@@ -1,0 +1,176 @@
+package dev.tylercash.event.discord;
+
+import dev.tylercash.event.db.model.Attendee;
+import dev.tylercash.event.db.model.Event;
+import dev.tylercash.event.db.repository.EventRepository;
+import lombok.AllArgsConstructor;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.TextChannel;
+import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.interaction.MessageComponentInteraction;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import javax.annotation.PostConstruct;
+import java.awt.*;
+import java.time.ZoneOffset;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import static dev.tylercash.event.discord.DiscordConfiguration.*;
+
+
+@Service
+@AllArgsConstructor
+public class DiscordService {
+    public static final String ACCEPTED = "accepted";
+    public static final String DECLINED = "declined";
+    public static final String MAYBE = "maybe";
+    private final DiscordConfiguration discordConfiguration;
+    private final DiscordApi discordApi;
+    private final EventRepository eventRepository;
+
+    private static void flipAttendeesState(Set<Attendee> attendees, String id) {
+        Attendee attendee = Attendee.createDiscordAttendee(id);
+        if (!attendees.contains(attendee)) {
+            attendees.add(attendee);
+        } else {
+            attendees.remove(attendee);
+        }
+    }
+
+    @PostConstruct
+    public void setupListeners() {
+        this.createMessageComponentListener();
+    }
+
+    private MessageBuilder createEventMessage(Event event) {
+        MessageBuilder builder = new MessageBuilder();
+        builder
+                .setEmbed(getEmbed(event))
+                .addComponents(ActionRow.of(
+                        Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
+                        Button.secondary(DECLINED, DECLINED_EMOJI),
+                        Button.secondary(MAYBE, MAYBE_EMOJI)));
+
+        return builder;
+    }
+
+    private EmbedBuilder getEmbed(Event event) {
+        String capDescription = event.getCapacity() > 0 ? " (Capacity " + event.getAccepted().size() + "/" + event.getCapacity() + ")" : "";
+        long epochSecond = event.getDateTime().toEpochSecond(ZoneOffset.UTC);
+        String timeMessage = "<t:" + epochSecond + ":F>\n<t:" + epochSecond + ":R>";
+        EmbedBuilder embed = new EmbedBuilder()
+                .setTitle(event.getName())
+                .setDescription(event.getDescription())
+                .addField("Time", timeMessage)
+                .setColor(Color.orange);
+
+        if (!event.getLocation().isBlank()) {
+            embed.addField("Location", event.getLocation());
+        }
+
+        Optional<Server> server = discordApi.getServerById(event.getServerId());
+        if (server.isEmpty()) {
+            embed.addField("No attendees yet", "");
+        } else {
+            embed.addInlineField(ACCEPTED_EMOJI + " Accepted" + capDescription, reduceAttendeesToBlock(server.get(), event.getAccepted()))
+                    .addInlineField(DECLINED_EMOJI + " Declined", reduceAttendeesToBlock(server.get(), event.getDeclined()))
+                    .addInlineField(MAYBE_EMOJI + " Maybe", reduceAttendeesToBlock(server.get(), event.getMaybe()));
+        }
+        return embed;
+    }
+
+    private String reduceAttendeesToBlock(Server server, Set<Attendee> attendees) {
+        Set<String> names = new HashSet<>();
+        for (Attendee attendee : attendees) {
+            String name = attendee.getName();
+            if (Objects.nonNull(attendee.getSnowflake())) {
+                name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
+            }
+            names.add(name);
+        }
+        return names.stream()
+                .map(attendee -> "> " + attendee + "\n")
+                .reduce("", String::concat);
+    }
+
+    public ServerTextChannel createEventChannel(Event event) {
+        ChannelCategory category = getEventCategory();
+        return category.getServer().createTextChannelBuilder()
+                .setName(DiscordUtil.getChannelNameFromEvent(event))
+                .setCategory(category)
+                .create()
+                .join();
+    }
+
+    private ChannelCategory getEventCategory() {
+        Set<ChannelCategory> channels = discordApi.getChannelCategoriesByName(EVENT_CATEGORY);
+        if (channels.size() > 1) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Found multiple matching channels");
+        }
+        return channels.stream().findFirst().get();
+    }
+
+    public Message postEventMessage(Event event, ServerTextChannel channel) {
+        MessageBuilder builder = createEventMessage(event);
+        return builder
+                .send(channel)
+                .join();
+    }
+
+    public Message updateEventMessage(Event event) {
+        Optional<Channel> optionalChannel = discordApi.getChannelById(event.getChannelId());
+        if (optionalChannel.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord channel found with ID " + event.getChannelId());
+        }
+        Message message = ((TextChannel) optionalChannel.get()).getMessageById(event.getMessageId()).join();
+        return message.edit(getEmbed(event)).join();
+    }
+
+    public void pinMessage(Message message) {
+        message.pin().join();
+    }
+
+    public void createMessageComponentListener() {
+        discordApi.addMessageComponentCreateListener(listenerEvent -> {
+            MessageComponentInteraction messageComponentInteraction = listenerEvent.getMessageComponentInteraction();
+            String customId = messageComponentInteraction.getCustomId();
+            Event currentEvent = eventRepository.findByMessageId(messageComponentInteraction.getMessage().getId());
+            String userId = messageComponentInteraction.getUser().getIdAsString();
+            switch (customId) {
+                case ACCEPTED:
+                    flipAttendeesState(currentEvent.getAccepted(), userId);
+                    currentEvent.getDeclined().remove(Attendee.createDiscordAttendee(userId));
+                    currentEvent.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                    break;
+                case DECLINED:
+                    flipAttendeesState(currentEvent.getDeclined(), userId);
+                    currentEvent.getAccepted().remove(Attendee.createDiscordAttendee(userId));
+                    currentEvent.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                    break;
+                case MAYBE:
+                    flipAttendeesState(currentEvent.getMaybe(), userId);
+                    currentEvent.getAccepted().remove(Attendee.createDiscordAttendee(userId));
+                    currentEvent.getDeclined().remove(Attendee.createDiscordAttendee(userId));
+                    break;
+                default:
+                    break;
+            }
+            eventRepository.save(currentEvent);
+            listenerEvent.getMessageComponentInteraction().getMessage().edit(getEmbed(currentEvent)).join();
+            listenerEvent.getInteraction().createImmediateResponder().respond();
+        });
+    }
+}

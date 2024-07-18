@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: tyler
+      changes:
+        - createTable:
+            tableName: event
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: message_id
+                  type: long
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: long
+                  constraints:
+                    nullable: false
+              - column:
+                  name: server_id
+                  type: long
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location
+                  type: text
+              - column:
+                  name: capacity
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cost
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accepted
+                  type: text
+              - column:
+                  name: declined
+                  type: text
+              - column:
+                  name: maybe
+                  type: text
+              - column:
+                  name: date_time
+                  type: varchar(250)
+                  constraints:
+                    nullable: false
