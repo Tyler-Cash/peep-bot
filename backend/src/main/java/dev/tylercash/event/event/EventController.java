@@ -14,7 +14,7 @@ public class EventController {
     private EventService eventService;
 
     @PutMapping
-    public String createEvent(Event event) {
+    public String createEvent(@RequestBody Event event) {
         eventService.createEvent(event);
         return "Created event for " + event.getName();
     }

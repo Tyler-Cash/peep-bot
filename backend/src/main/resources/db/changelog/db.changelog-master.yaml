@@ -40,8 +40,6 @@ databaseChangeLog:
               - column:
                   name: description
                   type: text
-                  constraints:
-                    nullable: false
               - column:
                   name: location
                   type: text

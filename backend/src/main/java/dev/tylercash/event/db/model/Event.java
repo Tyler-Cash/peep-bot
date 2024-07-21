@@ -15,10 +15,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+@Data
+@Table
 @Schema
 @Entity
-@Table
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Event {
@@ -37,9 +37,8 @@ public class Event {
     private long channelId;
     @NotNull
     private String name;
-    @NotNull
-    private String description;
-    private String location;
+    private String description = "";
+    private String location = "";
     private Integer capacity = 0;
     private Integer cost = 0;
     @Convert(converter = SetOfAttendeesConverter.class)
