@@ -1,9 +1,9 @@
 package dev.tylercash.event.event;
 
-import dev.tylercash.event.db.model.Event;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.model.Event;
 import lombok.RequiredArgsConstructor;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -41,5 +41,10 @@ public class EventService {
 
     public List<Event> getEvents() {
         return eventRepository.findAll();
+    }
+
+    public String deleteEvent(String id) {
+        eventRepository.deleteById(UUID.fromString(id));
+        return "Event with id " + id + " has been deleted";
     }
 }

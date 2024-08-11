@@ -1,6 +1,6 @@
 package dev.tylercash.event.discord;
 
-import dev.tylercash.event.db.model.Event;
+import dev.tylercash.event.event.model.Event;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;

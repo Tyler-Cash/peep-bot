@@ -6,10 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @SpringBootApplication
 @ConfigurationProperties
-public class EventBotApplication {
+public class TylerBotApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(EventBotApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(TylerBotApplication.class, args);
+    }
 }

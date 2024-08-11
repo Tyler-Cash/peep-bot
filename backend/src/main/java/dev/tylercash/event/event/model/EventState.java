@@ -1,4 +1,4 @@
-package dev.tylercash.event.db.model;
+package dev.tylercash.event.event.model;
 
 public enum EventState {
     PLANNING,

@@ -1,9 +1,11 @@
 plugins {
     id 'application'
     id 'org.springframework.boot' version '3.3.2'
-    id 'io.spring.dependency-management' version '1.1.6'
     id 'org.graalvm.buildtools.native' version '0.10.2'
 }
+
+apply plugin: 'application'
+apply plugin: 'io.spring.dependency-management'
 
 group = 'dev.tylercash'
 version = '0.0.1-SNAPSHOT'
@@ -12,6 +14,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
+}
+
+application {
+    mainClass = 'dev.tylercash.event.TylerBotApplication'
 }
 
 configurations {
@@ -25,29 +31,33 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-//    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-//    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
-//    implementation 'org.springframework.boot:spring-boot-starter-security'
-//    implementation 'org.springframework.security:spring-security-oauth2-client'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.javacord:javacord:3.8.0'
     implementation 'com.h2database:h2'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.javacord:javacord:3.8.0'
+    implementation 'org.liquibase:liquibase-core'
+    implementation 'org.projectlombok:lombok'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.security:spring-security-oauth2-client'
+    implementation 'org.springframework.session:spring-session-jdbc'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
+
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.34'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -55,6 +65,11 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.named("bootJar") {
+    launchScript()
+
+}
+
 tasks.bootBuildImage {
-    imageName = "ghcr.io/tyler-cash/event-bot:latest"
+    imageName = "ghcr.io/tyler-cash/tyler-bot-backend:latest"
 }

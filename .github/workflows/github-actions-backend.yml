@@ -19,4 +19,4 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Build and test backend
-        run: chmod -R +x backend && cd backend/ && ./gradlew clean bootBuildImage && docker push ghcr.io/tyler-cash/event-bot-backend:latest
+        run: chmod -R +x backend && cd backend/ && ./gradlew clean bootBuildImage && docker push ghcr.io/tyler-cash/tyler-bot-backend:latest

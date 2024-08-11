@@ -1,10 +1,11 @@
 package dev.tylercash.event.discord;
 
-import dev.tylercash.event.db.model.Attendee;
-import dev.tylercash.event.db.model.Event;
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.event.model.Attendee;
+import dev.tylercash.event.event.model.Event;
 import lombok.AllArgsConstructor;
 import org.javacord.api.DiscordApi;
+import org.javacord.api.entity.Deletable;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -119,6 +120,8 @@ public class DiscordService {
         Set<ChannelCategory> channels = discordApi.getChannelCategoriesByName(EVENT_CATEGORY);
         if (channels.size() > 1) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Found multiple matching channels");
+        } else if (channels.stream().findFirst().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No category found called \"" + EVENT_CATEGORY + "\"");
         }
         return channels.stream().findFirst().get();
     }
@@ -141,6 +144,30 @@ public class DiscordService {
 
     public void pinMessage(Message message) {
         message.pin().join();
+    }
+
+    public boolean isUserMemberOfServer(long serverId, long userId) {
+        return getServerById(serverId).getMembers().stream().anyMatch(member -> member.getId() == userId);
+    }
+
+    private Server getServerById(long serverId) {
+        Optional<Server> server = discordApi.getServerById(serverId);
+        if (server.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord server found with ID " + serverId);
+        }
+        return server.get();
+    }
+
+    public void deleteEventChannel(Event event) {
+        getServerById(event.getServerId()).getChannels()
+                .stream()
+                .filter(channel -> channel.getId() == event.getChannelId())
+                .findFirst()
+                .ifPresentOrElse(
+                        Deletable::delete,
+                        () -> {
+                            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord channel found with ID " + event.getChannelId());
+                        });
     }
 
     public void createMessageComponentListener() {

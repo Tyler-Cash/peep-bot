@@ -1,7 +1,7 @@
 package dev.tylercash.event.db.repository;
 
-import dev.tylercash.event.db.model.Attendee;
-import dev.tylercash.event.db.model.Event;
+import dev.tylercash.event.event.model.Attendee;
+import dev.tylercash.event.event.model.Event;
 import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

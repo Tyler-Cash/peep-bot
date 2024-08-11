@@ -1,7 +1,7 @@
 package dev.tylercash.event.db.repository;
 
-import dev.tylercash.event.db.model.Event;
-import dev.tylercash.event.db.model.EventState;
+import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventState;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

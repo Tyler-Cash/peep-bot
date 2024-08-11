@@ -25,7 +25,9 @@ public class DiscordConfiguration {
         return new DiscordApiBuilder()
                 .setToken(getToken())
                 .addIntents(Intent.MESSAGE_CONTENT)
-                .login().join();
+                .addIntents(Intent.GUILD_MEMBERS)
+                .login()
+                .join();
     }
 
 }

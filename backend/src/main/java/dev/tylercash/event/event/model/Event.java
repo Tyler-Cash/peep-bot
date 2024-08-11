@@ -1,6 +1,6 @@
-package dev.tylercash.event.db.model;
+package dev.tylercash.event.event.model;
 
-import dev.tylercash.event.db.model.converter.SetOfAttendeesConverter;
+import dev.tylercash.event.event.model.converter.SetOfAttendeesConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -65,6 +65,16 @@ public class Event {
         this.name = name;
         this.description = description;
         this.dateTime = dateTime;
+    }
+
+    public Event(EventDto event) {
+        super();
+        this.name = event.getName();
+        this.description = event.getDescription();
+        this.location = event.getLocation();
+        this.capacity = event.getCapacity();
+        this.cost = event.getCost();
+        this.dateTime = event.getDateTime();
     }
 
     public void setDateTime(@NotNull LocalDateTime dateTime) {

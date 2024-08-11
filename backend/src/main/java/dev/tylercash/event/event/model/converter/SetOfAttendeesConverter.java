@@ -1,7 +1,7 @@
-package dev.tylercash.event.db.model.converter;
+package dev.tylercash.event.event.model.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.tylercash.event.db.model.Attendee;
+import dev.tylercash.event.event.model.Attendee;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.SneakyThrows;

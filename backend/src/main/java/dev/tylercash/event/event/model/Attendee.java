@@ -1,4 +1,4 @@
-package dev.tylercash.event.db.model;
+package dev.tylercash.event.event.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
