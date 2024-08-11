@@ -5,6 +5,7 @@ import dev.tylercash.event.event.model.Event;
 import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NoArgsConstructor
 @SpringBootTest
-@AutoConfigureTestDatabase
+@AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 class EventRepositoryTest {
     @Autowired
     private EventRepository eventRepository;

@@ -42,5 +42,7 @@ bin/
 .DS_Store
 
 **/application.properties
-**/application.yaml
+**/application-local.yaml
 *.db
+*.sqlite
+*.sqlite3

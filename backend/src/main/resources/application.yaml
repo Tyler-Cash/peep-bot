@@ -1,0 +1,34 @@
+spring.application.name: tyler-bot
+
+dev.tylercash:
+  discord:
+    timeout: 60
+  frontend:
+    protocol: http
+    hostname: localhost
+    path: /
+
+springdoc:
+  show-oauth2-endpoints: true
+
+server:
+  tomcat:
+    use-relative-redirects: true
+  servlet:
+    session:
+      cookie:
+        secure: true
+    context-path: /api/
+
+spring:
+  session:
+    jdbc:
+      initialize-schema: never
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:sqlite:file:/storage/data.sqlite3
+    driverClassName: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
