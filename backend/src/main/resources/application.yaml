@@ -28,7 +28,7 @@ spring:
     console:
       enabled: true
   datasource:
-    url: jdbc:sqlite:file:/storage/data.sqlite3
+    url: jdbc:sqlite:file:/storage/data.sqlite3?date_class=TEXT
     driverClassName: org.sqlite.JDBC
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
