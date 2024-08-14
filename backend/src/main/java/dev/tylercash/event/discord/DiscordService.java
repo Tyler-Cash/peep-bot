@@ -4,6 +4,8 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.Deletable;
 import org.javacord.api.entity.channel.Channel;
@@ -17,6 +19,7 @@ import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.MessageComponentInteraction;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,10 +31,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 
 
+@Log4j2
 @Service
 @AllArgsConstructor
 public class DiscordService {
@@ -173,31 +178,45 @@ public class DiscordService {
     public void createMessageComponentListener() {
         discordApi.addMessageComponentCreateListener(listenerEvent -> {
             MessageComponentInteraction messageComponentInteraction = listenerEvent.getMessageComponentInteraction();
-            String customId = messageComponentInteraction.getCustomId();
-            Event currentEvent = eventRepository.findByMessageId(messageComponentInteraction.getMessage().getId());
-            String userId = messageComponentInteraction.getUser().getIdAsString();
-            switch (customId) {
-                case ACCEPTED:
-                    flipAttendeesState(currentEvent.getAccepted(), userId);
-                    currentEvent.getDeclined().remove(Attendee.createDiscordAttendee(userId));
-                    currentEvent.getMaybe().remove(Attendee.createDiscordAttendee(userId));
-                    break;
-                case DECLINED:
-                    flipAttendeesState(currentEvent.getDeclined(), userId);
-                    currentEvent.getAccepted().remove(Attendee.createDiscordAttendee(userId));
-                    currentEvent.getMaybe().remove(Attendee.createDiscordAttendee(userId));
-                    break;
-                case MAYBE:
-                    flipAttendeesState(currentEvent.getMaybe(), userId);
-                    currentEvent.getAccepted().remove(Attendee.createDiscordAttendee(userId));
-                    currentEvent.getDeclined().remove(Attendee.createDiscordAttendee(userId));
-                    break;
-                default:
-                    break;
+
+            String eventType = messageComponentInteraction.getCustomId();
+            Message message = messageComponentInteraction.getMessage();
+            Event event = eventRepository.findByMessageId(message.getId());
+            if (event == null) {
+                throw new RuntimeException("Unrecognized event message ID " + message.getId());
             }
-            eventRepository.save(currentEvent);
-            listenerEvent.getMessageComponentInteraction().getMessage().edit(getEmbed(currentEvent)).join();
-            listenerEvent.getInteraction().createImmediateResponder().respond();
+            String userId = messageComponentInteraction.getUser().getIdAsString();
+            log.info("User {} interacting with status {}", messageComponentInteraction.getUser().getName(), eventType);
+            CompletableFuture<InteractionOriginalResponseUpdater> responder = messageComponentInteraction.createImmediateResponder().respond();
+
+            handleMessageComponentInteraction(event, eventType, userId);
+
+            message.edit(getEmbed(event));
+            responder.thenAccept(InteractionOriginalResponseUpdater::update);
         });
+    }
+
+    @SneakyThrows
+    private void handleMessageComponentInteraction(Event event, String eventType, String userId) {
+        switch (eventType) {
+            case ACCEPTED:
+                flipAttendeesState(event.getAccepted(), userId);
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                break;
+            case DECLINED:
+                flipAttendeesState(event.getDeclined(), userId);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                break;
+            case MAYBE:
+                flipAttendeesState(event.getMaybe(), userId);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId));
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId));
+                break;
+            default:
+                break;
+        }
+        eventRepository.save(event);
     }
 }
