@@ -3,7 +3,7 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.helper.GoogleCalendarService;
+import dev.tylercash.event.global.GoogleCalendarService;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;

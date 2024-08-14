@@ -1,4 +1,4 @@
-package dev.tylercash.event.helper;
+package dev.tylercash.event.global;
 
 import dev.tylercash.event.event.model.Event;
 import org.springframework.stereotype.Service;
