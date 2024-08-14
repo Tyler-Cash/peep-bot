@@ -33,6 +33,9 @@ repositories {
 dependencies {
     implementation 'com.ibm.icu:icu4j:75.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'io.micrometer:micrometer-tracing'
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
     implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.0.Final'
     implementation 'org.javacord:javacord:3.8.0'
     implementation 'org.liquibase:liquibase-core'
@@ -47,6 +50,7 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
     implementation 'org.xerial:sqlite-jdbc:3.46.0.1'
+    implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
