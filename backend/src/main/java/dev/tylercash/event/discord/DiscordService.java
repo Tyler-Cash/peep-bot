@@ -3,6 +3,7 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.helper.GoogleCalendarService;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -45,6 +46,7 @@ public class DiscordService {
     private final DiscordConfiguration discordConfiguration;
     private final DiscordApi discordApi;
     private final EventRepository eventRepository;
+    private final GoogleCalendarService googleCalendarService;
 
     private static void flipAttendeesState(Set<Attendee> attendees, String id) {
         Attendee attendee = Attendee.createDiscordAttendee(id);
@@ -92,6 +94,8 @@ public class DiscordService {
         if (!event.getLocation().isBlank()) {
             embed.addField("Location", event.getLocation());
         }
+
+        embed.addField("Links", "[Add to Google calendar](" + googleCalendarService.getCalendarEventUrl(event) + ")");
 
         Optional<Server> server = discordApi.getServerById(event.getServerId());
         if (server.isEmpty()) {
