@@ -21,11 +21,17 @@ public class EventService {
 
     public String createEvent(Event event) {
         ServerTextChannel channel = discordService.createEventChannel(event);
-        Message message = discordService.postEventMessage(event, channel);
-        event.setServerId(channel.getServer().getId());
-        event.setChannelId(channel.getId());
-        event.setMessageId(message.getId());
-        eventRepository.save(event);
+        Message message = null;
+        try {
+            message = discordService.postEventMessage(event, channel);
+            event.setServerId(channel.getServer().getId());
+            event.setChannelId(channel.getId());
+            event.setMessageId(message.getId());
+            eventRepository.save(event);
+        } catch (Exception e) {
+            channel.delete();
+            throw e;
+        }
         discordService.pinMessage(message);
         return "Created event for " + event.getName();
     }
