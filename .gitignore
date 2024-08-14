@@ -46,3 +46,4 @@ bin/
 *.db
 *.sqlite
 *.sqlite3
+.idea/sonarlint/
