@@ -19,7 +19,7 @@ export default function CreateEvent(props) {
                 "description": data.description,
                 // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
-                "cost": parseInt(data.cost || "0"),
+                // "cost": parseInt(data.cost || "0"),
                 "dateTime": new Date(data.dateTime).toISOString()
             }).unwrap();
             document.location.href = "/"
@@ -65,11 +65,11 @@ export default function CreateEvent(props) {
                             <div className="invalid-feedback">{errors.capacity?.message}</div>
                         </div>
 
-                        <div className="mb-3 has-validation">
-                            <label className="form-label" htmlFor="cost">Cost</label>
-                            <input className={"form-control " + (errors.cost && "is-invalid")} {...register("cost")} />
-                            <div className="invalid-feedback">{errors.cost?.message}</div>
-                        </div>
+                        {/*<div className="mb-3 has-validation">*/}
+                        {/*    <label className="form-label" htmlFor="cost">Cost</label>*/}
+                        {/*    <input className={"form-control " + (errors.cost && "is-invalid")} {...register("cost")} />*/}
+                        {/*    <div className="invalid-feedback">{errors.cost?.message}</div>*/}
+                        {/*</div>*/}
 
                         <div className="mb-3 has-validation">
                             <label className="form-label" htmlFor="time">Start time</label>
