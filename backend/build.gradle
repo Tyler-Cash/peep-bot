@@ -31,12 +31,12 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.ibm.icu:icu4j:75.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.0.Final'
     implementation 'org.javacord:javacord:3.8.0'
     implementation 'org.liquibase:liquibase-core'
     implementation 'org.projectlombok:lombok'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.0.Final'
-    implementation 'org.xerial:sqlite-jdbc:3.46.0.1'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -46,6 +46,7 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.1'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -59,12 +60,19 @@ public class EventService {
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void deleteEventSchedule() {
+
         for (Event event : eventRepository.findAll()) {
             LocalDateTime eventExpiry = event.getDateTime().plus(3, DAYS.toChronoUnit());
+            String eventName = DiscordUtil.getChannelNameFromEvent(event);
             if (LocalDateTime.now().isAfter(eventExpiry)) {
-                discordService.deleteEventChannel(event);
-                eventRepository.deleteById(event.getId());
-                log.info("Event {} has been deleted", event.getName());
+                try {
+                    discordService.deleteEventChannel(event);
+                    eventRepository.deleteById(event.getId());
+                    log.info("Event {} has been deleted", eventName);
+                } catch (Exception e) {
+                    log.error("Error deleting event {}", eventName, e);
+                }
+
             }
         }
     }

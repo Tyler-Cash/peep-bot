@@ -19,6 +19,7 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -43,7 +44,6 @@ public class DiscordService {
     public static final String ACCEPTED = "accepted";
     public static final String DECLINED = "declined";
     public static final String MAYBE = "maybe";
-    private final DiscordConfiguration discordConfiguration;
     private final DiscordApi discordApi;
     private final EventRepository eventRepository;
     private final GoogleCalendarService googleCalendarService;
@@ -173,6 +173,7 @@ public class DiscordService {
         return server.get();
     }
 
+    @Async
     public void sortChannels() {
         ChannelCategory eventCategory = getEventCategory();
         List<RegularServerChannel> channels = eventCategory.getChannels();

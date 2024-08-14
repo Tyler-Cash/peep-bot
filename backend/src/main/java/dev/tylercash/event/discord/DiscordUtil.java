@@ -1,40 +1,27 @@
 package dev.tylercash.event.discord;
 
+import com.ibm.icu.text.RuleBasedNumberFormat;
 import dev.tylercash.event.event.model.Event;
+import lombok.AllArgsConstructor;
 
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.Locale;
 
+@AllArgsConstructor
 public class DiscordUtil {
     public static final String CHANNEL_SEPERATOR = "-";
     public static final DateTimeFormatter CHANNEL_NAME_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM");
+    private static final RuleBasedNumberFormat RULE_BASED_NUMBER_FORMAT = new RuleBasedNumberFormat(Locale.UK, RuleBasedNumberFormat.ORDINAL);
 
     public static String getChannelNameFromEvent(Event event) {
-        return dateFromEvent(event)
-                + CHANNEL_SEPERATOR + event.getName().replaceAll("/\\s+/g", "-").toLowerCase(Locale.ROOT);
-    }
-
-    private static String dateFromEvent(Event event) {
-        return CHANNEL_NAME_FORMATTER.format(event.getDateTime()).replace(CHANNEL_SEPERATOR, getDayNumberSuffix(event.getDateTime().getDayOfMonth()) + "-");
-    }
-
-    public static String datetimestampFromEvent(Event event) {
-        return DateTimeFormatter.ofPattern("h:mma dd-MMM").format(event.getDateTime()).replace(CHANNEL_SEPERATOR, getDayNumberSuffix(event.getDateTime().getDayOfMonth()) + " of ");
-    }
-
-    private static String getDayNumberSuffix(int day) {
-        if (day >= 11 && day <= 13) {
-            return "th";
-        }
-        switch (day % 10) {
-            case 1:
-                return "st";
-            case 2:
-                return "nd";
-            case 3:
-                return "rd";
-            default:
-                return "th";
-        }
+        String day = RULE_BASED_NUMBER_FORMAT.format(event.getDateTime().getDayOfMonth());
+        String month = event.getDateTime()
+                .getMonth()
+                .getDisplayName(TextStyle.SHORT, Locale.US);
+        String name = event.getName().replaceAll("/\\s+/g", "-").toLowerCase(Locale.ROOT);
+        String nameMinified = name.substring(0, Math.min(20, name.length()));
+        return (day + CHANNEL_SEPERATOR + month + CHANNEL_SEPERATOR + nameMinified)
+                .toLowerCase(Locale.ROOT);
     }
 }
