@@ -60,7 +60,8 @@ public class EventService {
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void deleteEventSchedule() {
         for (Event event : eventRepository.findAll()) {
-            if (event.getDateTime().plus(3, DAYS.toChronoUnit()).isAfter(LocalDateTime.now())) {
+            LocalDateTime eventExpiry = event.getDateTime().plus(3, DAYS.toChronoUnit());
+            if (LocalDateTime.now().isAfter(eventExpiry)) {
                 discordService.deleteEventChannel(event);
                 eventRepository.deleteById(event.getId());
                 log.info("Event {} has been deleted", event.getName());
