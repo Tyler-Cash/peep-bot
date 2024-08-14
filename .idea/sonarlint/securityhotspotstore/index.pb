@@ -176,3 +176,5 @@ j
 :backend/src/main/java/dev/tylercash/event/global/Futu.java,c\f\cfd19ac77d91794973dbec059f8a6d91cec2c0d5
 ‹
 [backend/src/main/java/dev/tylercash/event/global/FutureOrPresentZonedDateTimeValidator.java,c\5\c5fd010e9a98a629e2f1968d09a8a0a5ea108eee
+
+Obackend/src/test/java/dev/tylercash/event/discord/DiscordConfigurationTest.java,3\c\3c46a6d230757ff4b527360bd2d0e751b2386505
