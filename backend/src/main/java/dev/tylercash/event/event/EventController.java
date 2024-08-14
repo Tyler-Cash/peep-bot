@@ -34,9 +34,4 @@ public class EventController {
     public List<Event> getEvents() {
         return eventService.getEvents();
     }
-
-    @DeleteMapping
-    public Map<String, String> deleteEvent(String id) {
-        return Map.of("message", eventService.deleteEvent(id));
-    }
 }

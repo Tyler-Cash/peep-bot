@@ -1,0 +1,47 @@
+networks:
+  dev:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+    networks:
+      - dev
+
+  api:
+    build:
+      context: backend
+      dockerfile: ./Dockerfile
+    container_name: api
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: "local"
+    volumes:
+      - database:/storage/
+    ports:
+      - "8080:8080"
+    networks:
+      - dev
+
+  frontend:
+    build:
+      context: frontend
+      target: development
+    ports:
+      - 3000
+    volumes:
+      - ./frontend/src:/code/src
+    environment:
+      REACT_APP_BACKEND_URI: http://localhost:8000
+    networks:
+      - dev
+    depends_on:
+      - api
+volumes:
+  database:

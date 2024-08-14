@@ -5,13 +5,20 @@ import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+@Log4j2
 @Service
 @RequiredArgsConstructor
 public class EventService {
@@ -21,7 +28,7 @@ public class EventService {
 
     public String createEvent(Event event) {
         ServerTextChannel channel = discordService.createEventChannel(event);
-        Message message = null;
+        Message message;
         try {
             message = discordService.postEventMessage(event, channel);
             event.setServerId(channel.getServer().getId());
@@ -33,6 +40,7 @@ public class EventService {
             throw e;
         }
         discordService.pinMessage(message);
+        discordService.sortChannels();
         return "Created event for " + event.getName();
     }
 
@@ -49,8 +57,14 @@ public class EventService {
         return eventRepository.findAll();
     }
 
-    public String deleteEvent(String id) {
-        eventRepository.deleteById(UUID.fromString(id));
-        return "Event with id " + id + " has been deleted";
+    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    public void deleteEventSchedule() {
+        for (Event event : eventRepository.findAll()) {
+            if (event.getDateTime().plus(3, DAYS.toChronoUnit()).isAfter(LocalDateTime.now())) {
+                discordService.deleteEventChannel(event);
+                eventRepository.deleteById(event.getId());
+                log.info("Event {} has been deleted", event.getName());
+            }
+        }
     }
 }

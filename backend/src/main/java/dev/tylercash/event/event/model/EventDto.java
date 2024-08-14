@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Data
 @NoArgsConstructor
@@ -31,5 +31,5 @@ public class EventDto {
     @NotNull(message = "A date and time is required.")
     @FutureOrPresent(message = "The event can only be organized in the future.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime dateTime;
+    private ZonedDateTime dateTime;
 }

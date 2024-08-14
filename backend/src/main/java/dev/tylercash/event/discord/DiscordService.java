@@ -8,10 +8,7 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.Deletable;
-import org.javacord.api.entity.channel.Channel;
-import org.javacord.api.entity.channel.ChannelCategory;
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.channel.TextChannel;
+import org.javacord.api.entity.channel.*;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
@@ -26,11 +23,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
 import java.awt.*;
+import java.time.MonthDay;
 import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
@@ -54,6 +53,13 @@ public class DiscordService {
         } else {
             attendees.remove(attendee);
         }
+    }
+
+    private static MonthDay getMonthDayFromChannelName(ServerChannel channel, DateTimeFormatter monthParser) {
+        String[] split = channel.getName().replaceAll("(?<=\\d)(st|nd|rd|th)", "").split("-");
+        String day = split[0];
+        int month = monthParser.parse(split[1]).get(ChronoField.MONTH_OF_YEAR);
+        return MonthDay.of(month, Integer.parseInt(day));
     }
 
     @PostConstruct
@@ -161,6 +167,25 @@ public class DiscordService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord server found with ID " + serverId);
         }
         return server.get();
+    }
+
+    public void sortChannels() {
+        ChannelCategory eventCategory = getEventCategory();
+        List<RegularServerChannel> channels = eventCategory.getChannels();
+        DateTimeFormatter monthParser = new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern("MMM")
+                .toFormatter(Locale.ENGLISH);
+        List<RegularServerChannel> sorted = channels.stream()
+                .sorted((RegularServerChannel left, RegularServerChannel right) -> {
+                    MonthDay leftDay = getMonthDayFromChannelName(left, monthParser);
+                    MonthDay rightDay = getMonthDayFromChannelName(right, monthParser);
+                    return leftDay.compareTo(rightDay);
+                })
+                .toList();
+        for (int i = 0; i < sorted.size(); i++) {
+            sorted.get(i).updateRawPosition(i);
+        }
     }
 
     public void deleteEventChannel(Event event) {

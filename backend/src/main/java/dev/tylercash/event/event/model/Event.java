@@ -74,7 +74,7 @@ public class Event {
         this.location = event.getLocation();
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
-        this.dateTime = event.getDateTime();
+        this.dateTime = LocalDateTime.from(event.getDateTime());
     }
 
     public void setDateTime(@NotNull LocalDateTime dateTime) {

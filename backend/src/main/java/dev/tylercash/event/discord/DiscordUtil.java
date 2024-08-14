@@ -7,6 +7,7 @@ import java.util.Locale;
 
 public class DiscordUtil {
     public static final String CHANNEL_SEPERATOR = "-";
+    public static final DateTimeFormatter CHANNEL_NAME_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM");
 
     public static String getChannelNameFromEvent(Event event) {
         return dateFromEvent(event)
@@ -14,7 +15,7 @@ public class DiscordUtil {
     }
 
     private static String dateFromEvent(Event event) {
-        return DateTimeFormatter.ofPattern("dd-MMM").format(event.getDateTime()).replace(CHANNEL_SEPERATOR, getDayNumberSuffix(event.getDateTime().getDayOfMonth()) + "-");
+        return CHANNEL_NAME_FORMATTER.format(event.getDateTime()).replace(CHANNEL_SEPERATOR, getDayNumberSuffix(event.getDateTime().getDayOfMonth()) + "-");
     }
 
     public static String datetimestampFromEvent(Event event) {
