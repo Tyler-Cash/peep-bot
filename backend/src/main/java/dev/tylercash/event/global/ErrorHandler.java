@@ -2,6 +2,9 @@ package dev.tylercash.event.global;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.view.RedirectView;
@@ -19,6 +23,7 @@ import java.util.List;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+@Log4j2
 @ControllerAdvice
 public class ErrorHandler {
 
@@ -26,6 +31,12 @@ public class ErrorHandler {
     public RedirectView handleError404(HttpServletRequest request, Exception e) {
         // Redirect to URL for FE to identify it's logged in. This should be okay as it's a BFF
         return new RedirectView("/login/success");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
+        log.error("Exception occurred: {}, Request Details: {}", ex.getMessage(), request.getDescription(false), ex);
+        return new ResponseEntity<>("An error occurred" + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ResponseStatus(BAD_REQUEST)
