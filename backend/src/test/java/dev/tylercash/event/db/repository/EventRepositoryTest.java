@@ -9,6 +9,7 @@ import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +24,7 @@ class EventRepositoryTest {
     @Test
     void testSave() {
         Event event = new Event(1, 2, 3, "description", "", LocalDateTime.now());
-        event.getAccepted().add(new Attendee("", "user1"));
+        event.getAccepted().add(new Attendee("", "user1", Instant.now()));
         eventRepository.save(event);
         assertEquals(event, eventRepository.findAll().get(0));
     }
