@@ -32,6 +32,7 @@ export default function CreateEvent(props) {
                 throw e;
             }
         }
+        await new Promise(r => setTimeout(r, 1000));
     }
 
     return (
@@ -39,9 +40,7 @@ export default function CreateEvent(props) {
             <Navbar focus="CREATE"/>
             <span className="border">
                 <div className="container text-center">
-                    {/*"handleSubmit" will validate your inputs before invoking "onSubmit"*/}
                     <form className="t-3" onSubmit={handleSubmit(onSubmit)}>
-                        {/* register your input into the hook by invoking the "register" function */}
                         <div className="mb-3 has-validation">
                             <label className="form-label" htmlFor="name">Event Name</label>
                             <input className={"form-control " + (errors.name && "is-invalid")} {...register("name", {
