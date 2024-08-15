@@ -52,7 +52,7 @@ public class Event {
     private Set<Attendee> maybe = new HashSet<>();
     @Enumerated(EnumType.STRING)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    private EventState state = EventState.PLANNING;
+    private EventState state = EventState.PLANNED;
     @NotNull
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime dateTime;
