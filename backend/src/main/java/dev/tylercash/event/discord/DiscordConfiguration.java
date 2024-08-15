@@ -3,7 +3,6 @@ package dev.tylercash.event.discord;
 import lombok.Data;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
-import org.javacord.api.entity.intent.Intent;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +25,7 @@ public class DiscordConfiguration {
     public DiscordApi discordClient() {
         return new DiscordApiBuilder()
                 .setToken(getToken())
-                .addIntents(Intent.MESSAGE_CONTENT)
-                .addIntents(Intent.GUILD_MEMBERS)
+                .setAllIntents()
                 .login()
                 .join();
     }

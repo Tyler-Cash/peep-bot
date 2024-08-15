@@ -16,7 +16,7 @@ public class Attendee implements Serializable {
     private String snowflake;
     private String name;
     @EqualsAndHashCode.Exclude
-    private Instant instant = Instant.now();
+    private Instant instant;
 
     public static Attendee createDiscordAttendee(String snowflake) {
         return new Attendee(snowflake, null, Instant.now());
