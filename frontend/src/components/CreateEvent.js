@@ -29,10 +29,14 @@ export default function CreateEvent(props) {
                     setError(error.field, {message: error.defaultMessage})
                 });
             } else {
-                throw e;
+                setError("root", {
+                    message: "This is probably cooked tbh. Try again later?\nmessage: "
+                        + e.message + "\ncode: " + e.status + "\ntime:" + new Date().toString() + "\nstacktrace: "
+                        + e.stack
+                })
             }
         }
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 500));
     }
 
     return (
@@ -40,6 +44,7 @@ export default function CreateEvent(props) {
             <Navbar focus="CREATE"/>
             <span className="border">
                 <div className="container text-center">
+                    <div className={errors.root && "alert alert-danger"}>{errors.root?.message}</div>
                     <form className="t-3" onSubmit={handleSubmit(onSubmit)}>
                         <div className="mb-3 has-validation">
                             <label className="form-label" htmlFor="name">Event Name</label>
