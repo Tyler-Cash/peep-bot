@@ -112,8 +112,10 @@ public class DiscordService {
     }
 
     private String reduceAttendeesToBlock(Server server, Set<Attendee> attendees) {
+        Set<Attendee> sortedAttendees = new TreeSet<>(Comparator.comparing(Attendee::getInstant));
+        sortedAttendees.addAll(attendees);
         Set<String> names = new HashSet<>();
-        for (Attendee attendee : attendees) {
+        for (Attendee attendee : sortedAttendees) {
             String name = attendee.getName();
             if (Objects.nonNull(attendee.getSnowflake())) {
                 name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
