@@ -19,6 +19,7 @@ public class DiscordConfiguration {
     private String token;
     private long guildId;
     private long timeout;
+    private String seperatorChannel = "";
 
     @Bean
     public DiscordApi discordClient() {

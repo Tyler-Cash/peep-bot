@@ -33,6 +33,7 @@ import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 
@@ -44,6 +45,7 @@ public class DiscordService {
     public static final String ACCEPTED = "accepted";
     public static final String DECLINED = "declined";
     public static final String MAYBE = "maybe";
+    private final DiscordConfiguration discordConfiguration;
     private final DiscordApi discordApi;
     private final EventRepository eventRepository;
     private final GoogleCalendarService googleCalendarService;
@@ -181,15 +183,25 @@ public class DiscordService {
                 .parseCaseInsensitive()
                 .appendPattern("MMM")
                 .toFormatter(Locale.ENGLISH);
-        List<RegularServerChannel> sorted = channels.stream()
+        Stream<RegularServerChannel> events = channels.stream();
+        int position = 0;
+        for (RegularServerChannel channel : channels) {
+            events = events.skip(1);
+            position++;
+            if (channel.getName().equalsIgnoreCase(discordConfiguration.getSeperatorChannel())) {
+                break;
+            }
+        }
+
+        List<RegularServerChannel> sorted = events
                 .sorted((RegularServerChannel left, RegularServerChannel right) -> {
                     MonthDay leftDay = getMonthDayFromChannelName(left, monthParser);
                     MonthDay rightDay = getMonthDayFromChannelName(right, monthParser);
                     return leftDay.compareTo(rightDay);
                 })
                 .toList();
-        for (int i = 0; i < sorted.size(); i++) {
-            sorted.get(i).updateRawPosition(i);
+        for (RegularServerChannel regularServerChannel : sorted) {
+            regularServerChannel.updateRawPosition(++position);
         }
     }
 
