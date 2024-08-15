@@ -11,6 +11,9 @@ import org.springframework.security.config.annotation.web.configurers.SessionMan
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
+import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
+
+import java.time.Duration;
 
 @Configuration
 @EnableJdbcHttpSession
@@ -43,5 +46,12 @@ public class WebSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable);
         return http.build();
+    }
+
+    @Bean
+    public JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration() {
+        JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration = new JdbcHttpSessionConfiguration();
+        jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(365));
+        return jdbcHttpSessionConfiguration;
     }
 }
