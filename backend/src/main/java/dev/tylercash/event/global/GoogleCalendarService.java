@@ -23,10 +23,10 @@ public class GoogleCalendarService {
                 .path("/calendar/event")
                 .queryParam("action", "TEMPLATE")
                 .queryParam("text", event.getName())
-                .queryParam("details", event.getDescription())
-                .queryParam("details", event.getDescription())
                 .queryParam("location", event.getLocation())
                 .queryParam("dates", start + "/" + end)
+                .queryParam("details", event.getDescription())
+                .encode()
                 .build()
                 .toUri()
                 .toString();
