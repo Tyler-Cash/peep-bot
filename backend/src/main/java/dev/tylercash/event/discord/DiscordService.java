@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
+import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
 
 
 @Log4j2
@@ -85,7 +86,6 @@ public class DiscordService {
     }
 
     private EmbedBuilder getEmbed(Event event) {
-        String capDescription = event.getCapacity() > 0 ? " (Capacity " + event.getAccepted().size() + "/" + event.getCapacity() + ")" : "";
         long epochSecond = event.getDateTime().toEpochSecond(ZoneOffset.UTC);
         String timeMessage = "<t:" + epochSecond + ":F>\n<t:" + epochSecond + ":R>";
         EmbedBuilder embed = new EmbedBuilder()
@@ -101,14 +101,22 @@ public class DiscordService {
         embed.addField("Links", "[Add to Google calendar](" + googleCalendarService.getCalendarEventUrl(event) + ")");
 
         Optional<Server> server = discordApi.getServerById(event.getServerId());
+        populateAttendeeSection(event, server, embed);
+        return embed;
+    }
+
+    private void populateAttendeeSection(Event event, Optional<Server> server, EmbedBuilder embed) {
         if (server.isEmpty()) {
             embed.addField("No attendees yet", "");
         } else {
-            embed.addInlineField(ACCEPTED_EMOJI + " Accepted" + capDescription, reduceAttendeesToBlock(server.get(), event.getAccepted()))
-                    .addInlineField(DECLINED_EMOJI + " Declined", reduceAttendeesToBlock(server.get(), event.getDeclined()))
-                    .addInlineField(MAYBE_EMOJI + " Maybe", reduceAttendeesToBlock(server.get(), event.getMaybe()));
+            embedAttendees(server.get(), event, embed);
         }
-        return embed;
+    }
+
+    private void embedAttendees(Server server, Event event, EmbedBuilder embed) {
+        embed.addInlineField(generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", event.getAccepted().size(), event.getCapacity()), reduceAttendeesToBlock(server, event.getAccepted()))
+                .addInlineField(generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0), reduceAttendeesToBlock(server, event.getDeclined()))
+                .addInlineField(generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0), reduceAttendeesToBlock(server, event.getMaybe()));
     }
 
     private String reduceAttendeesToBlock(Server server, Set<Attendee> attendees) {
