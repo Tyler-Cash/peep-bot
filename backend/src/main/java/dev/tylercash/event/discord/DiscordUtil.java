@@ -20,8 +20,7 @@ public class DiscordUtil {
                 .getMonth()
                 .getDisplayName(TextStyle.SHORT, Locale.US);
         String name = event.getName().replaceAll("/\\s+/g", "-").toLowerCase(Locale.ROOT);
-        String nameMinified = name.substring(0, Math.min(20, name.length()));
-        return (day + CHANNEL_SEPERATOR + month + CHANNEL_SEPERATOR + nameMinified)
+        return (day + CHANNEL_SEPERATOR + month + CHANNEL_SEPERATOR + name)
                 .toLowerCase(Locale.ROOT);
     }
 
