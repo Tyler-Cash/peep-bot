@@ -5,7 +5,7 @@ import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.GoogleCalendarService;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.javacord.api.DiscordApi;
@@ -21,6 +21,7 @@ import org.javacord.api.exception.NotFoundException;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,11 +39,12 @@ import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 
 @Log4j2
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor()
 public class DiscordService {
     public static final String ACCEPTED = "accepted";
     public static final String DECLINED = "declined";
@@ -200,6 +202,12 @@ public class DiscordService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord server found with ID " + serverId);
         }
         return server.get();
+    }
+
+
+    @Scheduled(fixedDelay = 6, timeUnit = HOURS)
+    public void sortChannels() {
+        sortChannels(getEventCategory());
     }
 
     @Async
