@@ -19,7 +19,6 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.exception.NotFoundException;
 import org.javacord.api.interaction.MessageComponentInteraction;
-import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -34,7 +33,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
@@ -269,8 +267,6 @@ public class DiscordService {
             }
             String userId = messageComponentInteraction.getUser().getIdAsString();
             log.info("User {} interacting with status {}", messageComponentInteraction.getUser().getName(), eventType);
-            CompletableFuture<InteractionOriginalResponseUpdater> responder = messageComponentInteraction.createImmediateResponder().respond();
-
             Optional<Server> server = discordApi.getServerById(event.getServerId());
             if (server.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No server found with ID " + event.getServerId());
@@ -278,8 +274,8 @@ public class DiscordService {
             handleMessageComponentInteraction(event, messageComponentInteraction.getUser().getDisplayName(server.get()), eventType, userId);
 
             message.edit(getEmbed(event));
-            responder.thenAccept(InteractionOriginalResponseUpdater::update);
             eventRepository.save(event);
+            listenerEvent.getMessageComponentInteraction().acknowledge();
         });
     }
 
