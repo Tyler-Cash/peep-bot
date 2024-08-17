@@ -219,15 +219,16 @@ public class DiscordService {
             }
         }
 
-        List<RegularServerChannel> sorted = events
-                .sorted((RegularServerChannel left, RegularServerChannel right) -> {
+        List<RegularServerChannel> sorted = Stream.concat(
+                channels.subList(0, position).stream(),
+                events.sorted((RegularServerChannel left, RegularServerChannel right) -> {
                     MonthDay leftDay = getMonthDayFromChannelName(left, monthParser);
                     MonthDay rightDay = getMonthDayFromChannelName(right, monthParser);
                     return leftDay.compareTo(rightDay);
                 })
-                .toList();
-        for (RegularServerChannel regularServerChannel : sorted) {
-            regularServerChannel.updateRawPosition(++position);
+        ).toList();
+        for (int i = 0; i < sorted.size(); i++) {
+            sorted.get(i).updateRawPosition(i);
         }
     }
 
