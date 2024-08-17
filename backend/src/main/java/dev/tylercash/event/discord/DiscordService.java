@@ -17,6 +17,7 @@ import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
+import org.javacord.api.exception.NotFoundException;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
@@ -126,7 +128,13 @@ public class DiscordService {
         sortedAttendees.forEach(attendee -> {
             String name = attendee.getName();
             if (Objects.nonNull(attendee.getSnowflake()) && Objects.isNull(attendee.getName())) {
-                name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
+                try {
+                    name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
+                } catch (CompletionException e) {
+                    if (e.getCause().getClass().equals(NotFoundException.class)) {
+                        log.warn("User with id " + attendee.getSnowflake() + " not found");
+                    }
+                }
                 attendee.setName(name);
             }
             names.add(name);
