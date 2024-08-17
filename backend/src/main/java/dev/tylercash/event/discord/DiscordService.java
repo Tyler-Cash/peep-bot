@@ -52,8 +52,8 @@ public class DiscordService {
     private final EventRepository eventRepository;
     private final GoogleCalendarService googleCalendarService;
 
-    private static void flipAttendeesState(Set<Attendee> attendees, String id) {
-        Attendee attendee = Attendee.createDiscordAttendee(id);
+    private static void flipAttendeesState(Set<Attendee> attendees, String id, String username) {
+        Attendee attendee = Attendee.createDiscordAttendee(id, username);
         if (!attendees.contains(attendee)) {
             attendees.add(attendee);
         } else {
@@ -125,8 +125,9 @@ public class DiscordService {
         Set<String> names = new LinkedHashSet<>();
         sortedAttendees.forEach(attendee -> {
             String name = attendee.getName();
-            if (Objects.nonNull(attendee.getSnowflake())) {
+            if (Objects.nonNull(attendee.getSnowflake()) && Objects.isNull(attendee.getName())) {
                 name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
+                attendee.setName(name);
             }
             names.add(name);
         });
@@ -262,34 +263,38 @@ public class DiscordService {
             log.info("User {} interacting with status {}", messageComponentInteraction.getUser().getName(), eventType);
             CompletableFuture<InteractionOriginalResponseUpdater> responder = messageComponentInteraction.createImmediateResponder().respond();
 
-            handleMessageComponentInteraction(event, eventType, userId);
+            Optional<Server> server = discordApi.getServerById(event.getServerId());
+            if (server.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No server found with ID " + event.getServerId());
+            }
+            handleMessageComponentInteraction(event, messageComponentInteraction.getUser().getDisplayName(server.get()), eventType, userId);
 
             message.edit(getEmbed(event));
             responder.thenAccept(InteractionOriginalResponseUpdater::update);
+            eventRepository.save(event);
         });
     }
 
     @SneakyThrows
-    private void handleMessageComponentInteraction(Event event, String eventType, String userId) {
+    private void handleMessageComponentInteraction(Event event, String userDisplayName, String eventType, String userId) {
         switch (eventType) {
             case ACCEPTED:
-                flipAttendeesState(event.getAccepted(), userId);
-                event.getDeclined().remove(Attendee.createDiscordAttendee(userId));
-                event.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                flipAttendeesState(event.getAccepted(), userId, userDisplayName);
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
                 break;
             case DECLINED:
-                flipAttendeesState(event.getDeclined(), userId);
-                event.getAccepted().remove(Attendee.createDiscordAttendee(userId));
-                event.getMaybe().remove(Attendee.createDiscordAttendee(userId));
+                flipAttendeesState(event.getDeclined(), userId, userDisplayName);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
                 break;
             case MAYBE:
-                flipAttendeesState(event.getMaybe(), userId);
-                event.getAccepted().remove(Attendee.createDiscordAttendee(userId));
-                event.getDeclined().remove(Attendee.createDiscordAttendee(userId));
+                flipAttendeesState(event.getMaybe(), userId, userDisplayName);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
                 break;
             default:
                 break;
         }
-        eventRepository.save(event);
     }
 }
