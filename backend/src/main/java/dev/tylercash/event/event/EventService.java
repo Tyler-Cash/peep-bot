@@ -1,7 +1,6 @@
 package dev.tylercash.event.event;
 
 import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Event;
@@ -13,6 +12,7 @@ import org.javacord.api.entity.message.Message;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -23,9 +23,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 @Service
 @RequiredArgsConstructor
 public class EventService {
-    private final DiscordConfiguration discordConfiguration;
     private final DiscordService discordService;
     private final EventRepository eventRepository;
+    private final Clock clock;
 
     public String createEvent(Event event) {
         ServerTextChannel channel = discordService.createEventChannel(event);
@@ -61,43 +61,52 @@ public class EventService {
     @Scheduled(fixedDelay = 1, timeUnit = HOURS)
     public void deleteEventSchedule() {
         for (Event event : eventRepository.findAll()) {
-            if (event.getState() != EventState.ARCHIVED) {
-                continue;
-            }
-            LocalDateTime eventExpiry = event.getDateTime().plusMonths(3);
-            String eventName = DiscordUtil.getChannelNameFromEvent(event);
-            if (LocalDateTime.now().isAfter(eventExpiry)) {
-                try {
-                    discordService.deleteEventChannel(event);
-                    eventRepository.deleteById(event.getId());
-                    log.info("Event {} has been deleted", eventName);
-                } catch (Exception e) {
-                    log.error("Error deleting event {}", eventName, e);
-                }
+            deleteEvent(event);
+        }
+    }
 
+    void deleteEvent(Event event) {
+        if (event.getState() != EventState.ARCHIVED) {
+            return;
+        }
+        LocalDateTime eventExpiry = event.getDateTime().plusMonths(3);
+        String eventName = DiscordUtil.getChannelNameFromEvent(event);
+        if (LocalDateTime.now(clock).isAfter(eventExpiry)) {
+            try {
+                discordService.deleteEventChannel(event);
+                eventRepository.deleteById(event.getId());
+                log.info("Event {} has been deleted", eventName);
+            } catch (Exception e) {
+                log.error("Error deleting event {}", eventName, e);
             }
+
         }
     }
 
     @Scheduled(fixedDelay = 1, timeUnit = HOURS)
-    public void archiveEvent() {
+    public void archiveEventSchedule() {
         for (Event event : eventRepository.findAll()) {
-            if (event.getState() != EventState.PLANNED) {
-                continue;
-            }
-            LocalDateTime eventExpiry = event.getDateTime().plusDays(3);
-            String eventName = DiscordUtil.getChannelNameFromEvent(event);
-            if (LocalDateTime.now().isAfter(eventExpiry)) {
-                try {
-                    discordService.archiveEventChannel(event);
-                    event.setState(EventState.ARCHIVED);
-                    eventRepository.save(event);
-                    log.info("Event {} has been archived", eventName);
-                } catch (Exception e) {
-                    log.error("Error archiving event {}", eventName, e);
-                }
+            archiveEvent(event);
+        }
+    }
 
+    void archiveEvent(Event event) {
+        if (event.getState() != EventState.PLANNED) {
+            return;
+        }
+        LocalDateTime eventExpiry = event.getDateTime().plusDays(1)
+                .withHour(22).withMinute(0).withSecond(0).withNano(0);
+        String eventName = DiscordUtil.getChannelNameFromEvent(event);
+        if (LocalDateTime.now(clock).isAfter(eventExpiry)) {
+            try {
+                discordService.archiveEventChannel(event);
+                event.setState(EventState.ARCHIVED);
+                eventRepository.save(event);
+                log.info("Event {} has been archived", eventName);
+            } catch (Exception e) {
+                log.error("Error archiving event {}", eventName, e);
             }
+
         }
     }
 }
