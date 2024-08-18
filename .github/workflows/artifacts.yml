@@ -1,7 +1,6 @@
 on:
   push:
-    branches:
-      - master
+    branches: '**'
 
 jobs:
   backend:
@@ -24,7 +23,8 @@ jobs:
       - run: chmod -R +x .
       - run: ./gradlew clean build
       - run: docker build . -t ghcr.io/tyler-cash/tyler-bot-backend:latest
-      - run: docker push ghcr.io/tyler-cash/tyler-bot-backend:latest
+      - if: github.ref == 'refs/heads/master'
+        run: docker push ghcr.io/tyler-cash/tyler-bot-backend:latest
 
   frontend:
     runs-on: ubuntu-22.04
@@ -44,4 +44,5 @@ jobs:
           node-version: 18
       - run: chmod -R +x .
       - run: docker build . -t ghcr.io/tyler-cash/tyler-bot-frontend:latest
-      - run: docker push ghcr.io/tyler-cash/tyler-bot-frontend:latest
+      - if: github.ref == 'refs/heads/master'
+        run: docker push ghcr.io/tyler-cash/tyler-bot-frontend:latest
