@@ -55,7 +55,7 @@ public class EventService {
     }
 
     public List<Event> getEvents() {
-        return eventRepository.findAll();
+        return eventRepository.findByState(EventState.PLANNED);
     }
 
     @Scheduled(fixedDelay = 1, timeUnit = HOURS)
