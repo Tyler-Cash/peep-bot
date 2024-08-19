@@ -266,8 +266,8 @@ public class DiscordService {
 
     public void createMessageComponentListener() {
         discordApi.addMessageComponentCreateListener(listenerEvent -> {
+            long startTime = System.nanoTime();
             MessageComponentInteraction messageComponentInteraction = listenerEvent.getMessageComponentInteraction();
-
             String eventType = messageComponentInteraction.getCustomId();
             Message message = messageComponentInteraction.getMessage();
             Event event = eventRepository.findByMessageId(message.getId());
@@ -275,7 +275,6 @@ public class DiscordService {
                 throw new RuntimeException("Unrecognized event message ID " + message.getId());
             }
             String userId = messageComponentInteraction.getUser().getIdAsString();
-            log.info("User {} interacting with status {}", messageComponentInteraction.getUser().getName(), eventType);
             Optional<Server> server = discordApi.getServerById(event.getServerId());
             if (server.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No server found with ID " + event.getServerId());
@@ -284,7 +283,9 @@ public class DiscordService {
 
             message.edit(getEmbed(event));
             eventRepository.save(event);
-            listenerEvent.getMessageComponentInteraction().acknowledge();
+            listenerEvent.getMessageComponentInteraction().acknowledge().join();
+            long endTime = System.nanoTime();
+            log.info("User {} interacting with status {} on event {}, taking {}ms", messageComponentInteraction.getUser().getName(), eventType, event.getName(), (endTime - startTime) / 1000000);
         });
     }
 

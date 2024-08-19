@@ -50,7 +50,7 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
-    implementation 'org.xerial:sqlite-jdbc:3.46.0.1'
+    implementation 'org.postgresql:postgresql'
     implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
 
     annotationProcessor 'org.projectlombok:lombok'

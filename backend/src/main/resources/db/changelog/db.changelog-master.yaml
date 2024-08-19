@@ -14,27 +14,27 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: message_id
-                  type: long
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
                   name: channel_id
-                  type: long
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
                   name: server_id
-                  type: long
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
                   name: state
-                  type: varchar(50)
+                  type: text
                   constraints:
                     nullable: false
               - column:
                   name: name
-                  type: varchar(50)
+                  type: text
                   constraints:
                     nullable: false
               - column:
@@ -64,7 +64,7 @@ databaseChangeLog:
                   type: text
               - column:
                   name: date_time
-                  type: varchar(250)
+                  type: text
                   constraints:
                     nullable: false
         - createTable:
@@ -106,4 +106,4 @@ databaseChangeLog:
       changes:
         - sqlFile:
             splitStatements: true
-            path: classpath:org/springframework/session/jdbc/schema-sqlite.sql
+            path: classpath:org/springframework/session/jdbc/schema-postgresql.sql
