@@ -74,7 +74,8 @@ public class EventService {
         if (LocalDateTime.now(clock).isAfter(eventExpiry)) {
             try {
                 discordService.deleteEventChannel(event);
-                eventRepository.deleteById(event.getId());
+                event.setState(EventState.DELETED);
+                eventRepository.save(event);
                 log.info("Event {} has been deleted", eventName);
             } catch (Exception e) {
                 log.error("Error deleting event {}", eventName, e);
