@@ -8,6 +8,7 @@ import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.RegularServerChannel;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -23,7 +24,7 @@ class DiscordServiceTest {
     @Test
     void sortChannelsSuccess() {
         DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
-        DiscordService discordService = new DiscordService(discordConfiguration, mock(DiscordApi.class), mock(EventRepository.class), mock(GoogleCalendarService.class), mock(MetricsService.class));
+        DiscordService discordService = new DiscordService(discordConfiguration, mock(DiscordApi.class), mock(EventRepository.class), mock(GoogleCalendarService.class), mock(MetricsService.class), mock(Clock.class));
         ChannelCategory category = mock(ChannelCategory.class);
         String seperatorChannel = "memories";
         List<RegularServerChannel> channels = List.of(

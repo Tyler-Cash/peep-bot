@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
+import java.time.Clock;
 import java.time.MonthDay;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -53,6 +54,7 @@ public class DiscordService {
     private final EventRepository eventRepository;
     private final GoogleCalendarService googleCalendarService;
     private final MetricsService metricsService;
+    private final Clock clock;
 
 
     private static void flipAttendeesState(Set<Attendee> attendees, String id, String username) {
@@ -90,7 +92,7 @@ public class DiscordService {
 
     private EmbedBuilder getEmbed(Event event) {
         Optional<Server> server = discordApi.getServerById(event.getServerId());
-        EmbedRenderer renderrer = new EmbedRenderer(discordApi, event, server.get());
+        EmbedRenderer renderrer = new EmbedRenderer(discordApi, event, server.get(), clock);
         return renderrer.getEmbedBuilder();
     }
 

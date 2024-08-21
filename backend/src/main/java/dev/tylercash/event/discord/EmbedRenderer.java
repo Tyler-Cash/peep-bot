@@ -11,7 +11,10 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.exception.NotFoundException;
 
 import java.awt.*;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletionException;
@@ -26,6 +29,7 @@ public class EmbedRenderer {
     private final DiscordApi discordApi;
     private final Event event;
     private final Server server;
+    private final Clock clock;
 
     public EmbedBuilder getEmbedBuilder() {
         long epochSecond = event.getDateTime().toEpochSecond(ZoneOffset.UTC);
@@ -42,6 +46,7 @@ public class EmbedRenderer {
 
         embed.addField("Links", "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")");
         populateAttendeeSection(event, embed);
+        embed.setFooter("Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock)));
         return embed;
     }
 
