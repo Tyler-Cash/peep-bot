@@ -27,3 +27,9 @@ spring:
     jdbc:
       initialize-schema: never
 
+management.endpoints.web.exposure.include: [ health, prometheus ]
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true

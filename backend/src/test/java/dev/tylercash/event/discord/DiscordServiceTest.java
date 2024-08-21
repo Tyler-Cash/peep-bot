@@ -2,6 +2,7 @@ package dev.tylercash.event.discord;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.global.GoogleCalendarService;
+import dev.tylercash.event.global.MetricsService;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.RegularServerChannel;
@@ -22,7 +23,7 @@ class DiscordServiceTest {
     @Test
     void sortChannelsSuccess() {
         DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
-        DiscordService discordService = new DiscordService(discordConfiguration, mock(DiscordApi.class), mock(EventRepository.class), mock(GoogleCalendarService.class));
+        DiscordService discordService = new DiscordService(discordConfiguration, mock(DiscordApi.class), mock(EventRepository.class), mock(GoogleCalendarService.class), mock(MetricsService.class));
         ChannelCategory category = mock(ChannelCategory.class);
         String seperatorChannel = "memories";
         List<RegularServerChannel> channels = List.of(

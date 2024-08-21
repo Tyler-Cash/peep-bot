@@ -4,6 +4,7 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.GoogleCalendarService;
+import dev.tylercash.event.global.MetricsService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -35,6 +36,7 @@ import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
@@ -53,6 +55,8 @@ public class DiscordService {
     private final DiscordApi discordApi;
     private final EventRepository eventRepository;
     private final GoogleCalendarService googleCalendarService;
+    private final MetricsService metricsService;
+
 
     private static void flipAttendeesState(Set<Attendee> attendees, String id, String username) {
         Attendee attendee = Attendee.createDiscordAttendee(id, username);
@@ -285,7 +289,9 @@ public class DiscordService {
             eventRepository.save(event);
             listenerEvent.getMessageComponentInteraction().acknowledge().join();
             long endTime = System.nanoTime();
-            log.info("User {} interacting with status {} on event {}, taking {}ms", messageComponentInteraction.getUser().getName(), eventType, event.getName(), (endTime - startTime) / 1000000);
+            long duration = (endTime - startTime) / 1000000;
+            metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
+            log.info("User {} interacting with status {} on event {}, taking {}ms", messageComponentInteraction.getUser().getName(), eventType, event.getName(), duration);
         });
     }
 
