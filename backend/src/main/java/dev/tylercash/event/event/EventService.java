@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -88,6 +90,13 @@ public class EventService {
     public void archiveEventSchedule() {
         for (Event event : eventRepository.findAll()) {
             archiveEvent(event);
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void updateEventsOnStartup() {
+        for (Event event : eventRepository.findAll()) {
+            discordService.updateEventMessage(event);
         }
     }
 
