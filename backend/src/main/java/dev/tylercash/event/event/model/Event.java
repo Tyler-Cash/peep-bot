@@ -81,4 +81,15 @@ public class Event {
         dateTime.truncatedTo(ChronoUnit.MINUTES);
         this.dateTime = dateTime;
     }
+
+    public Integer getCapacity() {
+        int output;
+        if (capacity == 0) {
+            output = accepted.size();
+        } else {
+            output = capacity;
+        }
+        return output;
+
+    }
 }

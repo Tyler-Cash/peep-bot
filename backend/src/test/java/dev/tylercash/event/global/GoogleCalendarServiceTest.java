@@ -27,8 +27,7 @@ class GoogleCalendarServiceTest {
     @ParameterizedTest
     @MethodSource("calendarTestEvents")
     void getCalendarEventUrlSuccess(Event event) {
-        GoogleCalendarService googleCalendarService = new GoogleCalendarService();
-        String calendarEventUrl = googleCalendarService.getCalendarEventUrl(event);
+        String calendarEventUrl = GoogleCalendarService.getCalendarEventUrl(event);
         assertNotNull(calendarEventUrl);
         assertEquals(
                 UriComponentsBuilder.fromHttpUrl("https://www.google.com/calendar/event" +

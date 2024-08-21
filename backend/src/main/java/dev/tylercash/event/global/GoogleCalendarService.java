@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit;
 public class GoogleCalendarService {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
 
-    public String getCalendarEventUrl(Event event) {
+    public static String getCalendarEventUrl(Event event) {
         OffsetDateTime eventTime = event.getDateTime().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES);
         String start = eventTime.format(FORMATTER);
         String end = eventTime.plusHours(1).format(FORMATTER);

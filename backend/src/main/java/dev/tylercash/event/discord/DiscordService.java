@@ -18,7 +18,6 @@ import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
-import org.javacord.api.exception.NotFoundException;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
@@ -27,20 +26,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
-import java.awt.*;
 import java.time.MonthDay;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.List;
-import java.util.*;
-import java.util.concurrent.CompletionException;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
-import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 
@@ -92,61 +89,11 @@ public class DiscordService {
     }
 
     private EmbedBuilder getEmbed(Event event) {
-        long epochSecond = event.getDateTime().toEpochSecond(ZoneOffset.UTC);
-        String timeMessage = "<t:" + epochSecond + ":F>\n<t:" + epochSecond + ":R>";
-        EmbedBuilder embed = new EmbedBuilder()
-                .setTitle(event.getName())
-                .setDescription(event.getDescription())
-                .addField("Time", timeMessage)
-                .setColor(Color.orange);
-
-        if (!event.getLocation().isBlank()) {
-            embed.addField("Location", event.getLocation());
-        }
-
-        embed.addField("Links", "[Add to Google calendar](" + googleCalendarService.getCalendarEventUrl(event) + ")");
-
         Optional<Server> server = discordApi.getServerById(event.getServerId());
-        populateAttendeeSection(event, server, embed);
-        return embed;
+        EmbedRenderer renderrer = new EmbedRenderer(discordApi, event, server.get());
+        return renderrer.getEmbedBuilder();
     }
 
-    private void populateAttendeeSection(Event event, Optional<Server> server, EmbedBuilder embed) {
-        if (server.isEmpty()) {
-            embed.addField("No attendees yet", "");
-        } else {
-            embedAttendees(server.get(), event, embed);
-        }
-    }
-
-    private void embedAttendees(Server server, Event event, EmbedBuilder embed) {
-        embed.addInlineField(generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", event.getAccepted().size(), event.getCapacity()), reduceAttendeesToBlock(server, event.getAccepted()))
-                .addInlineField(generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0), reduceAttendeesToBlock(server, event.getDeclined()))
-                .addInlineField(generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0), reduceAttendeesToBlock(server, event.getMaybe()));
-    }
-
-    private String reduceAttendeesToBlock(Server server, Set<Attendee> attendees) {
-        Set<Attendee> sortedAttendees = new TreeSet<>(Comparator.comparing(Attendee::getInstant));
-        sortedAttendees.addAll(attendees);
-        Set<String> names = new LinkedHashSet<>();
-        sortedAttendees.forEach(attendee -> {
-            String name = attendee.getName();
-            if (Objects.nonNull(attendee.getSnowflake()) && Objects.isNull(attendee.getName())) {
-                try {
-                    name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
-                } catch (CompletionException e) {
-                    if (e.getCause().getClass().equals(NotFoundException.class)) {
-                        log.warn("User with id " + attendee.getSnowflake() + " not found");
-                    }
-                }
-                attendee.setName(name);
-            }
-            names.add(name);
-        });
-        return names.stream()
-                .map(attendee -> "> " + attendee + "\n")
-                .reduce("", String::concat);
-    }
 
     public ServerTextChannel createEventChannel(Event event) {
         ChannelCategory category = getEventCategory();
@@ -276,7 +223,7 @@ public class DiscordService {
             Message message = messageComponentInteraction.getMessage();
             Event event = eventRepository.findByMessageId(message.getId());
             if (event == null) {
-                throw new RuntimeException("Unrecognized event message ID " + message.getId());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unrecognized event message ID " + message.getId());
             }
             String userId = messageComponentInteraction.getUser().getIdAsString();
             Optional<Server> server = discordApi.getServerById(event.getServerId());
@@ -287,7 +234,7 @@ public class DiscordService {
 
             message.edit(getEmbed(event));
             eventRepository.save(event);
-            listenerEvent.getMessageComponentInteraction().acknowledge().join();
+            listenerEvent.getMessageComponentInteraction().acknowledge();
             long endTime = System.nanoTime();
             long duration = (endTime - startTime) / 1000000;
             metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
