@@ -25,12 +25,6 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(redirectToFrontendAfterAuth)
-                )
                 .sessionManagement((session) -> session
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::newSession)
                 )
@@ -46,7 +40,13 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable);
+                .cors(AbstractHttpConfigurer::disable)
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(redirectToFrontendAfterAuth)
+                );
         return http.build();
     }
 
