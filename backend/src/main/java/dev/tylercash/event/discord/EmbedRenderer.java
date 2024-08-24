@@ -62,14 +62,15 @@ public class EmbedRenderer {
         List<Attendee> sortedAccepted = event.getAccepted().stream()
                 .sorted(Comparator.comparing(Attendee::getInstant))
                 .toList();
+        int eventCapacity = event.getCapacity() == 0 ? sortedAccepted.size() : event.getCapacity();
         Set<Attendee> accepted = sortedAccepted.stream()
-                .limit(event.getCapacity())
+                .limit(eventCapacity)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Attendee> waitlist = sortedAccepted.stream()
-                .skip(event.getCapacity())
+                .skip(eventCapacity)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        embed.addInlineField(generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity() == 0 ? accepted.size() : event.getCapacity()), reduceAttendeesToBlock(server, accepted))
+        embed.addInlineField(generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity()), reduceAttendeesToBlock(server, accepted))
                 .addInlineField(generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0), reduceAttendeesToBlock(server, event.getDeclined()))
                 .addInlineField(generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0), reduceAttendeesToBlock(server, event.getMaybe()));
         if (!waitlist.isEmpty()) {

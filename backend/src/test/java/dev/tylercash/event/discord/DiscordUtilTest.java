@@ -13,7 +13,8 @@ class DiscordUtilTest {
 
     public static Stream<Arguments> attendanceTitleGenerator() {
         return Stream.of(
-                Arguments.of("✅ Accepted (Capacity 2/5)", "✅ Accepted", 2, 5)
+                Arguments.of("✅ Accepted (Capacity 2/5)", "✅ Accepted", 2, 5),
+                Arguments.of("✅ Accepted (2)", "✅ Accepted", 2, 0)
         );
     }
 
