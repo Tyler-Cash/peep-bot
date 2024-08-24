@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17
+FROM eclipse-temurin:21
 WORKDIR /app
 EXPOSE 8080
 ARG JAR_FILE=build/libs/tyler-bot-0.0.1-SNAPSHOT.jar
