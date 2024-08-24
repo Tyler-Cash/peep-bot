@@ -52,6 +52,7 @@ public class EventService {
     }
 
     public Event updateEvent(Event event) {
+        eventRepository.save(event);
         discordService.updateEventMessage(event);
         return event;
     }
