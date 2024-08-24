@@ -23,7 +23,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - run: chmod -R +x .
-      - run: ./gradlew clean build
-      - run: docker build . -t ghcr.io/tyler-cash/tyler-bot-backend:latest
+      - run: ./gradlew clean build bootBuildImage
       - if: github.ref == 'refs/heads/master'
         run: docker push ghcr.io/tyler-cash/tyler-bot-backend:latest

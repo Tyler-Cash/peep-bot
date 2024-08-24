@@ -26,9 +26,31 @@ spring:
   session:
     jdbc:
       initialize-schema: never
+  datasource:
+    driverClassName: org.postgresql.Driver
+  security:
+    oauth2:
+      client:
+        registration:
+          discord:
+            client-authentication-method: client_secret_post
+            authorizationGrantType: authorization_code
+            scope:
+              - identify
+            redirectUri: "{baseUrl}/login/oauth2/code/discord"
+            clientName: Tyler Bot
+        provider:
+          discord:
+            authorizationUri: https://discordapp.com/api/oauth2/authorize
+            tokenUri: https://discordapp.com/api/oauth2/token
+            userInfoUri: https://discordapp.com/api/users/@me
+            usernameAttribute: username
 
-management.endpoints.web.exposure.include: [ health, prometheus ]
 management:
+  endpoints:
+    web:
+      exposure:
+        include: [ health, prometheus ]
   prometheus:
     metrics:
       export:
