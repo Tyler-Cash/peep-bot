@@ -23,6 +23,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - run: chmod -R +x .
-      - run: ./gradlew clean build bootBuildImage
+      - env:
+          DEV_TYLERCASH_DISCORD_GUILD_ID: ${{ secrets.DEV_TYLERCASH_DISCORD_GUILD_ID }}
+          DEV_TYLERCASH_DISCORD_TOKEN: ${{ secrets.DEV_TYLERCASH_DISCORD_TOKEN }}
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
+        run: ./gradlew clean build bootBuildImage
       - if: github.ref == 'refs/heads/master'
         run: docker push ghcr.io/tyler-cash/tyler-bot-backend:latest

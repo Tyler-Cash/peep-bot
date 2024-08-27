@@ -1,4 +1,5 @@
 spring.application.name: tyler-bot
+spring.main.lazy-initialization: true
 
 dev.tylercash:
   discord:
