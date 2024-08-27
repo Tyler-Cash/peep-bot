@@ -86,12 +86,14 @@ public class DiscordService {
                         Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
                         Button.secondary(DECLINED, DECLINED_EMOJI),
                         Button.secondary(MAYBE, MAYBE_EMOJI)));
-
         return builder;
     }
 
     private EmbedBuilder getEmbed(Event event) {
-        Optional<Server> server = discordApi.getServerById(event.getServerId());
+        Optional<Server> server = discordApi.getServerById(event.getServerId() != 0L ? event.getServerId() : discordConfiguration.getGuildId());
+        if (server.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server not found");
+        }
         EmbedRenderer renderrer = new EmbedRenderer(discordApi, event, server.get(), clock);
         return renderrer.getEmbedBuilder();
     }
