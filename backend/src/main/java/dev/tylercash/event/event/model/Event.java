@@ -9,8 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -54,17 +53,18 @@ public class Event {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private EventState state = EventState.PLANNED;
     @NotNull
+    @Column(name = "timestamp_migration")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime dateTime;
+    private ZonedDateTime dateTime;
 
-    public Event(long messageId, long serverId, long channelId, String name, String description, LocalDateTime dateTime) {
+    public Event(long messageId, long serverId, long channelId, String name, String description, ZonedDateTime dateTime) {
         super();
         this.messageId = messageId;
         this.serverId = serverId;
         this.channelId = channelId;
         this.name = name;
         this.description = description;
-        this.dateTime = dateTime;
+        this.dateTime = ZonedDateTime.from(dateTime);
     }
 
     public Event(EventDto event) {
@@ -74,11 +74,6 @@ public class Event {
         this.location = event.getLocation();
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
-        this.dateTime = LocalDateTime.from(event.getDateTime());
-    }
-
-    public void setDateTime(@NotNull LocalDateTime dateTime) {
-        dateTime.truncatedTo(ChronoUnit.MINUTES);
-        this.dateTime = dateTime;
+        this.dateTime = event.getDateTime();
     }
 }

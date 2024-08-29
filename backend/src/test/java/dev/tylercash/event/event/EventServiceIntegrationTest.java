@@ -17,7 +17,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(classes = TylerBotApplication.class)
@@ -51,7 +51,7 @@ class EventServiceIntegrationTest {
 
     @Test
     public void testSave() throws InterruptedException {
-        Event event = new Event(0, 0, 0, "name", "description", LocalDateTime.now());
+        Event event = new Event(0, 0, 0, "name", "description", ZonedDateTime.now());
         eventService.createEvent(event);
         discordService.deleteEventChannel(event);
         // Terrible way to have the channel deleted by the time the test is shutdown

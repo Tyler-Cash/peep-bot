@@ -15,7 +15,7 @@ export default function Navbar({focus}) {
         <div>
             <nav className="navbar navbar-expand border-bottom border-body">
                 <div className="container-fluid">
-                    <Link className="navbar-brand me-1" to="/events"> <img
+                    <Link className="navbar-brand me-1" to="/event/list"> <img
                         src="https://cdn.frankerfacez.com/emoticon/728261/animated/4" alt="Logo"
                         width="60"
                         height="40"
@@ -33,11 +33,11 @@ export default function Navbar({focus}) {
                             <ul className="navbar-nav">
                                 <li className="nav-item">
                                     <Link className={"nav-link " + (focus === "LIST" ? "active" : "")}
-                                          aria-current="page" to="/events">List</Link>
+                                          aria-current="page" to="/event/list">List</Link>
                                 </li>
                                 <li className="nav-item">
                                     <Link className={"nav-link " + (focus === "CREATE" ? "active" : "")}
-                                          to="/create-event">Create</Link>
+                                          to="/event/create">Create</Link>
                                 </li>
                             </ul>
                         ) : (<div/>)}

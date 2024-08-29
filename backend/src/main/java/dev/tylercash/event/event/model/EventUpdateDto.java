@@ -22,6 +22,8 @@ public class EventUpdateDto {
     @PositiveOrZero(message = "Capacity must be positive.")
     private Integer capacity = 0;
 
+    private String description = "";
+
     @FutureOrPresent(message = "The event can only be organized in the future.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;

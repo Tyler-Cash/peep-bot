@@ -1,26 +1,34 @@
-import React from 'react';
-import {useCreateEventMutation} from "../api/eventBotApi";
+import React, {useEffect} from 'react';
+import {useGetEventsQuery, usePatchEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
+import {useParams} from "react-router-dom";
+import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 
-export default function CreateEvent(props) {
-    const [createEvent] = useCreateEventMutation({})
+export default function EditEvent(props) {
+    const params = useParams();
+    const {data, error, isFetching} = useGetEventsQuery({"id": params.id})
+    const [patchEvent] = usePatchEventMutation({})
+
 
     const {
         register,
         handleSubmit,
         setError,
+        setValue,
         formState: {errors, isSubmitting},
-    } = useForm()
+    } = useForm({})
     const onSubmit = async (data) => {
         try {
-            const response = await createEvent({
+            const response = await patchEvent({
+                "id": params.id,
                 "name": data.name,
                 "description": data.description,
                 // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
                 // "cost": parseInt(data.cost || "0"),
-                "dateTime": new Date(data.dateTime).toISOString()
+                "dateTime": moment(data.dateTime).toISOString(),
+                "accepted": []
             }).unwrap();
             document.location.href = "/"
         } catch (e) {
@@ -39,9 +47,32 @@ export default function CreateEvent(props) {
         await new Promise(r => setTimeout(r, 500));
     }
 
+    useEffect(() => {
+        if (data) {
+            var eventDate = moment(data[0].dateTime);
+            setValue("name", data[0].name);
+            setValue("description", data[0].description);
+            setValue("capacity", parseInt(data[0].capacity || "0"));
+            setValue("dateTime", eventDate.tz('Australia/Sydney').format('YYYY-MM-DD HH:mm:ss'));
+        }
+    }, [data]);
+
+    if (isFetching) {
+        return (
+            <div>
+                <Navbar/>
+                <div className="d-flex justify-content-center">
+                    <div className="spinner-border" role="status">
+                        <span className="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div>
-            <Navbar focus="CREATE"/>
+            <Navbar/>
             <span className="border">
                 <div className="container text-center">
                     <div className={errors.root && "alert alert-danger"}>{errors.root?.message}</div>

@@ -8,13 +8,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class GoogleCalendarServiceTest {
-    private static final LocalDateTime time = LocalDateTime.of(2024, 8, 16, 13, 24);
+    private static final ZonedDateTime time = ZonedDateTime.of(
+            LocalDateTime.of(2024, 8, 16, 13, 24),
+            ZoneId.systemDefault()
+    );
 
     public static Stream<Arguments> calendarTestEvents() {
         return Stream.of(

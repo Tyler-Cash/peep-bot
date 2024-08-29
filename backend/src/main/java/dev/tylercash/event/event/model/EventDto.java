@@ -10,11 +10,14 @@ import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventDto {
+    private UUID id;
+
     @NotBlank(message = "Name is required.")
     private String name;
 
@@ -32,4 +35,13 @@ public class EventDto {
     @FutureOrPresent(message = "The event can only be organized in the future.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
+
+    public EventDto(Event event) {
+        this.id = event.getId();
+        this.name = event.getName();
+        this.location = event.getLocation();
+        this.capacity = event.getCapacity();
+        this.cost = event.getCost();
+        this.dateTime = event.getDateTime();
+    }
 }

@@ -9,6 +9,9 @@ export const eventBotApi = createApi({
         getEvents: builder.query({
             query: () => `event`,
         }),
+        getEvent: builder.query({
+            query: (id) => `event`,
+        }),
         deleteEvent: builder.mutation({
             query: ({id}) => ({
                 url: `event`,
@@ -30,10 +33,24 @@ export const eventBotApi = createApi({
                 },
             }),
         }),
+        patchEvent: builder.mutation({
+            query: (data) => ({
+                url: `event`,
+                method: 'PATCH',
+                body: {
+                    "id": data.id,
+                    "name": data.name,
+                    "description": data.description,
+                    "capacity": data.capacity,
+                    "dateTime": data.dateTime,
+                    "accepted": data.accepted,
+                },
+            }),
+        }),
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
     }),
 })
 
-export const {useGetEventsQuery, useDeleteEventQuery, useCreateEventMutation, useIsLoggedInQuery} = eventBotApi
+export const {useGetEventsQuery, useCreateEventMutation, usePatchEventMutation, useIsLoggedInQuery} = eventBotApi

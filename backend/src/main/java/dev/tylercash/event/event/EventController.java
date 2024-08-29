@@ -9,10 +9,10 @@ import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
@@ -28,10 +28,13 @@ public class EventController {
 
     @PatchMapping
     public Map<String, String> updateEvent(@RequestBody @Valid EventUpdateDto eventDto) {
-        Event event = eventService.getEvent(String.valueOf(eventDto.getId()));
+        Event event = eventService.getEvent(eventDto.getId());
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
-            event.setDateTime(LocalDateTime.from(eventDto.getDateTime()));
+            event.setDateTime(eventDto.getDateTime());
+        }
+        if (Objects.nonNull(eventDto.getDescription()) && !eventDto.getDescription().isBlank()) {
+            event.setDescription(eventDto.getDescription());
         }
         eventDto.getAccepted()
                 .forEach(attendeeName -> {
@@ -43,7 +46,12 @@ public class EventController {
     }
 
     @GetMapping
-    public List<Event> getEvents() {
-        return eventService.getEvents();
+    public List<EventDto> getEvents() {
+        return eventService.getPlannedEvents().stream().map(EventDto::new).toList();
+    }
+
+    @GetMapping(path = "/{id}")
+    public EventDto getEvent(@PathVariable UUID id) {
+        return new EventDto(eventService.getEvent(id));
     }
 }

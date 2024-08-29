@@ -13,7 +13,6 @@ import org.javacord.api.exception.NotFoundException;
 import java.awt.*;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
@@ -32,7 +31,7 @@ public class EmbedRenderer {
     private final Clock clock;
 
     public EmbedBuilder getEmbedBuilder() {
-        long epochSecond = event.getDateTime().toEpochSecond(ZoneOffset.UTC);
+        long epochSecond = event.getDateTime().toEpochSecond();
         String timeMessage = "<t:" + epochSecond + ":F>\n<t:" + epochSecond + ":R>";
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle(event.getName())

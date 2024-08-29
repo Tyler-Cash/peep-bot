@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -25,8 +25,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
     final static private Clock clock = Clock.fixed(Instant.ofEpochMilli(1515236400000L), ZoneId.systemDefault());
-    final static private LocalDateTime eventArchivalTime = LocalDateTime.now(clock).minusDays(2);
-    final static private LocalDateTime eventDeletionTime = LocalDateTime.now(clock).minusMonths(4);
+    final static private ZonedDateTime eventArchivalTime = ZonedDateTime.now(clock).minusDays(2);
+    final static private ZonedDateTime eventDeletionTime = ZonedDateTime.now(clock).minusMonths(4);
     @Captor
     private ArgumentCaptor<Event> eventArgumentCaptor = ArgumentCaptor.forClass(Event.class);
 
@@ -36,7 +36,7 @@ class EventServiceTest {
                         new Event(0, 0, 0, "Simple event", "", eventDeletionTime)),
                 Arguments.of(
                         false, // Event not old enough to be archived
-                        new Event(0, 0, 0, "Simple event", "", LocalDateTime.now(clock))));
+                        new Event(0, 0, 0, "Simple event", "", ZonedDateTime.now(clock))));
         for (Arguments argument : arguments) {
             ((Event) argument.get()[1]).setState(EventState.ARCHIVED);
         }
@@ -52,7 +52,7 @@ class EventServiceTest {
                         new Event(0, 0, 0, "Simple event", "", eventArchivalTime)),
                 Arguments.of(
                         false, // Event not old enough to be archived
-                        new Event(0, 0, 0, "Simple event", "", LocalDateTime.now(clock))));
+                        new Event(0, 0, 0, "Simple event", "", ZonedDateTime.now(clock))));
         ((Event) arguments.get(1).get()[1]).setState(EventState.ARCHIVED);
         return arguments.stream();
     }

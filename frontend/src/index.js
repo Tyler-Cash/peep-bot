@@ -13,16 +13,19 @@ import LoginSuccess from "./components/LoginSuccess";
 import {setupListeners} from "@reduxjs/toolkit/query";
 import CreateEvent from "./components/CreateEvent";
 import ListEvents from "./components/ListEvents";
+import EditEvent from "./components/EditEvent";
 
 const router = createBrowserRouter(createRoutesFromElements(
     <Route>
         <Route path="/login/success" element={<LoginSuccess/>}/>
         <Route path="/login" element={<Login/>}/>
-        <Route path="/create-event" element={<Protected><CreateEvent/></Protected>}/>
-        <Route path="/events" element={<Protected><ListEvents/></Protected>}/>
+        <Route path="/event/create" element={<Protected><CreateEvent/></Protected>}/>
+        <Route path="/event/:id" element={<Protected><EditEvent/></Protected>}/>
+        <Route path="/event/list" element={<Protected><ListEvents/></Protected>}/>
         <Route path="/" element={<Protected><ListEvents/></Protected>}/>
     </Route>
 ));
+
 
 const store = configureAppStore({
     isAuthenticated: false,

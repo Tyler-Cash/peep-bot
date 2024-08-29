@@ -21,7 +21,9 @@ export default function ListEvents(props) {
                 <div className="container">
                     <div className="row-gap-3">
                         {data.map((event) => {
-                            return (<EventOverview key={event.id} name={event.name}
+                            return (<EventOverview key={event.id}
+                                                   id={event.id}
+                                                   name={event.name}
                                                    description={event.description}
                                                    date={event.dateTime}
                             />)

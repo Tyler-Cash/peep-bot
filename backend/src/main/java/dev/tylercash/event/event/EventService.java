@@ -11,12 +11,15 @@ import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -47,8 +50,12 @@ public class EventService {
         return "Created event for " + event.getName();
     }
 
-    public Event getEvent(String id) {
-        return eventRepository.findById(UUID.fromString(id)).get();
+    public Event getEvent(UUID id) {
+        Optional<Event> event = eventRepository.findById(id);
+        if (event.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found");
+        }
+        return event.get();
     }
 
     public Event updateEvent(Event event) {
@@ -57,7 +64,7 @@ public class EventService {
         return event;
     }
 
-    public List<Event> getEvents() {
+    public List<Event> getPlannedEvents() {
         return eventRepository.findByState(EventState.PLANNED);
     }
 
@@ -72,9 +79,9 @@ public class EventService {
         if (event.getState() != EventState.ARCHIVED) {
             return;
         }
-        LocalDateTime eventExpiry = event.getDateTime().plusMonths(3);
+        ZonedDateTime eventExpiry = event.getDateTime().plusMonths(3);
         String eventName = DiscordUtil.getChannelNameFromEvent(event);
-        if (LocalDateTime.now(clock).isAfter(eventExpiry)) {
+        if (ZonedDateTime.now(clock).isAfter(eventExpiry)) {
             try {
                 discordService.deleteEventChannel(event);
                 event.setState(EventState.DELETED);
@@ -105,10 +112,10 @@ public class EventService {
         if (event.getState() != EventState.PLANNED) {
             return;
         }
-        LocalDateTime eventExpiry = event.getDateTime().plusDays(1)
+        ZonedDateTime eventExpiry = event.getDateTime().plusDays(1)
                 .withHour(22).withMinute(0).withSecond(0).withNano(0);
         String eventName = DiscordUtil.getChannelNameFromEvent(event);
-        if (LocalDateTime.now(clock).isAfter(eventExpiry)) {
+        if (ZonedDateTime.now(clock).isAfter(eventExpiry)) {
             try {
                 discordService.archiveEventChannel(event);
                 event.setState(EventState.ARCHIVED);

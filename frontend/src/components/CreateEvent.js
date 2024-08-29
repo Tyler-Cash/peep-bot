@@ -2,6 +2,7 @@ import React from 'react';
 import {useCreateEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
+import moment from "moment-timezone";
 
 export default function CreateEvent(props) {
     const [createEvent] = useCreateEventMutation({})
@@ -20,7 +21,7 @@ export default function CreateEvent(props) {
                 // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
                 // "cost": parseInt(data.cost || "0"),
-                "dateTime": new Date(data.dateTime).toISOString()
+                "dateTime": moment(data.dateTime).toISOString()
             }).unwrap();
             document.location.href = "/"
         } catch (e) {
