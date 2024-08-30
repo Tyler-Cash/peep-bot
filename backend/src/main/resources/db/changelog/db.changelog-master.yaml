@@ -101,17 +101,19 @@ databaseChangeLog:
                   constraints:
                     nullable: false
   - changeSet:
-      id: 2
+      id: add_timestamp_migration_column
       author: tyler
       changes:
         - addColumn:
             tableName: event
             columns:
               - column:
-                  name: timestamp
+                  name: timestamp_migration
                   type: TIMESTAMP WITH TIME ZONE
-                  constraints:
-                    nullable: false
+        - dropNotNullConstraint:
+            tableName: event
+            columnName: date_time
+            columnDataType: text
   - changeSet:
       id: spring-session-create
       author: tyler
