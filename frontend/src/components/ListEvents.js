@@ -2,6 +2,7 @@ import React from 'react';
 import EventOverview from "./EventOverview";
 import {useGetEventsQuery} from "../api/eventBotApi";
 import Navbar from "./Navbar";
+import moment from "moment-timezone";
 
 export default function ListEvents(props) {
     const {data, error, isLoading} = useGetEventsQuery()
@@ -20,7 +21,9 @@ export default function ListEvents(props) {
                 {navbar}
                 <div className="container">
                     <div className="row-gap-3">
-                        {data.map((event) => {
+                        {data.slice().sort((a, b) => {
+                            return moment(a.dateTime).diff(moment(b.dateTime));
+                        }).map((event) => {
                             return (<EventOverview key={event.id}
                                                    id={event.id}
                                                    name={event.name}
