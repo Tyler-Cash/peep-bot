@@ -20,7 +20,7 @@ export default function EventOverview(props) {
             <p className="mb-0 opacity-75">{props.description}</p>
             <br/>
             <div role="group" className="btn-group w-10">
-                <Link to={"/event/" + props.id}>
+                <Link to={`/event/${props.id}`}>
                     <button type="button" className="btn-secondary p-2 btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                              className="bi bi-pencil me-1" viewBox="0 0 16 16">

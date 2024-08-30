@@ -1,15 +1,14 @@
 import React, {useEffect} from 'react';
-import {useGetEventsQuery, usePatchEventMutation} from "../api/eventBotApi";
+import {useGetEventQuery, usePatchEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
 import {useParams} from "react-router-dom";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 
-export default function EditEvent(props) {
-    const params = useParams();
-    const {data, error, isFetching} = useGetEventsQuery({"id": params.id})
+export default function EditEvent() {
+    const {id} = useParams();
+    const {data, error, isFetching} = useGetEventQuery({"id": id})
     const [patchEvent] = usePatchEventMutation({})
-
 
     const {
         register,
@@ -21,7 +20,7 @@ export default function EditEvent(props) {
     const onSubmit = async (data) => {
         try {
             const response = await patchEvent({
-                "id": params.id,
+                "id": id,
                 "name": data.name,
                 "description": data.description,
                 // "location": form.location,
@@ -49,10 +48,10 @@ export default function EditEvent(props) {
 
     useEffect(() => {
         if (data) {
-            var eventDate = moment(data[0].dateTime);
-            setValue("name", data[0].name);
-            setValue("description", data[0].description);
-            setValue("capacity", parseInt(data[0].capacity || "0"));
+            var eventDate = moment(data.dateTime);
+            setValue("name", data.name);
+            setValue("description", data.description);
+            setValue("capacity", parseInt(data.capacity || "0"));
             setValue("dateTime", eventDate.tz('Australia/Sydney').format('YYYY-MM-DD HH:mm:ss'));
         }
     }, [data]);

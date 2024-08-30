@@ -10,7 +10,7 @@ export const eventBotApi = createApi({
             query: () => `event`,
         }),
         getEvent: builder.query({
-            query: (id) => `event`,
+            query: ({id}) => `event/${id}`,
         }),
         deleteEvent: builder.mutation({
             query: ({id}) => ({
@@ -53,4 +53,10 @@ export const eventBotApi = createApi({
     }),
 })
 
-export const {useGetEventsQuery, useCreateEventMutation, usePatchEventMutation, useIsLoggedInQuery} = eventBotApi
+export const {
+    useGetEventsQuery,
+    useGetEventQuery,
+    useCreateEventMutation,
+    usePatchEventMutation,
+    useIsLoggedInQuery
+} = eventBotApi
