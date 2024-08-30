@@ -53,7 +53,7 @@ public class Event {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private EventState state = EventState.PLANNED;
     @NotNull
-    @Column(name = "timestamp_migration")
+    @Column(name = "date_time")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 

@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 1
+      id: initialize db
       author: tyler
       changes:
         - createTable:
@@ -111,6 +111,23 @@ databaseChangeLog:
                   name: timestamp_migration
                   type: TIMESTAMP WITH TIME ZONE
         - dropNotNullConstraint:
+            tableName: event
+            columnName: date_time
+            columnDataType: text
+  - changeSet:
+      id: Delete old timestamp column
+      author: tyler
+      changes:
+        - dropColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: date_time
+        - renameColumn:
+            tableName: event
+            oldColumnName: timestamp_migration
+            newColumnName: date_time
+        - addNotNullConstraint:
             tableName: event
             columnName: date_time
             columnDataType: text
