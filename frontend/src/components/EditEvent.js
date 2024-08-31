@@ -118,10 +118,10 @@ export default function EditEvent() {
                                         <div>
                                          <span className="spinner-border spinner-border-sm me-1"
                                                aria-hidden="true"></span>
-                                            <span>Creating...</span>
+                                            <span>Updating...</span>
                                         </div>)
                                     :
-                                    (<span>Create event</span>)}
+                                    (<span>Update</span>)}
                             </button>
                         </div>
                     </form>
