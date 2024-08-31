@@ -138,3 +138,23 @@ databaseChangeLog:
         - sqlFile:
             splitStatements: true
             path: classpath:org/springframework/session/jdbc/schema-postgresql.sql
+  - changeSet:
+      id: create id index
+      author: tyler
+      changes:
+        - createIndex:
+            clustered: true
+            columns:
+              - column:
+                  name: id
+            indexName: id_index
+            tableName: event
+            unique: true
+        - createIndex:
+            clustered: true
+            columns:
+              - column:
+                  name: message_id
+            indexName: message_id_index
+            tableName: event
+            unique: true
