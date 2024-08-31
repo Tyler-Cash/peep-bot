@@ -39,6 +39,7 @@ public class EventDto {
     public EventDto(Event event) {
         this.id = event.getId();
         this.name = event.getName();
+        this.description = event.getDescription();
         this.location = event.getLocation();
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
