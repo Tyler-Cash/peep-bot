@@ -227,7 +227,8 @@ public class DiscordService {
             Message message = messageComponentInteraction.getMessage();
             Event event = eventRepository.findByMessageId(message.getId());
             if (event == null) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unrecognized event message ID " + message.getId());
+                log.warn("Unrecognized event message ID " + message.getId());
+                return;
             }
             String userId = messageComponentInteraction.getUser().getIdAsString();
             Optional<Server> server = discordApi.getServerById(event.getServerId());
