@@ -4,6 +4,7 @@ import com.ibm.icu.text.RuleBasedNumberFormat;
 import dev.tylercash.event.event.model.Event;
 import lombok.NoArgsConstructor;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
@@ -15,7 +16,7 @@ public class DiscordUtil {
     private static final RuleBasedNumberFormat RULE_BASED_NUMBER_FORMAT = new RuleBasedNumberFormat(Locale.UK, RuleBasedNumberFormat.ORDINAL);
 
     public static String getChannelNameFromEvent(Event event) {
-        String day = RULE_BASED_NUMBER_FORMAT.format(event.getDateTime().getDayOfMonth());
+        String day = RULE_BASED_NUMBER_FORMAT.format(event.getDateTime().withZoneSameInstant(ZoneId.of("Australia/Sydney")).getDayOfMonth());
         String month = event.getDateTime()
                 .getMonth()
                 .getDisplayName(TextStyle.SHORT, Locale.US);
