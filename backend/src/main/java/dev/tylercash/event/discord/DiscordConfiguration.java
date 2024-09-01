@@ -19,6 +19,7 @@ public class DiscordConfiguration {
     private String token;
     private long guildId;
     private long timeout;
+    private String eventsRole = "events";
     private String seperatorChannel = "";
 
     @Bean
@@ -29,5 +30,4 @@ public class DiscordConfiguration {
                 .login()
                 .join();
     }
-
 }

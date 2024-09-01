@@ -158,3 +158,16 @@ databaseChangeLog:
             indexName: message_id_index
             tableName: event
             unique: true
+  - changeSet:
+      id: add notification column
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: notifications
+                  type: text
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false

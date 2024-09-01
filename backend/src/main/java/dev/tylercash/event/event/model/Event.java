@@ -1,6 +1,7 @@
 package dev.tylercash.event.event.model;
 
 import dev.tylercash.event.event.model.converter.SetOfAttendeesConverter;
+import dev.tylercash.event.event.model.converter.SetOfNotificationsConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -49,6 +50,9 @@ public class Event {
     @Convert(converter = SetOfAttendeesConverter.class)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Set<Attendee> maybe = new HashSet<>();
+    @Convert(converter = SetOfNotificationsConverter.class)
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Set<Notification> notifications = new HashSet<>();
     @Enumerated(EnumType.STRING)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private EventState state = EventState.PLANNED;

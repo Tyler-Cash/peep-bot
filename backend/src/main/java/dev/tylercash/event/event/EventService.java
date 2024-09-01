@@ -41,6 +41,8 @@ public class EventService {
             event.setChannelId(channel.getId());
             event.setMessageId(message.getId());
             eventRepository.save(event);
+            discordService.notifyUsersAboutEvent(event, channel);
+            eventRepository.save(event);
         } catch (Exception e) {
             channel.delete();
             throw e;

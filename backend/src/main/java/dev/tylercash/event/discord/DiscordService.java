@@ -3,6 +3,8 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.Notification;
+import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.GoogleCalendarService;
 import dev.tylercash.event.global.MetricsService;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +19,9 @@ import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.message.mention.AllowedMentions;
+import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.springframework.http.HttpStatus;
@@ -28,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.annotation.PostConstruct;
 import java.time.Clock;
 import java.time.MonthDay;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -35,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -73,6 +80,22 @@ public class DiscordService {
         return MonthDay.of(month, Integer.parseInt(day));
     }
 
+    protected static MessageBuilder getMessageBuilderMentioningRoles(String message, Set<Role> roles) {
+        AllowedMentions allowedMentions = getAllowedMentions(roles);
+        MessageBuilder messageBuilder = new MessageBuilder()
+                .setAllowedMentions(allowedMentions);
+        roles.forEach(role -> messageBuilder.append(role.getMentionTag()));
+        messageBuilder.append(message);
+        return messageBuilder;
+    }
+
+    protected static AllowedMentions getAllowedMentions(Set<Role> rolesByName) {
+        AllowedMentionsBuilder allowedMentionsBuilder = new AllowedMentionsBuilder()
+                .setMentionRoles(true);
+        rolesByName.forEach(role -> allowedMentionsBuilder.addRole(role.getId()));
+        return allowedMentionsBuilder.build();
+    }
+
     @PostConstruct
     public void setupListeners() {
         this.createMessageComponentListener();
@@ -97,7 +120,6 @@ public class DiscordService {
         EmbedRenderer renderrer = new EmbedRenderer(discordApi, event, server.get(), clock);
         return renderrer.getEmbedBuilder();
     }
-
 
     public ServerTextChannel createEventChannel(Event event) {
         ChannelCategory category = getEventCategory();
@@ -158,7 +180,6 @@ public class DiscordService {
         }
         return server.get();
     }
-
 
     @Scheduled(fixedDelay = 6, timeUnit = HOURS)
     public void sortChannels() {
@@ -268,5 +289,29 @@ public class DiscordService {
             default:
                 break;
         }
+    }
+
+    @SneakyThrows
+    public void notifyUsersAboutEvent(Event event, ServerTextChannel channel) {
+        if (event.getNotifications().contains(new Notification(NotificationType.INITIAL_ALERT))) {
+            return;
+        }
+        Set<Role> roles = getRoles(discordConfiguration.getEventsRole());
+        MessageBuilder messageBuilder = getMessageBuilderMentioningRoles(" new event has been created!", roles);
+        CompletableFuture<Message> message = messageBuilder.send(channel);
+        event.getNotifications().add(
+                new Notification(
+                        NotificationType.INITIAL_ALERT,
+                        ZonedDateTime.now(clock).toInstant(),
+                        message.get().getId()
+                ));
+    }
+
+    private Set<Role> getRoles(String role) {
+        Set<Role> rolesByName = discordApi.getRolesByName(role);
+        if (rolesByName.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No roles found for event");
+        }
+        return rolesByName;
     }
 }
