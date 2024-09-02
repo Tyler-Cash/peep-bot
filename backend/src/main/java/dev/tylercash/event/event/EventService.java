@@ -5,6 +5,8 @@ import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -31,6 +33,7 @@ public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
     private final Clock clock;
+    private final RateLimiter notifyEventRoles;
 
     public String createEvent(Event event) {
         ServerTextChannel channel = discordService.createEventChannel(event);
@@ -41,7 +44,7 @@ public class EventService {
             event.setChannelId(channel.getId());
             event.setMessageId(message.getId());
             eventRepository.save(event);
-            discordService.notifyUsersAboutEvent(event, channel);
+            notifyEventWithRateLimiter(event, channel);
             eventRepository.save(event);
         } catch (Exception e) {
             channel.delete();
@@ -50,6 +53,14 @@ public class EventService {
         discordService.pinMessage(message);
         discordService.sortChannels(discordService.getEventCategory());
         return "Created event for " + event.getName();
+    }
+
+    private void notifyEventWithRateLimiter(Event event, ServerTextChannel channel) {
+        try {
+            notifyEventRoles.executeRunnable(() -> discordService.notifyUsersAboutEvent(event, channel));
+        } catch (RequestNotPermitted e) {
+            log.warn("Notification to event role currently rate limited. {}", e.getMessage());
+        }
     }
 
     public Event getEvent(UUID id) {
