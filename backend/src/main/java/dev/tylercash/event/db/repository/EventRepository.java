@@ -17,5 +17,7 @@ public interface EventRepository extends CrudRepository<Event, UUID> {
 
     Event findByMessageId(Long id);
 
+    Event findByChannelId(Long id);
+
     List<Event> findByState(EventState state);
 }

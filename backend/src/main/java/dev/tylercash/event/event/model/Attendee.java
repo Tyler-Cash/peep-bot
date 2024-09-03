@@ -1,5 +1,6 @@
 package dev.tylercash.event.event.model;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,19 +10,19 @@ import java.time.Instant;
 import java.util.Objects;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Attendee implements Serializable {
     private String snowflake;
     private String name;
     private Instant instant;
 
     public static Attendee createDiscordAttendee(String snowflake, String name) {
-        return new Attendee(snowflake, name, Instant.now());
-    }
-
-    public static Attendee createNamedAttendee(String name) {
-        return new Attendee(null, name, Instant.now());
+        return new Attendee(
+                snowflake,
+                snowflake == null || snowflake.isEmpty() ? "[+1] " + name : null,
+                Instant.now()
+        );
     }
 
     @Override
@@ -30,7 +31,7 @@ public class Attendee implements Serializable {
         if (snowflake == null) {
             hash = Objects.hash(name);
         } else {
-            hash = Objects.hash(snowflake, name);
+            hash = Objects.hash(snowflake);
         }
         return hash;
     }

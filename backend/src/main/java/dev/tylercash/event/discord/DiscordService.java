@@ -18,12 +18,15 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.component.TextInput;
+import org.javacord.api.entity.message.component.TextInputStyle;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.message.mention.AllowedMentions;
 import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.MessageComponentInteraction;
+import org.javacord.api.interaction.ModalInteraction;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -56,6 +59,7 @@ public class DiscordService {
     public static final String ACCEPTED = "accepted";
     public static final String DECLINED = "declined";
     public static final String MAYBE = "maybe";
+    public static final String PLUS_ONE = "Add +1";
     private final DiscordConfiguration discordConfiguration;
     private final DiscordApi discordApi;
     private final EventRepository eventRepository;
@@ -98,7 +102,7 @@ public class DiscordService {
 
     @PostConstruct
     public void setupListeners() {
-        this.createMessageComponentListener();
+        this.createListeners();
     }
 
     private MessageBuilder createEventMessage(Event event) {
@@ -108,7 +112,9 @@ public class DiscordService {
                 .addComponents(ActionRow.of(
                         Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
                         Button.secondary(DECLINED, DECLINED_EMOJI),
-                        Button.secondary(MAYBE, MAYBE_EMOJI)));
+                        Button.secondary(MAYBE, MAYBE_EMOJI),
+                        Button.secondary("plus1", PLUS_ONE)
+                ));
         return builder;
     }
 
@@ -240,10 +246,24 @@ public class DiscordService {
         categorizable.get().updateCategory(getArchiveCategory());
     }
 
-    public void createMessageComponentListener() {
+    public void createListeners() {
+        discordApi.addModalSubmitListener(listenerEvent -> {
+            ModalInteraction interaction = listenerEvent.getModalInteraction();
+            Event event = eventRepository.findByChannelId(interaction.getChannel().get().getId());
+            String plus1Name = interaction.getTextInputValues().get(0);
+            event.getAccepted().add(Attendee.createDiscordAttendee(null, plus1Name));
+            Message message = listenerEvent.getModalInteraction().getChannel().get().getMessageById(event.getMessageId()).join();
+            updateMessage(message, event);
+            listenerEvent.getModalInteraction().respondLater(true).join().delete();
+        });
         discordApi.addMessageComponentCreateListener(listenerEvent -> {
             long startTime = System.nanoTime();
             MessageComponentInteraction messageComponentInteraction = listenerEvent.getMessageComponentInteraction();
+            if (messageComponentInteraction.getCustomId().equals("plus1")) {
+                listenerEvent.getInteraction().respondWithModal("plus1", PLUS_ONE,
+                        ActionRow.of(TextInput.create(TextInputStyle.SHORT, "plus1", "Enter name of +1")));
+                return;
+            }
             String eventType = messageComponentInteraction.getCustomId();
             Message message = messageComponentInteraction.getMessage();
             Event event = eventRepository.findByMessageId(message.getId());
@@ -258,14 +278,18 @@ public class DiscordService {
             }
             handleMessageComponentInteraction(event, messageComponentInteraction.getUser().getDisplayName(server.get()), eventType, userId);
 
-            message.edit(getEmbed(event));
-            eventRepository.save(event);
+            updateMessage(message, event);
             listenerEvent.getMessageComponentInteraction().acknowledge();
             long endTime = System.nanoTime();
             long duration = (endTime - startTime) / 1000000;
             metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
             log.info("User {} interacting with status {} on event {}, taking {}ms", messageComponentInteraction.getUser().getName(), eventType, event.getName(), duration);
         });
+    }
+
+    private void updateMessage(Message message, Event event) {
+        message.edit(getEmbed(event));
+        eventRepository.save(event);
     }
 
     @SneakyThrows

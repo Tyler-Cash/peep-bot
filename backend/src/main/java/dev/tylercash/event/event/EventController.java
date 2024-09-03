@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,7 +37,7 @@ public class EventController {
         }
         eventDto.getAccepted()
                 .forEach(attendeeName -> {
-                    Attendee attendee = new Attendee(null, "[+1] " + attendeeName, Instant.now());
+                    Attendee attendee = Attendee.createDiscordAttendee(null, attendeeName);
                     event.getAccepted().add(attendee);
                 });
         eventService.updateEvent(event);
