@@ -18,7 +18,6 @@ server:
     use-relative-redirects: true
   servlet:
     session:
-      timeout: 365d
       cookie:
         secure: true
     context-path: /api/

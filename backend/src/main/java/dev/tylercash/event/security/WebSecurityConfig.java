@@ -5,11 +5,13 @@ import dev.tylercash.event.security.oauth2.RedirectToFrontendAfterAuth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
 
@@ -21,6 +23,7 @@ import java.time.Duration;
 public class WebSecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final RedirectToFrontendAfterAuth redirectToFrontendAfterAuth;
+    private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -51,9 +54,9 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration() {
-        JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration = new JdbcHttpSessionConfiguration();
+    @Primary
+    public JdbcIndexedSessionRepository jdbcIndexedSessionRepository() {
         jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(365));
-        return jdbcHttpSessionConfiguration;
+        return jdbcHttpSessionConfiguration.sessionRepository();
     }
 }
