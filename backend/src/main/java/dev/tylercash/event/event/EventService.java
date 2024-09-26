@@ -44,7 +44,7 @@ public class EventService {
             event.setChannelId(channel.getId());
             event.setMessageId(message.getId());
             eventRepository.save(event);
-            notifyEventWithRateLimiter(event, channel);
+            initialEventNotification(event, channel);
             eventRepository.save(event);
         } catch (Exception e) {
             channel.delete();
@@ -55,9 +55,9 @@ public class EventService {
         return "Created event for " + event.getName();
     }
 
-    private void notifyEventWithRateLimiter(Event event, ServerTextChannel channel) {
+    private void initialEventNotification(Event event, ServerTextChannel channel) {
         try {
-            notifyEventRoles.executeRunnable(() -> discordService.notifyUsersAboutEvent(event, channel));
+            notifyEventRoles.executeRunnable(() -> discordService.initialNotificationAboutEvent(event, channel));
         } catch (RequestNotPermitted e) {
             log.warn("Notification to event role currently rate limited. {}", e.getMessage());
         }
@@ -107,10 +107,27 @@ public class EventService {
         }
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = HOURS)
+    @Scheduled(fixedRate = 1000 * 60)
     public void archiveEventSchedule() {
         for (Event event : eventRepository.findAll()) {
             archiveEvent(event);
+        }
+    }
+
+    @Scheduled(fixedRate = 1000 * 60)
+    public void notifyBeforeEventSchedule() {
+        for (Event event : eventRepository.findAll()) {
+            boolean isMoreThan2HoursAway = ZonedDateTime.now(clock).isBefore(
+                    event.getDateTime().minus(2, HOURS.toChronoUnit())
+            );
+            if (!event.getState().equals(EventState.PLANNED) || isMoreThan2HoursAway) {
+                return;
+            }
+            try {
+                notifyEventRoles.executeRunnable(() -> discordService.notifyUsersBeforeEventStarts(event));
+            } catch (RequestNotPermitted e) {
+                log.warn("Notification to event role currently rate limited. {}", e.getMessage());
+            }
         }
     }
 
