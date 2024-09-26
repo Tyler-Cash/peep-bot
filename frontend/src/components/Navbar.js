@@ -19,9 +19,7 @@ export default function Navbar({focus}) {
                         src="https://cdn.frankerfacez.com/emoticon/728261/animated/4" alt="Logo"
                         width="60"
                         height="40"
-                        className="d-inline-block align-text-top"/>Tyler
-                        Bot</Link>
-
+                        className="d-inline-block align-text-top"/>Peep Bot</Link>
                     <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
                             aria-label="Toggle navigation">

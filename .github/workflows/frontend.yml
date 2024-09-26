@@ -22,6 +22,6 @@ jobs:
         with:
           node-version: 18
       - run: chmod -R +x .
-      - run: docker build . -t ghcr.io/tyler-cash/tyler-bot-frontend:latest
+      - run: docker build . -t ghcr.io/tyler-cash/peep-bot-frontend:latest
       - if: github.ref == 'refs/heads/master'
-        run: docker push ghcr.io/tyler-cash/tyler-bot-frontend:latest
+        run: docker push ghcr.io/tyler-cash/peep-bot-frontend:latest

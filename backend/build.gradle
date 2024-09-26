@@ -16,7 +16,7 @@ java {
 }
 
 application {
-    mainClass = 'dev.tylercash.event.TylerBotApplication'
+    mainClass = 'dev.tylercash.event.PeepBotApplication'
 }
 
 configurations {
@@ -90,5 +90,5 @@ tasks.named("bootJar") {
 }
 
 tasks.bootBuildImage {
-    imageName = "ghcr.io/tyler-cash/tyler-bot-backend:latest"
+    imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
 }

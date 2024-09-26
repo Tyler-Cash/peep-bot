@@ -19,36 +19,9 @@ services:
     volumes:
       - ~/apps/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=tylerbot
-      - POSTGRES_USER=tylerbot
-      - POSTGRES_DB=tylerbot
+      - POSTGRES_PASSWORD=peepbot
+      - POSTGRES_USER=peepbot
+      - POSTGRES_DB=peepbot
 
-#  api:
-#    image: ghcr.io/tyler-cash/tyler-bot-backend:latest
-#    container_name: api
-#    restart: always
-#    environment:
-#      SPRING_PROFILES_ACTIVE: "local,docker"
-#    volumes:
-#      - database:/storage/
-#    ports:
-#      - "8080:8080"
-#    networks:
-#      - dev
-#
-#  frontend:
-#    build:
-#      context: frontend
-#      target: development
-#    ports:
-#      - 3000
-#    volumes:
-#      - ./frontend/src:/code/src
-#    environment:
-#      REACT_APP_BACKEND_URI: http://localhost:8000
-#    networks:
-#      - dev
-#    depends_on:
-#      - api
 volumes:
   database:

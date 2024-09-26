@@ -30,4 +30,4 @@ jobs:
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
         run: ./gradlew clean build bootBuildImage
       - if: github.ref == 'refs/heads/master'
-        run: docker push ghcr.io/tyler-cash/tyler-bot-backend:latest
+        run: docker push ghcr.io/tyler-cash/peep-bot-backend:latest

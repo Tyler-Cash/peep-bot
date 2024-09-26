@@ -1,5 +1,5 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/tylerbot
-    username: tylerbot
-    password: tylerbot
+    url: jdbc:postgresql://localhost:5432/peepbot
+    username: peepbot
+    password: peepbot

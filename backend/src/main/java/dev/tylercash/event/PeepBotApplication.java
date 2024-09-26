@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @ConfigurationProperties
-public class TylerBotApplication {
+public class PeepBotApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(TylerBotApplication.class, args);
+        SpringApplication.run(PeepBotApplication.class, args);
     }
 }

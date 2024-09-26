@@ -1,6 +1,6 @@
 package dev.tylercash.event.event;
 
-import dev.tylercash.event.TylerBotApplication;
+import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import org.junit.jupiter.api.AfterAll;
@@ -20,7 +20,7 @@ import org.testcontainers.utility.TestcontainersConfiguration;
 import java.time.ZonedDateTime;
 
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest(classes = TylerBotApplication.class)
+@SpringBootTest(classes = PeepBotApplication.class)
 @Testcontainers
 @ActiveProfiles("local")
 class EventServiceIntegrationTest {
