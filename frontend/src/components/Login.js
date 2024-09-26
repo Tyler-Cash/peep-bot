@@ -37,10 +37,12 @@ export default function Login(props) {
         return (
             <div>
                 <Navbar></Navbar>
-                <div className="root">
+                <div className="d-flex justify-content-md-center align-items-center mx-auto"
+                     style={{height: 50 + 'em'}}>
                     <div>
                         <p>
-                            To use this app, I use discord to validate you're a member of the server. I'm not storing
+                            To use this app, I use discord to validate you're a member of the server. I'm not
+                            storing
                             anything
                             other than your account ID or username
                         </p>
