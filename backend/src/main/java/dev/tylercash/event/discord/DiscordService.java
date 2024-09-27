@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static org.javacord.api.entity.message.TimestampStyle.RELATIVE_TIME;
 
 
 @Log4j2
@@ -164,7 +163,11 @@ public class DiscordService {
     }
 
     public Message updateEventMessage(Event event) {
-        Message message = ((TextChannel) getChannel(event)).getMessageById(event.getMessageId()).join();
+        Optional<Channel> optionalChannel = discordApi.getChannelById(event.getChannelId());
+        if (optionalChannel.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No discord channel found with ID " + event.getChannelId());
+        }
+        Message message = ((TextChannel) optionalChannel.get()).getMessageById(event.getMessageId()).join();
         return message.edit(getEmbed(event)).join();
     }
 
@@ -232,20 +235,15 @@ public class DiscordService {
     }
 
     public void archiveEventChannel(Event event) {
-        Channel eventChannel = getChannel(event);
-        Optional<Categorizable> categorizable = eventChannel.asCategorizable();
-        if (categorizable.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Channel not cateogrizable " + event.getChannelId());
-        }
-        categorizable.get().updateCategory(getArchiveCategory());
-    }
-
-    private Channel getChannel(Event event) {
         Optional<Channel> eventChannel = discordApi.getChannelById(event.getChannelId());
         if (eventChannel.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No channel found with ID " + event.getChannelId());
         }
-        return eventChannel.get();
+        Optional<Categorizable> categorizable = eventChannel.get().asCategorizable();
+        if (categorizable.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Channel not cateogrizable " + event.getChannelId());
+        }
+        categorizable.get().updateCategory(getArchiveCategory());
     }
 
     public void createListeners() {
@@ -318,7 +316,7 @@ public class DiscordService {
     }
 
     @SneakyThrows
-    public void initialNotificationAboutEvent(Event event, ServerTextChannel channel) {
+    public void notifyUsersAboutEvent(Event event, ServerTextChannel channel) {
         if (event.getNotifications().contains(new Notification(NotificationType.INITIAL_ALERT))) {
             return;
         }
@@ -331,35 +329,6 @@ public class DiscordService {
                         ZonedDateTime.now(clock).toInstant(),
                         message.get().getId()
                 ));
-    }
-
-    @SneakyThrows
-    public void notifyUsersBeforeEventStarts(Event event) {
-        if (event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT))) {
-            return;
-        }
-        AllowedMentionsBuilder allowedMentionsBuilder = new AllowedMentionsBuilder()
-                .setMentionUsers(true);
-        MessageBuilder messageBuilder = new MessageBuilder()
-                .setAllowedMentions(allowedMentionsBuilder.build());
-        event.getAccepted().stream()
-                .filter(user -> !user.getSnowflake().isBlank())
-                .map(user -> discordApi.getUserById(user.getSnowflake()).join())
-                .forEach(user -> messageBuilder.append(user.getMentionTag() + " "));
-        messageBuilder
-                .appendNewLine()
-                .append("`" + event.getName() + "`")
-                .append(" starting in ")
-                .appendTimestamp(event.getDateTime().toEpochSecond(), RELATIVE_TIME);
-        log.info("Sending {} alert for {}", NotificationType.START_OF_EVENT, event.getName());
-        Message message = messageBuilder.send((TextChannel) getChannel(event)).join();
-        event.getNotifications().add(
-                new Notification(
-                        NotificationType.START_OF_EVENT,
-                        ZonedDateTime.now(clock).toInstant(),
-                        message.getId()
-                ));
-        eventRepository.save(event);
     }
 
     private Set<Role> getRoles(String role) {
