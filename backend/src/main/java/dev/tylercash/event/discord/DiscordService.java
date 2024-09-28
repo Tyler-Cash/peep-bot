@@ -25,6 +25,7 @@ import org.javacord.api.entity.message.mention.AllowedMentions;
 import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.interaction.ModalInteraction;
 import org.springframework.http.HttpStatus;
@@ -250,6 +251,7 @@ public class DiscordService {
 
     public void createListeners() {
         discordApi.addModalSubmitListener(listenerEvent -> {
+            long startTime = System.nanoTime();
             ModalInteraction interaction = listenerEvent.getModalInteraction();
             Event event = eventRepository.findByChannelId(interaction.getChannel().get().getId());
             String plus1Name = interaction.getTextInputValues().get(0);
@@ -257,6 +259,9 @@ public class DiscordService {
             Message message = listenerEvent.getModalInteraction().getChannel().get().getMessageById(event.getMessageId()).join();
             updateMessage(message, event);
             listenerEvent.getModalInteraction().respondLater(true).join().delete();
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000;
+            recordUserInteraction(interaction.getUser(), "plus1", event, duration);
         });
         discordApi.addMessageComponentCreateListener(listenerEvent -> {
             long startTime = System.nanoTime();
@@ -284,9 +289,13 @@ public class DiscordService {
             listenerEvent.getMessageComponentInteraction().acknowledge();
             long endTime = System.nanoTime();
             long duration = (endTime - startTime) / 1000000;
-            metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
-            log.info("User {} interacting with status {} on event {}, taking {}ms", messageComponentInteraction.getUser().getName(), eventType, event.getName(), duration);
+            recordUserInteraction(messageComponentInteraction.getUser(), eventType, event, duration);
         });
+    }
+
+    private void recordUserInteraction(User user, String type, Event event, long duration) {
+        metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
+        log.info("User {} interacting with status {} on event {}, taking {}ms", user.getName(), type, event.getName(), duration);
     }
 
     private void updateMessage(Message message, Event event) {
