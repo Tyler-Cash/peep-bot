@@ -34,8 +34,9 @@ class PreEventNotificationTest {
         event.setDateTime(ZonedDateTime.now(clock).minusMinutes(30));
         arguments.add(Arguments.of(Named.of("Check archived events can't be notified", event)));
 
+        event = new Event();
         event.setState(EventState.PLANNED);
-        event.setDateTime(ZonedDateTime.now(clock).plusMinutes(30));
+        event.setDateTime(ZonedDateTime.now(clock).plusMinutes(1));
         arguments.add(Arguments.of(Named.of("Event already occurred 30 minutes before, don't notify", event)));
 
         return arguments.stream();

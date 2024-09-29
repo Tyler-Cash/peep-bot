@@ -29,12 +29,10 @@ public class PreEventNotification extends ScheduledEventProcessor {
         boolean is2hBeforeEventStart = ZonedDateTime.now(clock)
                 .minusHours(2)
                 .isBefore(event.getDateTime());
-        boolean notAfterEventStart = event.getDateTime()
-                .plusMinutes(10)
-                .isAfter(ZonedDateTime.now(clock));
-        boolean hasNotHappened = event.getState().equals(EventState.PLANNED);
+        boolean isNotificationBeforeEventStart = ZonedDateTime.now(clock).isAfter(event.getDateTime());
+        boolean hasPlanningState = event.getState().equals(EventState.PLANNED);
         boolean notNotifiedAlready = !event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT));
-        return hasNotHappened && is2hBeforeEventStart && notAfterEventStart && notNotifiedAlready;
+        return hasPlanningState && is2hBeforeEventStart && isNotificationBeforeEventStart && notNotifiedAlready;
     }
 
     @Override
