@@ -6,6 +6,8 @@ import dev.tylercash.event.event.model.EventDto;
 import dev.tylercash.event.event.model.EventUpdateDto;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,8 +47,8 @@ public class EventController {
     }
 
     @GetMapping
-    public List<EventDto> getEvents() {
-        return eventService.getPlannedEvents().stream().map(EventDto::new).toList();
+    public List<EventDto> getEvents(@PageableDefault Pageable pageable) {
+        return eventService.getPlannedEvents(pageable).stream().map(EventDto::new).toList();
     }
 
     @GetMapping(path = "/{id}")

@@ -4,7 +4,6 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
-import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -63,7 +62,7 @@ class EventServiceTest {
     void deleteEventSchedule(boolean deleted, Event event) {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService eventService = new EventService(discordService, eventRepository, clock, mock(RateLimiter.class));
+        EventService eventService = new EventService(discordService, eventRepository);
         eventService.deleteEvent(event);
         int wantedNumberOfInvocations = deleted ? 1 : 0;
         if (deleted) {
@@ -79,7 +78,7 @@ class EventServiceTest {
     void archiveEvent(boolean archived, Event event) {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService eventService = new EventService(discordService, eventRepository, clock, mock(RateLimiter.class));
+        EventService eventService = new EventService(discordService, eventRepository);
         eventService.archiveEvent(event);
         int wantedNumberOfInvocations = archived ? 1 : 0;
         if (archived) {

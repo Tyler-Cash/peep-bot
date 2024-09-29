@@ -347,6 +347,7 @@ public class DiscordService {
         if (event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT))) {
             return;
         }
+        Server server = getServerById(event.getServerId());
         AllowedMentionsBuilder allowedMentionsBuilder = new AllowedMentionsBuilder()
                 .setMentionUsers(true);
         MessageBuilder messageBuilder = new MessageBuilder()
@@ -354,13 +355,14 @@ public class DiscordService {
         event.getAccepted().stream()
                 .filter(user -> !user.getSnowflake().isBlank())
                 .map(user -> discordApi.getUserById(user.getSnowflake()).join())
+                .filter(user -> user.getRoles(server).stream().anyMatch(role -> role.getName().equals("pre-event-notification")))
                 .forEach(user -> messageBuilder.append(user.getMentionTag() + " "));
         messageBuilder
                 .appendNewLine()
                 .append("`" + event.getName() + "`")
                 .append(" starting in ")
                 .appendTimestamp(event.getDateTime().toEpochSecond(), RELATIVE_TIME);
-        log.info("Sending {} alert for {}", NotificationType.START_OF_EVENT, event.getName());
+        log.info("Sending {} alert for \"{}\"", NotificationType.START_OF_EVENT, event.getName());
         Message message = messageBuilder.send((TextChannel) getChannel(event)).join();
         event.getNotifications().add(
                 new Notification(
