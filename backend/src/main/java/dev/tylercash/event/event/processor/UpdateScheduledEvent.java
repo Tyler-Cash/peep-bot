@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Log4j2
 @Component
 public class UpdateScheduledEvent extends ScheduledEventProcessor {
-    private boolean hasRun = false;
+    private final boolean hasRun = false;
 
     public UpdateScheduledEvent(DiscordService discordService, EventRepository eventRepository) {
         super(discordService, eventRepository);
@@ -17,10 +17,6 @@ public class UpdateScheduledEvent extends ScheduledEventProcessor {
 
     @Override
     public void processEvent(Event event) {
-        if (hasRun) {
-            return;
-        }
         discordService.updateEventMessage(event);
-        hasRun = true;
     }
 }
