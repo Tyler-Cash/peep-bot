@@ -37,6 +37,9 @@ public class EventController {
         if (Objects.nonNull(eventDto.getDescription()) && !eventDto.getDescription().isBlank()) {
             event.setDescription(eventDto.getDescription());
         }
+        if (Objects.nonNull(eventDto.getName()) && !eventDto.getName().isBlank()) {
+            event.setName(eventDto.getName());
+        }
         eventDto.getAccepted()
                 .forEach(attendeeName -> {
                     Attendee attendee = Attendee.createDiscordAttendee(null, attendeeName);

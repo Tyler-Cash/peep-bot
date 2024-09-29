@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 
 @Log4j2
 @Component
-public class UpdateEventOnStartup extends ScheduledEventProcessor {
+public class UpdateScheduledEvent extends ScheduledEventProcessor {
     private boolean hasRun = false;
 
-    public UpdateEventOnStartup(DiscordService discordService, EventRepository eventRepository) {
+    public UpdateScheduledEvent(DiscordService discordService, EventRepository eventRepository) {
         super(discordService, eventRepository);
     }
 

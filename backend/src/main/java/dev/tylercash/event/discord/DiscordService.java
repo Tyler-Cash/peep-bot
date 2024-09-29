@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
-import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.javacord.api.entity.message.TimestampStyle.RELATIVE_TIME;
 
 
@@ -138,6 +138,17 @@ public class DiscordService {
                 .join();
     }
 
+    public void updateChannelName(Event event) {
+        Optional<ServerChannel> channel = getChannel(event).asServerChannel();
+        if (channel.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Channel is not a server channel, id: " + event.getChannelId());
+        }
+        ServerChannel serverChannel = channel.get();
+        if (!DiscordUtil.getChannelNameFromEvent(event).equals(serverChannel.getName())) {
+            serverChannel.updateName(DiscordUtil.getChannelNameFromEvent(event));
+        }
+    }
+
     private ChannelCategory getArchiveCategory() {
         return getChannelCategory(EVENT_ARCHIVE_CATEGORY);
     }
@@ -185,7 +196,7 @@ public class DiscordService {
         return server.get();
     }
 
-    @Scheduled(fixedDelay = 6, timeUnit = HOURS)
+    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortChannels() {
         sortChannels(getEventCategory());
     }

@@ -67,6 +67,7 @@ public class EventService {
     @Transactional
     public Event updateEvent(Event event) {
         discordService.updateEventMessage(event);
+        discordService.updateChannelName(event);
         eventRepository.save(event);
         return event;
     }
