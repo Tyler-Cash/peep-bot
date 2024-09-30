@@ -1,15 +1,12 @@
 package dev.tylercash.event.discord;
 
 import lombok.Data;
-import org.javacord.api.DiscordApi;
-import org.javacord.api.DiscordApiBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties(prefix = "dev.tylercash.discord")
-@Configuration
 @Data
+@Configuration
+@ConfigurationProperties(prefix = "dev.tylercash.discord")
 public class DiscordConfiguration {
     public static final String EVENT_CATEGORY = "outings";
     public static final String EVENT_ARCHIVE_CATEGORY = EVENT_CATEGORY + "-archive";
@@ -21,13 +18,4 @@ public class DiscordConfiguration {
     private long timeout;
     private String eventsRole = "events";
     private String seperatorChannel = "";
-
-    @Bean
-    public DiscordApi discordClient() {
-        return new DiscordApiBuilder()
-                .setToken(getToken())
-                .setAllIntents()
-                .login()
-                .join();
-    }
 }

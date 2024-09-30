@@ -1,13 +1,23 @@
 package dev.tylercash.event.discord;
 
 import com.ibm.icu.text.RuleBasedNumberFormat;
+import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
+import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.time.temporal.ChronoField;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+
+import static dev.tylercash.event.discord.listener.ButtonInteractionListener.*;
 
 @NoArgsConstructor
 public class DiscordUtil {
@@ -30,6 +40,48 @@ public class DiscordUtil {
                 " (Capacity " + count + "/" + capacity + ")" :
                 " (" + count + ")";
         return attendanceGroup + attendanceModifier;
+    }
 
+
+    @SneakyThrows
+    public static void handleMessageComponentInteraction(Event event, Member member, String eventType) {
+        String userId = member.getId();
+        String userDisplayName = Optional.ofNullable(member.getNickname()).orElse(member.getEffectiveName());
+        switch (eventType) {
+            case ACCEPTED:
+                flipAttendeesState(event.getAccepted(), userId, userDisplayName);
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                break;
+            case DECLINED:
+                flipAttendeesState(event.getDeclined(), userId, userDisplayName);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getMaybe().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                break;
+            case MAYBE:
+                flipAttendeesState(event.getMaybe(), userId, userDisplayName);
+                event.getAccepted().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                event.getDeclined().remove(Attendee.createDiscordAttendee(userId, userDisplayName));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void flipAttendeesState(Set<Attendee> attendees, String id, String username) {
+        Attendee attendee = Attendee.createDiscordAttendee(id, username);
+        if (!attendees.contains(attendee)) {
+            attendees.add(attendee);
+        } else {
+            attendees.remove(attendee);
+        }
+    }
+
+
+    public static MonthDay getMonthDayFromChannelName(TextChannel channel, DateTimeFormatter monthParser) {
+        String[] split = channel.getName().replaceAll("(?<=\\d)(st|nd|rd|th)", "").split("-");
+        String day = split[0];
+        int month = monthParser.parse(split[1]).get(ChronoField.MONTH_OF_YEAR);
+        return MonthDay.of(month, Integer.parseInt(day));
     }
 }

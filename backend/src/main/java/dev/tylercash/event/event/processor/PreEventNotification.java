@@ -6,7 +6,6 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
-import io.github.resilience4j.ratelimiter.RateLimiter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -16,23 +15,20 @@ import java.time.ZonedDateTime;
 @Log4j2
 @Component
 public class PreEventNotification extends ScheduledEventProcessor {
-    private final RateLimiter notifyEventRoles;
     private final Clock clock;
 
-    public PreEventNotification(DiscordService discordService, EventRepository eventRepository, RateLimiter notifyEventRoles, Clock clock) {
+    public PreEventNotification(DiscordService discordService, EventRepository eventRepository, Clock clock) {
         super(discordService, eventRepository);
-        this.notifyEventRoles = notifyEventRoles;
         this.clock = clock;
     }
 
     boolean shouldEventBeProcessed(Event event) {
-        boolean is2hBeforeEventStart = ZonedDateTime.now(clock)
-                .minusHours(2)
-                .isBefore(event.getDateTime());
-        boolean isNotificationBeforeEventStart = ZonedDateTime.now(clock).isAfter(event.getDateTime());
+        boolean twoHoursBeforeEvent = ZonedDateTime.now(clock).isAfter(event.getDateTime().minusHours(2));
+        boolean beforeEvent = ZonedDateTime.now(clock).isBefore(event.getDateTime());
+        boolean isAtMost2hBeforeEventStart = twoHoursBeforeEvent && beforeEvent;
         boolean hasPlanningState = event.getState().equals(EventState.PLANNED);
         boolean notNotifiedAlready = !event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT));
-        return hasPlanningState && is2hBeforeEventStart && isNotificationBeforeEventStart && notNotifiedAlready;
+        return hasPlanningState && isAtMost2hBeforeEventStart && notNotifiedAlready;
     }
 
     @Override
@@ -40,6 +36,7 @@ public class PreEventNotification extends ScheduledEventProcessor {
         if (!shouldEventBeProcessed(event)) {
             return;
         }
-        notifyEventRoles.executeRunnable(() -> discordService.notifyUsersBeforeEventStarts(event));
+        discordService.sendMessageBeforeEvent(event);
+        eventRepository.save(event);
     }
 }

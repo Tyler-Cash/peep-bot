@@ -1,10 +1,10 @@
 package dev.tylercash.event.event.processor;
 
+import dev.tylercash.event.GlobalTestConfiguration;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
-import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 class PreEventNotificationTest {
-    private static final Clock clock = Clock.systemDefaultZone();
+    private static final Clock clock = GlobalTestConfiguration.CLOCK;
 
     public static Stream<Arguments> eventNotificationGenerator() {
         List<Arguments> arguments = new ArrayList<>();
@@ -36,7 +36,7 @@ class PreEventNotificationTest {
 
         event = new Event();
         event.setState(EventState.PLANNED);
-        event.setDateTime(ZonedDateTime.now(clock).plusMinutes(1));
+        event.setDateTime(ZonedDateTime.now(clock).minusMinutes(30));
         arguments.add(Arguments.of(Named.of("Event already occurred 30 minutes before, don't notify", event)));
 
         return arguments.stream();
@@ -44,7 +44,7 @@ class PreEventNotificationTest {
 
     private static @NotNull PreEventNotification getNotifyBeforeEventItemProcessor() {
         return new PreEventNotification(
-                mock(DiscordService.class), mock(EventRepository.class), mock(RateLimiter.class), clock);
+                mock(DiscordService.class), mock(EventRepository.class), clock);
     }
 
     @ParameterizedTest
@@ -59,7 +59,7 @@ class PreEventNotificationTest {
     void shouldEventBeProcessedSuccess() {
         PreEventNotification preEventNotification = getNotifyBeforeEventItemProcessor();
         Event event = new Event();
-        event.setDateTime(ZonedDateTime.now(clock).minusHours(1).minusMinutes(30));
+        event.setDateTime(ZonedDateTime.now(clock).plusHours(2).minusMinutes(5));
         assertTrue(preEventNotification.shouldEventBeProcessed(event));
     }
 }

@@ -45,8 +45,8 @@ dependencies {
     implementation 'com.ibm.icu:icu4j:75.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.1.Final'
-    implementation 'org.javacord:javacord:3.8.0'
     implementation 'org.liquibase:liquibase-core'
+    implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -59,8 +59,10 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.1.2.RELEASE'
-    implementation 'org.postgresql:postgresql'
     implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
+    implementation("net.dv8tion:JDA:5.1.1") {
+        exclude module: 'opus-java'
+    }
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

@@ -5,18 +5,16 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.GoogleCalendarService;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.javacord.api.DiscordApi;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.server.Server;
-import org.javacord.api.exception.NotFoundException;
+import net.dv8tion.jda.api.EmbedBuilder;
 
 import java.awt.*;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.*;
-import java.util.concurrent.CompletionException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
@@ -25,9 +23,7 @@ import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
 @Log4j2
 @AllArgsConstructor
 public class EmbedRenderer {
-    private final DiscordApi discordApi;
     private final Event event;
-    private final Server server;
     private final Clock clock;
 
     public EmbedBuilder getEmbedBuilder() {
@@ -36,14 +32,14 @@ public class EmbedRenderer {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle(event.getName())
                 .setDescription(event.getDescription())
-                .addField("Time", timeMessage)
-                .setColor(Color.orange);
+                .addField("Time", timeMessage, false)
+                .setColor(Color.PINK);
 
         if (!event.getLocation().isBlank()) {
-            embed.addField("Location", event.getLocation());
+            embed.addField("Location", event.getLocation(), false);
         }
 
-        embed.addField("Links", "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")");
+        embed.addField("Links", "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")", false);
         populateAttendeeSection(event, embed);
         embed.setFooter("Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock)));
         return embed;
@@ -51,7 +47,7 @@ public class EmbedRenderer {
 
     private void populateAttendeeSection(Event event, EmbedBuilder embed) {
         if (event.getAccepted().isEmpty() && event.getDeclined().isEmpty() && event.getMaybe().isEmpty()) {
-            embed.addField("No attendees yet", "");
+            embed.addField("No attendees yet", "", false);
         } else {
             embedAttendees(embed);
         }
@@ -68,34 +64,29 @@ public class EmbedRenderer {
         Set<Attendee> waitlist = sortedAccepted.stream()
                 .skip(eventCapacity)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        embed.addInlineField(generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity()), reduceAttendeesToBlock(server, accepted))
-                .addInlineField(generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0), reduceAttendeesToBlock(server, event.getDeclined()))
-                .addInlineField(generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0), reduceAttendeesToBlock(server, event.getMaybe()));
+        embed.addField(
+                generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity()),
+                reduceAttendeesToBlock(accepted), true);
+        embed.addField(
+                generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0),
+                reduceAttendeesToBlock(event.getDeclined()), true);
+        embed.addField(
+                generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0),
+                reduceAttendeesToBlock(event.getMaybe()), true);
         if (!waitlist.isEmpty()) {
-            embed.addField(generateAttendanceTitle("Waitlist", waitlist.size(), 0), reduceAttendeesToBlock(server, waitlist));
+            embed.addField(
+                    generateAttendanceTitle("Waitlist", waitlist.size(), 0),
+                    reduceAttendeesToBlock(waitlist), false);
         }
     }
 
-    private String reduceAttendeesToBlock(Server server, Set<Attendee> attendees) {
+    private String reduceAttendeesToBlock(Set<Attendee> attendees) {
         Set<String> names = new LinkedHashSet<>();
         attendees.forEach(attendee -> {
-            String name = attendee.getName();
-            if (Objects.nonNull(attendee.getSnowflake()) && Objects.isNull(attendee.getName())) {
-                try {
-                    name = discordApi.getUserById(attendee.getSnowflake()).join().getDisplayName(server);
-                } catch (CompletionException e) {
-                    if (e.getCause().getClass().equals(NotFoundException.class)) {
-                        log.warn("User with id " + attendee.getSnowflake() + " not found");
-                    }
-                }
-                attendee.setName(name);
-            }
-            names.add(name);
+            names.add(attendee.getName());
         });
         return names.stream()
                 .map(attendee -> "> " + attendee + "\n")
                 .reduce("", String::concat);
     }
-
 }

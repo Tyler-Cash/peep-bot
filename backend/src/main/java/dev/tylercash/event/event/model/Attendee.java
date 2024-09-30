@@ -20,7 +20,7 @@ public class Attendee implements Serializable {
     public static Attendee createDiscordAttendee(String snowflake, String name) {
         return new Attendee(
                 snowflake,
-                snowflake == null || snowflake.isEmpty() ? "[+1] " + name : null,
+                snowflake == null || snowflake.isEmpty() ? "[+1] " + name : name,
                 Instant.now()
         );
     }

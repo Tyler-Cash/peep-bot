@@ -4,13 +4,11 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
-import io.github.resilience4j.ratelimiter.RateLimiter;
-import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.message.Message;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,34 +24,21 @@ import java.util.UUID;
 public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
-    private final RateLimiter notifyEventRoles;
 
     public String createEvent(Event event) {
-        ServerTextChannel channel = discordService.createEventChannel(event);
-        Message message;
+        TextChannel channel = discordService.createEventChannel(event);
         try {
-            message = discordService.postEventMessage(event, channel);
-            event.setServerId(channel.getServer().getId());
-            event.setChannelId(channel.getId());
-            event.setMessageId(message.getId());
-            eventRepository.save(event);
-            initialEventNotification(event, channel);
+            Message message = discordService.postEventMessage(event, channel);
+            event.setServerId(message.getGuildIdLong());
+            event.setChannelId(channel.getIdLong());
+            event.setMessageId(message.getIdLong());
             eventRepository.save(event);
         } catch (Exception e) {
-            channel.delete();
+            channel.delete().queue();
             throw e;
         }
-        discordService.pinMessage(message);
-        discordService.sortChannels(discordService.getEventCategory());
+        discordService.sortChannels();
         return "Created event for " + event.getName();
-    }
-
-    private void initialEventNotification(Event event, ServerTextChannel channel) {
-        try {
-            notifyEventRoles.executeRunnable(() -> discordService.initialNotificationAboutEvent(event, channel));
-        } catch (RequestNotPermitted e) {
-            log.warn("Notification to event role currently rate limited. {}", e.getMessage());
-        }
     }
 
     public Event getEvent(UUID id) {
