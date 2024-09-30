@@ -33,7 +33,7 @@ public class EmbedRenderer {
                 .setTitle(event.getName())
                 .setDescription(event.getDescription())
                 .addField("Time", timeMessage, false)
-                .setColor(Color.PINK);
+                .setColor(Color.YELLOW);
 
         if (!event.getLocation().isBlank()) {
             embed.addField("Location", event.getLocation(), false);
@@ -82,9 +82,7 @@ public class EmbedRenderer {
 
     private String reduceAttendeesToBlock(Set<Attendee> attendees) {
         Set<String> names = new LinkedHashSet<>();
-        attendees.forEach(attendee -> {
-            names.add(attendee.getName());
-        });
+        attendees.forEach(attendee -> names.add(attendee.getName()));
         return names.stream()
                 .map(attendee -> "> " + attendee + "\n")
                 .reduce("", String::concat);
