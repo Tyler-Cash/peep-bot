@@ -109,7 +109,9 @@ public class DiscordService {
     }
 
     public boolean isUserMemberOfServer(long serverId, long userId) {
-        return jda.getGuildById(serverId).getMembers().stream().anyMatch(member -> member.getIdLong() == userId);
+        Guild server = jda.getGuildById(serverId);
+        server.retrieveMemberById(userId).complete();
+        return server.retrieveMemberById(userId).complete() != null;
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)

@@ -26,7 +26,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         log.info("Authenticated user {}", (String) oAuth2User.getAttribute("username"));
         if (!discordService.isUserMemberOfServer(discordConfiguration.getGuildId(), Long.parseLong(Objects.requireNonNull(oAuth2User.getAttribute("id"))))) {
-            log.warn("User {} not a member of the server", (String) oAuth2User.getAttribute("username"));
+            log.warn("User {} not a member of the server. id: {}", oAuth2User.getAttribute("username"), oAuth2User.getAttribute("id"));
             throw new OAuth2AuthenticationException("User not a member of discord server " + discordConfiguration.getGuildId());
         }
         return oAuth2User;
