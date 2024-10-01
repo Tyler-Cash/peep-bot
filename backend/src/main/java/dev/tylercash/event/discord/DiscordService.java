@@ -94,12 +94,28 @@ public class DiscordService {
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))
                 );
         messageBuilder.addContent(event.getName() + " created\n");
-        notifyEventRoles.executeRunnable(() -> rolesToMention.forEach(role -> messageBuilder.mentionRoles(role.getId())
-                .addContent(role.getAsMention())));
+        addNotificationToMessage(messageBuilder, rolesToMention);
         MessageCreateAction messageCreateAction = channel.sendMessage(messageBuilder.build());
         Message message = messageCreateAction.complete();
         message.pin().queue();
         return message;
+    }
+
+    private void addNotificationToMessage(MessageCreateBuilder messageBuilder, List<Role> rolesToMention) {
+        if (notifyEventRoles.acquirePermission()) {
+            try {
+                rolesToMention.forEach(role -> messageBuilder.mentionRoles(role.getId())
+                        .addContent(role.getAsMention())
+                        .addContent("\n")
+                );
+                notifyEventRoles.onSuccess();
+            } catch (Exception e) {
+                notifyEventRoles.onError(e);
+                throw e;
+            }
+        } else {
+            messageBuilder.addContent("Not notifying @events because we've exceeded ping quota.\n");
+        }
     }
 
     public void updateEventMessage(Event event) {
