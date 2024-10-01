@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.utils.MarkdownSanitizer;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.MonthDay;
 import java.time.ZoneId;
@@ -46,7 +48,7 @@ public class DiscordUtil {
     @SneakyThrows
     public static void handleMessageComponentInteraction(Event event, Member member, String eventType) {
         String userId = member.getId();
-        String userDisplayName = Optional.ofNullable(member.getNickname()).orElse(member.getEffectiveName());
+        String userDisplayName = getUserDisplayName(member);
         switch (eventType) {
             case ACCEPTED:
                 flipAttendeesState(event.getAccepted(), userId, userDisplayName);
@@ -66,6 +68,14 @@ public class DiscordUtil {
             default:
                 break;
         }
+    }
+
+    @NotNull
+    public static String getUserDisplayName(Member member) {
+        return MarkdownSanitizer.escape(
+                Optional.ofNullable(member.getNickname())
+                        .orElse(member.getEffectiveName()),
+                true);
     }
 
     private static void flipAttendeesState(Set<Attendee> attendees, String id, String username) {

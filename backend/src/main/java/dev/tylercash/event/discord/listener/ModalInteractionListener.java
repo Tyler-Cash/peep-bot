@@ -1,7 +1,7 @@
 package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.discord.EmbedRenderer;
+import dev.tylercash.event.discord.EmbedService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.MetricsService;
@@ -25,6 +25,7 @@ public class ModalInteractionListener extends ListenerAdapter {
     private final Clock clock;
     private final MetricsService metricsService;
     private final EventRepository eventRepository;
+    private final EmbedService embedService;
 
     @Override
     public void onModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
@@ -33,7 +34,7 @@ public class ModalInteractionListener extends ListenerAdapter {
         Event event = eventRepository.findByChannelId(modalInteractionEvent.getChannel().getIdLong());
         String plus1Name = interaction.getValues().get(0).getAsString();
         event.getAccepted().add(Attendee.createDiscordAttendee(null, plus1Name));
-        modalInteractionEvent.editMessageEmbeds(new EmbedRenderer(event, clock).getEmbedBuilder().build()).queue();
+        modalInteractionEvent.editMessageEmbeds(embedService.getMessage(event, clock)).queue();
         eventRepository.save(event);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000;

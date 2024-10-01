@@ -8,7 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -40,8 +43,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 @Service
 @AllArgsConstructor
 public class DiscordService {
-
     private final DiscordConfiguration discordConfiguration;
+    private final EmbedService embedService;
     private final RateLimiter notifyEventRoles;
     private final Clock clock;
     private final JDA jda;
@@ -83,10 +86,9 @@ public class DiscordService {
     }
 
     public Message postEventMessage(Event event, TextChannel channel) {
-        MessageEmbed messageEmbed = new EmbedRenderer(event, clock).getEmbedBuilder().build();
         List<Role> rolesToMention = getRoles(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
-                .addEmbeds(messageEmbed)
+                .addEmbeds(embedService.getMessage(event, clock))
                 .addActionRow(List.of(
                         Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
                         Button.secondary(DECLINED, DECLINED_EMOJI),
@@ -120,14 +122,18 @@ public class DiscordService {
 
     public void updateEventMessage(Event event) {
         getChannel(event)
-                .editMessageEmbedsById(event.getMessageId(), new EmbedRenderer(event, clock).getEmbedBuilder().build())
+                .editMessageEmbedsById(event.getMessageId(), embedService.getMessage(event, clock))
                 .queue();
     }
 
-    public boolean isUserMemberOfServer(long serverId, long userId) {
+    public Member getMemberFromServer(long serverId, long userId) {
         Guild server = jda.getGuildById(serverId);
         server.retrieveMemberById(userId).complete();
-        return server.retrieveMemberById(userId).complete() != null;
+        return server.retrieveMemberById(userId).complete();
+    }
+
+    public boolean isUserMemberOfServer(long serverId, long userId) {
+        return getMemberFromServer(serverId, userId) != null;
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
@@ -204,7 +210,7 @@ public class DiscordService {
                     );
             event.getAccepted().stream()
                     .filter(user -> !user.getSnowflake().isBlank())
-                    .map(user -> jda.getGuildById(discordConfiguration.getGuildId()).getMember(UserSnowflake.fromId(user.getSnowflake())))
+                    .map(user -> getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(user.getSnowflake())))
                     .filter(user -> user.getRoles().stream().anyMatch(role -> role.getName().equals("pre-event-notification")))
                     .forEach(user -> messageBuilder.addContent(user.getAsMention() + " "));
             log.info("Sending {} alert for \"{}\"", NotificationType.START_OF_EVENT, event.getName());

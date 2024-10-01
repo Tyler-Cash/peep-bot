@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 @Log4j2
 @Component
 public class UpdateScheduledEvent extends ScheduledEventProcessor {
-    private final boolean hasRun = false;
-
     public UpdateScheduledEvent(DiscordService discordService, EventRepository eventRepository) {
         super(discordService, eventRepository);
     }
