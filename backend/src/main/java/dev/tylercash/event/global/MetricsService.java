@@ -12,7 +12,8 @@ public class MetricsService {
 
     public MetricsService(MeterRegistry registry) {
         discordMessageComponentEventTimer = Timer.builder("discord.message_component_event_timer")
-                .description("Times how long to respond to a Discord message component event")
+                .description("Records how long to respond to a Discord message component event")
+                .publishPercentileHistogram()
                 .register(registry);
     }
 }
