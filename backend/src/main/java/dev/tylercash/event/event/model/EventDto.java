@@ -1,9 +1,6 @@
 package dev.tylercash.event.event.model;
 
-import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,11 +13,17 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventDto {
+    public static final int NAME_SIZE_MIN = 4;
+    public static final int NAME_SIZE_MAX = 80;
+    public static final String NAME_SIZE_ERROR = "Name should be between " + NAME_SIZE_MIN + " and " + NAME_SIZE_MAX + " characters long";
     private UUID id;
 
     @NotBlank(message = "Name is required.")
+    @Size(min = NAME_SIZE_MIN, message = NAME_SIZE_ERROR)
+    @Size(max = NAME_SIZE_MAX, message = NAME_SIZE_ERROR)
     private String name;
 
+    @Size(max = 3800, message = "Please make this less than 3800 characters long")
     private String description = "";
 
     private String location = "";
