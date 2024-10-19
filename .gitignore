@@ -44,9 +44,14 @@ bin/
 **/application.properties
 **/application-local.yaml
 **/application-k8s.yaml
-*.db
-*.sqlite
-*.sqlite3
 .idea/sonarlint/
 .idea/dataSources*.xml
 .idea/dataSources/**
+
+#### Stop accidental file commits ###
+*.db
+*.sqlite
+*.sqlite3
+*.yaml
+*.json
+*.csv
