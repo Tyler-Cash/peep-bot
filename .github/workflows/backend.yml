@@ -1,7 +1,8 @@
 on:
   push:
-    branches: 'main'
+    branches: '**'
     paths:
+      - '.github/**'
       - 'backend/**'
 
 jobs:
@@ -32,5 +33,5 @@ jobs:
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
         run: ./gradlew clean build bootBuildImage
-      - if: github.ref == 'refs/heads/master'
+      - if: github.ref == 'refs/heads/main'
         run: docker push ghcr.io/tyler-cash/peep-bot-backend:latest

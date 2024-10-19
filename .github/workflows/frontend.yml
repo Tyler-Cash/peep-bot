@@ -1,7 +1,8 @@
 on:
   push:
-    branches: 'main'
+    branches: '**'
     paths:
+      - '.github/**'
       - 'frontend/**'
 
 jobs:
@@ -26,5 +27,5 @@ jobs:
           node-version: 18
       - run: chmod -R +x .
       - run: docker build . -t ghcr.io/tyler-cash/peep-bot-frontend:latest
-      - if: github.ref == 'refs/heads/master'
+      - if: github.ref == 'refs/heads/main'
         run: docker push ghcr.io/tyler-cash/peep-bot-frontend:latest
