@@ -4,7 +4,7 @@ spring.main.lazy-initialization: true
 dev.tylercash:
   discord:
     timeout: 60
-    seperator-channel: memories
+    seperator-channel: organising
   frontend:
     protocol: http
     hostname: localhost
