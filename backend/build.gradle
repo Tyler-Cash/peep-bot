@@ -60,7 +60,7 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.1.2.RELEASE'
     implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
-    implementation("net.dv8tion:JDA:5.2.0") {
+    implementation("net.dv8tion:JDA:5.2.1") {
         exclude module: 'opus-java'
     }
 
