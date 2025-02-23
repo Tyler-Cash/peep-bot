@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.ibm.icu:icu4j:75.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.8.Final'
+    implementation 'org.hibernate.orm:hibernate-community-dialects:6.6.9.Final'
     implementation 'org.liquibase:liquibase-core'
     implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
