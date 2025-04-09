@@ -24,13 +24,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
-import java.time.MonthDay;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Stream;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 import static dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName;
@@ -137,34 +137,48 @@ public class DiscordService {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
-    public void sortChannels() {
-        sortChannels(getEventCategory(discordConfiguration.getGuildId()));
+    public void sortActiveChannels() {
+        sortChannels(getEventCategory(discordConfiguration.getGuildId()), discordConfiguration.getSeperatorChannel());
     }
 
-    public void sortChannels(Category eventCategory) {
+    @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    public void sortArchiveChannels() {
+        sortChannels(getArchiveCategory(discordConfiguration.getGuildId()), null);
+    }
+
+    public void sortChannels(Category eventCategory, String separator) {
         List<TextChannel> channels = eventCategory.getTextChannels();
+
         DateTimeFormatter monthParser = new DateTimeFormatterBuilder()
                 .parseCaseInsensitive()
                 .appendPattern("MMM")
                 .toFormatter(Locale.ENGLISH);
-        Stream<TextChannel> events = channels.stream();
-        int position = 0;
-        for (TextChannel channel : channels) {
-            events = events.skip(1);
-            position++;
-            if (channel.getName().equalsIgnoreCase(discordConfiguration.getSeperatorChannel())) {
+
+        int separatorIndex = -1;
+        for (int i = 0; i < channels.size(); i++) {
+            if (channels.get(i).getName().equalsIgnoreCase(separator)) {
+                separatorIndex = i;
                 break;
             }
         }
 
-        List<TextChannel> sorted = Stream.concat(
-                channels.subList(0, position).stream(),
-                events.sorted((TextChannel left, TextChannel right) -> {
-                    MonthDay leftDay = getMonthDayFromChannelName(left, monthParser);
-                    MonthDay rightDay = getMonthDayFromChannelName(right, monthParser);
-                    return leftDay.compareTo(rightDay);
-                })
-        ).toList();
+        List<TextChannel> before;
+        List<TextChannel> after;
+        if (separatorIndex != -1) {
+            before = channels.subList(0, separatorIndex + 1);
+            after = channels.subList(separatorIndex + 1, channels.size());
+        } else {
+            before = List.of();
+            after = channels;
+        }
+
+        List<TextChannel> sortedAfter = after.stream()
+                .sorted(Comparator.comparing(channel -> getMonthDayFromChannelName(channel, monthParser)))
+                .toList();
+
+        List<TextChannel> sorted = new ArrayList<>(before);
+        sorted.addAll(sortedAfter);
+
         for (int i = 0; i < sorted.size(); i++) {
             sorted.get(i).getManager().setPosition(i).queue();
         }
@@ -184,6 +198,7 @@ public class DiscordService {
                 .setParent(category)
                 .sync()
                 .queue();
+        sortChannels(category, null);
     }
 
     private TextChannel getChannel(Event event) {

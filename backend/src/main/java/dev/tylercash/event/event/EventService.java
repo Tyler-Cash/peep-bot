@@ -37,7 +37,7 @@ public class EventService {
             channel.delete().queue();
             throw e;
         }
-        discordService.sortChannels();
+        discordService.sortActiveChannels();
         return "Created event for " + event.getName();
     }
 
