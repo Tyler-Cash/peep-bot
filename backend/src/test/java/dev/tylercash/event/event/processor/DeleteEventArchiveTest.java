@@ -28,13 +28,13 @@ class DeleteEventArchiveTest {
     private ArgumentCaptor<Event> eventArgumentCaptor = ArgumentCaptor.forClass(Event.class);
 
     public static Stream<Arguments> deleteEvents() {
-        Event eventToBeDeleted = new Event(0, 0, 0, "Simple event", "", eventDeletionTime);
+        Event eventToBeDeleted = new Event(0, 0, 0, "Simple event", "creator", eventDeletionTime, "");
         List<Arguments> arguments = new ArrayList<>(List.of(
                 Arguments.of(true, // Event old enough to be deleted
                         eventToBeDeleted),
                 Arguments.of(
                         false, // Event not old enough to be archived
-                        new Event(0, 0, 0, "Simple event", "", ZonedDateTime.now(CLOCK)))));
+                        new Event(0, 0, 0, "Simple event", "creator", ZonedDateTime.now(CLOCK), ""))));
         for (Arguments argument : arguments) {
             ((Event) argument.get()[1]).setState(EventState.ARCHIVED);
         }

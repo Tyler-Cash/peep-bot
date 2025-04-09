@@ -171,3 +171,16 @@ databaseChangeLog:
                   defaultValue: "[]"
                   constraints:
                     nullable: false
+  - changeSet:
+      id: add creator column
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: creator
+                  type: text
+                  defaultValue: "Tyler"
+                  constraints:
+                    nullable: false

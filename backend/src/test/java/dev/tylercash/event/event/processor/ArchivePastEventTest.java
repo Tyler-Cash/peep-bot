@@ -29,13 +29,13 @@ class ArchivePastEventTest {
     public static Stream<Arguments> archiveEvents() {
         List<Arguments> arguments = List.of(
                 Arguments.of(true, // Event old enough to be archived
-                        new Event(0, 0, 0, "Simple event", "", eventArchivalTime)),
+                        new Event(0, 0, 0, "Simple event", "creator", eventArchivalTime, "")),
                 Arguments.of(
                         false, // Test that manually unarchived event isn't rearchived
-                        new Event(0, 0, 0, "Simple event", "", eventArchivalTime)),
+                        new Event(0, 0, 0, "Simple event", "creator", eventArchivalTime, "")),
                 Arguments.of(
                         false, // Event not old enough to be archived
-                        new Event(0, 0, 0, "Simple event", "", ZonedDateTime.now(CLOCK))));
+                        new Event(0, 0, 0, "Simple event", "creator", ZonedDateTime.now(CLOCK), "")));
         ((Event) arguments.get(1).get()[1]).setState(EventState.ARCHIVED);
         return arguments.stream();
     }

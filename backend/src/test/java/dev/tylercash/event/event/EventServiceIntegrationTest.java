@@ -51,7 +51,7 @@ class EventServiceIntegrationTest {
 
     @Test
     public void testSave() throws InterruptedException {
-        Event event = new Event(0, 0, 0, "name", "description", ZonedDateTime.now());
+        Event event = new Event(0, 0, 0, "name", "creator", ZonedDateTime.now(), "description");
         eventService.createEvent(event);
         discordService.deleteEventChannel(event);
         // Terrible way to have the channel deleted by the time the test is shutdown

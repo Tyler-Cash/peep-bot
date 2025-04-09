@@ -23,8 +23,8 @@ class GoogleCalendarServiceTest {
 
     public static Stream<Arguments> calendarTestEvents() {
         return Stream.of(
-                new Event(0, 0, 0, "Simple event 😊", "", time),
-                new Event(0, 0, 0, "Simple event", "", time)
+                new Event(0, 0, 0, "Simple event 😊", "creator", time, ""),
+                new Event(0, 0, 0, "Simple event", "creator", time, "")
         ).map(Arguments::of);
     }
 

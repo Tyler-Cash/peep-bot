@@ -41,7 +41,9 @@ public class EmbedRenderer {
 
         embed.addField("Links", "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")", false);
         populateAttendeeSection(event, embed);
-        embed.setFooter("Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock)));
+        String creator = "Created by: " + event.getCreator();
+        String lastUpdated = "Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock));
+        embed.setFooter(String.join("\n", List.of(creator, lastUpdated)));
         return embed;
     }
 

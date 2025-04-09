@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,7 +24,8 @@ public class EventController {
 
     @PutMapping
     public Map<String, String> createEvent(@RequestBody @Valid EventDto event) {
-        eventService.createEvent(new Event(event));
+        String creator = SecurityContextHolder.getContext().getAuthentication().getName();
+        eventService.createEvent(new Event(event, creator));
         return Map.of("message", "Created event for " + event.getName());
     }
 

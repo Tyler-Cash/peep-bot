@@ -37,6 +37,8 @@ public class Event {
     private long channelId;
     @NotNull
     private String name;
+    @NotNull
+    private String creator;
     private String description = "";
     private String location = "";
     private Integer capacity = 0;
@@ -61,19 +63,20 @@ public class Event {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
-    public Event(long messageId, long serverId, long channelId, String name, String description, ZonedDateTime dateTime) {
+    public Event(long messageId, long serverId, long channelId, String name, String owner, ZonedDateTime dateTime, String description) {
         super();
         this.messageId = messageId;
         this.serverId = serverId;
         this.channelId = channelId;
         this.name = name;
         this.description = description;
-        this.dateTime = ZonedDateTime.from(dateTime);
+        this.dateTime = dateTime;
     }
 
-    public Event(EventDto event) {
+    public Event(EventDto event, String creator) {
         super();
         this.name = event.getName();
+        this.creator = creator;
         this.description = event.getDescription();
         this.location = event.getLocation();
         this.capacity = event.getCapacity();
