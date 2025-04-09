@@ -63,12 +63,13 @@ public class Event {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
-    public Event(long messageId, long serverId, long channelId, String name, String owner, ZonedDateTime dateTime, String description) {
+    public Event(long messageId, long serverId, long channelId, String name, String creator, ZonedDateTime dateTime, String description) {
         super();
         this.messageId = messageId;
         this.serverId = serverId;
         this.channelId = channelId;
         this.name = name;
+        this.creator = creator;
         this.description = description;
         this.dateTime = dateTime;
     }
