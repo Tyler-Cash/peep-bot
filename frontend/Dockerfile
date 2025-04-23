@@ -33,7 +33,7 @@ FROM development AS build
 
 RUN ["npm", "run", "build"]
 
-FROM nginx:1.27-alpine
+FROM nginx:1.28-alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 COPY static/nginx.conf /etc/nginx/conf.d/default.conf
