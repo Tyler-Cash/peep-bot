@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.15
+# syntax=docker/dockerfile:1.16
 
 FROM --platform=$BUILDPLATFORM node:lts AS development
 
