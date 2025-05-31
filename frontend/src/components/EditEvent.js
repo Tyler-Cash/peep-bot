@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
 import {useParams} from "react-router-dom";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
+import './css/events.css';
 
 export default function EditEvent() {
     const {id} = useParams();
@@ -17,6 +18,7 @@ export default function EditEvent() {
         setValue,
         formState: {errors, isSubmitting},
     } = useForm({})
+
     const onSubmit = async (data) => {
         try {
             const response = await patchEvent({
@@ -37,9 +39,8 @@ export default function EditEvent() {
                 });
             } else {
                 setError("root", {
-                    message: "This is probably cooked tbh. Try again later?\nmessage: "
-                        + e.message + "\ncode: " + e.status + "\ntime:" + new Date().toString() + "\nstacktrace: "
-                        + e.stack
+                    message: "Something went wrong. Please try again later. Error details: "
+                        + e.message + " (Code: " + e.status + ")"
                 })
             }
         }
@@ -60,9 +61,13 @@ export default function EditEvent() {
         return (
             <div>
                 <Navbar/>
-                <div className="d-flex justify-content-center">
-                    <div className="spinner-border" role="status">
-                        <span className="sr-only">Loading...</span>
+                <div className="loading-container">
+                    <div className="text-center">
+                        <div className="spinner-border text-primary" role="status"
+                             style={{width: '3rem', height: '3rem'}}>
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="mt-3 text-muted">Loading event information...</p>
                     </div>
                 </div>
             </div>
@@ -72,61 +77,127 @@ export default function EditEvent() {
     return (
         <div>
             <Navbar/>
-            <span className="border">
-                <div className="container text-center">
-                    <div className={errors.root && "alert alert-danger"}>{errors.root?.message}</div>
-                    <form className="t-3" onSubmit={handleSubmit(onSubmit)}>
-                        <div className="mb-3 has-validation">
-                            <label className="form-label" htmlFor="name">Event Name</label>
-                            <input className={"form-control " + (errors.name && "is-invalid")} {...register("name", {
-                                required: "Provide a name",
-                                minLength: {value: 3, message: "Must be greater than 3 characters"}
-                            })} />
-                            <div className="invalid-feedback">{errors.name?.message}</div>
-                        </div>
+            <div className="container event-container">
+                <div className="row">
+                    <div className="col-12">
+                        <div className="event-card">
+                            <div className="event-card-header">
+                                <h2 className="mb-0"><i className="bi bi-pencil-square me-2"></i>Edit Event</h2>
+                                <p className="text-muted mb-0">Update your event details below</p>
+                            </div>
 
-                        <div className="mb-3 has-validation">
-                            <label className="form-label" htmlFor="description">Description</label>
-                            <textarea
-                                className={"form-control " + (errors.description && "is-invalid")} {...register("description")} />
-                            <div className="invalid-feedback">{errors.description?.message}</div>
-                        </div>
+                            {errors.root && (
+                                <div className="mx-4 mt-4 error-alert">
+                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                    {errors.root?.message}
+                                </div>
+                            )}
 
-                        <div className="mb-3 has-validation">
-                            <label className="form-label" htmlFor="capacity">Capacity</label>
-                            <input
-                                className={"form-control " + (errors.capacity && "is-invalid")} {...register("capacity")} />
-                            <div className="invalid-feedback">{errors.capacity?.message}</div>
-                        </div>
+                            <div className="event-card-body">
+                                <form onSubmit={handleSubmit(onSubmit)}>
+                                    <div className="event-form-group">
+                                        <label className="event-form-label" htmlFor="name">
+                                            <i className="bi bi-calendar-event me-2"></i>Event Name
+                                        </label>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-dark text-light border-secondary">
+                                                <i className="bi bi-type"></i>
+                                            </span>
+                                            <input
+                                                className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
+                                                placeholder="Enter event name"
+                                                {...register("name", {
+                                                    required: "Please provide an event name",
+                                                    minLength: {value: 3, message: "Name must be at least 3 characters"}
+                                                })}
+                                            />
+                                            <div className="invalid-feedback">{errors.name?.message}</div>
+                                        </div>
+                                    </div>
 
-                        {/*<div className="mb-3 has-validation">*/}
-                        {/*    <label className="form-label" htmlFor="cost">Cost</label>*/}
-                        {/*    <input className={"form-control " + (errors.cost && "is-invalid")} {...register("cost")} />*/}
-                        {/*    <div className="invalid-feedback">{errors.cost?.message}</div>*/}
-                        {/*</div>*/}
+                                    <div className="event-form-group">
+                                        <label className="event-form-label" htmlFor="description">
+                                            <i className="bi bi-card-text me-2"></i>Description
+                                        </label>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-dark text-light border-secondary">
+                                                <i className="bi bi-blockquote-left"></i>
+                                            </span>
+                                            <textarea
+                                                className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
+                                                placeholder="Describe your event"
+                                                rows="4"
+                                                {...register("description")}
+                                            />
+                                            <div className="invalid-feedback">{errors.description?.message}</div>
+                                        </div>
+                                    </div>
 
-                        <div className="mb-3 has-validation">
-                            <label className="form-label" htmlFor="time">Start time</label>
-                            <input className={"form-control " + (errors.dateTime && "is-invalid")} type="datetime-local"
-                                   {...register("dateTime", {required: "Select an event start time"})} />
-                            <div className="invalid-feedback">{errors.dateTime?.message}</div>
-                        </div>
+                                    <div className="row">
+                                        <div className="col-md-6">
+                                            <div className="event-form-group">
+                                                <label className="event-form-label" htmlFor="capacity">
+                                                    <i className="bi bi-people-fill me-2"></i>Capacity
+                                                </label>
+                                                <div className="input-group">
+                                                    <span
+                                                        className="input-group-text bg-dark text-light border-secondary">
+                                                        <i className="bi bi-person-plus"></i>
+                                                    </span>
+                                                    <input
+                                                        type="number"
+                                                        className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
+                                                        placeholder="Number of attendees"
+                                                        {...register("capacity")}
+                                                    />
+                                                    <div className="invalid-feedback">{errors.capacity?.message}</div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        <div className="mb-3">
-                            <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? (
-                                        <div>
-                                         <span className="spinner-border spinner-border-sm me-1"
-                                               aria-hidden="true"></span>
-                                            <span>Updating...</span>
-                                        </div>)
-                                    :
-                                    (<span>Update</span>)}
-                            </button>
+                                        <div className="col-md-6">
+                                            <div className="event-form-group">
+                                                <label className="event-form-label" htmlFor="dateTime">
+                                                    <i className="bi bi-clock me-2"></i>Start Time
+                                                </label>
+                                                <div className="input-group">
+                                                    <span
+                                                        className="input-group-text bg-dark text-light border-secondary">
+                                                        <i className="bi bi-calendar-date"></i>
+                                                    </span>
+                                                    <input
+                                                        className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
+                                                        type="datetime-local"
+                                                        {...register("dateTime", {required: "Please select a start time"})}
+                                                    />
+                                                    <div className="invalid-feedback">{errors.dateTime?.message}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="event-footer d-flex justify-content-between align-items-center">
+                                        <a href="/" className="btn btn-outline-secondary">
+                                            <i className="bi bi-arrow-left"></i> Cancel
+                                        </a>
+                                        <button className="btn btn-primary btn-event" type="submit"
+                                                disabled={isSubmitting}>
+                                            {isSubmitting ? (
+                                                    <div>
+                                                    <span className="spinner-border spinner-border-sm"
+                                                          aria-hidden="true"></span>
+                                                        <span>Updating...</span>
+                                                    </div>)
+                                                :
+                                                (<span><i className="bi bi-check-circle"></i> Save Changes</span>)}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </span>
+            </div>
         </div>
     )
 }
