@@ -56,7 +56,7 @@ public class WebSecurityConfig {
     @Bean
     @Primary
     public JdbcIndexedSessionRepository jdbcIndexedSessionRepository() {
-        jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(365));
+        jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(30));
         return jdbcHttpSessionConfiguration.sessionRepository();
     }
 }

@@ -24,8 +24,14 @@ server:
 
 spring:
   session:
+    cookie:
+      name: SESSION
+      http-only: true
+      secure: true
+      same-site: Lax
     jdbc:
       initialize-schema: never
+      cleanup-cron: 0 * * * * *
   datasource:
     driverClassName: org.postgresql.Driver
   security:
