@@ -21,7 +21,8 @@ export default function CreateEvent(props) {
                 // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
                 // "cost": parseInt(data.cost || "0"),
-                "dateTime": moment(data.dateTime).toISOString()
+                "dateTime": moment(data.dateTime).toISOString(),
+                "notifyOnCreate": data.notifyOnCreate ?? true
             }).unwrap();
             document.location.href = "/"
         } catch (e) {
@@ -142,6 +143,13 @@ export default function CreateEvent(props) {
                                         </div>
                                     </div>
 
+                                    <div className="form-check mb-3">
+                                        <input className="form-check-input" type="checkbox" id="notifyOnCreate"
+                                               defaultChecked {...register("notifyOnCreate")} />
+                                        <label className="form-check-label" htmlFor="notifyOnCreate">
+                                            Notify people now
+                                        </label>
+                                    </div>
                                     <div className="event-footer d-flex justify-content-between align-items-center">
                                         <a href="/" className="btn btn-outline-secondary">
                                             <i className="bi bi-arrow-left"></i> Cancel

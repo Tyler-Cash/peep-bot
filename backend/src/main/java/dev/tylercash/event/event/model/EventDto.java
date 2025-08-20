@@ -39,6 +39,9 @@ public class EventDto {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
+    // Transient request-only flag: whether to notify people when creating the event. Defaults to true.
+    private Boolean notifyOnCreate = true;
+
     public EventDto(Event event) {
         this.id = event.getId();
         this.name = event.getName();
@@ -47,5 +50,6 @@ public class EventDto {
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
+        // Do not expose notifyOnCreate from entity; it's request-only and not persisted
     }
 }

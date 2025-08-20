@@ -96,7 +96,9 @@ public class DiscordService {
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))
                 );
         messageBuilder.addContent(event.getName() + " created\n");
-        addNotificationToMessage(messageBuilder, rolesToMention);
+        if (event.isNotifyOnCreate()) {
+            addNotificationToMessage(messageBuilder, rolesToMention);
+        }
         MessageCreateAction messageCreateAction = channel.sendMessage(messageBuilder.build());
         Message message = messageCreateAction.complete();
         message.pin().queue();

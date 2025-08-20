@@ -29,7 +29,8 @@ export const eventBotApi = createApi({
                     "location": data.location,
                     "capacity": data.capacity,
                     "cost": data.cost,
-                    "dateTime": data.dateTime
+                    "dateTime": data.dateTime,
+                    "notifyOnCreate": data.notifyOnCreate ?? true
                 },
             }),
         }),

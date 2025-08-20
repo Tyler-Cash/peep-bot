@@ -63,6 +63,10 @@ public class Event {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
+    // Request only flag, do not persist
+    @Transient
+    private boolean notifyOnCreate = true;
+
     public Event(long messageId, long serverId, long channelId, String name, String creator, ZonedDateTime dateTime, String description) {
         super();
         this.messageId = messageId;
@@ -83,5 +87,7 @@ public class Event {
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
+        // map transient notify flag (default true if null)
+        this.notifyOnCreate = event.getNotifyOnCreate() == null || event.getNotifyOnCreate();
     }
 }
