@@ -1,6 +1,7 @@
 plugins {
     id 'application'
     id 'org.springframework.boot' version '3.5.5'
+    id 'org.cyclonedx.bom' version '2.3.1'
 }
 
 apply plugin: 'application'
@@ -11,7 +12,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -95,3 +96,4 @@ tasks.named("bootJar") {
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
 }
+
