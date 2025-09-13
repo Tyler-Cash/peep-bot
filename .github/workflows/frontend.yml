@@ -16,7 +16,7 @@ jobs:
       run:
         working-directory: ./frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Generate SBOM (frontend)
         uses: anchore/sbom-action@v0
