@@ -1,7 +1,7 @@
 import {configureStore} from '@reduxjs/toolkit'
 
 import rootReducer from './reducers/rootReducer'
-import {eventBotApi} from "./api/eventBotApi";
+import {eventBotApi} from './api/eventBotApi'
 
 export default function configureAppStore(preloadedState) {
     const store = configureStore({
@@ -9,14 +9,15 @@ export default function configureAppStore(preloadedState) {
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware().concat(eventBotApi.middleware),
         preloadedState,
-        enhancers: (getDefaultEnhancers) =>
-            getDefaultEnhancers(),
+        enhancers: (getDefaultEnhancers) => getDefaultEnhancers(),
     })
 
-    if (process.env.NODE_ENV !== 'production' && module.hot) {
-        module.hot.accept('./reducers/rootReducer', () => store.replaceReducer(rootReducer))
+    if (import.meta.env.DEV && import.meta.hot) {
+        import.meta.hot.accept('./reducers/rootReducer', (mod) => {
+            const nextReducer = mod?.default ?? mod?.rootReducer ?? rootReducer
+            store.replaceReducer(nextReducer)
+        })
     }
 
     return store
 }
-
