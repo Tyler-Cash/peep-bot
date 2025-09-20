@@ -29,14 +29,14 @@ class EventServiceIntegrationTest {
     private DiscordService discordService;
 
     @DynamicPropertySource
-    void configureProperties(DynamicPropertyRegistry registry) {
+    static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 
     @Test
-    static public void testSave() throws InterruptedException {
+    public void testSave() throws InterruptedException {
         Event event = new Event(0, 0, 0, "name", "creator", ZonedDateTime.now(), "description");
         eventService.createEvent(event);
         discordService.deleteEventChannel(event);
