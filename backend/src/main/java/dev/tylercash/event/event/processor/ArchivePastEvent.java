@@ -6,6 +6,8 @@ import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import lombok.extern.log4j.Log4j2;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -19,6 +21,13 @@ public class ArchivePastEvent extends ScheduledEventProcessor {
     public ArchivePastEvent(DiscordService discordService, EventRepository eventRepository, Clock clock) {
         super(discordService, eventRepository);
         this.clock = clock;
+    }
+
+    @Override
+    @Scheduled(fixedRate = 1000 * 60)
+    @SchedulerLock(name = "archivePastEvent")
+    public void processAll() {
+        super.processAll();
     }
 
 
