@@ -222,3 +222,11 @@ databaseChangeLog:
               - column:
                   name: maybe_confirmation_message_id
                   type: bigint
+  - changeSet:
+      id: make maybe_confirmation_message_id nullable
+      author: jules
+      changes:
+        - dropNotNullConstraint:
+            tableName: event
+            columnName: maybe_confirmation_message_id
+            columnDataType: bigint
