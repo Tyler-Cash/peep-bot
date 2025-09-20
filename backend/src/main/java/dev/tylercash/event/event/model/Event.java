@@ -29,6 +29,8 @@ public class Event {
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long messageId;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private long maybeConfirmationMessageId;
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long serverId;
