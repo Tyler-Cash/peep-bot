@@ -36,7 +36,7 @@ class EventServiceIntegrationTest {
     }
 
     @Test
-    public void testSave() throws InterruptedException {
+    static public void testSave() throws InterruptedException {
         Event event = new Event(0, 0, 0, "name", "creator", ZonedDateTime.now(), "description");
         eventService.createEvent(event);
         discordService.deleteEventChannel(event);
