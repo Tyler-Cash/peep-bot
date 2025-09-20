@@ -1,17 +1,4 @@
-networks:
-  dev:
-    driver: bridge
-
 services:
-  nginx:
-    image: nginx:stable-alpine
-    container_name: nginx
-    restart: always
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./nginx:/etc/nginx/conf.d/
-
   db:
     image: postgres:17.5-alpine3.20
     ports:

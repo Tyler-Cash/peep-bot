@@ -3,7 +3,10 @@ import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
 
 export const eventBotApi = createApi({
     reducerPath: 'eventBot',
-    baseQuery: fetchBaseQuery({baseUrl: process.env.REACT_APP_BACKEND_URI + '/api/'}),
+    baseQuery: fetchBaseQuery({
+        baseUrl: import.meta.env.VITE_BACKEND_URI + '/api/'
+    }),
+    credentials: "include",
     refetchOnMountOrArgChange: 120,
     endpoints: (builder) => ({
         getEvents: builder.query({
