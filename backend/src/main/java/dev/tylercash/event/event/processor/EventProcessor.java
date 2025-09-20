@@ -23,7 +23,6 @@ public abstract class EventProcessor {
      */
     public abstract Page<Event> getEvents();
 
-    @Scheduled(fixedRate = 1000 * 60)
     public void processAll() {
         Page<Event> events = getEvents();
         for (Event event : events) {
