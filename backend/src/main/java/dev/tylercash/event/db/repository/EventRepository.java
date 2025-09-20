@@ -20,6 +20,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     Event findByMessageId(Long id);
 
+    Optional<Event> findByMaybeConfirmationMessageId(long messageId);
+
     Event findByChannelId(Long id);
 
     Page<Event> findByState(Pageable pageable, EventState state);
