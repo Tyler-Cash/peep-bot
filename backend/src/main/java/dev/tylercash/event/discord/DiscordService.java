@@ -243,4 +243,39 @@ public class DiscordService {
                     ));
         });
     }
+
+    public void sendMaybeConfirmationMessage(Event event) {
+        if (event.getNotifications().contains(new Notification(NotificationType.CONFIRM_ATTENDANCE))) {
+            return;
+        }
+
+        notifyEventRoles.executeRunnable(() -> {
+            Guild server = jda.getGuildById(discordConfiguration.getGuildId());
+            MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
+                .addContent("Please confirm if you're going to **" + event.getName() + "**. ");
+
+            event.getMaybe().stream()
+                .map(user -> getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(user.getSnowflake())))
+                .filter(user -> user.getRoles().stream().noneMatch(role -> role.getName().equals("event-mute-maybe-attendance")))
+                .forEach(user -> messageBuilder.addContent(user.getAsMention() + " "));
+
+            messageBuilder.addContent("\n\nReact ❌ if you don't want confirmations in the future");
+
+            log.info("Sending {} alert for \"{}\"", NotificationType.CONFIRM_ATTENDANCE, event.getName());
+
+            Message message = server.getChannelById(TextChannel.class, event.getChannelId()).sendMessage(
+                messageBuilder.build()
+            ).complete();
+
+            message.addReaction(net.dv8tion.jda.api.entities.emoji.Emoji.fromUnicode("❌")).queue();
+
+            event.getNotifications().add(
+                new Notification(
+                    NotificationType.CONFIRM_ATTENDANCE,
+                    ZonedDateTime.now(clock).toInstant(),
+                    message.getIdLong()
+                )
+            );
+        });
+    }
 }

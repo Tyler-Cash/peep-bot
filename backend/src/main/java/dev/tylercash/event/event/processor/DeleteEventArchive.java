@@ -40,4 +40,10 @@ public class DeleteEventArchive extends ArchivedEventProcessor {
             }
         }
     }
+
+    @Override
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 1000 * 60)
+    public void processAll() {
+        super.processAll();
+    }
 }

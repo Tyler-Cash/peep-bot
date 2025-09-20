@@ -41,4 +41,10 @@ public class ArchivePastEvent extends ScheduledEventProcessor {
             }
         }
     }
+
+    @Override
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 1000 * 60)
+    public void processAll() {
+        super.processAll();
+    }
 }

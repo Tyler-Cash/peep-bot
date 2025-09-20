@@ -14,21 +14,31 @@ import java.time.ZonedDateTime;
 
 @Log4j2
 @Component
-public class PreEventNotification extends ScheduledEventProcessor {
+public class PreEventMaybeConfirmationNotification extends ScheduledEventProcessor {
     private final Clock clock;
 
-    public PreEventNotification(DiscordService discordService, EventRepository eventRepository, Clock clock) {
+    public PreEventMaybeConfirmationNotification(DiscordService discordService, EventRepository eventRepository, Clock clock) {
         super(discordService, eventRepository);
         this.clock = clock;
     }
 
     boolean shouldEventBeProcessed(Event event) {
-        boolean twoHoursBeforeEvent = ZonedDateTime.now(clock).isAfter(event.getDateTime().minusHours(2));
-        boolean beforeEvent = ZonedDateTime.now(clock).isBefore(event.getDateTime());
-        boolean isAtMost2hBeforeEventStart = twoHoursBeforeEvent && beforeEvent;
+        ZonedDateTime now = ZonedDateTime.now(clock);
+        ZonedDateTime eventDateTime = event.getDateTime();
+
+        if (now.isAfter(eventDateTime)) {
+            return false;
+        }
+
+        boolean isSixHoursBefore = now.isAfter(eventDateTime.minusHours(6));
+        boolean isEightAmDayOf = now.toLocalDate().equals(eventDateTime.toLocalDate()) && now.getHour() >= 8;
+
+        boolean shouldSendNotification = isSixHoursBefore || isEightAmDayOf;
+
         boolean hasPlanningState = event.getState().equals(EventState.PLANNED);
-        boolean notNotifiedAlready = !event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT));
-        return hasPlanningState && isAtMost2hBeforeEventStart && notNotifiedAlready;
+        boolean notNotifiedAlready = !event.getNotifications().contains(new Notification(NotificationType.CONFIRM_ATTENDANCE));
+
+        return hasPlanningState && shouldSendNotification && notNotifiedAlready;
     }
 
     @Override
@@ -36,7 +46,7 @@ public class PreEventNotification extends ScheduledEventProcessor {
         if (!shouldEventBeProcessed(event)) {
             return;
         }
-        discordService.sendMessageBeforeEvent(event);
+        discordService.sendMaybeConfirmationMessage(event);
         eventRepository.save(event);
     }
 
