@@ -21,7 +21,7 @@ import java.time.ZonedDateTime;
 class EventServiceIntegrationTest {
 
     @Container
-    public PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
 
     @Autowired
     private EventService eventService;
@@ -29,7 +29,7 @@ class EventServiceIntegrationTest {
     private DiscordService discordService;
 
     @DynamicPropertySource
-    void configureProperties(DynamicPropertyRegistry registry) {
+    static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
