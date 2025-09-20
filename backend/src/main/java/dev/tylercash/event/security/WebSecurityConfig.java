@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
@@ -42,7 +43,9 @@ public class WebSecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus")).permitAll()
                         .anyRequest().authenticated()
                 )
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                )
                 .cors(AbstractHttpConfigurer::disable)
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo

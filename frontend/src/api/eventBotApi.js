@@ -1,9 +1,31 @@
 import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
 
+const getCookie = (name) => {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        let cookie = cookies[i].trim();
+        if (cookie.startsWith(name + '=')) {
+            return cookie.substring(name.length + 1);
+        }
+    }
+    return null;
+}
+
+const baseQuery = fetchBaseQuery({
+    baseUrl: process.env.REACT_APP_BACKEND_URI + '/api/',
+    prepareHeaders: (headers) => {
+        const token = getCookie('XSRF-TOKEN');
+        if (token) {
+            headers.set('X-XSRF-TOKEN', token);
+        }
+        return headers;
+    },
+});
+
 
 export const eventBotApi = createApi({
     reducerPath: 'eventBot',
-    baseQuery: fetchBaseQuery({baseUrl: process.env.REACT_APP_BACKEND_URI + '/api/'}),
+    baseQuery: baseQuery,
     refetchOnMountOrArgChange: 120,
     endpoints: (builder) => ({
         getEvents: builder.query({
