@@ -212,3 +212,13 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: false
+  - changeSet:
+      id: add maybe confirmation message id column
+      author: jules
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: maybe_confirmation_message_id
+                  type: bigint
