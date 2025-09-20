@@ -21,7 +21,7 @@ import java.time.ZonedDateTime;
 class EventServiceIntegrationTest {
 
     @Container
-    public PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
 
     @Autowired
     private EventService eventService;
