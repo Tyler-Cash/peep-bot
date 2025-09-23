@@ -41,9 +41,11 @@ public class MaybeConfirmationNotification extends ScheduledEventProcessor {
         boolean shouldProcessTime = isSixHoursBefore || is8AmDayOf;
 
         boolean hasPlanningState = event.getState().equals(EventState.PLANNED);
-        boolean notNotifiedAlready = !event.getNotifications().contains(new Notification(NotificationType.MAYBE_CONFIRMATION));
+        boolean maybeNotificationNotSent = !event.getNotifications().contains(new Notification(NotificationType.MAYBE_CONFIRMATION));
+        boolean startOfEventNotificationSent = event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT));
+        boolean maybeGreaterThanAThirdOfYes = event.getMaybe().size() > event.getAccepted().size() / 3;
 
-        return hasPlanningState && shouldProcessTime && notNotifiedAlready;
+        return hasPlanningState && shouldProcessTime && maybeNotificationNotSent && startOfEventNotificationSent && maybeGreaterThanAThirdOfYes;
     }
 
     @Override
