@@ -74,7 +74,7 @@ jobs:
 
       - name: Scan SBOM with Grype
         id: grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         with:
           sbom: backend/build/reports/application.cdx.json
           output-file: backend/grype-backend.sarif
@@ -132,7 +132,7 @@ jobs:
 
       - name: Scan SBOM with Grype
         id: grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         with:
           sbom: frontend/sbom-frontend.cdx.json
           output-file: frontend/grype-frontend.sarif
