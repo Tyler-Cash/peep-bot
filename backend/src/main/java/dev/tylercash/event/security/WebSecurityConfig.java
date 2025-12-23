@@ -54,8 +54,6 @@ public class WebSecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/auth/is-logged-in")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("v3/api-docs/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/actuator/health")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus")).permitAll()
