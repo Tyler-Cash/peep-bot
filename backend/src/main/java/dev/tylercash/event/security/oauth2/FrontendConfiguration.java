@@ -13,6 +13,6 @@ public class FrontendConfiguration {
     private String path = "/";
 
     public String getUrl() {
-        return protocol + "://" + hostname;
+        return protocol + "://" + hostname + path;
     }
 }
