@@ -14,8 +14,12 @@ springdoc:
   show-oauth2-endpoints: true
 
 server:
+  forward-headers-strategy: NATIVE
   tomcat:
-    use-relative-redirects: true
+    use-relative-redirects: false
+    remoteip:
+      remote-ip-header: x-forwarded-for
+      protocol-header: x-forwarded-proto
   servlet:
     session:
       cookie:
