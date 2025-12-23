@@ -95,7 +95,8 @@ public class WebSecurityConfig {
     @Profile("!local")
     public CorsConfigurationSource corsConfigurationProd() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://event.k8s.tylercash.dev"));
+        config.setAllowedOrigins(List.of("https://event.tylercash.dev"));
         return corsConfigurationBuilder(config);
     }
 }
+
