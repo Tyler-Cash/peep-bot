@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +16,7 @@ import java.util.Map;
 @AllArgsConstructor
 @RequestMapping(value = "/auth")
 public class SecurityController {
+    @CrossOrigin(origins = "https://event.tylercash.dev", allowCredentials = "true")
     @GetMapping("/is-logged-in")
     public Map<String, String> isLoggedIn() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
