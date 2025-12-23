@@ -2,6 +2,8 @@ spring.application.name: peep-bot
 spring.main.lazy-initialization: true
 
 dev.tylercash:
+  cors:
+    allowed-origins: https://event.tylercash.dev
   discord:
     timeout: 60
     seperator-channel: organising
