@@ -32,18 +32,6 @@ public class WebSecurityConfig {
     private final RedirectToFrontendAfterAuth redirectToFrontendAfterAuth;
     private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
 
-    @NotNull
-    private static CorsConfigurationSource corsConfigurationBuilder(CorsConfiguration config) {
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -77,22 +65,5 @@ public class WebSecurityConfig {
     public JdbcIndexedSessionRepository jdbcIndexedSessionRepository() {
         jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(30));
         return jdbcHttpSessionConfiguration.sessionRepository();
-    }
-
-
-    @Bean
-    @Profile("local")
-    public CorsConfigurationSource corsConfigurationLocal() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
-        return corsConfigurationBuilder(config);
-    }
-
-    @Bean
-    @Profile("!local")
-    public CorsConfigurationSource corsConfigurationProd() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://event.tylercash.dev"));
-        return corsConfigurationBuilder(config);
     }
 }
