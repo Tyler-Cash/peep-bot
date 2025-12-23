@@ -51,6 +51,7 @@ public class WebSecurityConfig {
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::newSession)
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(new AntPathRequestMatcher("/csrf")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("auth/is-logged-in")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("swagger-ui.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("swagger-ui/**")).permitAll()
