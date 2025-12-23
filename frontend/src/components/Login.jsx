@@ -47,7 +47,7 @@ export default function Login(props) {
                             other than your account ID or username
                         </p>
                         <div className="btn-container">
-                            <a href="/api/" className="btn btn-primary" onClick={handleClick}>
+                            <a href="#" className="btn btn-primary" onClick={handleClick}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px"
                                      viewBox="0 -28.5 256 256"
                                      version="1.1" preserveAspectRatio="xMidYMid">
