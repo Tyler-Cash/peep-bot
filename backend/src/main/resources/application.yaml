@@ -6,8 +6,8 @@ dev.tylercash:
     timeout: 60
     seperator-channel: organising
   frontend:
-    protocol: http
-    hostname: localhost
+    protocol: https
+    hostname: event.tylercash.dev
     path: /
 
 springdoc:
@@ -65,3 +65,4 @@ management:
     metrics:
       export:
         enabled: true
+
