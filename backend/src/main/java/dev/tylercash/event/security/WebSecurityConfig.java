@@ -2,6 +2,7 @@ package dev.tylercash.event.security;
 
 import dev.tylercash.event.security.oauth2.CustomOAuth2UserService;
 import dev.tylercash.event.security.oauth2.RedirectToFrontendAfterAuth;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Bean;
@@ -105,5 +106,6 @@ public class WebSecurityConfig {
         return source;
     }
 }
+
 
 
