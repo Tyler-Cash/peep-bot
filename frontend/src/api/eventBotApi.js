@@ -63,7 +63,13 @@ const baseQueryWithCsrf = async (args, api, extraOptions) => {
     }
 
     // Proceed with the actual request; prepareHeaders will add X-XSRF-TOKEN if available
-    return baseQuery(args, api, extraOptions);
+    const result = await baseQuery(args, api, extraOptions);
+
+    if (result.error && result.error.status === 401) {
+        window.location.href = `${baseUrl}oauth2/authorization/discord`;
+    }
+
+    return result;
 };
 
 export const eventBotApi = createApi({
