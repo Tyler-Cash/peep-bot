@@ -55,3 +55,4 @@ bin/
 *.yaml
 *.json
 *.csv
+npm_output.log
