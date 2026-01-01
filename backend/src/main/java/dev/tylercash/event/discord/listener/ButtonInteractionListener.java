@@ -7,6 +7,9 @@ import dev.tylercash.event.global.MetricsService;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
@@ -62,12 +65,55 @@ public class ButtonInteractionListener extends ListenerAdapter {
             return;
         }
         handleMessageComponentInteraction(event, Objects.requireNonNull(buttonInteractionEvent.getMember()), Objects.requireNonNull(eventType));
+        updateUserRoles(buttonInteractionEvent, event, eventType);
         buttonInteractionEvent.editMessageEmbeds(embedService.getMessage(event, clock)).complete();
         eventRepository.save(event);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000;
         metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
         log.info("User {} interacting with status {} on event {}, taking {}ms", buttonInteractionEvent.getMember().getEffectiveName(), eventType, event.getName(), duration);
+    }
+
+    private void updateUserRoles(ButtonInteractionEvent buttonInteractionEvent, Event event, String eventType) {
+        Guild guild = buttonInteractionEvent.getGuild();
+        if (guild == null) {
+            log.error("Could not find guild from button interaction.");
+            return;
+        }
+        Member member = buttonInteractionEvent.getMember();
+        if (member == null) {
+            log.error("Could not find member from button interaction.");
+            return;
+        }
+
+        Role acceptedRole = getRoleFromId(guild, event.getAcceptedRoleId());
+        Role maybeRole = getRoleFromId(guild, event.getMaybeRoleId());
+        Role declinedRole = getRoleFromId(guild, event.getDeclinedRoleId());
+
+        // Remove existing roles
+        if (acceptedRole != null) guild.removeRoleFromMember(member, acceptedRole).queue();
+        if (maybeRole != null) guild.removeRoleFromMember(member, maybeRole).queue();
+        if (declinedRole != null) guild.removeRoleFromMember(member, declinedRole).queue();
+
+        // Add the new role
+        switch (eventType) {
+            case ACCEPTED:
+                if (acceptedRole != null) guild.addRoleToMember(member, acceptedRole).queue();
+                break;
+            case MAYBE:
+                if (maybeRole != null) guild.addRoleToMember(member, maybeRole).queue();
+                break;
+            case DECLINED:
+                if (declinedRole != null) guild.addRoleToMember(member, declinedRole).queue();
+                break;
+        }
+    }
+
+    private Role getRoleFromId(Guild guild, long roleId) {
+        if (roleId == 0L) {
+            return null;
+        }
+        return guild.getRoleById(roleId);
     }
 }
 

@@ -37,6 +37,12 @@ public class Event {
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long channelId;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private long acceptedRoleId;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private long maybeRoleId;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private long declinedRoleId;
     @NotNull
     private String name;
     @NotNull
