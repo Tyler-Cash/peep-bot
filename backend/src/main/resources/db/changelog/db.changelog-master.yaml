@@ -230,3 +230,5 @@ databaseChangeLog:
             tableName: event
             columnName: maybe_confirmation_message_id
             columnDataType: bigint
+  - include:
+      file: db/changelog/db.changelog-add-role-ids.yaml

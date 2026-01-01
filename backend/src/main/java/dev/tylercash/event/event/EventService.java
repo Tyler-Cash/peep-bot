@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +29,11 @@ public class EventService {
     public String createEvent(Event event) {
         TextChannel channel = discordService.createEventChannel(event);
         try {
+            Map<String, Long> roleIds = discordService.createEventRoles(event);
+            event.setAcceptedRoleId(roleIds.getOrDefault("accepted", 0L));
+            event.setMaybeRoleId(roleIds.getOrDefault("maybe", 0L));
+            event.setDeclinedRoleId(roleIds.getOrDefault("declined", 0L));
+
             Message message = discordService.postEventMessage(event, channel);
             event.setServerId(message.getGuildIdLong());
             event.setChannelId(channel.getIdLong());

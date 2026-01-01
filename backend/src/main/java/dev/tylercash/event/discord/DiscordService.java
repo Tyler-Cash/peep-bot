@@ -30,8 +30,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
 import static dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName;
@@ -55,6 +57,52 @@ public class DiscordService {
         ChannelAction<TextChannel> textChannelChannelAction = category.createTextChannel(DiscordUtil.getChannelNameFromEvent(event))
                 .setPosition(99);
         return textChannelChannelAction.complete();
+    }
+
+    public Map<String, Long> createEventRoles(Event event) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        if (guild == null) {
+            log.error("Could not find guild with ID {}", discordConfiguration.getGuildId());
+            return Map.of();
+        }
+
+        Map<String, Long> roleIds = new HashMap<>();
+        String eventName = event.getName();
+
+        try {
+            Role acceptedRole = createRoleForEvent(guild, "Accepted", eventName);
+            roleIds.put("accepted", acceptedRole.getIdLong());
+
+            Role maybeRole = createRoleForEvent(guild, "Maybe", eventName);
+            roleIds.put("maybe", maybeRole.getIdLong());
+
+            Role declinedRole = createRoleForEvent(guild, "Declined", eventName);
+            roleIds.put("declined", declinedRole.getIdLong());
+
+        } catch (Exception e) {
+            log.error("Failed to create one or more roles for event: " + event.getName(), e);
+            // If roles were partially created, delete them to leave a clean state.
+            roleIds.values().forEach(roleId -> {
+                Role role = guild.getRoleById(roleId);
+                if (role != null) {
+                    role.delete().queue();
+                }
+            });
+            return Map.of(); // Return empty map to indicate failure but not block event creation
+        }
+
+        return roleIds;
+    }
+
+    private Role createRoleForEvent(Guild guild, String prefix, String eventName) {
+        String roleName = prefix + " - " + eventName;
+        if (roleName.length() > 100) {
+            roleName = roleName.substring(0, 100);
+        }
+        return guild.createRole()
+                .setName(roleName)
+                .setPermissions(0L)
+                .complete();
     }
 
 
@@ -202,6 +250,8 @@ public class DiscordService {
                 .sync()
                 .queue();
         sortChannels(category, null);
+
+        deleteEventRoles(event);
     }
 
     private TextChannel getChannel(Event event) {
@@ -286,5 +336,33 @@ public class DiscordService {
                     .complete();
         }
         return roles.get(0);
+    }
+
+    private void deleteEventRoles(Event event) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        if (guild == null) {
+            log.error("Could not find guild with ID {}", discordConfiguration.getGuildId());
+            return;
+        }
+
+        deleteRole(guild, event.getAcceptedRoleId());
+        deleteRole(guild, event.getMaybeRoleId());
+        deleteRole(guild, event.getDeclinedRoleId());
+    }
+
+    private void deleteRole(Guild guild, long roleId) {
+        if (roleId == 0L) {
+            return;
+        }
+
+        Role role = guild.getRoleById(roleId);
+        if (role != null) {
+            role.delete().queue(
+                    success -> log.info("Successfully deleted role with ID {}", roleId),
+                    error -> log.error("Failed to delete role with ID {}", roleId, error)
+            );
+        } else {
+            log.warn("Attempted to delete a role with ID {} that no longer exists.", roleId);
+        }
     }
 }
