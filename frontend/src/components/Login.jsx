@@ -10,7 +10,7 @@ export default function Login(props) {
     const dispatch = useDispatch();
     const {data, error, isFetching, isSuccess} = useIsLoggedInQuery()
     if (isSuccess) {
-        dispatch(loginSuccess());
+        dispatch(loginSuccess(data));
     } else if (error) {
         console.log(error);
         dispatch(logout());

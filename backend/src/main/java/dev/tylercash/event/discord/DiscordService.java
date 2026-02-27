@@ -139,6 +139,12 @@ public class DiscordService {
         return getMemberFromServer(serverId, userId) != null;
     }
 
+    public boolean isUserAdminOfServer(long serverId, long userId) {
+        Member member = getMemberFromServer(serverId, userId);
+        return member != null && member.getRoles().stream()
+                .anyMatch(role -> role.getName().equalsIgnoreCase(discordConfiguration.getAdminRole()));
+    }
+
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortActiveChannels() {
         sortChannels(getEventCategory(discordConfiguration.getGuildId()), discordConfiguration.getSeperatorChannel());

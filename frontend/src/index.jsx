@@ -27,9 +27,7 @@ const router = createBrowserRouter(createRoutesFromElements(
 ));
 
 
-const store = configureAppStore({
-    isAuthenticated: false,
-})
+const store = configureAppStore()
 setupListeners(store.dispatch)
 
 
