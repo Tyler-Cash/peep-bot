@@ -1,15 +1,54 @@
-import React, {useEffect} from 'react';
-import {useGetEventQuery, usePatchEventMutation} from "../api/eventBotApi";
+import React, {useEffect, useState} from 'react';
+import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
 import {useParams} from "react-router-dom";
+import {useSelector} from "react-redux";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
+
+function AttendeeSection({title, emoji, attendees, eventId, onRemove, removingKey}) {
+    return (
+        <div className="mb-4">
+            <h6 className="event-form-label mb-2">
+                {emoji} {title}
+                <span className="badge bg-secondary ms-2">{attendees?.length ?? 0}</span>
+            </h6>
+            {(!attendees || attendees.length === 0) ? (
+                <p className="text-muted small ms-1">No attendees</p>
+            ) : (
+                attendees.map((a) => {
+                    const key = a.snowflake || a.name;
+                    return (
+                        <div key={key}
+                             className="d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded"
+                             style={{background: 'rgba(255,255,255,0.04)'}}>
+                            <span className="small">{a.name}</span>
+                            <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm py-0 px-2"
+                                disabled={removingKey === key}
+                                onClick={() => onRemove(a)}
+                            >
+                                {removingKey === key
+                                    ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
+                                    : <i className="bi bi-x-lg"/>}
+                            </button>
+                        </div>
+                    );
+                })
+            )}
+        </div>
+    );
+}
 
 export default function EditEvent() {
     const {id} = useParams();
     const {data, error, isFetching} = useGetEventQuery({"id": id})
     const [patchEvent] = usePatchEventMutation({})
+    const [removeAttendee] = useRemoveAttendeeMutation()
+    const isAdmin = useSelector(state => state.auth.isAdmin)
+    const [removingKey, setRemovingKey] = useState(null)
 
     const {
         register,
@@ -21,7 +60,7 @@ export default function EditEvent() {
 
     const onSubmit = async (data) => {
         try {
-            const response = await patchEvent({
+            await patchEvent({
                 "id": id,
                 "name": data.name,
                 "description": data.description,
@@ -45,6 +84,18 @@ export default function EditEvent() {
             }
         }
         await new Promise(r => setTimeout(r, 500));
+    }
+
+    const handleRemove = async (attendee) => {
+        const key = attendee.snowflake || attendee.name;
+        setRemovingKey(key);
+        try {
+            await removeAttendee({id, snowflake: attendee.snowflake, name: attendee.name}).unwrap();
+        } catch (e) {
+            console.error("Failed to remove attendee", e);
+        } finally {
+            setRemovingKey(null);
+        }
     }
 
     useEffect(() => {
@@ -195,6 +246,43 @@ export default function EditEvent() {
                                 </form>
                             </div>
                         </div>
+
+                        {isAdmin && data && (
+                            <div className="event-card mt-3">
+                                <div className="event-card-header">
+                                    <h4 className="mb-0">
+                                        <i className="bi bi-people me-2"></i>Attendees
+                                    </h4>
+                                    <p className="text-muted mb-0 small">Admin view — remove attendees from any list</p>
+                                </div>
+                                <div className="event-card-body">
+                                    <AttendeeSection
+                                        title="Accepted"
+                                        emoji="✅"
+                                        attendees={data.accepted}
+                                        eventId={id}
+                                        onRemove={handleRemove}
+                                        removingKey={removingKey}
+                                    />
+                                    <AttendeeSection
+                                        title="Maybe"
+                                        emoji="❔"
+                                        attendees={data.maybe}
+                                        eventId={id}
+                                        onRemove={handleRemove}
+                                        removingKey={removingKey}
+                                    />
+                                    <AttendeeSection
+                                        title="Declined"
+                                        emoji="❌"
+                                        attendees={data.declined}
+                                        eventId={id}
+                                        onRemove={handleRemove}
+                                        removingKey={removingKey}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

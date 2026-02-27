@@ -7,13 +7,14 @@ import {loginSuccess, logout} from "../reducers/authReducer";
 const Protected = ({children}) => {
     const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
     const dispatch = useDispatch();
-    const {data, error, isSuccess} = useIsLoggedInQuery()
+    const {data, error, isSuccess, isLoading} = useIsLoggedInQuery()
     if (isSuccess) {
-        dispatch(loginSuccess());
+        dispatch(loginSuccess(data));
     } else if (error) {
         console.log(error);
         dispatch(logout());
     }
+    if (isLoading) return null;
     return isAuthenticated ? children : (<Navigate to="/login"/>);
 };
 

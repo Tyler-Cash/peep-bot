@@ -18,5 +18,6 @@ public class DiscordConfiguration {
     private long timeout;
     private String eventsRole = "events";
     private String dontNotifyMaybeRole = "event-dont-notify-when-maybe";
+    private String adminRole = "event-admin";
     private String seperatorChannel = "";
 }

@@ -1,15 +1,22 @@
 package dev.tylercash.event.event;
 
+import dev.tylercash.event.discord.DiscordConfiguration;
+import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventDetailDto;
 import dev.tylercash.event.event.model.EventDto;
 import dev.tylercash.event.event.model.EventUpdateDto;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +28,8 @@ import java.util.UUID;
 @RequestMapping(value = "/event")
 public class EventController {
     private EventService eventService;
+    private DiscordService discordService;
+    private DiscordConfiguration discordConfiguration;
 
     @PutMapping
     public Map<String, String> createEvent(@RequestBody @Valid EventDto event) {
@@ -57,7 +66,21 @@ public class EventController {
     }
 
     @GetMapping(path = "/{id}")
-    public EventDto getEvent(@PathVariable UUID id) {
-        return new EventDto(eventService.getEvent(id));
+    public EventDetailDto getEvent(@PathVariable UUID id) {
+        return new EventDetailDto(eventService.getEvent(id));
+    }
+
+    @DeleteMapping(path = "/{id}/attendee")
+    public Map<String, String> removeAttendee(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String snowflake,
+            @RequestParam(required = false) String name,
+            @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required to remove attendees");
+        }
+        eventService.removeAttendee(id, snowflake, name);
+        return Map.of("message", "Removed attendee");
     }
 }
