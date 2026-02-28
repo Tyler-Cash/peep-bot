@@ -25,6 +25,7 @@ import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
 public class EmbedRenderer {
     private final Event event;
     private final Clock clock;
+    private final String frontendUrl;
 
     public EmbedBuilder getEmbedBuilder() {
         long epochSecond = event.getDateTime().toEpochSecond();
@@ -39,7 +40,11 @@ public class EmbedRenderer {
             embed.addField("Location", event.getLocation(), false);
         }
 
-        embed.addField("Links", "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")", false);
+        String editUrl = frontendUrl + "event/" + event.getId();
+        embed.addField("Links",
+                "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")" +
+                " | [Edit event](" + editUrl + ")",
+                false);
         populateAttendeeSection(event, embed);
         String creator = "Created by: " + event.getCreator();
         String lastUpdated = "Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock));

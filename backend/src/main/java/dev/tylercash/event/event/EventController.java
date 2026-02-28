@@ -2,6 +2,7 @@ package dev.tylercash.event.event;
 
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventDetailDto;
@@ -9,11 +10,11 @@ import dev.tylercash.event.event.model.EventDto;
 import dev.tylercash.event.event.model.EventUpdateDto;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import net.dv8tion.jda.api.entities.Member;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,9 +33,15 @@ public class EventController {
     private DiscordConfiguration discordConfiguration;
 
     @PutMapping
-    public Map<String, String> createEvent(@RequestBody @Valid EventDto event) {
-        String creator = SecurityContextHolder.getContext().getAuthentication().getName();
-        eventService.createEvent(new Event(event, creator));
+    public Map<String, String> createEvent(@RequestBody @Valid EventDto event,
+                                           @AuthenticationPrincipal OAuth2User principal) {
+        String creator = principal.getAttribute("username");
+        String discordId = principal.getAttribute("id");
+        Event newEvent = new Event(event, creator);
+        Member member = discordService.getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+        String displayName = DiscordUtil.getUserDisplayName(member);
+        newEvent.getAccepted().add(Attendee.createDiscordAttendee(discordId, displayName));
+        eventService.createEvent(newEvent);
         return Map.of("message", "Created event for " + event.getName());
     }
 
