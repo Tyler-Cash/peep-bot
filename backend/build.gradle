@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.5.11'
+    id 'org.springframework.boot' version '4.0.3'
     id 'org.cyclonedx.bom' version '2.4.1'
 }
 
