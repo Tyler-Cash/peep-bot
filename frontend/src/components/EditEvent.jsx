@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
-import {useParams, useNavigate} from "react-router-dom";
+import {useParams, useNavigate, Link} from "react-router-dom";
 import {useSelector} from "react-redux";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
@@ -197,7 +197,7 @@ export default function EditEvent() {
                         </div>
 
                         <div className="event-footer">
-                            <a href="/" className="btn-cancel">Cancel</a>
+                            <Link to="/" className="btn-cancel">Cancel</Link>
                             <button className="btn-event" type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <span>

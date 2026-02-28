@@ -2,7 +2,7 @@ import React from 'react';
 import {useCreateEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, Link} from "react-router-dom";
 import moment from "moment-timezone";
 import './css/events.css';
 
@@ -123,7 +123,7 @@ export default function CreateEvent(props) {
                         </div>
 
                         <div className="event-footer">
-                            <a href="/" className="btn-cancel">Cancel</a>
+                            <Link to="/" className="btn-cancel">Cancel</Link>
                             <button className="btn-event" type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <span>
