@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'jacoco'
     id 'org.springframework.boot' version '3.5.8'
     id 'org.cyclonedx.bom' version '2.4.1'
 }
@@ -95,7 +96,31 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'e2e'
+    }
+    finalizedBy jacocoTestReport
+}
+
+tasks.register('e2eTest', Test) {
+    description = 'Runs e2e tests against real external services (Discord, DB). Requires credentials in environment.'
+    group = 'verification'
+    useJUnitPlatform {
+        includeTags 'e2e'
+    }
+    shouldRunAfter test
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 tasks.named("bootJar") {

@@ -3,14 +3,10 @@ package dev.tylercash.event.event;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -20,31 +16,27 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.ZonedDateTime;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-@SpringBootTest(classes = PeepBotApplication.class, properties = {
-        "spring.security.oauth2.client.registration.discord.client-id=test",
-        "spring.security.oauth2.client.registration.discord.client-secret=test",
-        "dev.tylercash.discord.token=dummy",
-        "dev.tylercash.discord.guild-id=0"
-})
+/**
+ * End-to-end tests that require real external services (Discord bot, PostgreSQL).
+ * Requires DISCORD_TOKEN, DISCORD_GUILD_ID, and OAuth2 credentials to be set
+ * in the environment — these are available in CI via GitHub Actions secrets but
+ * not locally unless you have a real application-local.yaml configured.
+ *
+ * Run explicitly with: ./gradlew e2eTest
+ */
+@SpringBootTest(classes = PeepBotApplication.class)
 @Testcontainers
 @ActiveProfiles("local")
-class EventServiceIntegrationTest {
-
-    @MockitoBean
-    JDA jda;
-
-    @MockitoBean
-    DiscordService discordService;
+@Tag("e2e")
+class EventServiceE2ETest {
 
     @Container
     public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
 
     @Autowired
     private EventService eventService;
+    @Autowired
+    private DiscordService discordService;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -53,20 +45,12 @@ class EventServiceIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 
-    @BeforeEach
-    void setUp() {
-        TextChannel mockChannel = mock(TextChannel.class);
-        Message mockMessage = mock(Message.class);
-        when(mockChannel.getIdLong()).thenReturn(100L);
-        when(mockMessage.getGuildIdLong()).thenReturn(200L);
-        when(mockMessage.getIdLong()).thenReturn(300L);
-        when(discordService.createEventChannel(any())).thenReturn(mockChannel);
-        when(discordService.postEventMessage(any(), any())).thenReturn(mockMessage);
-    }
-
     @Test
-    public void testSave() {
+    public void testSave() throws InterruptedException {
         Event event = new Event(0, 0, 0, "name", "creator", ZonedDateTime.now(), "description");
         eventService.createEvent(event);
+        discordService.deleteEventChannel(event);
+        // Terrible way to have the channel deleted by the time the test is shutdown
+        Thread.sleep(5000);
     }
 }

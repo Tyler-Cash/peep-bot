@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: write
       security-events: write
     steps:
       - name: Checkout code
@@ -62,6 +63,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Run unit and integration tests
+        env:
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
+        run: ./gradlew clean test
+        working-directory: ./backend
+
+      - name: Run e2e tests
+        env:
+          DEV_TYLERCASH_DISCORD_GUILD_ID: ${{ secrets.DEV_TYLERCASH_DISCORD_GUILD_ID }}
+          DEV_TYLERCASH_DISCORD_TOKEN: ${{ secrets.DEV_TYLERCASH_DISCORD_TOKEN }}
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
+        run: ./gradlew e2eTest
+        working-directory: ./backend
+
+      - name: Report coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v2
+        with:
+          paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Backend Code Coverage
+          update-comment: true
+
       - name: Build, create SBOM, and create container image
         id: build
         env:
@@ -69,7 +95,7 @@ jobs:
           DEV_TYLERCASH_DISCORD_TOKEN: ${{ secrets.DEV_TYLERCASH_DISCORD_TOKEN }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
-        run: ./gradlew clean build bootBuildImage -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" cyclonedxBom
+        run: ./gradlew bootBuildImage -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" cyclonedxBom -x test
         working-directory: ./backend
 
       - name: Scan SBOM with Grype
