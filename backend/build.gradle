@@ -105,6 +105,8 @@ tasks.named('test') {
 tasks.register('e2eTest', Test) {
     description = 'Runs e2e tests against real external services (Discord, DB). Requires credentials in environment.'
     group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform {
         includeTags 'e2e'
     }
@@ -117,6 +119,9 @@ jacoco {
 
 jacocoTestReport {
     dependsOn test
+    mustRunAfter e2eTest
+    // Pick up exec files from both test and e2eTest when both have run
+    executionData fileTree(layout.buildDirectory.dir("jacoco")).include("*.exec")
     reports {
         xml.required = true
         html.required = true

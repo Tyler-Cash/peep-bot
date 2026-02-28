@@ -63,20 +63,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run unit and integration tests
-        env:
-          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
-          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
-        run: ./gradlew clean test
-        working-directory: ./backend
-
-      - name: Run e2e tests
+      - name: Run tests and generate coverage report
         env:
           DEV_TYLERCASH_DISCORD_GUILD_ID: ${{ secrets.DEV_TYLERCASH_DISCORD_GUILD_ID }}
           DEV_TYLERCASH_DISCORD_TOKEN: ${{ secrets.DEV_TYLERCASH_DISCORD_TOKEN }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
-        run: ./gradlew e2eTest
+        run: ./gradlew clean test e2eTest jacocoTestReport
         working-directory: ./backend
 
       - name: Report coverage on PR
