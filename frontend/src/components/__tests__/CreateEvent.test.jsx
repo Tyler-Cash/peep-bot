@@ -2,14 +2,14 @@ import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 
 // Mock the Navbar to avoid Redux store requirements
-jest.mock('../Navbar', () => () => <div data-testid="navbar"/>);
+vi.mock('../Navbar', () => ({default: () => <div data-testid="navbar"/>}));
 
 // Mock the RTK Query hook to capture payloads
-const mockCreateEvent = jest.fn(() => ({
-  unwrap: jest.fn().mockRejectedValue(new Error('fail')) // prevent navigation
+const mockCreateEvent = vi.fn(() => ({
+  unwrap: vi.fn().mockRejectedValue(new Error('fail')) // prevent navigation
 }));
 
-jest.mock('../../api/eventBotApi', () => ({
+vi.mock('../../api/eventBotApi', () => ({
   useCreateEventMutation: () => [mockCreateEvent]
 }));
 

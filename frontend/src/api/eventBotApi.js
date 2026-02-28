@@ -76,12 +76,14 @@ export const eventBotApi = createApi({
     reducerPath: 'eventBot',
     baseQuery: baseQueryWithCsrf,
     refetchOnMountOrArgChange: 120,
+    tagTypes: ['Event'],
     endpoints: (builder) => ({
         getEvents: builder.query({
             query: () => `event`,
         }),
         getEvent: builder.query({
             query: ({id}) => `event/${id}`,
+            providesTags: (result, error, {id}) => [{type: 'Event', id}],
         }),
         deleteEvent: builder.mutation({
             query: ({id}) => ({
@@ -119,6 +121,14 @@ export const eventBotApi = createApi({
                 },
             }),
         }),
+        removeAttendee: builder.mutation({
+            query: ({id, snowflake, name}) => ({
+                url: `event/${id}/attendee`,
+                method: 'DELETE',
+                params: (snowflake && snowflake.trim()) ? {snowflake} : {name},
+            }),
+            invalidatesTags: (result, error, {id}) => [{type: 'Event', id}],
+        }),
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
@@ -130,5 +140,6 @@ export const {
     useGetEventQuery,
     useCreateEventMutation,
     usePatchEventMutation,
+    useRemoveAttendeeMutation,
     useIsLoggedInQuery,
 } = eventBotApi;

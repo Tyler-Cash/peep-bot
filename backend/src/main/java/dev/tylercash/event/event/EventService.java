@@ -60,4 +60,20 @@ public class EventService {
     public Page<Event> getPlannedEvents(Pageable pageable) {
         return eventRepository.findByState(pageable, EventState.PLANNED);
     }
+
+    @Transactional
+    public void removeAttendee(UUID id, String snowflake, String name) {
+        Event event = getEvent(id);
+        event.getAccepted().removeIf(a -> matches(a, snowflake, name));
+        event.getDeclined().removeIf(a -> matches(a, snowflake, name));
+        event.getMaybe().removeIf(a -> matches(a, snowflake, name));
+        updateEvent(event);
+    }
+
+    private boolean matches(dev.tylercash.event.event.model.Attendee attendee, String snowflake, String name) {
+        if (snowflake != null && !snowflake.isBlank()) {
+            return snowflake.equals(attendee.getSnowflake());
+        }
+        return name != null && name.equals(attendee.getName());
+    }
 }
