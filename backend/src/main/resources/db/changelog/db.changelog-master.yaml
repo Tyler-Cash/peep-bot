@@ -230,3 +230,30 @@ databaseChangeLog:
             tableName: event
             columnName: maybe_confirmation_message_id
             columnDataType: bigint
+  - changeSet:
+      id: remove maybe confirmation notification
+      author: tyler
+      changes:
+        - sql:
+            sql: >
+              UPDATE event
+              SET notifications = (
+                SELECT COALESCE(json_agg(elem)::text, '[]')
+                FROM event e,
+                LATERAL json_array_elements(e.notifications::json) AS elem
+                WHERE e.id = event.id
+                AND elem->>'type' != 'MAYBE_CONFIRMATION'
+              )
+              WHERE notifications::text LIKE '%MAYBE_CONFIRMATION%'
+        - dropColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: maybe_confirmation_message_id
+      rollback:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: maybe_confirmation_message_id
+                  type: bigint

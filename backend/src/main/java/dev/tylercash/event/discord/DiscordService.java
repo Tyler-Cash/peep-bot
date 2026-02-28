@@ -14,7 +14,6 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
@@ -251,46 +250,4 @@ public class DiscordService {
         });
     }
 
-    public void sendMaybeConfirmationMessage(Event event) {
-        if (event.getNotifications().contains(new Notification(NotificationType.MAYBE_CONFIRMATION))) {
-            return;
-        }
-
-        Guild server = jda.getGuildById(discordConfiguration.getGuildId());
-        Role dontNotifyRole = getOrCreateDontNotifyRole(server);
-
-        List<Member> maybesToNotify = event.getMaybe().stream()
-                .filter(user -> !user.getSnowflake().isBlank())
-                .map(user -> getMemberFromServer(server.getIdLong(), Long.parseLong(user.getSnowflake())))
-                .filter(member -> member.getRoles().stream().noneMatch(role -> role.equals(dontNotifyRole)))
-                .toList();
-
-        if (maybesToNotify.isEmpty()) {
-            return;
-        }
-
-        MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
-                .addContent("Please confirm if you're going to **" + event.getName() + "**. ");
-
-        maybesToNotify.forEach(member -> messageBuilder.addContent(member.getAsMention() + " "));
-
-        messageBuilder.addContent("\n\nReact " + DECLINED_EMOJI + " if you don't want confirmations in the future");
-
-        TextChannel channel = getChannel(event);
-        Message message = channel.sendMessage(messageBuilder.build()).complete();
-        message.addReaction(Emoji.fromUnicode(DECLINED_EMOJI)).queue();
-
-        event.setMaybeConfirmationMessageId(message.getIdLong());
-        event.getNotifications().add(new Notification(NotificationType.MAYBE_CONFIRMATION, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
-    }
-
-    private Role getOrCreateDontNotifyRole(Guild guild) {
-        List<Role> roles = guild.getRolesByName(discordConfiguration.getDontNotifyMaybeRole(), true);
-        if (roles.isEmpty()) {
-            return guild.createRole()
-                    .setName(discordConfiguration.getDontNotifyMaybeRole())
-                    .complete();
-        }
-        return roles.get(0);
-    }
 }
