@@ -22,6 +22,7 @@ jobs:
   backend:
     runs-on: ubuntu-24.04
     permissions:
+      checks: write
       contents: read
       packages: write
       pull-requests: write
@@ -71,6 +72,15 @@ jobs:
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
         run: ./gradlew clean test e2eTest jacocoTestReport
         working-directory: ./backend
+
+      - name: Publish test results
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: |
+            backend/build/test-results/test/TEST-*.xml
+            backend/build/test-results/e2eTest/TEST-*.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report coverage on PR
         if: github.event_name == 'pull_request'
