@@ -1,20 +1,43 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "automergeType": "branch",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "mergeConfidence:all-badges",
+    ":separatePatchReleases",
+    ":separateMultipleMajorReleases"
   ],
-  "autoApprove": true,
-  "minimumReleaseAge": "7 days",
+  "dependencyDashboard": true,
+  "minimumReleaseAge": "3 days",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "platformAutomerge": true,
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "automerge": true
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major"]
+    },
+    {
+      "groupName": "vite",
+      "matchPackageNames": ["vite", "@vitejs/plugin-react"]
+    },
+    {
+      "groupName": "moment",
+      "matchPackageNames": ["moment", "moment-timezone"]
+    },
+    {
+      "groupName": "redux",
+      "matchPackageNames": ["@reduxjs/toolkit", "react-redux", "redux-thunk"]
+    },
+    {
+      "groupName": "prop-types",
+      "matchPackageNames": ["prop-types", "@types/prop-types"]
     }
   ]
 }
