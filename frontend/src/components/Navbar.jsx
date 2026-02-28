@@ -2,6 +2,7 @@ import React from 'react';
 import {Link} from "react-router-dom";
 import {useSelector} from "react-redux";
 import PropTypes from "prop-types";
+import './css/events.css';
 
 Navbar.propTypes = {
     focus: PropTypes.string
@@ -9,43 +10,48 @@ Navbar.propTypes = {
 
 export default function Navbar({focus}) {
     const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
-    const pageSelected = useSelector(state => state.nav.pageSelected);
 
     return (
-        <div>
-            <nav className="navbar navbar-expand border-bottom border-body">
-                <div className="container-fluid">
-                    <Link className="navbar-brand me-1" to="/event/list"> <img
-                        src="https://cdn.frankerfacez.com/emoticon/728261/animated/4" alt="Logo"
-                        width="60"
-                        height="40"
-                        className="d-inline-block align-text-top"/>Peep Bot</Link>
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
-                            aria-label="Toggle navigation">
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
-                    <div className="collapse navbar-collapse" id="navbarNavDropdown">
-                        {isAuthenticated ? (
-
-                            <ul className="navbar-nav">
-                                <li className="nav-item">
-                                    <Link className={"nav-link " + (focus === "LIST" ? "active" : "")}
-                                          aria-current="page" to="/event/list">List</Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link className={"nav-link " + (focus === "CREATE" ? "active" : "")}
-                                          to="/event/create">Create</Link>
-                                </li>
-                            </ul>
-                        ) : (<div/>)}
-                    </div>
+        <nav className="navbar navbar-expand peep-navbar">
+            <div className="container-fluid">
+                <Link className="navbar-brand" to="/event/list">
+                    <span className="brand-logo-glow">
+                        <img
+                            src="https://cdn.frankerfacez.com/emoticon/728261/animated/4"
+                            alt="Logo"
+                            width="58"
+                            height="38"
+                            className="d-inline-block"
+                        />
+                    </span>
+                    <span className="brand-text"><span className="brand-peep">Peep</span> <span className="brand-bot">Bot</span></span>
+                </Link>
+                <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon"></span>
+                </button>
+                <div className="collapse navbar-collapse" id="navbarNavDropdown">
+                    {isAuthenticated ? (
+                        <div className="navbar-breadcrumb">
+                            <Link className={"nav-breadcrumb-link" + (focus === "LIST" ? " active" : "")}
+                                  to="/event/list">Events</Link>
+                            {focus === "CREATE" && (
+                                <>
+                                    <span className="nav-breadcrumb-sep">/</span>
+                                    <span className="nav-breadcrumb-current">Create</span>
+                                </>
+                            )}
+                            {focus === "EDIT" && (
+                                <>
+                                    <span className="nav-breadcrumb-sep">/</span>
+                                    <span className="nav-breadcrumb-current">Edit</span>
+                                </>
+                            )}
+                        </div>
+                    ) : (<div/>)}
                 </div>
-            </nav>
-        </div>
+            </div>
+        </nav>
     )
 }
-//
-//
-//
-//

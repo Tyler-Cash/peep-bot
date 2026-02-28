@@ -80,6 +80,7 @@ export const eventBotApi = createApi({
     endpoints: (builder) => ({
         getEvents: builder.query({
             query: () => `event`,
+            providesTags: ['Event'],
         }),
         getEvent: builder.query({
             query: ({id}) => `event/${id}`,
@@ -91,6 +92,7 @@ export const eventBotApi = createApi({
                 method: 'DELETE',
                 params: {id: id},
             }),
+            invalidatesTags: ['Event'],
         }),
         createEvent: builder.mutation({
             query: (data) => ({
@@ -106,6 +108,7 @@ export const eventBotApi = createApi({
                     "notifyOnCreate": data.notifyOnCreate ?? true
                 },
             }),
+            invalidatesTags: ['Event'],
         }),
         patchEvent: builder.mutation({
             query: (data) => ({
@@ -120,6 +123,7 @@ export const eventBotApi = createApi({
                     "accepted": data.accepted,
                 },
             }),
+            invalidatesTags: ['Event'],
         }),
         removeAttendee: builder.mutation({
             query: ({id, snowflake, name}) => ({
