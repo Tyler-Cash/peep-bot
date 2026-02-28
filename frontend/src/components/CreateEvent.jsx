@@ -2,10 +2,13 @@ import React from 'react';
 import {useCreateEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
+import {useNavigate, Link} from "react-router-dom";
 import moment from "moment-timezone";
+import './css/events.css';
 
 export default function CreateEvent(props) {
     const [createEvent] = useCreateEventMutation({})
+    const navigate = useNavigate();
 
     const {
         register,
@@ -13,18 +16,17 @@ export default function CreateEvent(props) {
         setError,
         formState: {errors, isSubmitting},
     } = useForm()
+
     const onSubmit = async (data) => {
         try {
-            const response = await createEvent({
+            await createEvent({
                 "name": data.name,
                 "description": data.description,
-                // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
-                // "cost": parseInt(data.cost || "0"),
                 "dateTime": moment(data.dateTime).toISOString(),
                 "notifyOnCreate": data.notifyOnCreate ?? true
             }).unwrap();
-            document.location.href = "/"
+            navigate('/', {state: {toast: 'Event created successfully'}});
         } catch (e) {
             if (e.data?.message === "validation error") {
                 e.data.fieldErrors.forEach(error => {
@@ -45,131 +47,95 @@ export default function CreateEvent(props) {
         <div>
             <Navbar focus={"CREATE"}/>
             <div className="container event-container">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="event-card">
-                            <div className="event-card-header">
-                                <h2 className="mb-0"><i className="bi bi-pencil-square me-2"></i>Create Event</h2>
-                                <p className="text-muted mb-0">Provide your event details below</p>
+                <div className="event-card">
+                    <div className="event-card-header">
+                        <h2 className="mb-0">Create Event</h2>
+                        <p className="text-muted mb-0 mt-1">Fill in the details for your new event</p>
+                    </div>
+
+                    {errors.root && (
+                        <div className="mx-4 mt-4 error-alert">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            {errors.root?.message}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <div className="event-card-body">
+                            <div className="event-form-group">
+                                <label className="event-form-label" htmlFor="name">Event Name</label>
+                                <input
+                                    className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
+                                    placeholder="What's the event called?"
+                                    {...register("name", {
+                                        required: "Please provide an event name",
+                                        minLength: {value: 3, message: "Name must be at least 3 characters"}
+                                    })}
+                                />
+                                <div className="invalid-feedback">{errors.name?.message}</div>
                             </div>
 
-                            {errors.root && (
-                                <div className="mx-4 mt-4 error-alert">
-                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                                    {errors.root?.message}
+                            <div className="event-form-group">
+                                <label className="event-form-label" htmlFor="description">Description</label>
+                                <textarea
+                                    className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
+                                    placeholder="Give people a reason to come..."
+                                    rows="4"
+                                    {...register("description")}
+                                />
+                                <div className="invalid-feedback">{errors.description?.message}</div>
+                            </div>
+
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <div className="event-form-group">
+                                        <label className="event-form-label" htmlFor="capacity">Capacity</label>
+                                        <input
+                                            type="number"
+                                            className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
+                                            placeholder="0 = unlimited"
+                                            {...register("capacity")}
+                                        />
+                                        <div className="invalid-feedback">{errors.capacity?.message}</div>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="event-card-body">
-                                <form onSubmit={handleSubmit(onSubmit)}>
+                                <div className="col-md-6">
                                     <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="name">
-                                            <i className="bi bi-calendar-event me-2"></i>Event Name
-                                        </label>
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-dark text-light border-secondary">
-                                                <i className="bi bi-type"></i>
-                                            </span>
-                                            <input
-                                                className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
-                                                placeholder="Enter event name"
-                                                {...register("name", {
-                                                    required: "Please provide an event name",
-                                                    minLength: {value: 3, message: "Name must be at least 3 characters"}
-                                                })}
-                                            />
-                                            <div className="invalid-feedback">{errors.name?.message}</div>
-                                        </div>
+                                        <label className="event-form-label" htmlFor="dateTime">Start Time</label>
+                                        <input
+                                            className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
+                                            type="datetime-local"
+                                            {...register("dateTime", {required: "Please select a start time"})}
+                                        />
+                                        <div className="invalid-feedback">{errors.dateTime?.message}</div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="description">
-                                            <i className="bi bi-card-text me-2"></i>Description
-                                        </label>
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-dark text-light border-secondary">
-                                                <i className="bi bi-blockquote-left"></i>
-                                            </span>
-                                            <textarea
-                                                className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
-                                                placeholder="Describe your event"
-                                                rows="4"
-                                                {...register("description")}
-                                            />
-                                            <div className="invalid-feedback">{errors.description?.message}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6">
-                                            <div className="event-form-group">
-                                                <label className="event-form-label" htmlFor="capacity">
-                                                    <i className="bi bi-people-fill me-2"></i>Capacity
-                                                </label>
-                                                <div className="input-group">
-                                                    <span
-                                                        className="input-group-text bg-dark text-light border-secondary">
-                                                        <i className="bi bi-person-plus"></i>
-                                                    </span>
-                                                    <input
-                                                        type="number"
-                                                        className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
-                                                        placeholder="Number of attendees"
-                                                        {...register("capacity")}
-                                                    />
-                                                    <div className="invalid-feedback">{errors.capacity?.message}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="col-md-6">
-                                            <div className="event-form-group">
-                                                <label className="event-form-label" htmlFor="dateTime">
-                                                    <i className="bi bi-clock me-2"></i>Start Time
-                                                </label>
-                                                <div className="input-group">
-                                                    <span
-                                                        className="input-group-text bg-dark text-light border-secondary">
-                                                        <i className="bi bi-calendar-date"></i>
-                                                    </span>
-                                                    <input
-                                                        className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
-                                                        type="datetime-local"
-                                                        {...register("dateTime", {required: "Please select a start time"})}
-                                                    />
-                                                    <div className="invalid-feedback">{errors.dateTime?.message}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="form-check mb-3">
-                                        <input className="form-check-input" type="checkbox" id="notifyOnCreate"
-                                               defaultChecked {...register("notifyOnCreate")} />
-                                        <label className="form-check-label" htmlFor="notifyOnCreate">
-                                            Notify people now
-                                        </label>
-                                    </div>
-                                    <div className="event-footer d-flex justify-content-between align-items-center">
-                                        <a href="/" className="btn btn-outline-secondary">
-                                            <i className="bi bi-arrow-left"></i> Cancel
-                                        </a>
-                                        <button className="btn btn-primary btn-event" type="submit"
-                                                disabled={isSubmitting}>
-                                            {isSubmitting ? (
-                                                    <div>
-                                                    <span className="spinner-border spinner-border-sm"
-                                                          aria-hidden="true"></span>
-                                                        <span>Updating...</span>
-                                                    </div>)
-                                                :
-                                                (<span><i className="bi bi-check-circle"></i> Save Changes</span>)}
-                                        </button>
-                                    </div>
-                                </form>
+                            <div className="form-check event-form-check">
+                                <input className="form-check-input" type="checkbox" id="notifyOnCreate"
+                                       defaultChecked {...register("notifyOnCreate")} />
+                                <label className="form-check-label" htmlFor="notifyOnCreate">
+                                    Notify people now
+                                </label>
                             </div>
                         </div>
-                    </div>
+
+                        <div className="event-footer">
+                            <Link to="/" className="btn-cancel">Cancel</Link>
+                            <button className="btn-event" type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <span>
+                                        <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                        Creating...
+                                    </span>
+                                ) : (
+                                    <span>Create Event</span>
+                                )}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

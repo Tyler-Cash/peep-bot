@@ -2,48 +2,50 @@ import React, {useEffect, useState} from 'react';
 import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
 import {useForm} from "react-hook-form";
-import {useParams} from "react-router-dom";
+import {useParams, useNavigate, Link} from "react-router-dom";
 import {useSelector} from "react-redux";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
 
-function AttendeeSection({title, emoji, attendees, eventId, onRemove, removingKey}) {
+function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey}) {
     return (
-        <div className="mb-4">
-            <h6 className="event-form-label mb-2">
-                {emoji} {title}
-                <span className="badge bg-secondary ms-2">{attendees?.length ?? 0}</span>
-            </h6>
-            {(!attendees || attendees.length === 0) ? (
-                <p className="text-muted small ms-1">No attendees</p>
-            ) : (
-                attendees.map((a) => {
-                    const key = a.snowflake || a.name;
-                    return (
-                        <div key={key}
-                             className="d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded"
-                             style={{background: 'rgba(255,255,255,0.04)'}}>
-                            <span className="small">{a.name}</span>
-                            <button
-                                type="button"
-                                className="btn btn-outline-danger btn-sm py-0 px-2"
-                                disabled={removingKey === key}
-                                onClick={() => onRemove(a)}
-                            >
-                                {removingKey === key
-                                    ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
-                                    : <i className="bi bi-x-lg"/>}
-                            </button>
-                        </div>
-                    );
-                })
-            )}
+        <div className="attendee-col">
+            <div className={`attendee-col-header ${colorClass}`}>
+                {title}
+                <span className="attendee-col-count">{attendees?.length ?? 0}</span>
+            </div>
+            <div className="attendee-col-body">
+                {(!attendees || attendees.length === 0) ? (
+                    <p className="attendee-empty">None</p>
+                ) : (
+                    attendees.map((a) => {
+                        const key = a.snowflake || a.name;
+                        return (
+                            <div key={key} className="attendee-row">
+                                <span className="attendee-name">{a.name}</span>
+                                <button
+                                    type="button"
+                                    className="attendee-remove"
+                                    disabled={removingKey === key}
+                                    onClick={() => onRemove(a)}
+                                    aria-label={`Remove ${a.name}`}
+                                >
+                                    {removingKey === key
+                                        ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
+                                        : <i className="bi bi-x"/>}
+                                </button>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
         </div>
     );
 }
 
 export default function EditEvent() {
     const {id} = useParams();
+    const navigate = useNavigate();
     const {data, error, isFetching} = useGetEventQuery({"id": id})
     const [patchEvent] = usePatchEventMutation({})
     const [removeAttendee] = useRemoveAttendeeMutation()
@@ -64,13 +66,11 @@ export default function EditEvent() {
                 "id": id,
                 "name": data.name,
                 "description": data.description,
-                // "location": form.location,
                 "capacity": parseInt(data.capacity || "0"),
-                // "cost": parseInt(data.cost || "0"),
                 "dateTime": moment(data.dateTime).toISOString(),
                 "accepted": []
             }).unwrap();
-            document.location.href = "/"
+            navigate('/', {state: {toast: 'Event updated successfully'}});
         } catch (e) {
             if (e.data?.message === "validation error") {
                 e.data.fieldErrors.forEach(error => {
@@ -111,14 +111,14 @@ export default function EditEvent() {
     if (isFetching) {
         return (
             <div>
-                <Navbar/>
+                <Navbar focus="EDIT"/>
                 <div className="loading-container">
                     <div className="text-center">
                         <div className="spinner-border text-primary" role="status"
                              style={{width: '3rem', height: '3rem'}}>
                             <span className="visually-hidden">Loading...</span>
                         </div>
-                        <p className="mt-3 text-muted">Loading event information...</p>
+                        <p className="mt-3 text-muted">Loading event...</p>
                     </div>
                 </div>
             </div>
@@ -127,164 +127,124 @@ export default function EditEvent() {
 
     return (
         <div>
-            <Navbar/>
+            <Navbar focus="EDIT"/>
             <div className="container event-container">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="event-card">
-                            <div className="event-card-header">
-                                <h2 className="mb-0"><i className="bi bi-pencil-square me-2"></i>Edit Event</h2>
-                                <p className="text-muted mb-0">Update your event details below</p>
+                <div className="event-card">
+                    <div className="event-card-header">
+                        <h2 className="mb-0">Edit Event</h2>
+                        <p className="text-muted mb-0 mt-1">Update your event details below</p>
+                    </div>
+
+                    {errors.root && (
+                        <div className="mx-4 mt-4 error-alert">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            {errors.root?.message}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <div className="event-card-body">
+                            <div className="event-form-group">
+                                <label className="event-form-label" htmlFor="name">Event Name</label>
+                                <input
+                                    className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
+                                    placeholder="What's the event called?"
+                                    {...register("name", {
+                                        required: "Please provide an event name",
+                                        minLength: {value: 3, message: "Name must be at least 3 characters"}
+                                    })}
+                                />
+                                <div className="invalid-feedback">{errors.name?.message}</div>
                             </div>
 
-                            {errors.root && (
-                                <div className="mx-4 mt-4 error-alert">
-                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                                    {errors.root?.message}
+                            <div className="event-form-group">
+                                <label className="event-form-label" htmlFor="description">Description</label>
+                                <textarea
+                                    className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
+                                    placeholder="Give people a reason to come..."
+                                    rows="4"
+                                    {...register("description")}
+                                />
+                                <div className="invalid-feedback">{errors.description?.message}</div>
+                            </div>
+
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <div className="event-form-group">
+                                        <label className="event-form-label" htmlFor="capacity">Capacity</label>
+                                        <input
+                                            type="number"
+                                            className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
+                                            placeholder="0 = unlimited"
+                                            {...register("capacity")}
+                                        />
+                                        <div className="invalid-feedback">{errors.capacity?.message}</div>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="event-card-body">
-                                <form onSubmit={handleSubmit(onSubmit)}>
+                                <div className="col-md-6">
                                     <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="name">
-                                            <i className="bi bi-calendar-event me-2"></i>Event Name
-                                        </label>
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-dark text-light border-secondary">
-                                                <i className="bi bi-type"></i>
-                                            </span>
-                                            <input
-                                                className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
-                                                placeholder="Enter event name"
-                                                {...register("name", {
-                                                    required: "Please provide an event name",
-                                                    minLength: {value: 3, message: "Name must be at least 3 characters"}
-                                                })}
-                                            />
-                                            <div className="invalid-feedback">{errors.name?.message}</div>
-                                        </div>
+                                        <label className="event-form-label" htmlFor="dateTime">Start Time</label>
+                                        <input
+                                            className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
+                                            type="datetime-local"
+                                            {...register("dateTime", {required: "Please select a start time"})}
+                                        />
+                                        <div className="invalid-feedback">{errors.dateTime?.message}</div>
                                     </div>
-
-                                    <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="description">
-                                            <i className="bi bi-card-text me-2"></i>Description
-                                        </label>
-                                        <div className="input-group">
-                                            <span className="input-group-text bg-dark text-light border-secondary">
-                                                <i className="bi bi-blockquote-left"></i>
-                                            </span>
-                                            <textarea
-                                                className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
-                                                placeholder="Describe your event"
-                                                rows="4"
-                                                {...register("description")}
-                                            />
-                                            <div className="invalid-feedback">{errors.description?.message}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6">
-                                            <div className="event-form-group">
-                                                <label className="event-form-label" htmlFor="capacity">
-                                                    <i className="bi bi-people-fill me-2"></i>Capacity
-                                                </label>
-                                                <div className="input-group">
-                                                    <span
-                                                        className="input-group-text bg-dark text-light border-secondary">
-                                                        <i className="bi bi-person-plus"></i>
-                                                    </span>
-                                                    <input
-                                                        type="number"
-                                                        className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
-                                                        placeholder="Number of attendees"
-                                                        {...register("capacity")}
-                                                    />
-                                                    <div className="invalid-feedback">{errors.capacity?.message}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="col-md-6">
-                                            <div className="event-form-group">
-                                                <label className="event-form-label" htmlFor="dateTime">
-                                                    <i className="bi bi-clock me-2"></i>Start Time
-                                                </label>
-                                                <div className="input-group">
-                                                    <span
-                                                        className="input-group-text bg-dark text-light border-secondary">
-                                                        <i className="bi bi-calendar-date"></i>
-                                                    </span>
-                                                    <input
-                                                        className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
-                                                        type="datetime-local"
-                                                        {...register("dateTime", {required: "Please select a start time"})}
-                                                    />
-                                                    <div className="invalid-feedback">{errors.dateTime?.message}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="event-footer d-flex justify-content-between align-items-center">
-                                        <a href="/" className="btn btn-outline-secondary">
-                                            <i className="bi bi-arrow-left"></i> Cancel
-                                        </a>
-                                        <button className="btn btn-primary btn-event" type="submit"
-                                                disabled={isSubmitting}>
-                                            {isSubmitting ? (
-                                                    <div>
-                                                    <span className="spinner-border spinner-border-sm"
-                                                          aria-hidden="true"></span>
-                                                        <span>Updating...</span>
-                                                    </div>)
-                                                :
-                                                (<span><i className="bi bi-check-circle"></i> Save Changes</span>)}
-                                        </button>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
 
-                        {isAdmin && data && (
-                            <div className="event-card mt-3">
-                                <div className="event-card-header">
-                                    <h4 className="mb-0">
-                                        <i className="bi bi-people me-2"></i>Attendees
-                                    </h4>
-                                    <p className="text-muted mb-0 small">Admin view — remove attendees from any list</p>
-                                </div>
-                                <div className="event-card-body">
-                                    <AttendeeSection
-                                        title="Accepted"
-                                        emoji="✅"
-                                        attendees={data.accepted}
-                                        eventId={id}
-                                        onRemove={handleRemove}
-                                        removingKey={removingKey}
-                                    />
-                                    <AttendeeSection
-                                        title="Maybe"
-                                        emoji="❔"
-                                        attendees={data.maybe}
-                                        eventId={id}
-                                        onRemove={handleRemove}
-                                        removingKey={removingKey}
-                                    />
-                                    <AttendeeSection
-                                        title="Declined"
-                                        emoji="❌"
-                                        attendees={data.declined}
-                                        eventId={id}
-                                        onRemove={handleRemove}
-                                        removingKey={removingKey}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        <div className="event-footer">
+                            <Link to="/" className="btn-cancel">Cancel</Link>
+                            <button className="btn-event" type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <span>
+                                        <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                        Saving...
+                                    </span>
+                                ) : (
+                                    <span>Save Changes</span>
+                                )}
+                            </button>
+                        </div>
+                    </form>
                 </div>
+
+                {isAdmin && data && (
+                    <div className="event-card mt-3">
+                        <div className="event-card-header">
+                            <h4 className="mb-0">Attendees</h4>
+                            <p className="text-muted mb-0 mt-1 small">Remove attendees from any response list</p>
+                        </div>
+                        <div className="event-card-body">
+                            <div className="attendees-grid">
+                                <AttendeeColumn
+                                    title="Accepted"
+                                    colorClass="attendee-col-header--accepted"
+                                    attendees={data.accepted}
+                                    onRemove={handleRemove}
+                                    removingKey={removingKey}
+                                />
+                                <AttendeeColumn
+                                    title="Maybe"
+                                    colorClass="attendee-col-header--maybe"
+                                    attendees={data.maybe}
+                                    onRemove={handleRemove}
+                                    removingKey={removingKey}
+                                />
+                                <AttendeeColumn
+                                    title="Declined"
+                                    colorClass="attendee-col-header--declined"
+                                    attendees={data.declined}
+                                    onRemove={handleRemove}
+                                    removingKey={removingKey}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

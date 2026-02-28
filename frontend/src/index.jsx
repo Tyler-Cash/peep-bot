@@ -1,7 +1,7 @@
 import React from 'react';
+import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
-import 'bootstrap/dist/css/bootstrap.css';
 import * as ReactDOM from "react-dom/client";
 import {createBrowserRouter, createRoutesFromElements, Route, RouterProvider,} from "react-router-dom";
 import Login from "./components/Login";
@@ -14,15 +14,18 @@ import {setupListeners} from "@reduxjs/toolkit/query";
 import CreateEvent from "./components/CreateEvent";
 import ListEvents from "./components/ListEvents";
 import EditEvent from "./components/EditEvent";
+import Layout from "./components/Layout";
 
 const router = createBrowserRouter(createRoutesFromElements(
     <Route>
         <Route path="/login/success" element={<LoginSuccess/>}/>
         <Route path="/login" element={<Login/>}/>
-        <Route path="/event/create" element={<Protected><CreateEvent/></Protected>}/>
-        <Route path="/event/:id" element={<Protected><EditEvent/></Protected>}/>
-        <Route path="/event/list" element={<Protected><ListEvents/></Protected>}/>
-        <Route path="/" element={<Protected><ListEvents/></Protected>}/>
+        <Route element={<Layout/>}>
+            <Route path="/event/create" element={<Protected><CreateEvent/></Protected>}/>
+            <Route path="/event/:id" element={<Protected><EditEvent/></Protected>}/>
+            <Route path="/event/list" element={<Protected><ListEvents/></Protected>}/>
+            <Route path="/" element={<Protected><ListEvents/></Protected>}/>
+        </Route>
     </Route>
 ));
 
