@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
 
 // Mock the Navbar to avoid Redux store requirements
 vi.mock('../Navbar', () => ({default: () => <div data-testid="navbar"/>}));
@@ -17,14 +18,14 @@ import CreateEvent from '../CreateEvent';
 
 function fillAndSubmit(container, {name = 'My Event', description = 'desc', dateTime = '2030-12-01T10:00'}) {
   // Name
-  fireEvent.change(screen.getByPlaceholderText('Enter event name'), {target: {value: name}});
+  fireEvent.change(screen.getByPlaceholderText("What's the event called?"), {target: {value: name}});
   // Description
-  fireEvent.change(screen.getByPlaceholderText('Describe your event'), {target: {value: description}});
+  fireEvent.change(screen.getByPlaceholderText('Give people a reason to come...'), {target: {value: description}});
   // DateTime (select by input type since label-for linkage lacks id)
   const dateInput = container.querySelector('input[type="datetime-local"]');
   fireEvent.change(dateInput, {target: {value: dateTime}});
   // Submit
-  fireEvent.click(screen.getByRole('button', {name: /save changes/i}));
+  fireEvent.click(screen.getByRole('button', {name: /create event/i}));
 }
 
 describe('CreateEvent form', () => {
@@ -33,7 +34,7 @@ describe('CreateEvent form', () => {
   });
 
   test('submits with notifyOnCreate defaulting to true when checkbox left checked', async () => {
-    const {container} = render(<CreateEvent/>);
+    const {container} = render(<MemoryRouter><CreateEvent/></MemoryRouter>);
 
     // Checkbox should be checked by default
     const checkbox = screen.getByLabelText('Notify people now');
@@ -49,7 +50,7 @@ describe('CreateEvent form', () => {
   });
 
   test('submits with notifyOnCreate=false when checkbox is unchecked', async () => {
-    const {container} = render(<CreateEvent/>);
+    const {container} = render(<MemoryRouter><CreateEvent/></MemoryRouter>);
 
     const checkbox = screen.getByLabelText('Notify people now');
     fireEvent.click(checkbox); // uncheck
