@@ -41,6 +41,7 @@ const mockEventData = {
     description: 'A test event',
     capacity: 10,
     dateTime: '2030-12-01T10:00:00Z',
+    attendanceLocked: false,
     accepted: [{snowflake: '111', name: 'Alice', instant: '2024-01-01T00:00:00Z'}],
     maybe: [{snowflake: '222', name: 'Bob', instant: '2024-01-02T00:00:00Z'}],
     declined: [{snowflake: '333', name: 'Carol', instant: '2024-01-03T00:00:00Z'}],
@@ -69,7 +70,6 @@ describe('EditEvent admin panel', () => {
 
         renderEditEvent();
 
-        // The Attendees section heading and all attendee names should be visible
         expect(screen.getByText('Attendees')).toBeInTheDocument();
         expect(screen.getByText('Alice')).toBeInTheDocument();
         expect(screen.getByText('Bob')).toBeInTheDocument();
@@ -81,7 +81,6 @@ describe('EditEvent admin panel', () => {
 
         renderEditEvent();
 
-        // Neither the section heading nor any attendee names should be present
         expect(screen.queryByText('Attendees')).not.toBeInTheDocument();
         expect(screen.queryByText('Alice')).not.toBeInTheDocument();
         expect(screen.queryByText('Bob')).not.toBeInTheDocument();
@@ -93,8 +92,7 @@ describe('EditEvent admin panel', () => {
 
         const {container} = renderEditEvent();
 
-        // One remove button per attendee (3 attendees across accepted/maybe/declined)
-        const removeButtons = container.querySelectorAll('.btn-outline-danger');
+        const removeButtons = container.querySelectorAll('.attendee-remove');
         expect(removeButtons).toHaveLength(3);
     });
 
@@ -103,9 +101,8 @@ describe('EditEvent admin panel', () => {
 
         renderEditEvent();
 
-        // Find Alice's row and click her remove button
-        const aliceRow = screen.getByText('Alice').closest('.d-flex');
-        const removeButton = aliceRow.querySelector('.btn-outline-danger');
+        const aliceRow = screen.getByText('Alice').closest('.attendee-row');
+        const removeButton = aliceRow.querySelector('.attendee-remove');
         fireEvent.click(removeButton);
 
         await waitFor(() => expect(mockRemoveAttendee).toHaveBeenCalledWith(
@@ -123,7 +120,7 @@ describe('EditEvent admin panel', () => {
 
         renderEditEvent();
 
-        const noAttendeesMessages = screen.getAllByText('No attendees');
+        const noAttendeesMessages = screen.getAllByText('None');
         expect(noAttendeesMessages).toHaveLength(3);
     });
 
@@ -133,6 +130,31 @@ describe('EditEvent admin panel', () => {
 
         renderEditEvent();
 
-        expect(screen.getByText('Loading event information...')).toBeInTheDocument();
+        expect(screen.getByText('Loading event...')).toBeInTheDocument();
+    });
+
+    test('remove buttons are hidden when attendance is locked', () => {
+        useSelector.mockImplementation(fn => fn({auth: {isAdmin: true}}));
+        useGetEventQuery.mockReturnValue({
+            data: {...mockEventData, attendanceLocked: true},
+            isFetching: false,
+            error: null,
+        });
+
+        const {container} = renderEditEvent();
+
+        const removeButtons = container.querySelectorAll('.attendee-remove');
+        expect(removeButtons).toHaveLength(0);
+        expect(screen.getByText('Attendance is locked for this event')).toBeInTheDocument();
+    });
+
+    test('remove buttons are visible when attendance is not locked', () => {
+        useSelector.mockImplementation(fn => fn({auth: {isAdmin: true}}));
+
+        const {container} = renderEditEvent();
+
+        const removeButtons = container.querySelectorAll('.attendee-remove');
+        expect(removeButtons).toHaveLength(3);
+        expect(screen.getByText('Remove attendees from any response list')).toBeInTheDocument();
     });
 });
