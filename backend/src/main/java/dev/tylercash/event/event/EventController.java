@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.entities.Member;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -88,8 +88,8 @@ public class EventController {
     @Operation(summary = "List active events", description = "Returns paginated list of non-archived, non-deleted events")
     @ApiResponse(responseCode = "200", description = "Events retrieved successfully")
     @GetMapping
-    public List<EventDto> getEvents(@PageableDefault Pageable pageable) {
-        return eventService.getActiveEvents(pageable).stream().map(EventDto::new).toList();
+    public Page<EventDto> getEvents(@PageableDefault Pageable pageable) {
+        return eventService.getActiveEvents(pageable).map(EventDto::new);
     }
 
     @Operation(summary = "Get event details", description = "Returns full event details including attendee lists")

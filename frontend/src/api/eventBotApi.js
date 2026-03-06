@@ -81,6 +81,7 @@ export const eventBotApi = createApi({
     endpoints: (builder) => ({
         getEvents: builder.query({
             query: () => `event`,
+            transformResponse: (response) => response.content,
             providesTags: ['Event'],
         }),
         getEvent: builder.query({

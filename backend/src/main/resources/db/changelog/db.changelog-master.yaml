@@ -297,3 +297,14 @@ databaseChangeLog:
                   name: state
             indexName: idx_event_state
             tableName: event
+  - changeSet:
+      id: add channel_id index
+      author: claude
+      changes:
+        - createIndex:
+            columns:
+              - column:
+                  name: channel_id
+            indexName: idx_event_channel_id
+            tableName: event
+            unique: true
