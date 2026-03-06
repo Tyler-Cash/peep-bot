@@ -86,12 +86,13 @@ public class EventStateMachineActions {
             discordService.removeEventButtons(event);
             discordService.updateEventMessage(event);
             discordService.updateChannelName(event);
+            discordService.archiveEventChannel(event);
             event.getNotifications().add(new Notification(
                     NotificationType.ATTENDANCE_LOCKED,
                     ZonedDateTime.now(clock).toInstant(),
                     0
             ));
-            event.setState(EventState.COMPLETED);
+            event.setState(EventState.ARCHIVED);
             eventRepository.save(event);
         };
     }
