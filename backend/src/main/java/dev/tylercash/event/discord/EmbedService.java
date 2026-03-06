@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.immich.ImmichService;
 import dev.tylercash.event.security.oauth2.FrontendConfiguration;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -14,8 +15,10 @@ import java.util.List;
 @AllArgsConstructor
 public class EmbedService {
     private final FrontendConfiguration frontendConfiguration;
+    private final ImmichService immichService;
 
     public Collection<MessageEmbed> getMessage(Event event, Clock clock) {
-        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl()).getEmbedBuilder().build());
+        String albumUrl = event.getImmichShareKey() != null ? immichService.getShareUrl(event.getImmichShareKey()) : null;
+        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl).getEmbedBuilder().build());
     }
 }

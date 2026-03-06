@@ -26,6 +26,7 @@ public class EmbedRenderer {
     private final Event event;
     private final Clock clock;
     private final String frontendUrl;
+    private final String albumUrl;
 
     public EmbedBuilder getEmbedBuilder() {
         long epochSecond = event.getDateTime().toEpochSecond();
@@ -41,10 +42,13 @@ public class EmbedRenderer {
         }
 
         String editUrl = frontendUrl + "event/" + event.getId();
-        embed.addField("Links",
-                "[Add to Google calendar](" + GoogleCalendarService.getCalendarEventUrl(event) + ")" +
-                " | [Edit event](" + editUrl + ")",
-                false);
+        StringBuilder links = new StringBuilder();
+        links.append("[Add to Google calendar](<").append(GoogleCalendarService.getCalendarEventUrl(event)).append(">)");
+        links.append(" | [Edit event](<").append(editUrl).append(">)");
+        if (albumUrl != null) {
+            links.append(" | [Photo album](<").append(albumUrl).append(">)");
+        }
+        embed.addField("Links", links.toString(), false);
         populateAttendeeSection(event, embed);
         String creator = "Created by: " + event.getCreator();
         String lastUpdated = "Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock));
