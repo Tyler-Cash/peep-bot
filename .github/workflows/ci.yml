@@ -8,10 +8,6 @@ on:
   push:
     branches:
       - 'main'
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/ci.yml'
   pull_request:
     paths:
       - 'backend/**'
@@ -196,3 +192,39 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: docker push "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
         working-directory: ./frontend
+
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up lowercase owner
+        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest images
+        run: |
+          docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
+          docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@0986a7fde0f76a0ebc00ddd1f7a8585e55d607c6 # v4
+        with:
+          extra_plugins: |
+            @semantic-release/exec
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

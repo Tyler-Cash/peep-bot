@@ -185,6 +185,20 @@ npm run preview  # Preview production build
 | `spring.datasource.url`                | *(not set in default yaml)*   | Must be provided via local config or CLI               |
 | `server.servlet.session.cookie.secure` | `true`                        | Set to `false` locally to avoid HTTPS redirect         |
 
+## Commit Conventions
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) with semantic-release for automated
+versioning. Both backend and frontend share a single version — one release versions both.
+
+| Prefix                                    | Effect         | Example                          |
+|-------------------------------------------|----------------|----------------------------------|
+| `feat:`                                   | Minor bump     | `feat: add event reminders`      |
+| `fix:`                                    | Patch bump     | `fix: correct date parsing`      |
+| `feat!:` or `BREAKING CHANGE:` in footer  | Major bump     | `feat!: redesign event API`      |
+| `chore:`, `ci:`, `docs:`, `refactor:`, `test:` | No release | `chore: update dependencies`     |
+
+Scope is optional: `feat(discord):`, `fix(deps):`, etc.
+
 ## Gotchas
 
 - **DevTools restart causes port conflicts.** Always pass `--spring.devtools.restart.enabled=false` locally, or set it

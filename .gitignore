@@ -54,5 +54,6 @@ bin/
 *.sqlite3
 *.yaml
 *.json
+!.releaserc.json
 *.csv
 npm_output.log
