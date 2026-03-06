@@ -176,6 +176,73 @@ jobs:
           path: /tmp/backend-image.tar.gz
           retention-days: 1
 
+  backend-sbom:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle*', 'backend/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+        working-directory: ./backend
+
+      - name: Generate SBOM
+        run: ./gradlew cyclonedxBom
+        working-directory: ./backend
+
+      - name: Scan SBOM with Grype
+        id: grype
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7
+        with:
+          sbom: backend/build/reports/application.cdx.json
+          output-file: backend/grype-backend.sarif
+          severity-cutoff: high
+          fail-build: true
+
+      - name: Print Grype results
+        if: always()
+        run: |
+          cat backend/grype-backend.sarif | jq '.runs[].results[] | {ruleId, message: .message.text}'
+
+      - name: Manually correct SARIF paths
+        if: always()
+        run: |
+          echo "Correcting paths in SARIF file..."
+          SARIF_FILE="backend/grype-backend.sarif"
+          TMP_SARIF_FILE="${SARIF_FILE}.tmp"
+          jq '(.runs[].results[].locations[].physicalLocation.artifactLocation.uri |= "backend/" + .)' "$SARIF_FILE" > "$TMP_SARIF_FILE"
+          mv "$TMP_SARIF_FILE" "$SARIF_FILE"
+          echo "Path correction complete."
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818 # v3
+        if: always()
+        with:
+          sarif_file: backend/grype-backend.sarif
+          category: backend
+
   backend-push:
     needs: [backend-test, backend-e2etest, backend-build]
     if: github.ref == 'refs/heads/main'
