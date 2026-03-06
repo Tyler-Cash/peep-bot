@@ -250,7 +250,7 @@ public class DiscordService {
         notifyEventRoles.executeRunnable(() -> {
             Guild server = jda.getGuildById(discordConfiguration.getGuildId());
             MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
-                    .addContent("`" + event.getName() + "`  starting at " +
+                    .addContent("**" + event.getName() + "**  starting at " +
                             "<t:" + event.getDateTime().toEpochSecond() + ":t>\n"
                     );
             event.getAccepted().stream()
