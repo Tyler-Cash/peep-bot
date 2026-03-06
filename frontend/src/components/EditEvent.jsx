@@ -186,6 +186,7 @@ export default function EditEvent() {
                             <div className="event-form-group">
                                 <label className="event-form-label" htmlFor="name">Event Name</label>
                                 <input
+                                    id="name"
                                     className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
                                     placeholder="What's the event called?"
                                     {...register("name", {
@@ -199,6 +200,7 @@ export default function EditEvent() {
                             <div className="event-form-group">
                                 <label className="event-form-label" htmlFor="description">Description</label>
                                 <textarea
+                                    id="description"
                                     className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
                                     placeholder="Give people a reason to come..."
                                     rows="4"
@@ -212,6 +214,7 @@ export default function EditEvent() {
                                     <div className="event-form-group">
                                         <label className="event-form-label" htmlFor="capacity">Capacity</label>
                                         <input
+                                            id="capacity"
                                             type="number"
                                             className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
                                             placeholder="0 = unlimited"
@@ -225,6 +228,7 @@ export default function EditEvent() {
                                     <div className="event-form-group">
                                         <label className="event-form-label" htmlFor="dateTime">Start Time</label>
                                         <input
+                                            id="dateTime"
                                             className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
                                             type="datetime-local"
                                             {...register("dateTime", {required: "Please select a start time"})}

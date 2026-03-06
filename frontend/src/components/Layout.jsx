@@ -29,8 +29,8 @@ export default function Layout() {
 
     return (
         <div className="app-layout">
-            {toast && (
-                <div className="toast-container">
+            <div className="toast-container" role="status" aria-live="polite">
+                {toast && (
                     <div className={`toast-message ${exiting ? 'toast-exit' : ''}`}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#4ade80"
                              viewBox="0 0 16 16">
@@ -39,8 +39,8 @@ export default function Layout() {
                         </svg>
                         {toast}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
             <main className="page-enter" key={location.pathname}>
                 <Outlet/>
             </main>

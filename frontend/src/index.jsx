@@ -15,12 +15,13 @@ import CreateEvent from "./components/CreateEvent";
 import ListEvents from "./components/ListEvents";
 import EditEvent from "./components/EditEvent";
 import Layout from "./components/Layout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const router = createBrowserRouter(createRoutesFromElements(
     <Route>
         <Route path="/login/success" element={<LoginSuccess/>}/>
         <Route path="/login" element={<Login/>}/>
-        <Route element={<Layout/>}>
+        <Route element={<ErrorBoundary><Layout/></ErrorBoundary>}>
             <Route path="/event/create" element={<Protected><CreateEvent/></Protected>}/>
             <Route path="/event/:id" element={<Protected><EditEvent/></Protected>}/>
             <Route path="/event/list" element={<Protected><ListEvents/></Protected>}/>
