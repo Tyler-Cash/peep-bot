@@ -2,24 +2,23 @@ package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.EmbedService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.MetricsService;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Log4j2
 @Component
-@AllArgsConstructor
 public class ModalInteractionListener extends ListenerAdapter {
     public static final String PLUS_ONE = "Add +1";
     public static final String PLUS_ONE_ID = "plus1";
@@ -27,13 +26,24 @@ public class ModalInteractionListener extends ListenerAdapter {
     private final MetricsService metricsService;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
+    private final EventService eventService;
+
+    public ModalInteractionListener(Clock clock, MetricsService metricsService,
+                                    EventRepository eventRepository, EmbedService embedService,
+                                    @Lazy EventService eventService) {
+        this.clock = clock;
+        this.metricsService = metricsService;
+        this.eventRepository = eventRepository;
+        this.embedService = embedService;
+        this.eventService = eventService;
+    }
 
     @Override
     public void onModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
         long startTime = System.nanoTime();
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
         Event event = eventRepository.findByChannelId(modalInteractionEvent.getChannel().getIdLong());
-        if (event == null || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6))) {
+        if (event == null || eventService.isCompleted(event)) {
             modalInteractionEvent.reply("Attendance is locked for this event.").setEphemeral(true).queue();
             return;
         }

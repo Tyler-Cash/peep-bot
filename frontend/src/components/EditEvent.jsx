@@ -219,8 +219,8 @@ export default function EditEvent() {
                         <div className="event-card-header">
                             <h4 className="mb-0">Attendees</h4>
                             <p className="text-muted mb-0 mt-1 small">
-                                {data.attendanceLocked
-                                    ? "Attendance is locked for this event"
+                                {data.completed
+                                    ? "This event has been completed"
                                     : "Remove attendees from any response list"}
                             </p>
                         </div>
@@ -232,7 +232,7 @@ export default function EditEvent() {
                                     attendees={data.accepted}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
-                                    locked={data.attendanceLocked}
+                                    locked={data.completed}
                                 />
                                 <AttendeeColumn
                                     title="Maybe"
@@ -240,7 +240,7 @@ export default function EditEvent() {
                                     attendees={data.maybe}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
-                                    locked={data.attendanceLocked}
+                                    locked={data.completed}
                                 />
                                 <AttendeeColumn
                                     title="Declined"
@@ -248,7 +248,7 @@ export default function EditEvent() {
                                     attendees={data.declined}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
-                                    locked={data.attendanceLocked}
+                                    locked={data.completed}
                                 />
                             </div>
                         </div>

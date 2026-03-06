@@ -2,9 +2,9 @@ package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.EmbedService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.MetricsService;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -13,10 +13,10 @@ import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.textinput.TextInput;
 import net.dv8tion.jda.api.components.textinput.TextInputStyle;
 import net.dv8tion.jda.api.modals.Modal;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +26,6 @@ import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS
 
 @Log4j2
 @Component
-@AllArgsConstructor
 public class ButtonInteractionListener extends ListenerAdapter {
     public static final String ACCEPTED = "accepted";
     public static final String DECLINED = "declined";
@@ -36,6 +35,17 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private final MetricsService metricsService;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
+    private final EventService eventService;
+
+    public ButtonInteractionListener(Clock clock, MetricsService metricsService,
+                                     EventRepository eventRepository, EmbedService embedService,
+                                     @Lazy EventService eventService) {
+        this.clock = clock;
+        this.metricsService = metricsService;
+        this.eventRepository = eventRepository;
+        this.embedService = embedService;
+        this.eventService = eventService;
+    }
 
     private static void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
         TextInput plusOne = TextInput.create(PLUS_ONE_ID, TextInputStyle.SHORT)
@@ -57,7 +67,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
             return;
         }
-        if (ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6))) {
+        if (eventService.isCompleted(event)) {
             buttonInteractionEvent.reply("Attendance is locked for this event.").setEphemeral(true).queue();
             return;
         }
@@ -75,4 +85,3 @@ public class ButtonInteractionListener extends ListenerAdapter {
         log.info("User {} interacting with status {} on event {}, taking {}ms", buttonInteractionEvent.getMember().getEffectiveName(), eventType, event.getName(), duration);
     }
 }
-

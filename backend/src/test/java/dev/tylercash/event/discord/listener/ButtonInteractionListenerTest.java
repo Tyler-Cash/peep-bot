@@ -2,6 +2,7 @@ package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.EmbedService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.MetricsService;
@@ -42,8 +43,8 @@ class ButtonInteractionListenerTest {
     @Test
     void onButtonInteractionWhenAcceptingEvent() {
         Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
-        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
+        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
+        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
         String nickname = "testNickname";
         String snowflake = "38943984983";
 
@@ -60,6 +61,7 @@ class ButtonInteractionListenerTest {
         when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
         when(result.buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(result.eventRepository.findByMessageId(messageId)).thenReturn(event);
+        when(result.eventService.isCompleted(event)).thenReturn(false);
         when(result.embedService.getMessage(event, result.clock)).thenReturn(List.of(mock(MessageEmbed.class)));
         when(result.buttonInteractionEvent.editMessageEmbeds(result.embedService.getMessage(event, result.clock))).thenReturn(mock(MessageEditCallbackAction.class));
         when(result.metricsService.getDiscordMessageComponentEventTimer()).thenReturn(mock(Timer.class));
@@ -79,8 +81,8 @@ class ButtonInteractionListenerTest {
 
     @Test
     void onButtonInteractionEventDoesntExist() {
-        Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
+        Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
+        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
 
         when(result.buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
@@ -95,10 +97,11 @@ class ButtonInteractionListenerTest {
     @Test
     void onButtonInteractionWhenReturnModal() {
         Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
-        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
+        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
+        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
         Event futureEvent = mock(Event.class);
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
+        when(result.eventService.isCompleted(futureEvent)).thenReturn(false);
         when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
         when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
         when(result.buttonInteractionEvent.replyModal(any())).thenReturn(result.modalCallbackAction());
@@ -122,6 +125,6 @@ class ButtonInteractionListenerTest {
 
     private record Result(Clock clock, MetricsService metricsService, EventRepository eventRepository,
                           ButtonInteractionEvent buttonInteractionEvent, ModalCallbackAction modalCallbackAction,
-                          EmbedService embedService) {
+                          EmbedService embedService, EventService eventService) {
     }
 }

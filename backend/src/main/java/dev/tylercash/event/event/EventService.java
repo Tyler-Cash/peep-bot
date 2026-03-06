@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -69,18 +70,19 @@ public class EventService {
         return event;
     }
 
-    public Page<Event> getPlannedEvents(Pageable pageable) {
-        return eventRepository.findByState(pageable, EventState.PLANNED);
+    public Page<Event> getActiveEvents(Pageable pageable) {
+        return eventRepository.findAllByStateNotIn(pageable, List.of(EventState.ARCHIVED, EventState.DELETED));
     }
 
-    public boolean isAttendanceLocked(Event event) {
-        return ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
+    public boolean isCompleted(Event event) {
+        return event.getState().ordinal() >= EventState.COMPLETED.ordinal()
+                || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
     }
 
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
         Event event = getEvent(id);
-        if (isAttendanceLocked(event)) {
+        if (isCompleted(event)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance is locked for this event");
         }
         event.getAccepted().removeIf(a -> matches(a, snowflake, name));

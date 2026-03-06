@@ -35,7 +35,6 @@ ext {
     springCloudVersion = '2025.0.1'
     // Overriding Spring dependency versions for security and consistency
     set('spring-framework.version', '6.2.16')
-    set('spring-batch.version', '5.2.2')
     set('spring-data-bom.version', '2025.0.9')
     set('spring-security.version', '6.5.8')
     set('spring-session.version', '3.5.2')
@@ -60,7 +59,6 @@ dependencies {
     implementation 'org.projectlombok:lombok'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -74,6 +72,7 @@ dependencies {
     implementation("net.dv8tion:JDA:6.3.1") {
         exclude module: 'opus-java'
     }
+    implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.0'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
@@ -84,7 +83,6 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.42'
     testImplementation "org.testcontainers:testcontainers"
     testImplementation 'com.h2database:h2'
-    testImplementation 'org.springframework.batch:spring-batch-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'

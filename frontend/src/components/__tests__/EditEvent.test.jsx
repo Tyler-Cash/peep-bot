@@ -41,7 +41,7 @@ const mockEventData = {
     description: 'A test event',
     capacity: 10,
     dateTime: '2030-12-01T10:00:00Z',
-    attendanceLocked: false,
+    completed: false,
     accepted: [{snowflake: '111', name: 'Alice', instant: '2024-01-01T00:00:00Z'}],
     maybe: [{snowflake: '222', name: 'Bob', instant: '2024-01-02T00:00:00Z'}],
     declined: [{snowflake: '333', name: 'Carol', instant: '2024-01-03T00:00:00Z'}],
@@ -136,7 +136,7 @@ describe('EditEvent admin panel', () => {
     test('remove buttons are hidden when attendance is locked', () => {
         useSelector.mockImplementation(fn => fn({auth: {isAdmin: true}}));
         useGetEventQuery.mockReturnValue({
-            data: {...mockEventData, attendanceLocked: true},
+            data: {...mockEventData, completed: true},
             isFetching: false,
             error: null,
         });
@@ -145,7 +145,7 @@ describe('EditEvent admin panel', () => {
 
         const removeButtons = container.querySelectorAll('.attendee-remove');
         expect(removeButtons).toHaveLength(0);
-        expect(screen.getByText('Attendance is locked for this event')).toBeInTheDocument();
+        expect(screen.getByText('This event has been completed')).toBeInTheDocument();
     });
 
     test('remove buttons are visible when attendance is not locked', () => {

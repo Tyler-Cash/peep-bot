@@ -69,13 +69,13 @@ public class EventController {
 
     @GetMapping
     public List<EventDto> getEvents(@PageableDefault Pageable pageable) {
-        return eventService.getPlannedEvents(pageable).stream().map(EventDto::new).toList();
+        return eventService.getActiveEvents(pageable).stream().map(EventDto::new).toList();
     }
 
     @GetMapping(path = "/{id}")
     public EventDetailDto getEvent(@PathVariable UUID id) {
         Event event = eventService.getEvent(id);
-        return new EventDetailDto(event, eventService.isAttendanceLocked(event));
+        return new EventDetailDto(event, eventService.isCompleted(event));
     }
 
     @DeleteMapping(path = "/{id}/attendee")

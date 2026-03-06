@@ -13,14 +13,14 @@ public class EventDetailDto extends EventDto {
     private List<AttendeeDto> accepted;
     private List<AttendeeDto> declined;
     private List<AttendeeDto> maybe;
-    private boolean attendanceLocked;
+    private boolean completed;
 
-    public EventDetailDto(Event event, boolean attendanceLocked) {
+    public EventDetailDto(Event event, boolean completed) {
         super(event);
         this.accepted = toSortedList(event.getAccepted());
         this.declined = toSortedList(event.getDeclined());
         this.maybe = toSortedList(event.getMaybe());
-        this.attendanceLocked = attendanceLocked;
+        this.completed = completed;
     }
 
     private static List<AttendeeDto> toSortedList(Set<Attendee> attendees) {

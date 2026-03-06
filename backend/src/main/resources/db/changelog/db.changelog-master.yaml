@@ -270,3 +270,30 @@ databaseChangeLog:
               - column:
                   name: immich_share_key
                   type: text
+  - changeSet:
+      id: migrate event state to state machine
+      author: claude
+      comment: >
+        Map existing events to new granular states based on their notifications JSON.
+        Order matters: most-advanced state first to avoid double-matching.
+        Events already ARCHIVED or DELETED stay unchanged. PLANNED events with no
+        notifications stay PLANNED.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'COMPLETED'
+              WHERE state = 'PLANNED' AND notifications::text LIKE '%ATTENDANCE_LOCKED%';
+        - sql:
+            sql: >
+              UPDATE event SET state = 'ALBUM_POSTED'
+              WHERE state = 'PLANNED' AND notifications::text LIKE '%ALBUM_LINK%';
+        - sql:
+            sql: >
+              UPDATE event SET state = 'NOTIFIED'
+              WHERE state = 'PLANNED' AND notifications::text LIKE '%START_OF_EVENT%';
+        - createIndex:
+            columns:
+              - column:
+                  name: state
+            indexName: idx_event_state
+            tableName: event
