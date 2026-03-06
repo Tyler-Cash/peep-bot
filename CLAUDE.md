@@ -145,7 +145,26 @@ curl http://localhost:8080/api/actuator/health
 npm run dev      # Start dev server (port 5173)
 npm run build    # Production build
 npm run preview  # Preview production build
+npm run lint     # Run ESLint
+npm run lint:fix # Run ESLint with auto-fix
+npm run format   # Format with Prettier
+npm run format:check # Check formatting without writing
 ```
+
+## Code Quality Requirements
+
+All code changes **must** pass linting and formatting checks before committing. CI enforces these.
+
+### Backend
+
+- **Spotless** — Java formatter using Palantir style. Run `./gradlew spotlessCheck` to verify, `./gradlew spotlessApply`
+  to auto-fix.
+
+### Frontend
+
+- **ESLint** — Configured in `frontend/eslint.config.js`. Run `npm run lint` to check, `npm run lint:fix` to auto-fix.
+- **Prettier** — Configured for JS/JSX/CSS. Run `npm run format:check` to verify, `npm run format` to auto-fix.
+- Always run both ESLint and Prettier before committing frontend changes.
 
 ## Architecture Notes
 
