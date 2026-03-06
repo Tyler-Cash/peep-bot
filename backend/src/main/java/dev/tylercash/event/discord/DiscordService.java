@@ -129,6 +129,12 @@ public class DiscordService {
                 .queue();
     }
 
+    public void removeEventButtons(Event event) {
+        getChannel(event)
+                .editMessageComponentsById(event.getMessageId())
+                .queue();
+    }
+
     public Member getMemberFromServer(long serverId, long userId) {
         Guild server = jda.getGuildById(serverId);
         server.retrieveMemberById(userId).complete();

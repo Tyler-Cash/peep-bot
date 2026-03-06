@@ -20,6 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.List;
 
@@ -38,13 +41,15 @@ class ButtonInteractionListenerTest {
 
     @Test
     void onButtonInteractionWhenAcceptingEvent() {
-        Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
+        Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
+        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
         ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
         String nickname = "testNickname";
         String snowflake = "38943984983";
 
         Event event = mock(Event.class);
         when(event.getMessageId()).thenReturn(messageId);
+        when(event.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
         when(event.getAccepted()).thenReturn(new HashSet<>());
 
         when(result.buttonInteractionEvent.getMember()).thenReturn(mock(Member.class));
@@ -89,12 +94,15 @@ class ButtonInteractionListenerTest {
 
     @Test
     void onButtonInteractionWhenReturnModal() {
-        Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
+        Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
+        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
         ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
+        Event futureEvent = mock(Event.class);
+        when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
         when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
         when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
         when(result.buttonInteractionEvent.replyModal(any())).thenReturn(result.modalCallbackAction());
-        when(result.eventRepository.findByMessageId(any())).thenReturn(mock(Event.class));
+        when(result.eventRepository.findByMessageId(any())).thenReturn(futureEvent);
 
         buttonInteractionListener.onButtonInteraction(result.buttonInteractionEvent());
 

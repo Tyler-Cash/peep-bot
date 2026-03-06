@@ -74,7 +74,8 @@ public class EventController {
 
     @GetMapping(path = "/{id}")
     public EventDetailDto getEvent(@PathVariable UUID id) {
-        return new EventDetailDto(eventService.getEvent(id));
+        Event event = eventService.getEvent(id);
+        return new EventDetailDto(event, eventService.isAttendanceLocked(event));
     }
 
     @DeleteMapping(path = "/{id}/attendee")

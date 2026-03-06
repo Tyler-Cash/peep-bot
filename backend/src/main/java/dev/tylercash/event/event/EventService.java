@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +28,7 @@ public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
     private final ImmichService immichService;
+    private final Clock clock;
 
     public String createEvent(Event event) {
         TextChannel channel = discordService.createEventChannel(event);
@@ -70,9 +73,16 @@ public class EventService {
         return eventRepository.findByState(pageable, EventState.PLANNED);
     }
 
+    public boolean isAttendanceLocked(Event event) {
+        return ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
+    }
+
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
         Event event = getEvent(id);
+        if (isAttendanceLocked(event)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance is locked for this event");
+        }
         event.getAccepted().removeIf(a -> matches(a, snowflake, name));
         event.getDeclined().removeIf(a -> matches(a, snowflake, name));
         event.getMaybe().removeIf(a -> matches(a, snowflake, name));

@@ -7,7 +7,7 @@ import {useSelector} from "react-redux";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
 
-function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey}) {
+function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, locked}) {
     return (
         <div className="attendee-col">
             <div className={`attendee-col-header ${colorClass}`}>
@@ -23,17 +23,19 @@ function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey}) {
                         return (
                             <div key={key} className="attendee-row">
                                 <span className="attendee-name">{a.name}</span>
-                                <button
-                                    type="button"
-                                    className="attendee-remove"
-                                    disabled={removingKey === key}
-                                    onClick={() => onRemove(a)}
-                                    aria-label={`Remove ${a.name}`}
-                                >
-                                    {removingKey === key
-                                        ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
-                                        : <i className="bi bi-x"/>}
-                                </button>
+                                {!locked && (
+                                    <button
+                                        type="button"
+                                        className="attendee-remove"
+                                        disabled={removingKey === key}
+                                        onClick={() => onRemove(a)}
+                                        aria-label={`Remove ${a.name}`}
+                                    >
+                                        {removingKey === key
+                                            ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
+                                            : <i className="bi bi-x"/>}
+                                    </button>
+                                )}
                             </div>
                         );
                     })
@@ -216,7 +218,11 @@ export default function EditEvent() {
                     <div className="event-card mt-3">
                         <div className="event-card-header">
                             <h4 className="mb-0">Attendees</h4>
-                            <p className="text-muted mb-0 mt-1 small">Remove attendees from any response list</p>
+                            <p className="text-muted mb-0 mt-1 small">
+                                {data.attendanceLocked
+                                    ? "Attendance is locked for this event"
+                                    : "Remove attendees from any response list"}
+                            </p>
                         </div>
                         <div className="event-card-body">
                             <div className="attendees-grid">
@@ -226,6 +232,7 @@ export default function EditEvent() {
                                     attendees={data.accepted}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
+                                    locked={data.attendanceLocked}
                                 />
                                 <AttendeeColumn
                                     title="Maybe"
@@ -233,6 +240,7 @@ export default function EditEvent() {
                                     attendees={data.maybe}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
+                                    locked={data.attendanceLocked}
                                 />
                                 <AttendeeColumn
                                     title="Declined"
@@ -240,6 +248,7 @@ export default function EditEvent() {
                                     attendees={data.declined}
                                     onRemove={handleRemove}
                                     removingKey={removingKey}
+                                    locked={data.attendanceLocked}
                                 />
                             </div>
                         </div>

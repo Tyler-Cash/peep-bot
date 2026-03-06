@@ -17,7 +17,7 @@ class EventDetailDtoTest {
     void emptyAttendeeSetsMappedToEmptyLists() {
         Event event = buildEvent();
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         assertThat(dto.getAccepted()).isEmpty();
         assertThat(dto.getDeclined()).isEmpty();
@@ -29,7 +29,7 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.getAccepted().add(Attendee.createDiscordAttendee("123", "Alice"));
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         assertThat(dto.getAccepted()).hasSize(1);
         AttendeeDto attendeeDto = dto.getAccepted().get(0);
@@ -48,7 +48,7 @@ class EventDetailDtoTest {
         event.getAccepted().add(second);
         event.getAccepted().add(first);
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         List<AttendeeDto> accepted = dto.getAccepted();
         assertThat(accepted).hasSize(2);
@@ -63,7 +63,7 @@ class EventDetailDtoTest {
         event.getDeclined().add(Attendee.createDiscordAttendee("2", "Declined Person"));
         event.getMaybe().add(Attendee.createDiscordAttendee("3", "Maybe Person"));
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         assertThat(dto.getAccepted()).hasSize(1);
         assertThat(dto.getAccepted().get(0).getName()).isEqualTo("Accepted Person");
@@ -78,7 +78,7 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.getAccepted().add(Attendee.createDiscordAttendee(null, "Guest"));
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         assertThat(dto.getAccepted()).hasSize(1);
         assertThat(dto.getAccepted().get(0).getSnowflake()).isNull();
@@ -100,7 +100,7 @@ class EventDetailDtoTest {
         event.getMaybe().add(m2);
         event.getMaybe().add(m1);
 
-        EventDetailDto dto = new EventDetailDto(event);
+        EventDetailDto dto = new EventDetailDto(event, false);
 
         assertThat(dto.getAccepted().get(0).getSnowflake()).isEqualTo("a1");
         assertThat(dto.getAccepted().get(1).getSnowflake()).isEqualTo("a2");

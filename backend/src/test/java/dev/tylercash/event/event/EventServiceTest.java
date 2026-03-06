@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +29,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getAccepted().add(Attendee.createDiscordAttendee("12345", "Alice"));
@@ -47,7 +48,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getDeclined().add(Attendee.createDiscordAttendee("99999", "Bob"));
@@ -66,7 +67,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getMaybe().add(Attendee.createDiscordAttendee("77777", "Carol"));
@@ -85,7 +86,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         // createDiscordAttendee(null, name) creates "[+1] name" as the stored name
@@ -106,7 +107,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee target = Attendee.createDiscordAttendee("11111", "Target");
@@ -128,7 +129,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee attendee = Attendee.createDiscordAttendee("11111", "Alice");
@@ -149,7 +150,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService);
+        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee guest = Attendee.createDiscordAttendee(null, "Eve");

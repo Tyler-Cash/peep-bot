@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.modals.Modal;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +55,10 @@ public class ButtonInteractionListener extends ListenerAdapter {
         Event event = eventRepository.findByMessageId(buttonInteractionEvent.getMessageIdLong());
         if (event == null) {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
+            return;
+        }
+        if (ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6))) {
+            buttonInteractionEvent.reply("Attendance is locked for this event.").setEphemeral(true).queue();
             return;
         }
         String eventType = buttonInteractionEvent.getButton().getCustomId();

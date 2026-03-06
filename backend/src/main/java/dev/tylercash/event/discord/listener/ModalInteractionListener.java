@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Log4j2
@@ -32,6 +33,10 @@ public class ModalInteractionListener extends ListenerAdapter {
         long startTime = System.nanoTime();
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
         Event event = eventRepository.findByChannelId(modalInteractionEvent.getChannel().getIdLong());
+        if (event == null || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6))) {
+            modalInteractionEvent.reply("Attendance is locked for this event.").setEphemeral(true).queue();
+            return;
+        }
         String plus1Name = interaction.getValues().get(0).getAsString();
         event.getAccepted().add(Attendee.createDiscordAttendee(null, plus1Name));
         modalInteractionEvent.editMessageEmbeds(embedService.getMessage(event, clock)).queue();
