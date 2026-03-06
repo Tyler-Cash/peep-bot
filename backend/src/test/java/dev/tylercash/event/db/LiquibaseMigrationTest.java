@@ -19,17 +19,27 @@ import liquibase.resource.Resource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 class LiquibaseMigrationTest {
 
     // 16 changesets run before the data migration (through "create attendance table")
     // Changesets 17-20: migrate creator, seed cache, migrate attendees, drop old columns
     private static final int CHANGESETS_BEFORE_DATA_MIGRATION = 16;
 
-    private Connection openConnection() throws Exception {
-        PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:17-alpine");
-        pg.start();
-        return DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+    @Container
+    private static final PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:17-alpine");
+
+    private Connection createIsolatedConnection() throws Exception {
+        String dbName = "test_" + UUID.randomUUID().toString().replace("-", "");
+        try (Connection admin = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+                Statement stmt = admin.createStatement()) {
+            stmt.execute("CREATE DATABASE " + dbName);
+        }
+        String url = pg.getJdbcUrl().replaceFirst("/[^/]*$", "/" + dbName);
+        return DriverManager.getConnection(url, pg.getUsername(), pg.getPassword());
     }
 
     private Liquibase createLiquibase(Connection connection) throws Exception {
@@ -41,7 +51,7 @@ class LiquibaseMigrationTest {
     @Test
     @DisplayName("Migration changesets correctly transform JSON attendees to attendance table and seed cache")
     void migrationTransformsExistingData() throws Exception {
-        try (Connection conn = openConnection()) {
+        try (Connection conn = createIsolatedConnection()) {
 
             Liquibase liquibase = createLiquibase(conn);
 
@@ -165,7 +175,7 @@ class LiquibaseMigrationTest {
     @Test
     @DisplayName("Migration handles events with null/empty JSON columns gracefully")
     void migrationHandlesNullAndEmptyJson() throws Exception {
-        try (Connection conn = openConnection()) {
+        try (Connection conn = createIsolatedConnection()) {
 
             Liquibase liquibase = createLiquibase(conn);
             liquibase.update(CHANGESETS_BEFORE_DATA_MIGRATION, "");

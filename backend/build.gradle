@@ -101,6 +101,7 @@ tasks.named('test') {
         exceptionFormat = 'full'
         showStackTraces = true
     }
+    maxParallelForks = 2
     finalizedBy jacocoTestReport
 }
 
