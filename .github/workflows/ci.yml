@@ -222,7 +222,7 @@ jobs:
           docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@0986a7fde0f76a0ebc00ddd1f7a8585e55d607c6 # v4
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         with:
           extra_plugins: |
             @semantic-release/exec
