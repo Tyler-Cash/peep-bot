@@ -21,6 +21,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.statemachine.StateContext;
 
@@ -40,7 +41,11 @@ class EventStateMachineActionsTest {
         eventRepository = mock(EventRepository.class);
         immichService = mock(ImmichService.class);
         eventService = mock(EventService.class);
-        actions = new EventStateMachineActions(discordService, eventRepository, immichService, CLOCK, eventService);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<EventService> eventServiceProvider = mock(ObjectProvider.class);
+        when(eventServiceProvider.getObject()).thenReturn(eventService);
+        actions = new EventStateMachineActions(
+                discordService, eventRepository, immichService, CLOCK, eventServiceProvider);
     }
 
     @SuppressWarnings("unchecked")

@@ -35,6 +35,7 @@ import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackA
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.ObjectProvider;
 
 class ButtonInteractionListenerTest {
     final ArgumentCaptor<Modal> modalArgumentCaptor = ArgumentCaptor.forClass(Modal.class);
@@ -48,6 +49,9 @@ class ButtonInteractionListenerTest {
         ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
         EmbedService embedService = mock(EmbedService.class);
         EventService eventService = mock(EventService.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<EventService> eventServiceProvider = mock(ObjectProvider.class);
+        when(eventServiceProvider.getObject()).thenReturn(eventService);
         AttendanceService attendanceService = mock(AttendanceService.class);
         DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
 
@@ -56,7 +60,7 @@ class ButtonInteractionListenerTest {
                 metricsService,
                 eventRepository,
                 embedService,
-                eventService,
+                eventServiceProvider,
                 attendanceService,
                 discordUserCacheService);
 
@@ -98,12 +102,14 @@ class ButtonInteractionListenerTest {
         EventRepository eventRepository = mock(EventRepository.class);
         ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
 
+        @SuppressWarnings("unchecked")
+        ObjectProvider<EventService> esp = mock(ObjectProvider.class);
         ButtonInteractionListener listener = new ButtonInteractionListener(
                 mock(Clock.class),
                 mock(MetricsService.class),
                 eventRepository,
                 mock(EmbedService.class),
-                mock(EventService.class),
+                esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class));
 
@@ -123,13 +129,16 @@ class ButtonInteractionListenerTest {
         ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
         ModalCallbackAction modalCallbackAction = mock(ModalCallbackAction.class);
         EventService eventService = mock(EventService.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<EventService> esp = mock(ObjectProvider.class);
+        when(esp.getObject()).thenReturn(eventService);
 
         ButtonInteractionListener listener = new ButtonInteractionListener(
                 fixedClock,
                 mock(MetricsService.class),
                 eventRepository,
                 mock(EmbedService.class),
-                eventService,
+                esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class));
 

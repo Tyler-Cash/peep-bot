@@ -12,7 +12,7 @@ import dev.tylercash.event.immich.ImmichService;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
@@ -24,26 +24,26 @@ public class EventStateMachineActions {
     private final EventRepository eventRepository;
     private final ImmichService immichService;
     private final Clock clock;
-    private final EventService eventService;
+    private final ObjectProvider<EventService> eventServiceProvider;
 
     public EventStateMachineActions(
             DiscordService discordService,
             EventRepository eventRepository,
             ImmichService immichService,
             Clock clock,
-            @Lazy EventService eventService) {
+            ObjectProvider<EventService> eventServiceProvider) {
         this.discordService = discordService;
         this.eventRepository = eventRepository;
         this.immichService = immichService;
         this.clock = clock;
-        this.eventService = eventService;
+        this.eventServiceProvider = eventServiceProvider;
     }
 
     public Action<EventState, EventStateMachineEvent> preEventNotifyAction() {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
             log.info("Sending pre-event notification for: {}", event.getName());
-            eventService.populateAttendance(event);
+            eventServiceProvider.getObject().populateAttendance(event);
             discordService.sendMessageBeforeEvent(event);
             event.setState(EventState.NOTIFIED);
             eventRepository.save(event);
@@ -98,7 +98,7 @@ public class EventStateMachineActions {
             log.info("Cancelling event: {}", event.getName());
             event.setName("[CANCELLED] " + event.getName());
             discordService.removeEventButtons(event);
-            eventService.populateAttendance(event);
+            eventServiceProvider.getObject().populateAttendance(event);
             discordService.updateEventMessage(event);
             discordService.updateChannelName(event);
             discordService.archiveEventChannel(event);

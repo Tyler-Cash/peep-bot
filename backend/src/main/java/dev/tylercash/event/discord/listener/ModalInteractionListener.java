@@ -16,7 +16,7 @@ import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 @Log4j2
@@ -28,7 +28,7 @@ public class ModalInteractionListener extends ListenerAdapter {
     private final MetricsService metricsService;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
-    private final EventService eventService;
+    private final ObjectProvider<EventService> eventServiceProvider;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
 
@@ -37,14 +37,14 @@ public class ModalInteractionListener extends ListenerAdapter {
             MetricsService metricsService,
             EventRepository eventRepository,
             EmbedService embedService,
-            @Lazy EventService eventService,
+            ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService) {
         this.clock = clock;
         this.metricsService = metricsService;
         this.eventRepository = eventRepository;
         this.embedService = embedService;
-        this.eventService = eventService;
+        this.eventServiceProvider = eventServiceProvider;
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
     }
@@ -55,7 +55,7 @@ public class ModalInteractionListener extends ListenerAdapter {
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
         Event event = eventRepository.findByChannelId(
                 modalInteractionEvent.getChannel().getIdLong());
-        if (event == null || eventService.isCompleted(event)) {
+        if (event == null || eventServiceProvider.getObject().isCompleted(event)) {
             modalInteractionEvent
                     .reply("Attendance is locked for this event.")
                     .setEphemeral(true)
@@ -71,7 +71,7 @@ public class ModalInteractionListener extends ListenerAdapter {
         attendanceService.recordAttendance(
                 event.getId(), null, "[+1] " + plus1Name, AttendanceStatus.ACCEPTED, ownerSnowflake);
 
-        eventService.populateAttendance(event);
+        eventServiceProvider.getObject().populateAttendance(event);
         modalInteractionEvent
                 .editMessageEmbeds(embedService.getMessage(event, clock))
                 .queue();

@@ -23,7 +23,7 @@ import net.dv8tion.jda.api.components.textinput.TextInputStyle;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.modals.Modal;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 @Log4j2
@@ -37,7 +37,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private final MetricsService metricsService;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
-    private final EventService eventService;
+    private final ObjectProvider<EventService> eventServiceProvider;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
 
@@ -46,14 +46,14 @@ public class ButtonInteractionListener extends ListenerAdapter {
             MetricsService metricsService,
             EventRepository eventRepository,
             EmbedService embedService,
-            @Lazy EventService eventService,
+            ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService) {
         this.clock = clock;
         this.metricsService = metricsService;
         this.eventRepository = eventRepository;
         this.embedService = embedService;
-        this.eventService = eventService;
+        this.eventServiceProvider = eventServiceProvider;
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
     }
@@ -78,7 +78,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
             return;
         }
-        if (eventService.isCompleted(event)) {
+        if (eventServiceProvider.getObject().isCompleted(event)) {
             buttonInteractionEvent
                     .reply("Attendance is locked for this event.")
                     .setEphemeral(true)
@@ -101,7 +101,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             attendanceService.flipAttendance(event.getId(), userId, null, status);
         }
 
-        eventService.populateAttendance(event);
+        eventServiceProvider.getObject().populateAttendance(event);
         buttonInteractionEvent
                 .editMessageEmbeds(embedService.getMessage(event, clock))
                 .complete();
