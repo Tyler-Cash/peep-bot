@@ -53,6 +53,10 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./backend
 
+      - name: Check code formatting
+        run: ./gradlew spotlessCheck
+        working-directory: ./backend
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
@@ -154,6 +158,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./frontend
+
+      - name: Check code formatting
+        run: npx prettier --check "src/**/*.{js,jsx,css}"
+        working-directory: ./frontend
+
+      - name: Lint code
+        run: npx eslint src/
         working-directory: ./frontend
 
       - name: Run tests
