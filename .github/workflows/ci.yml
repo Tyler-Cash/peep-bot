@@ -110,6 +110,10 @@ jobs:
           severity-cutoff: high
           fail-build: true
 
+      - name: Print Grype results
+        if: always()
+        run: cat backend/grype-backend.sarif | jq '.runs[].results[] | {ruleId, message: .message.text}'
+
       - name: Manually correct SARIF paths
         if: always()
         run: |
