@@ -51,12 +51,17 @@
     border: 1px solid var(--border-muted);
     background-color: var(--bg-input);
     color: var(--text-primary);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
 }
 
 .event-form-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15), 0 2px 8px rgba(88, 101, 242, 0.1);
+    box-shadow:
+        0 0 0 3px rgba(88, 101, 242, 0.15),
+        0 2px 8px rgba(88, 101, 242, 0.1);
     background-color: var(--bg-elevated);
     color: var(--text-primary);
 }
@@ -219,7 +224,10 @@
     margin-bottom: 1rem;
     overflow: hidden;
     border: 1px solid var(--border-subtle);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition:
+        box-shadow 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
@@ -395,7 +403,9 @@
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
     padding: 0.6rem 1rem;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 24px rgba(0, 0, 0, 0.35);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04),
+        0 4px 24px rgba(0, 0, 0, 0.35);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -576,7 +586,9 @@
     font-size: 1rem;
     line-height: 1;
     flex-shrink: 0;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition:
+        color 0.15s ease,
+        background 0.15s ease;
 }
 
 .attendee-remove:hover:not(:disabled) {

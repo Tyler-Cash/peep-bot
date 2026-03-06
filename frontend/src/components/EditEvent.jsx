@@ -1,14 +1,19 @@
-import React, {useEffect, useState} from 'react';
-import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation, useCancelEventMutation} from "../api/eventBotApi";
-import Navbar from "./Navbar";
-import ConfirmModal from "./ConfirmModal";
-import {useForm} from "react-hook-form";
-import {useParams, useNavigate, Link} from "react-router-dom";
-import {useSelector} from "react-redux";
+import React, { useEffect, useState } from 'react';
+import {
+    useGetEventQuery,
+    usePatchEventMutation,
+    useRemoveAttendeeMutation,
+    useCancelEventMutation,
+} from '../api/eventBotApi';
+import Navbar from './Navbar';
+import ConfirmModal from './ConfirmModal';
+import { useForm } from 'react-hook-form';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
 
-function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, canRemove}) {
+function AttendeeColumn({ title, colorClass, attendees, onRemove, removingKey, canRemove }) {
     return (
         <div className="attendee-col">
             <div className={`attendee-col-header ${colorClass}`}>
@@ -16,7 +21,7 @@ function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, ca
                 <span className="attendee-col-count">{attendees?.length ?? 0}</span>
             </div>
             <div className="attendee-col-body">
-                {(!attendees || attendees.length === 0) ? (
+                {!attendees || attendees.length === 0 ? (
                     <p className="attendee-empty">None</p>
                 ) : (
                     attendees.map((a) => {
@@ -32,9 +37,11 @@ function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, ca
                                         onClick={() => onRemove(a)}
                                         aria-label={`Remove ${a.name}`}
                                     >
-                                        {removingKey === key
-                                            ? <span className="spinner-border spinner-border-sm" aria-hidden="true"/>
-                                            : <i className="bi bi-x"/>}
+                                        {removingKey === key ? (
+                                            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                                        ) : (
+                                            <i className="bi bi-x" />
+                                        )}
                                     </button>
                                 )}
                             </div>
@@ -47,16 +54,16 @@ function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, ca
 }
 
 export default function EditEvent() {
-    const {id} = useParams();
+    const { id } = useParams();
     const navigate = useNavigate();
-    const {data, error, isFetching} = useGetEventQuery({"id": id})
-    const [patchEvent] = usePatchEventMutation({})
-    const [removeAttendee] = useRemoveAttendeeMutation()
-    const [cancelEvent, {isLoading: isCancelling}] = useCancelEventMutation()
-    const isAdmin = useSelector(state => state.auth.isAdmin)
-    const discordId = useSelector(state => state.auth.discordId)
-    const [removingKey, setRemovingKey] = useState(null)
-    const [confirmAction, setConfirmAction] = useState(null)
+    const { data, error, isFetching } = useGetEventQuery({ id: id });
+    const [patchEvent] = usePatchEventMutation({});
+    const [removeAttendee] = useRemoveAttendeeMutation();
+    const [cancelEvent, { isLoading: isCancelling }] = useCancelEventMutation();
+    const isAdmin = useSelector((state) => state.auth.isAdmin);
+    const discordId = useSelector((state) => state.auth.discordId);
+    const [removingKey, setRemovingKey] = useState(null);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const canRemove = (a) => {
         if (data?.completed) return false;
@@ -69,47 +76,51 @@ export default function EditEvent() {
         handleSubmit,
         setError,
         setValue,
-        formState: {errors, isSubmitting},
-    } = useForm({})
+        formState: { errors, isSubmitting },
+    } = useForm({});
 
     const onSubmit = async (data) => {
         try {
             await patchEvent({
-                "id": id,
-                "name": data.name,
-                "description": data.description,
-                "capacity": parseInt(data.capacity || "0"),
-                "dateTime": moment(data.dateTime).toISOString(),
-                "accepted": []
+                id: id,
+                name: data.name,
+                description: data.description,
+                capacity: parseInt(data.capacity || '0'),
+                dateTime: moment(data.dateTime).toISOString(),
+                accepted: [],
             }).unwrap();
-            navigate('/', {state: {toast: 'Event updated successfully'}});
+            navigate('/', { state: { toast: 'Event updated successfully' } });
         } catch (e) {
-            if (e.data?.message === "validation error") {
-                e.data.fieldErrors.forEach(error => {
-                    setError(error.field, {message: error.defaultMessage})
+            if (e.data?.message === 'validation error') {
+                e.data.fieldErrors.forEach((error) => {
+                    setError(error.field, { message: error.defaultMessage });
                 });
             } else {
-                setError("root", {
-                    message: "Something went wrong. Please try again later. Error details: "
-                        + e.message + " (Code: " + e.status + ")"
-                })
+                setError('root', {
+                    message:
+                        'Something went wrong. Please try again later. Error details: ' +
+                        e.message +
+                        ' (Code: ' +
+                        e.status +
+                        ')',
+                });
             }
         }
-        await new Promise(r => setTimeout(r, 500));
-    }
+        await new Promise((r) => setTimeout(r, 500));
+    };
 
     const handleRemove = async (attendee) => {
         const key = attendee.snowflake || attendee.name;
         setRemovingKey(key);
         try {
-            await removeAttendee({id, snowflake: attendee.snowflake, name: attendee.name}).unwrap();
+            await removeAttendee({ id, snowflake: attendee.snowflake, name: attendee.name }).unwrap();
         } catch (e) {
-            console.error("Failed to remove attendee", e);
+            console.error('Failed to remove attendee', e);
         } finally {
             setRemovingKey(null);
             setConfirmAction(null);
         }
-    }
+    };
 
     const confirmRemove = (attendee) => {
         setConfirmAction({
@@ -123,13 +134,13 @@ export default function EditEvent() {
 
     const handleCancelEvent = async () => {
         try {
-            await cancelEvent({id}).unwrap();
+            await cancelEvent({ id }).unwrap();
             setConfirmAction(null);
-            navigate('/', {state: {toast: 'Event cancelled successfully'}});
+            navigate('/', { state: { toast: 'Event cancelled successfully' } });
         } catch (e) {
             setConfirmAction(null);
-            setError("root", {
-                message: "Failed to cancel event. " + (e.data?.message || e.message || "Please try again later.")
+            setError('root', {
+                message: 'Failed to cancel event. ' + (e.data?.message || e.message || 'Please try again later.'),
             });
         }
     };
@@ -137,7 +148,8 @@ export default function EditEvent() {
     const confirmCancel = () => {
         setConfirmAction({
             title: 'Cancel Event',
-            message: 'This will cancel the event, lock attendance, and remove Discord interaction buttons. The event name will be prefixed with "[CANCELLED]". This cannot be undone.',
+            message:
+                'This will cancel the event, lock attendance, and remove Discord interaction buttons. The event name will be prefixed with "[CANCELLED]". This cannot be undone.',
             confirmLabel: 'Cancel Event',
             confirmColorClass: 'btn-confirm-danger',
             onConfirm: handleCancelEvent,
@@ -147,21 +159,24 @@ export default function EditEvent() {
     useEffect(() => {
         if (data) {
             var eventDate = moment(data.dateTime);
-            setValue("name", data.name);
-            setValue("description", data.description);
-            setValue("capacity", parseInt(data.capacity || "0"));
-            setValue("dateTime", eventDate.tz('Australia/Sydney').format('YYYY-MM-DD HH:mm:ss'));
+            setValue('name', data.name);
+            setValue('description', data.description);
+            setValue('capacity', parseInt(data.capacity || '0'));
+            setValue('dateTime', eventDate.tz('Australia/Sydney').format('YYYY-MM-DD HH:mm:ss'));
         }
     }, [data]);
 
     if (isFetching) {
         return (
             <div>
-                <Navbar focus="EDIT"/>
+                <Navbar focus="EDIT" />
                 <div className="loading-container">
                     <div className="text-center">
-                        <div className="spinner-border text-primary" role="status"
-                             style={{width: '3rem', height: '3rem'}}>
+                        <div
+                            className="spinner-border text-primary"
+                            role="status"
+                            style={{ width: '3rem', height: '3rem' }}
+                        >
                             <span className="visually-hidden">Loading...</span>
                         </div>
                         <p className="mt-3 text-muted">Loading event...</p>
@@ -173,7 +188,7 @@ export default function EditEvent() {
 
     return (
         <div>
-            <Navbar focus="EDIT"/>
+            <Navbar focus="EDIT" />
             <div className="container event-container">
                 <div className="event-card">
                     <div className="event-card-header">
@@ -191,27 +206,31 @@ export default function EditEvent() {
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="event-card-body">
                             <div className="event-form-group">
-                                <label className="event-form-label" htmlFor="name">Event Name</label>
+                                <label className="event-form-label" htmlFor="name">
+                                    Event Name
+                                </label>
                                 <input
                                     id="name"
-                                    className={`form-control event-form-input ${errors.name ? "is-invalid" : ""}`}
+                                    className={`form-control event-form-input ${errors.name ? 'is-invalid' : ''}`}
                                     placeholder="What's the event called?"
-                                    {...register("name", {
-                                        required: "Please provide an event name",
-                                        minLength: {value: 3, message: "Name must be at least 3 characters"}
+                                    {...register('name', {
+                                        required: 'Please provide an event name',
+                                        minLength: { value: 3, message: 'Name must be at least 3 characters' },
                                     })}
                                 />
                                 <div className="invalid-feedback">{errors.name?.message}</div>
                             </div>
 
                             <div className="event-form-group">
-                                <label className="event-form-label" htmlFor="description">Description</label>
+                                <label className="event-form-label" htmlFor="description">
+                                    Description
+                                </label>
                                 <textarea
                                     id="description"
-                                    className={`form-control event-form-input ${errors.description ? "is-invalid" : ""}`}
+                                    className={`form-control event-form-input ${errors.description ? 'is-invalid' : ''}`}
                                     placeholder="Give people a reason to come..."
                                     rows="4"
-                                    {...register("description")}
+                                    {...register('description')}
                                 />
                                 <div className="invalid-feedback">{errors.description?.message}</div>
                             </div>
@@ -219,13 +238,15 @@ export default function EditEvent() {
                             <div className="row">
                                 <div className="col-md-6">
                                     <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="capacity">Capacity</label>
+                                        <label className="event-form-label" htmlFor="capacity">
+                                            Capacity
+                                        </label>
                                         <input
                                             id="capacity"
                                             type="number"
-                                            className={`form-control event-form-input ${errors.capacity ? "is-invalid" : ""}`}
+                                            className={`form-control event-form-input ${errors.capacity ? 'is-invalid' : ''}`}
                                             placeholder="0 = unlimited"
-                                            {...register("capacity")}
+                                            {...register('capacity')}
                                         />
                                         <div className="invalid-feedback">{errors.capacity?.message}</div>
                                     </div>
@@ -233,12 +254,14 @@ export default function EditEvent() {
 
                                 <div className="col-md-6">
                                     <div className="event-form-group">
-                                        <label className="event-form-label" htmlFor="dateTime">Start Time</label>
+                                        <label className="event-form-label" htmlFor="dateTime">
+                                            Start Time
+                                        </label>
                                         <input
                                             id="dateTime"
-                                            className={`form-control event-form-input ${errors.dateTime ? "is-invalid" : ""}`}
+                                            className={`form-control event-form-input ${errors.dateTime ? 'is-invalid' : ''}`}
                                             type="datetime-local"
-                                            {...register("dateTime", {required: "Please select a start time"})}
+                                            {...register('dateTime', { required: 'Please select a start time' })}
                                         />
                                         <div className="invalid-feedback">{errors.dateTime?.message}</div>
                                     </div>
@@ -247,11 +270,16 @@ export default function EditEvent() {
                         </div>
 
                         <div className="event-footer">
-                            <Link to="/" className="btn-cancel">Cancel</Link>
+                            <Link to="/" className="btn-cancel">
+                                Cancel
+                            </Link>
                             <button className="btn-event" type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <span>
-                                        <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                        <span
+                                            className="spinner-border spinner-border-sm me-2"
+                                            aria-hidden="true"
+                                        ></span>
                                         Saving...
                                     </span>
                                 ) : (
@@ -269,7 +297,12 @@ export default function EditEvent() {
                             <p className="text-muted mb-0 mt-1 small">Administrative actions for this event</p>
                         </div>
                         <div className="event-card-body">
-                            <button type="button" className="btn-confirm-danger" onClick={confirmCancel} disabled={isCancelling}>
+                            <button
+                                type="button"
+                                className="btn-confirm-danger"
+                                onClick={confirmCancel}
+                                disabled={isCancelling}
+                            >
                                 Cancel Event
                             </button>
                         </div>
@@ -282,10 +315,10 @@ export default function EditEvent() {
                             <h4 className="mb-0">Attendees</h4>
                             <p className="text-muted mb-0 mt-1 small">
                                 {data.completed
-                                    ? "This event has been completed"
+                                    ? 'This event has been completed'
                                     : isAdmin
-                                        ? "Remove attendees from any response list"
-                                        : "You can remove +1 guests you've added"}
+                                      ? 'Remove attendees from any response list'
+                                      : "You can remove +1 guests you've added"}
                             </p>
                         </div>
                         <div className="event-card-body">
@@ -331,5 +364,5 @@ export default function EditEvent() {
                 isLoading={isCancelling || !!removingKey}
             />
         </div>
-    )
+    );
 }

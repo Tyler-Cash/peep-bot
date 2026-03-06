@@ -1,13 +1,13 @@
 import React from 'react';
-import {Navigate,} from 'react-router-dom';
-import {useDispatch, useSelector} from "react-redux";
-import {useIsLoggedInQuery} from "../api/eventBotApi";
-import {loginSuccess, logout} from "../reducers/authReducer";
+import { Navigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { useIsLoggedInQuery } from '../api/eventBotApi';
+import { loginSuccess, logout } from '../reducers/authReducer';
 
-const Protected = ({children}) => {
-    const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
+const Protected = ({ children }) => {
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const dispatch = useDispatch();
-    const {data, error, isSuccess, isLoading} = useIsLoggedInQuery()
+    const { data, error, isSuccess, isLoading } = useIsLoggedInQuery();
     if (isSuccess) {
         dispatch(loginSuccess(data));
     } else if (error) {
@@ -15,7 +15,7 @@ const Protected = ({children}) => {
         dispatch(logout());
     }
     if (isLoading) return null;
-    return isAuthenticated ? children : (<Navigate to="/login"/>);
+    return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 export default Protected;

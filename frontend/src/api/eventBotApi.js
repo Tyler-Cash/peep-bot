@@ -1,5 +1,5 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
-import {backendUrl} from './backendUrl'
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { backendUrl } from './backendUrl';
 
 // In-memory cache of the CSRF token for this tab/session.
 // You could also store it in Redux state if you prefer.
@@ -13,7 +13,7 @@ async function ensureCsrfToken(baseUrl) {
     const res = await fetch(`${baseUrl}csrf`, {
         method: 'GET',
         credentials: 'include',
-        headers: {'Accept': 'application/json'},
+        headers: { Accept: 'application/json' },
     });
 
     if (!res.ok) {
@@ -49,7 +49,12 @@ const baseQueryWithCsrf = async (args, api, extraOptions) => {
     const method =
         typeof args === 'string'
             ? 'GET'
-            : (args?.method || args?.body?.method || args?.params?.method || (args?.body ? 'POST' : 'GET')).toUpperCase();
+            : (
+                  args?.method ||
+                  args?.body?.method ||
+                  args?.params?.method ||
+                  (args?.body ? 'POST' : 'GET')
+              ).toUpperCase();
 
     // Only ensure CSRF for state-changing requests
     const needsCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
@@ -59,7 +64,7 @@ const baseQueryWithCsrf = async (args, api, extraOptions) => {
             await ensureCsrfToken(baseUrl);
         } catch (e) {
             // Surface a meaningful error to RTK Query
-            return {error: {status: 'CSRF_FETCH_FAILED', data: String(e)}};
+            return { error: { status: 'CSRF_FETCH_FAILED', data: String(e) } };
         }
     }
 
@@ -85,14 +90,14 @@ export const eventBotApi = createApi({
             providesTags: ['Event'],
         }),
         getEvent: builder.query({
-            query: ({id}) => `event/${id}`,
-            providesTags: (result, error, {id}) => [{type: 'Event', id}],
+            query: ({ id }) => `event/${id}`,
+            providesTags: (result, error, { id }) => [{ type: 'Event', id }],
         }),
         deleteEvent: builder.mutation({
-            query: ({id}) => ({
+            query: ({ id }) => ({
                 url: `event`,
                 method: 'DELETE',
-                params: {id: id},
+                params: { id: id },
             }),
             invalidatesTags: ['Event'],
         }),
@@ -101,13 +106,13 @@ export const eventBotApi = createApi({
                 url: `event`,
                 method: 'PUT',
                 body: {
-                    "name": data.name,
-                    "description": data.description,
-                    "location": data.location,
-                    "capacity": data.capacity,
-                    "cost": data.cost,
-                    "dateTime": data.dateTime,
-                    "notifyOnCreate": data.notifyOnCreate ?? true
+                    name: data.name,
+                    description: data.description,
+                    location: data.location,
+                    capacity: data.capacity,
+                    cost: data.cost,
+                    dateTime: data.dateTime,
+                    notifyOnCreate: data.notifyOnCreate ?? true,
                 },
             }),
             invalidatesTags: ['Event'],
@@ -117,33 +122,33 @@ export const eventBotApi = createApi({
                 url: `event`,
                 method: 'PATCH',
                 body: {
-                    "id": data.id,
-                    "name": data.name,
-                    "description": data.description,
-                    "capacity": data.capacity,
-                    "dateTime": data.dateTime,
-                    "accepted": data.accepted,
+                    id: data.id,
+                    name: data.name,
+                    description: data.description,
+                    capacity: data.capacity,
+                    dateTime: data.dateTime,
+                    accepted: data.accepted,
                 },
             }),
             invalidatesTags: ['Event'],
         }),
         removeAttendee: builder.mutation({
-            query: ({id, snowflake, name}) => ({
+            query: ({ id, snowflake, name }) => ({
                 url: `event/${id}/attendee`,
                 method: 'DELETE',
-                params: (snowflake && snowflake.trim()) ? {snowflake} : {name},
+                params: snowflake && snowflake.trim() ? { snowflake } : { name },
             }),
-            invalidatesTags: (result, error, {id}) => [{type: 'Event', id}],
+            invalidatesTags: (result, error, { id }) => [{ type: 'Event', id }],
         }),
         cancelEvent: builder.mutation({
-            query: ({id}) => ({url: `event/${id}/cancel`, method: 'POST'}),
-            invalidatesTags: (result, error, {id}) => [{type: 'Event', id}, 'Event'],
+            query: ({ id }) => ({ url: `event/${id}/cancel`, method: 'POST' }),
+            invalidatesTags: (result, error, { id }) => [{ type: 'Event', id }, 'Event'],
         }),
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
     }),
-})
+});
 
 export const {
     useGetEventsQuery,
