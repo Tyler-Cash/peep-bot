@@ -36,7 +36,7 @@ public class ErrorHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
         log.error("Exception occurred: {}, Request Details: {}", ex.getMessage(), request.getDescription(false), ex);
-        return new ResponseEntity<>("An error occurred" + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("An internal error occurred. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ResponseStatus(BAD_REQUEST)
