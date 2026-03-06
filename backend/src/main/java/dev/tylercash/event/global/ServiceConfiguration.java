@@ -1,9 +1,12 @@
 package dev.tylercash.event.global;
 
+import dev.tylercash.event.immich.ImmichConfiguration;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestClient;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -27,9 +30,17 @@ public class ServiceConfiguration {
                 .build();
     }
 
-
     @Bean(NOTIFY_EVENT_ROLES_KEY)
     public RateLimiter notifyEventRoles(RateLimiterConfig config) {
         return RateLimiter.of(NOTIFY_EVENT_ROLES_KEY, config);
+    }
+
+    @Bean
+    public RestClient immichRestClient(ImmichConfiguration immichConfiguration) {
+        return RestClient.builder()
+                .baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
+                .defaultHeader("x-api-key", immichConfiguration.getApiKey() != null ? immichConfiguration.getApiKey() : "")
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .build();
     }
 }

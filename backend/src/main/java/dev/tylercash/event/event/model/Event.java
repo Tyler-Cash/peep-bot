@@ -62,6 +62,8 @@ public class Event {
     @Column(name = "date_time")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
+    private String immichAlbumId;
+    private String immichShareKey;
 
     // Request only flag, do not persist
     @Transient

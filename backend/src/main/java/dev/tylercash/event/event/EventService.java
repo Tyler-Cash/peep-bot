@@ -4,6 +4,7 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.immich.ImmichService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
+    private final ImmichService immichService;
 
     public String createEvent(Event event) {
         TextChannel channel = discordService.createEventChannel(event);
@@ -37,6 +39,13 @@ public class EventService {
             channel.delete().queue();
             throw e;
         }
+        immichService.createAlbum(event.getName(), event.getDescription())
+                .ifPresent(albumId -> {
+                    event.setImmichAlbumId(albumId);
+                    immichService.createSharedLink(albumId)
+                            .ifPresent(event::setImmichShareKey);
+                    eventRepository.save(event);
+                });
         discordService.sortActiveChannels();
         return "Created event for " + event.getName();
     }

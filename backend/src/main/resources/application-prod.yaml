@@ -3,3 +3,5 @@ dev.tylercash:
     allowed-origins: https://event.tylercash.dev
   frontend:
     hostname: event.tylercash.dev
+  immich:
+    album-name-prefix: ""

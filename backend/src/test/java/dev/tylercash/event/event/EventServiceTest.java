@@ -4,6 +4,7 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.immich.ImmichService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,7 +27,8 @@ class EventServiceTest {
     void removeAttendee_bySnowflake_removesFromAccepted() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         event.getAccepted().add(Attendee.createDiscordAttendee("12345", "Alice"));
@@ -44,7 +46,8 @@ class EventServiceTest {
     void removeAttendee_bySnowflake_removesFromDeclined() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         event.getDeclined().add(Attendee.createDiscordAttendee("99999", "Bob"));
@@ -62,7 +65,8 @@ class EventServiceTest {
     void removeAttendee_bySnowflake_removesFromMaybe() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         event.getMaybe().add(Attendee.createDiscordAttendee("77777", "Carol"));
@@ -80,7 +84,8 @@ class EventServiceTest {
     void removeAttendee_byName_removesGuestWithNullSnowflake() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         // createDiscordAttendee(null, name) creates "[+1] name" as the stored name
@@ -100,7 +105,8 @@ class EventServiceTest {
     void removeAttendee_leavesOtherAttendeesUntouched() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         Attendee target = Attendee.createDiscordAttendee("11111", "Target");
@@ -121,7 +127,8 @@ class EventServiceTest {
     void removeAttendee_whenSnowflakeNotFound_stillSavesAndRetainsAttendees() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         Attendee attendee = Attendee.createDiscordAttendee("11111", "Alice");
@@ -141,7 +148,8 @@ class EventServiceTest {
     void removeAttendee_blankSnowflakeFallsBackToNameMatch() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventService service = new EventService(discordService, eventRepository);
+        ImmichService immichService = mock(ImmichService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService);
 
         Event event = buildEvent();
         Attendee guest = Attendee.createDiscordAttendee(null, "Eve");

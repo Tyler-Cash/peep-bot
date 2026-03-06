@@ -257,3 +257,16 @@ databaseChangeLog:
               - column:
                   name: maybe_confirmation_message_id
                   type: bigint
+  - changeSet:
+      id: add immich album columns
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: immich_album_id
+                  type: text
+              - column:
+                  name: immich_share_key
+                  type: text

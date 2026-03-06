@@ -221,6 +221,21 @@ public class DiscordService {
         return rolesByName;
     }
 
+    public void sendAlbumLink(Event event, String albumUrl) {
+        if (event.getNotifications().contains(new Notification(NotificationType.ALBUM_LINK))) {
+            return;
+        }
+        TextChannel channel = getChannel(event);
+        Message message = channel.sendMessage("Photo album for `" + event.getName() + "`: " + albumUrl).complete();
+        message.pin().queue();
+        event.getNotifications().add(
+                new Notification(
+                        NotificationType.ALBUM_LINK,
+                        ZonedDateTime.now(clock).toInstant(),
+                        message.getIdLong()
+                ));
+    }
+
     public void sendMessageBeforeEvent(Event event) {
         if (event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT))) {
             return;
