@@ -1,16 +1,5 @@
 package dev.tylercash.event.immich;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
-
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -18,6 +7,16 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
 
 class ImmichServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -43,7 +42,9 @@ class ImmichServiceTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://immich.example.com/api/albums"))
                 .andExpect(method(HttpMethod.POST))
-                .andRespond(withSuccess(objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(
+                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")),
+                        MediaType.APPLICATION_JSON));
 
         ImmichService service = new ImmichService(enabledConfig(), builder.build());
         Optional<String> result = service.createAlbum("Test Event", "Description");
@@ -60,7 +61,9 @@ class ImmichServiceTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://immich.example.com/api/shared-links"))
                 .andExpect(method(HttpMethod.POST))
-                .andRespond(withSuccess(objectMapper.writeValueAsString(new ImmichSharedLinkResponse("share-key-456")), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(
+                        objectMapper.writeValueAsString(new ImmichSharedLinkResponse("share-key-456")),
+                        MediaType.APPLICATION_JSON));
 
         ImmichService service = new ImmichService(enabledConfig(), builder.build());
         Optional<String> result = service.createSharedLink("album-123");
@@ -107,7 +110,9 @@ class ImmichServiceTest {
         server.expect(requestTo("https://immich.example.com/api/albums"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().json("{\"albumName\":\"[DEV] Test Event\"}"))
-                .andRespond(withSuccess(objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(
+                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")),
+                        MediaType.APPLICATION_JSON));
 
         ImmichService service = new ImmichService(config, builder.build());
         Optional<String> result = service.createAlbum("Test Event", "Description");
@@ -120,7 +125,8 @@ class ImmichServiceTest {
     @Test
     @DisplayName("getShareUrl constructs correct URL")
     void getShareUrlConstructsCorrectUrl() {
-        ImmichService service = new ImmichService(enabledConfig(), RestClient.builder().build());
+        ImmichService service =
+                new ImmichService(enabledConfig(), RestClient.builder().build());
         assertEquals("https://immich.example.com/share/my-key", service.getShareUrl("my-key"));
     }
 }

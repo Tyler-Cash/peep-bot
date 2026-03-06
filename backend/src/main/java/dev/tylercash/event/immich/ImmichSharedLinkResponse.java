@@ -1,4 +1,3 @@
 package dev.tylercash.event.immich;
 
-public record ImmichSharedLinkResponse(String key) {
-}
+public record ImmichSharedLinkResponse(String key) {}

@@ -1,26 +1,27 @@
 package dev.tylercash.event.event;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
-import dev.tylercash.event.event.model.Attendee;
+import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.immich.ImmichService;
+import java.time.Clock;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Clock;
-import java.time.ZonedDateTime;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
@@ -29,159 +30,99 @@ class EventServiceTest {
         return new Event(0L, 0L, 0L, "Test Event", "creator", ZonedDateTime.now(), "description");
     }
 
+    private EventService createService(
+            EventRepository eventRepository,
+            DiscordService discordService,
+            AttendanceService attendanceService,
+            DiscordUserCacheService discordUserCacheService) {
+        return new EventService(
+                discordService,
+                eventRepository,
+                mock(ImmichService.class),
+                mock(EventStateMachineService.class),
+                Clock.systemDefaultZone(),
+                attendanceService,
+                discordUserCacheService);
+    }
+
     @Test
-    void removeAttendee_bySnowflake_removesFromAccepted() {
+    void removeAttendee_delegatesToAttendanceService() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
+        EventService service = createService(eventRepository, discordService, attendanceService, cacheService);
 
         Event event = buildEvent();
-        event.getAccepted().add(Attendee.createDiscordAttendee("12345", "Alice"));
-
         UUID id = UUID.randomUUID();
+        event.setId(id);
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+        when(attendanceService.getCurrentAttendance(id))
+                .thenReturn(new AttendanceSummary(List.of(), List.of(), List.of()));
+        when(cacheService.getDisplayNames(any())).thenReturn(Map.of());
 
         service.removeAttendee(id, "12345", null);
 
-        assertThat(event.getAccepted()).isEmpty();
-        verify(eventRepository).save(event);
+        verify(attendanceService).removeAttendee(id, "12345", null);
     }
 
     @Test
-    void removeAttendee_bySnowflake_removesFromDeclined() {
+    void removeAttendee_byName_delegatesToAttendanceService() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
+        EventService service = createService(eventRepository, discordService, attendanceService, cacheService);
 
         Event event = buildEvent();
-        event.getDeclined().add(Attendee.createDiscordAttendee("99999", "Bob"));
-
         UUID id = UUID.randomUUID();
+        event.setId(id);
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-
-        service.removeAttendee(id, "99999", null);
-
-        assertThat(event.getDeclined()).isEmpty();
-        verify(eventRepository).save(event);
-    }
-
-    @Test
-    void removeAttendee_bySnowflake_removesFromMaybe() {
-        EventRepository eventRepository = mock(EventRepository.class);
-        DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
-
-        Event event = buildEvent();
-        event.getMaybe().add(Attendee.createDiscordAttendee("77777", "Carol"));
-
-        UUID id = UUID.randomUUID();
-        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-
-        service.removeAttendee(id, "77777", null);
-
-        assertThat(event.getMaybe()).isEmpty();
-        verify(eventRepository).save(event);
-    }
-
-    @Test
-    void removeAttendee_byName_removesGuestWithNullSnowflake() {
-        EventRepository eventRepository = mock(EventRepository.class);
-        DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
-
-        Event event = buildEvent();
-        // createDiscordAttendee(null, name) creates "[+1] name" as the stored name
-        Attendee guest = Attendee.createDiscordAttendee(null, "Dave");
-        event.getAccepted().add(guest);
-
-        UUID id = UUID.randomUUID();
-        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+        when(attendanceService.getCurrentAttendance(id))
+                .thenReturn(new AttendanceSummary(List.of(), List.of(), List.of()));
+        when(cacheService.getDisplayNames(any())).thenReturn(Map.of());
 
         service.removeAttendee(id, null, "[+1] Dave");
 
-        assertThat(event.getAccepted()).isEmpty();
-        verify(eventRepository).save(event);
+        verify(attendanceService).removeAttendee(id, null, "[+1] Dave");
     }
 
     @Test
-    void removeAttendee_leavesOtherAttendeesUntouched() {
+    void removeAttendee_whenCompleted_throwsForbidden() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
+        EventService service = createService(eventRepository, discordService, attendanceService, cacheService);
 
         Event event = buildEvent();
-        Attendee target = Attendee.createDiscordAttendee("11111", "Target");
-        Attendee other = Attendee.createDiscordAttendee("22222", "Other");
-        event.getAccepted().add(target);
-        event.getAccepted().add(other);
-
+        event.setState(EventState.COMPLETED);
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
-        service.removeAttendee(id, "11111", null);
+        assertThatThrownBy(() -> service.removeAttendee(id, "12345", null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Attendance is locked");
 
-        assertThat(event.getAccepted()).hasSize(1);
-        assertThat(event.getAccepted().iterator().next().getSnowflake()).isEqualTo("22222");
-    }
-
-    @Test
-    void removeAttendee_whenSnowflakeNotFound_stillSavesAndRetainsAttendees() {
-        EventRepository eventRepository = mock(EventRepository.class);
-        DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
-
-        Event event = buildEvent();
-        Attendee attendee = Attendee.createDiscordAttendee("11111", "Alice");
-        event.getAccepted().add(attendee);
-
-        UUID id = UUID.randomUUID();
-        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-
-        // Remove a snowflake that doesn't exist on the event
-        service.removeAttendee(id, "99999", null);
-
-        assertThat(event.getAccepted()).hasSize(1);
-        verify(eventRepository).save(event);
-    }
-
-    @Test
-    void removeAttendee_blankSnowflakeFallsBackToNameMatch() {
-        EventRepository eventRepository = mock(EventRepository.class);
-        DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
-
-        Event event = buildEvent();
-        Attendee guest = Attendee.createDiscordAttendee(null, "Eve");
-        event.getMaybe().add(guest);
-
-        UUID id = UUID.randomUUID();
-        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-
-        // Empty snowflake should fall through to name matching
-        service.removeAttendee(id, "  ", "[+1] Eve");
-
-        assertThat(event.getMaybe()).isEmpty();
-        verify(eventRepository).save(event);
+        verifyNoInteractions(attendanceService);
     }
 
     @Test
     void cancelEvent_throwsBadRequest_whenEventAlreadyCompleted() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
         EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+        EventService service = new EventService(
+                discordService,
+                eventRepository,
+                mock(ImmichService.class),
+                stateMachineService,
+                Clock.systemDefaultZone(),
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class));
 
         Event event = buildEvent();
         event.setState(EventState.COMPLETED);
-
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
@@ -196,15 +137,21 @@ class EventServiceTest {
     void cancelEvent_callsAttemptTransition_withCancelEvent() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
         EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+        EventService service = new EventService(
+                discordService,
+                eventRepository,
+                mock(ImmichService.class),
+                stateMachineService,
+                Clock.systemDefaultZone(),
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class));
 
         Event event = buildEvent();
-
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL)).thenReturn(true);
+        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL))
+                .thenReturn(true);
 
         service.cancelEvent(id);
 
@@ -215,15 +162,21 @@ class EventServiceTest {
     void cancelEvent_throwsInternalServerError_whenTransitionFails() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        ImmichService immichService = mock(ImmichService.class);
         EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+        EventService service = new EventService(
+                discordService,
+                eventRepository,
+                mock(ImmichService.class),
+                stateMachineService,
+                Clock.systemDefaultZone(),
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class));
 
         Event event = buildEvent();
-
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL)).thenReturn(false);
+        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL))
+                .thenReturn(false);
 
         assertThatThrownBy(() -> service.cancelEvent(id))
                 .isInstanceOf(ResponseStatusException.class)

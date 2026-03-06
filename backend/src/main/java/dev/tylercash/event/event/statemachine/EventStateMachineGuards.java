@@ -3,12 +3,11 @@ package dev.tylercash.event.event.statemachine;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.immich.ImmichConfiguration;
+import java.time.Clock;
+import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.statemachine.guard.Guard;
 import org.springframework.stereotype.Component;
-
-import java.time.Clock;
-import java.time.ZonedDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -21,8 +20,7 @@ public class EventStateMachineGuards {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
             ZonedDateTime now = ZonedDateTime.now(clock);
-            return now.isAfter(event.getDateTime().minusHours(2))
-                    && now.isBefore(event.getDateTime());
+            return now.isAfter(event.getDateTime().minusHours(2)) && now.isBefore(event.getDateTime());
         };
     }
 
@@ -57,7 +55,11 @@ public class EventStateMachineGuards {
             Event event = context.getExtendedState().get("event", Event.class);
             ZonedDateTime now = ZonedDateTime.now(clock);
             ZonedDateTime archiveTime = event.getDateTime()
-                    .plusDays(1).withHour(22).withMinute(0).withSecond(0).withNano(0);
+                    .plusDays(1)
+                    .withHour(22)
+                    .withMinute(0)
+                    .withSecond(0)
+                    .withNano(0);
             return now.isAfter(archiveTime);
         };
     }

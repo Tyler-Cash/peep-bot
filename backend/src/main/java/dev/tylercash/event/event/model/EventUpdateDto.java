@@ -3,14 +3,13 @@ package dev.tylercash.event.event.model;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.time.ZonedDateTime;
+import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-
-import java.time.ZonedDateTime;
-import java.util.Set;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor

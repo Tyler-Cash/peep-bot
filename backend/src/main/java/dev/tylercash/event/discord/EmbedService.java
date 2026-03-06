@@ -3,13 +3,12 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.immich.ImmichService;
 import dev.tylercash.event.security.oauth2.FrontendConfiguration;
-import lombok.AllArgsConstructor;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import org.springframework.stereotype.Service;
-
 import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
@@ -18,7 +17,10 @@ public class EmbedService {
     private final ImmichService immichService;
 
     public Collection<MessageEmbed> getMessage(Event event, Clock clock) {
-        String albumUrl = event.getImmichShareKey() != null ? immichService.getShareUrl(event.getImmichShareKey()) : null;
-        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl).getEmbedBuilder().build());
+        String albumUrl =
+                event.getImmichShareKey() != null ? immichService.getShareUrl(event.getImmichShareKey()) : null;
+        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl)
+                .getEmbedBuilder()
+                .build());
     }
 }

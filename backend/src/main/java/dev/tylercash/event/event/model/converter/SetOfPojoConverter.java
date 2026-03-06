@@ -4,11 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.persistence.AttributeConverter;
-import lombok.SneakyThrows;
-
 import java.util.HashSet;
 import java.util.Set;
-
+import lombok.SneakyThrows;
 
 public class SetOfPojoConverter<T> implements AttributeConverter<Set<T>, String> {
     private static final ObjectMapper MAPPER = getMapper();

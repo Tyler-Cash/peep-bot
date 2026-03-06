@@ -1,12 +1,11 @@
 package dev.tylercash.event.discord;
 
+import static dev.tylercash.event.discord.DiscordConfiguration.*;
+import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
+
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.GoogleCalendarService;
-import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import net.dv8tion.jda.api.EmbedBuilder;
-
 import java.awt.*;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -16,9 +15,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static dev.tylercash.event.discord.DiscordConfiguration.*;
-import static dev.tylercash.event.discord.DiscordUtil.generateAttendanceTitle;
+import lombok.AllArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.dv8tion.jda.api.EmbedBuilder;
 
 @Log4j2
 @AllArgsConstructor
@@ -43,21 +42,27 @@ public class EmbedRenderer {
 
         String editUrl = frontendUrl + "event/" + event.getId();
         StringBuilder links = new StringBuilder();
-        links.append("[Add to Google calendar](<").append(GoogleCalendarService.getCalendarEventUrl(event)).append(">)");
+        links.append("[Add to Google calendar](<")
+                .append(GoogleCalendarService.getCalendarEventUrl(event))
+                .append(">)");
         links.append(" | [Edit event](<").append(editUrl).append(">)");
         if (albumUrl != null) {
             links.append(" | [Photo album](<").append(albumUrl).append(">)");
         }
         embed.addField("Links", links.toString(), false);
         populateAttendeeSection(event, embed);
-        String creator = "Created by: " + event.getCreator();
-        String lastUpdated = "Last updated: " + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock));
+        String creatorName = event.getCreatorDisplayName() != null ? event.getCreatorDisplayName() : event.getCreator();
+        String creator = "Created by: " + creatorName;
+        String lastUpdated = "Last updated: "
+                + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now(clock));
         embed.setFooter(String.join("\n", List.of(creator, lastUpdated)));
         return embed;
     }
 
     private void populateAttendeeSection(Event event, EmbedBuilder embed) {
-        if (event.getAccepted().isEmpty() && event.getDeclined().isEmpty() && event.getMaybe().isEmpty()) {
+        if (event.getAccepted().isEmpty()
+                && event.getDeclined().isEmpty()
+                && event.getMaybe().isEmpty()) {
             embed.addField("No attendees yet", "", false);
         } else {
             embedAttendees(embed);
@@ -69,33 +74,32 @@ public class EmbedRenderer {
                 .sorted(Comparator.comparing(Attendee::getInstant))
                 .toList();
         int eventCapacity = event.getCapacity() == 0 ? sortedAccepted.size() : event.getCapacity();
-        Set<Attendee> accepted = sortedAccepted.stream()
-                .limit(eventCapacity)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        Set<Attendee> waitlist = sortedAccepted.stream()
-                .skip(eventCapacity)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Attendee> accepted =
+                sortedAccepted.stream().limit(eventCapacity).collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Attendee> waitlist =
+                sortedAccepted.stream().skip(eventCapacity).collect(Collectors.toCollection(LinkedHashSet::new));
         embed.addField(
                 generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity()),
-                reduceAttendeesToBlock(accepted), true);
+                reduceAttendeesToBlock(accepted),
+                true);
         embed.addField(
-                generateAttendanceTitle(DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0),
-                reduceAttendeesToBlock(event.getDeclined()), true);
+                generateAttendanceTitle(
+                        DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0),
+                reduceAttendeesToBlock(event.getDeclined()),
+                true);
         embed.addField(
                 generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0),
-                reduceAttendeesToBlock(event.getMaybe()), true);
+                reduceAttendeesToBlock(event.getMaybe()),
+                true);
         if (!waitlist.isEmpty()) {
             embed.addField(
-                    generateAttendanceTitle("Waitlist", waitlist.size(), 0),
-                    reduceAttendeesToBlock(waitlist), false);
+                    generateAttendanceTitle("Waitlist", waitlist.size(), 0), reduceAttendeesToBlock(waitlist), false);
         }
     }
 
     private String reduceAttendeesToBlock(Set<Attendee> attendees) {
         Set<String> names = new LinkedHashSet<>();
         attendees.forEach(attendee -> names.add(attendee.getName()));
-        return names.stream()
-                .map(attendee -> "> " + attendee + "\n")
-                .reduce("", String::concat);
+        return names.stream().map(attendee -> "> " + attendee + "\n").reduce("", String::concat);
     }
 }

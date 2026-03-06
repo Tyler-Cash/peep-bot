@@ -1,6 +1,10 @@
 package dev.tylercash.event.global;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -18,16 +22,15 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.view.RedirectView;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-
 @Log4j2
 @ControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler({NoHandlerFoundException.class, HttpClientErrorException.NotFound.class, NoResourceFoundException.class})
+    @ExceptionHandler({
+        NoHandlerFoundException.class,
+        HttpClientErrorException.NotFound.class,
+        NoResourceFoundException.class
+    })
     public RedirectView handleError404(HttpServletRequest request, Exception e) {
         // Redirect to URL for FE to identify it's logged in. This should be okay as it's a BFF
         return new RedirectView("/login/success");
@@ -36,7 +39,8 @@ public class ErrorHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
         log.error("Exception occurred: {}, Request Details: {}", ex.getMessage(), request.getDescription(false), ex);
-        return new ResponseEntity<>("An internal error occurred. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(
+                "An internal error occurred. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ResponseStatus(BAD_REQUEST)
@@ -71,6 +75,5 @@ public class ErrorHandler {
             FieldError error = new FieldError(objectName, path, message);
             fieldErrors.add(error);
         }
-
     }
 }

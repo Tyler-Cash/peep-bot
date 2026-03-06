@@ -1,11 +1,10 @@
 package dev.tylercash.event.immich;
 
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-
-import java.util.Map;
-import java.util.Optional;
 
 @Log4j2
 @Service
@@ -25,7 +24,8 @@ public class ImmichService {
         try {
             String prefix = immichConfiguration.getAlbumNamePrefix();
             String albumName = (prefix != null && !prefix.isBlank()) ? prefix + name : name;
-            ImmichAlbumResponse response = immichRestClient.post()
+            ImmichAlbumResponse response = immichRestClient
+                    .post()
                     .uri("/api/albums")
                     .body(Map.of("albumName", albumName, "description", description != null ? description : ""))
                     .retrieve()
@@ -47,15 +47,15 @@ public class ImmichService {
             return Optional.empty();
         }
         try {
-            ImmichSharedLinkResponse response = immichRestClient.post()
+            ImmichSharedLinkResponse response = immichRestClient
+                    .post()
                     .uri("/api/shared-links")
                     .body(Map.of(
                             "type", "ALBUM",
                             "albumId", albumId,
                             "allowUpload", true,
                             "allowDownload", true,
-                            "showMetadata", true
-                    ))
+                            "showMetadata", true))
                     .retrieve()
                     .body(ImmichSharedLinkResponse.class);
             if (response == null || response.key() == null) {

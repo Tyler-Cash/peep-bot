@@ -3,33 +3,47 @@ package dev.tylercash.event.event.statemachine;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUtil;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.immich.ImmichService;
-import lombok.RequiredArgsConstructor;
+import java.time.Clock;
+import java.time.ZonedDateTime;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-import java.time.ZonedDateTime;
-
 @Log4j2
 @Component
-@RequiredArgsConstructor
 public class EventStateMachineActions {
 
     private final DiscordService discordService;
     private final EventRepository eventRepository;
     private final ImmichService immichService;
     private final Clock clock;
+    private final EventService eventService;
+
+    public EventStateMachineActions(
+            DiscordService discordService,
+            EventRepository eventRepository,
+            ImmichService immichService,
+            Clock clock,
+            @Lazy EventService eventService) {
+        this.discordService = discordService;
+        this.eventRepository = eventRepository;
+        this.immichService = immichService;
+        this.clock = clock;
+        this.eventService = eventService;
+    }
 
     public Action<EventState, EventStateMachineEvent> preEventNotifyAction() {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
             log.info("Sending pre-event notification for: {}", event.getName());
+            eventService.populateAttendance(event);
             discordService.sendMessageBeforeEvent(event);
             event.setState(EventState.NOTIFIED);
             eventRepository.save(event);
@@ -41,13 +55,13 @@ public class EventStateMachineActions {
             Event event = context.getExtendedState().get("event", Event.class);
 
             if (event.getImmichAlbumId() == null) {
-                immichService.createAlbum(event.getName(), event.getDescription())
+                immichService
+                        .createAlbum(event.getName(), event.getDescription())
                         .ifPresent(event::setImmichAlbumId);
             }
 
             if (event.getImmichAlbumId() != null && event.getImmichShareKey() == null) {
-                immichService.createSharedLink(event.getImmichAlbumId())
-                        .ifPresent(event::setImmichShareKey);
+                immichService.createSharedLink(event.getImmichAlbumId()).ifPresent(event::setImmichShareKey);
             }
 
             if (event.getImmichShareKey() == null) {
@@ -68,11 +82,11 @@ public class EventStateMachineActions {
             Event event = context.getExtendedState().get("event", Event.class);
             log.info("Completing event (removing buttons): {}", event.getName());
             discordService.removeEventButtons(event);
-            event.getNotifications().add(new Notification(
-                    NotificationType.ATTENDANCE_LOCKED,
-                    ZonedDateTime.now(clock).toInstant(),
-                    0
-            ));
+            event.getNotifications()
+                    .add(new Notification(
+                            NotificationType.ATTENDANCE_LOCKED,
+                            ZonedDateTime.now(clock).toInstant(),
+                            0));
             event.setState(EventState.COMPLETED);
             eventRepository.save(event);
         };
@@ -84,14 +98,15 @@ public class EventStateMachineActions {
             log.info("Cancelling event: {}", event.getName());
             event.setName("[CANCELLED] " + event.getName());
             discordService.removeEventButtons(event);
+            eventService.populateAttendance(event);
             discordService.updateEventMessage(event);
             discordService.updateChannelName(event);
             discordService.archiveEventChannel(event);
-            event.getNotifications().add(new Notification(
-                    NotificationType.ATTENDANCE_LOCKED,
-                    ZonedDateTime.now(clock).toInstant(),
-                    0
-            ));
+            event.getNotifications()
+                    .add(new Notification(
+                            NotificationType.ATTENDANCE_LOCKED,
+                            ZonedDateTime.now(clock).toInstant(),
+                            0));
             event.setState(EventState.ARCHIVED);
             eventRepository.save(event);
         };

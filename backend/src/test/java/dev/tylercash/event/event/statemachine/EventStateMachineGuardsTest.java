@@ -1,23 +1,22 @@
 package dev.tylercash.event.event.statemachine;
 
-import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.event.model.EventState;
-import dev.tylercash.event.immich.ImmichConfiguration;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.statemachine.StateContext;
-import org.springframework.statemachine.ExtendedState;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.immich.ImmichConfiguration;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.statemachine.ExtendedState;
+import org.springframework.statemachine.StateContext;
 
 class EventStateMachineGuardsTest {
 

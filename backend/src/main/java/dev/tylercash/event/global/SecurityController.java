@@ -36,8 +36,8 @@ public class SecurityController {
         }
         String userSnowflake = principal.getAttribute("id");
         String username = principal.getAttribute("username");
-        boolean isAdmin = discordService.isUserAdminOfServer(
-                discordConfiguration.getGuildId(), Long.parseLong(userSnowflake));
+        boolean isAdmin =
+                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(userSnowflake));
         return new UserInfoDto(username, userSnowflake, isAdmin);
     }
 }

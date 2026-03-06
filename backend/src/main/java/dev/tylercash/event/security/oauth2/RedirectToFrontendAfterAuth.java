@@ -13,8 +13,8 @@ public class RedirectToFrontendAfterAuth implements AuthenticationSuccessHandler
     private final FrontendConfiguration frontendConfiguration;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) {
+    public void onAuthenticationSuccess(
+            HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         response.setHeader("Location", frontendConfiguration.getUrl());
         response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
     }

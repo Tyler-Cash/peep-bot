@@ -1,4 +1,3 @@
 package dev.tylercash.event.immich;
 
-public record ImmichAlbumResponse(String id) {
-}
+public record ImmichAlbumResponse(String id) {}

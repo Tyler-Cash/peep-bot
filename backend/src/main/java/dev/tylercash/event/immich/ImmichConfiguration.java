@@ -21,10 +21,12 @@ public class ImmichConfiguration {
         if (enabled) {
             log.info("Immich integration enabled with base URL: {}", baseUrl);
             if (baseUrl == null || baseUrl.isBlank()) {
-                throw new IllegalStateException("Immich is enabled but 'dev.tylercash.immich.base-url' is not configured");
+                throw new IllegalStateException(
+                        "Immich is enabled but 'dev.tylercash.immich.base-url' is not configured");
             }
             if (apiKey == null || apiKey.isBlank()) {
-                throw new IllegalStateException("Immich is enabled but 'dev.tylercash.immich.api-key' is not configured");
+                throw new IllegalStateException(
+                        "Immich is enabled but 'dev.tylercash.immich.api-key' is not configured");
             }
         } else {
             log.info("Immich integration disabled");

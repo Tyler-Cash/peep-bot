@@ -2,17 +2,19 @@ package dev.tylercash.event.event;
 
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.DiscordUtil;
-import dev.tylercash.event.event.model.Attendee;
-import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.event.model.EventDetailDto;
-import dev.tylercash.event.event.model.EventDto;
-import dev.tylercash.event.event.model.EventUpdateDto;
+import dev.tylercash.event.event.model.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.entities.Member;
 import org.springframework.data.domain.Page;
@@ -24,10 +26,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
 @RestController
 @AllArgsConstructor
 @RequestMapping(value = "/event")
@@ -36,6 +34,8 @@ public class EventController {
     private EventService eventService;
     private DiscordService discordService;
     private DiscordConfiguration discordConfiguration;
+    private AttendanceService attendanceService;
+    private DiscordUserCacheService discordUserCacheService;
 
     @Operation(summary = "Create a new event", description = "Creates an event and its associated Discord channel")
     @ApiResponses({
@@ -44,19 +44,27 @@ public class EventController {
         @ApiResponse(responseCode = "401", description = "Not authenticated")
     })
     @PutMapping
-    public Map<String, String> createEvent(@RequestBody @Valid EventDto event,
-                                           @AuthenticationPrincipal OAuth2User principal) {
-        String creator = principal.getAttribute("username");
+    public Map<String, String> createEvent(
+            @RequestBody @Valid EventDto event, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
-        Event newEvent = new Event(event, creator);
-        Member member = discordService.getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+        Member member =
+                discordService.getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
         String displayName = DiscordUtil.getUserDisplayName(member);
+
+        Event newEvent = new Event(event, discordId);
+        discordUserCacheService.upsertUser(discordId, displayName);
         newEvent.getAccepted().add(Attendee.createDiscordAttendee(discordId, displayName));
+
         eventService.createEvent(newEvent);
+
+        attendanceService.recordAttendance(newEvent.getId(), discordId, null, AttendanceStatus.ACCEPTED, null);
+
         return Map.of("message", "Created event for " + event.getName());
     }
 
-    @Operation(summary = "Update an existing event", description = "Partially updates event details and syncs with Discord")
+    @Operation(
+            summary = "Update an existing event",
+            description = "Partially updates event details and syncs with Discord")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Event updated successfully"),
         @ApiResponse(responseCode = "400", description = "Validation error"),
@@ -64,28 +72,32 @@ public class EventController {
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @PatchMapping
-    public Map<String, String> updateEvent(@RequestBody @Valid EventUpdateDto eventDto) {
+    public Map<String, String> updateEvent(
+            @RequestBody @Valid EventUpdateDto eventDto, @AuthenticationPrincipal OAuth2User principal) {
         Event event = eventService.getEvent(eventDto.getId());
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
             event.setDateTime(eventDto.getDateTime());
         }
-        if (Objects.nonNull(eventDto.getDescription()) && !eventDto.getDescription().isBlank()) {
+        if (Objects.nonNull(eventDto.getDescription())
+                && !eventDto.getDescription().isBlank()) {
             event.setDescription(eventDto.getDescription());
         }
         if (Objects.nonNull(eventDto.getName()) && !eventDto.getName().isBlank()) {
             event.setName(eventDto.getName());
         }
+        String adminDiscordId = principal.getAttribute("id");
         eventDto.getAccepted()
-                .forEach(attendeeName -> {
-                    Attendee attendee = Attendee.createDiscordAttendee(null, attendeeName);
-                    event.getAccepted().add(attendee);
-                });
+                .forEach(attendeeName -> attendanceService.recordAttendance(
+                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, adminDiscordId));
+        eventService.populateAttendance(event);
         eventService.updateEvent(event);
         return Map.of("message", "Updated event for " + event.getName());
     }
 
-    @Operation(summary = "List active events", description = "Returns paginated list of non-archived, non-deleted events")
+    @Operation(
+            summary = "List active events",
+            description = "Returns paginated list of non-archived, non-deleted events")
     @ApiResponse(responseCode = "200", description = "Events retrieved successfully")
     @GetMapping
     public Page<EventDto> getEvents(@PageableDefault Pageable pageable) {
@@ -100,7 +112,18 @@ public class EventController {
     @GetMapping(path = "/{id}")
     public EventDetailDto getEvent(@PathVariable UUID id) {
         Event event = eventService.getEvent(id);
-        return new EventDetailDto(event, eventService.isCompleted(event));
+        boolean completed = eventService.isCompleted(event);
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
+
+        java.util.Set<String> allSnowflakes = Stream.of(
+                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                .flatMap(s -> s)
+                .map(AttendanceRecord::getSnowflake)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+
+        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
+        return new EventDetailDto(event, completed, summary, nameMap);
     }
 
     @Operation(summary = "Cancel an event", description = "Admin-only: cancels an event and archives it")
@@ -111,9 +134,7 @@ public class EventController {
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @PostMapping(path = "/{id}/cancel")
-    public Map<String, String> cancelEvent(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal OAuth2User principal) {
+    public Map<String, String> cancelEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
         if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
@@ -122,10 +143,13 @@ public class EventController {
         return Map.of("message", "Event cancelled");
     }
 
-    @Operation(summary = "Remove an attendee", description = "Admin-only: removes an attendee from all RSVP lists")
+    @Operation(
+            summary = "Remove an attendee",
+            description =
+                    "Removes an attendee from the event. Admins can remove anyone; non-admins can only remove their own +1s.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Attendee removed"),
-        @ApiResponse(responseCode = "403", description = "Admin role required"),
+        @ApiResponse(responseCode = "403", description = "Not authorized to remove this attendee"),
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @DeleteMapping(path = "/{id}/attendee")
@@ -135,9 +159,19 @@ public class EventController {
             @RequestParam(required = false) String name,
             @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
-        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required to remove attendees");
+        boolean isAdmin =
+                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+
+        if (!isAdmin) {
+            if (snowflake != null && !snowflake.isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "Only admins can remove Discord-authenticated attendees");
+            }
+            if (name == null || !attendanceService.isOwnerOfPlusOne(id, name, discordId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only remove +1 guests that you added");
+            }
         }
+
         eventService.removeAttendee(id, snowflake, name);
         return Map.of("message", "Removed attendee");
     }

@@ -6,6 +6,8 @@ dev.tylercash:
     timeout: 60
     seperator-channel: organising
     admin-role: event-admin
+  feature-toggles:
+    remove-plus-ones-on-decline: true
   immich:
     enabled: false
     album-name-prefix: "[DEV] "

@@ -2,12 +2,17 @@ package dev.tylercash.event.event;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
-import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.immich.ImmichService;
 import jakarta.transaction.Transactional;
+import java.time.Clock;
+import java.time.ZonedDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Message;
@@ -18,12 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Clock;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
@@ -33,6 +32,8 @@ public class EventService {
     private final ImmichService immichService;
     private final EventStateMachineService stateMachineService;
     private final Clock clock;
+    private final AttendanceService attendanceService;
+    private final DiscordUserCacheService discordUserCacheService;
 
     public String createEvent(Event event) {
         TextChannel channel = discordService.createEventChannel(event);
@@ -46,13 +47,11 @@ public class EventService {
             channel.delete().queue();
             throw e;
         }
-        immichService.createAlbum(event.getName(), event.getDescription())
-                .ifPresent(albumId -> {
-                    event.setImmichAlbumId(albumId);
-                    immichService.createSharedLink(albumId)
-                            .ifPresent(event::setImmichShareKey);
-                    eventRepository.save(event);
-                });
+        immichService.createAlbum(event.getName(), event.getDescription()).ifPresent(albumId -> {
+            event.setImmichAlbumId(albumId);
+            immichService.createSharedLink(albumId).ifPresent(event::setImmichShareKey);
+            eventRepository.save(event);
+        });
         discordService.sortActiveChannels();
         return "Created event for " + event.getName();
     }
@@ -99,16 +98,47 @@ public class EventService {
         if (isCompleted(event)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance is locked for this event");
         }
-        event.getAccepted().removeIf(a -> matches(a, snowflake, name));
-        event.getDeclined().removeIf(a -> matches(a, snowflake, name));
-        event.getMaybe().removeIf(a -> matches(a, snowflake, name));
+        attendanceService.removeAttendee(id, snowflake, name);
+        populateAttendance(event);
         updateEvent(event);
     }
 
-    private boolean matches(dev.tylercash.event.event.model.Attendee attendee, String snowflake, String name) {
-        if (snowflake != null && !snowflake.isBlank()) {
-            return snowflake.equals(attendee.getSnowflake());
+    public void populateAttendance(Event event) {
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(event.getId());
+
+        Set<String> allSnowflakes = Stream.of(
+                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                .flatMap(s -> s)
+                .map(AttendanceRecord::getSnowflake)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+
+        if (event.getCreator() != null && !event.getCreator().isBlank()) {
+            allSnowflakes.add(event.getCreator());
         }
-        return name != null && name.equals(attendee.getName());
+
+        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
+
+        event.setAccepted(toAttendeeSet(summary.accepted(), nameMap));
+        event.setDeclined(toAttendeeSet(summary.declined(), nameMap));
+        event.setMaybe(toAttendeeSet(summary.maybe(), nameMap));
+
+        String creatorName = nameMap.get(event.getCreator());
+        event.setCreatorDisplayName(creatorName != null ? creatorName : event.getCreator());
+    }
+
+    private Set<Attendee> toAttendeeSet(List<AttendanceRecord> records, Map<String, String> nameMap) {
+        Set<Attendee> attendees = new LinkedHashSet<>();
+        for (AttendanceRecord record : records) {
+            String displayName;
+            if (record.getSnowflake() != null) {
+                displayName = nameMap.getOrDefault(
+                        record.getSnowflake(), discordUserCacheService.getDisplayName(record.getSnowflake()));
+            } else {
+                displayName = record.getName();
+            }
+            attendees.add(Attendee.createWithTimestamp(record.getSnowflake(), displayName, record.getRecordedAt()));
+        }
+        return attendees;
     }
 }

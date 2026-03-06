@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
+import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.time.ZonedDateTime;
 
 /**
  * End-to-end tests that require real external services (Discord bot, PostgreSQL).
@@ -35,6 +34,7 @@ class EventServiceE2ETest {
 
     @Autowired
     private EventService eventService;
+
     @Autowired
     private DiscordService discordService;
 

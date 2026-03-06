@@ -1,13 +1,12 @@
 package dev.tylercash.event.event.statemachine;
 
-import dev.tylercash.event.event.model.EventState;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import dev.tylercash.event.event.model.EventState;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class EventLifecyclePollerTest {
 

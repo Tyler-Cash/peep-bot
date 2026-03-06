@@ -1,32 +1,5 @@
 package dev.tylercash.event.discord.listener;
 
-import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.discord.EmbedService;
-import dev.tylercash.event.event.EventService;
-import dev.tylercash.event.event.model.Attendee;
-import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.global.MetricsService;
-import io.micrometer.core.instrument.Timer;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.components.ModalTopLevelComponentUnion;
-import net.dv8tion.jda.api.components.buttons.Button;
-import net.dv8tion.jda.api.components.label.Label;
-import net.dv8tion.jda.api.components.textinput.TextInput;
-import net.dv8tion.jda.api.modals.Modal;
-import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
-import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.HashSet;
-import java.util.List;
-
 import static dev.tylercash.event.discord.listener.ButtonInteractionListener.ACCEPTED;
 import static dev.tylercash.event.discord.listener.ButtonInteractionListener.MODAL_PLACEHOLDER;
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE;
@@ -35,81 +8,142 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.discord.EmbedService;
+import dev.tylercash.event.event.AttendanceService;
+import dev.tylercash.event.event.EventService;
+import dev.tylercash.event.event.model.AttendanceStatus;
+import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.global.MetricsService;
+import io.micrometer.core.instrument.Timer;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.UUID;
+import net.dv8tion.jda.api.components.ModalTopLevelComponentUnion;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.modals.Modal;
+import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 class ButtonInteractionListenerTest {
     final ArgumentCaptor<Modal> modalArgumentCaptor = ArgumentCaptor.forClass(Modal.class);
-    final ArgumentCaptor<Event> eventArgumentCaptor = ArgumentCaptor.forClass(Event.class);
     final long messageId = 352353L;
 
     @Test
     void onButtonInteractionWhenAcceptingEvent() {
         Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
-        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
+        MetricsService metricsService = mock(MetricsService.class);
+        EventRepository eventRepository = mock(EventRepository.class);
+        ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
+        EmbedService embedService = mock(EmbedService.class);
+        EventService eventService = mock(EventService.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+
+        ButtonInteractionListener listener = new ButtonInteractionListener(
+                fixedClock,
+                metricsService,
+                eventRepository,
+                embedService,
+                eventService,
+                attendanceService,
+                discordUserCacheService);
+
         String nickname = "testNickname";
         String snowflake = "38943984983";
 
         Event event = mock(Event.class);
+        UUID eventId = UUID.randomUUID();
         when(event.getMessageId()).thenReturn(messageId);
+        when(event.getId()).thenReturn(eventId);
+        when(event.getName()).thenReturn("Test Event");
         when(event.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
-        when(event.getAccepted()).thenReturn(new HashSet<>());
 
-        when(result.buttonInteractionEvent.getMember()).thenReturn(mock(Member.class));
-        when(result.buttonInteractionEvent.getMember().getNickname()).thenReturn(nickname);
-        when(result.buttonInteractionEvent.getMember().getId()).thenReturn(snowflake);
+        when(buttonInteractionEvent.getMember()).thenReturn(mock(Member.class));
+        when(buttonInteractionEvent.getMember().getNickname()).thenReturn(nickname);
+        when(buttonInteractionEvent.getMember().getId()).thenReturn(snowflake);
+        when(buttonInteractionEvent.getMember().getEffectiveName()).thenReturn(nickname);
 
-        when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
-        when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
-        when(result.buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
-        when(result.eventRepository.findByMessageId(messageId)).thenReturn(event);
-        when(result.eventService.isCompleted(event)).thenReturn(false);
-        when(result.embedService.getMessage(event, result.clock)).thenReturn(List.of(mock(MessageEmbed.class)));
-        when(result.buttonInteractionEvent.editMessageEmbeds(result.embedService.getMessage(event, result.clock))).thenReturn(mock(MessageEditCallbackAction.class));
-        when(result.metricsService.getDiscordMessageComponentEventTimer()).thenReturn(mock(Timer.class));
+        when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
+        when(buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
+        when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
+        when(eventRepository.findByMessageId(messageId)).thenReturn(event);
+        when(eventService.isCompleted(event)).thenReturn(false);
+        when(embedService.getMessage(event, fixedClock)).thenReturn(List.of(mock(MessageEmbed.class)));
+        when(buttonInteractionEvent.editMessageEmbeds(embedService.getMessage(event, fixedClock)))
+                .thenReturn(mock(MessageEditCallbackAction.class));
+        when(metricsService.getDiscordMessageComponentEventTimer()).thenReturn(mock(Timer.class));
 
-        buttonInteractionListener.onButtonInteraction(result.buttonInteractionEvent());
+        listener.onButtonInteraction(buttonInteractionEvent);
 
-        verify(result.embedService, times(2)).getMessage(event, result.clock);
-        verify(result.eventRepository).save(eventArgumentCaptor.capture());
-        verify(result.buttonInteractionEvent).editMessageEmbeds(result.embedService.getMessage(event, result.clock));
-        verify(result.buttonInteractionEvent.editMessageEmbeds(result.embedService.getMessage(event, result.clock))).complete();
-        List<Event> actuals = eventArgumentCaptor.getAllValues();
-        assertEquals(1, actuals.size());
-        assertEquals(messageId, actuals.get(0).getMessageId());
-        assertEquals(nickname, ((Attendee) actuals.get(0).getAccepted().toArray()[0]).getName());
-        assertEquals(snowflake, ((Attendee) actuals.get(0).getAccepted().toArray()[0]).getSnowflake());
+        verify(discordUserCacheService).upsertUser(snowflake, nickname);
+        verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
+        verify(eventService).populateAttendance(event);
+        verify(buttonInteractionEvent).editMessageEmbeds(embedService.getMessage(event, fixedClock));
     }
 
     @Test
     void onButtonInteractionEventDoesntExist() {
-        Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
+        EventRepository eventRepository = mock(EventRepository.class);
+        ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
 
-        when(result.buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
-        when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
+        ButtonInteractionListener listener = new ButtonInteractionListener(
+                mock(Clock.class),
+                mock(MetricsService.class),
+                eventRepository,
+                mock(EmbedService.class),
+                mock(EventService.class),
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class));
 
-        buttonInteractionListener.onButtonInteraction(result.buttonInteractionEvent());
-        verify(result.eventRepository).findByMessageId(messageId);
-        verifyNoMoreInteractions(result.eventRepository);
-        verifyNoInteractions(result.buttonInteractionEvent.getButton());
-        verifyNoInteractions(result.metricsService);
+        when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
+        when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
+
+        listener.onButtonInteraction(buttonInteractionEvent);
+        verify(eventRepository).findByMessageId(messageId);
+        verifyNoMoreInteractions(eventRepository);
+        verifyNoInteractions(buttonInteractionEvent.getButton());
     }
 
     @Test
     void onButtonInteractionWhenReturnModal() {
         Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
-        Result result = new Result(fixedClock, mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class), mock(EventService.class));
-        ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService, result.eventService);
+        EventRepository eventRepository = mock(EventRepository.class);
+        ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
+        ModalCallbackAction modalCallbackAction = mock(ModalCallbackAction.class);
+        EventService eventService = mock(EventService.class);
+
+        ButtonInteractionListener listener = new ButtonInteractionListener(
+                fixedClock,
+                mock(MetricsService.class),
+                eventRepository,
+                mock(EmbedService.class),
+                eventService,
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class));
+
         Event futureEvent = mock(Event.class);
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
-        when(result.eventService.isCompleted(futureEvent)).thenReturn(false);
-        when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
-        when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
-        when(result.buttonInteractionEvent.replyModal(any())).thenReturn(result.modalCallbackAction());
-        when(result.eventRepository.findByMessageId(any())).thenReturn(futureEvent);
+        when(eventService.isCompleted(futureEvent)).thenReturn(false);
+        when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
+        when(buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
+        when(buttonInteractionEvent.replyModal(any())).thenReturn(modalCallbackAction);
+        when(eventRepository.findByMessageId(any())).thenReturn(futureEvent);
 
-        buttonInteractionListener.onButtonInteraction(result.buttonInteractionEvent());
+        listener.onButtonInteraction(buttonInteractionEvent);
 
-        verify(result.buttonInteractionEvent, atLeastOnce()).replyModal(modalArgumentCaptor.capture());
+        verify(buttonInteractionEvent, atLeastOnce()).replyModal(modalArgumentCaptor.capture());
         List<Modal> actual = modalArgumentCaptor.getAllValues();
         assertEquals(1, actual.size());
         assertEquals(PLUS_ONE_ID, actual.get(0).getId());
@@ -121,10 +155,5 @@ class ButtonInteractionListenerTest {
         TextInput textInput = (TextInput) label.getChild();
         assertEquals(PLUS_ONE_ID, textInput.getCustomId());
         assertEquals(MODAL_PLACEHOLDER, textInput.getPlaceHolder());
-    }
-
-    private record Result(Clock clock, MetricsService metricsService, EventRepository eventRepository,
-                          ButtonInteractionEvent buttonInteractionEvent, ModalCallbackAction modalCallbackAction,
-                          EmbedService embedService, EventService eventService) {
     }
 }

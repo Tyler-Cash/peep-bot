@@ -8,7 +8,7 @@ import {useSelector} from "react-redux";
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
 import './css/events.css';
 
-function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, locked}) {
+function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, canRemove}) {
     return (
         <div className="attendee-col">
             <div className={`attendee-col-header ${colorClass}`}>
@@ -24,7 +24,7 @@ function AttendeeColumn({title, colorClass, attendees, onRemove, removingKey, lo
                         return (
                             <div key={key} className="attendee-row">
                                 <span className="attendee-name">{a.name}</span>
-                                {!locked && (
+                                {canRemove(a) && (
                                     <button
                                         type="button"
                                         className="attendee-remove"
@@ -54,8 +54,15 @@ export default function EditEvent() {
     const [removeAttendee] = useRemoveAttendeeMutation()
     const [cancelEvent, {isLoading: isCancelling}] = useCancelEventMutation()
     const isAdmin = useSelector(state => state.auth.isAdmin)
+    const discordId = useSelector(state => state.auth.discordId)
     const [removingKey, setRemovingKey] = useState(null)
     const [confirmAction, setConfirmAction] = useState(null)
+
+    const canRemove = (a) => {
+        if (data?.completed) return false;
+        if (isAdmin) return true;
+        return !a.snowflake && a.ownerSnowflake === discordId;
+    };
 
     const {
         register,
@@ -269,14 +276,16 @@ export default function EditEvent() {
                     </div>
                 )}
 
-                {isAdmin && data && (
+                {data && (
                     <div className="event-card mt-3">
                         <div className="event-card-header">
                             <h4 className="mb-0">Attendees</h4>
                             <p className="text-muted mb-0 mt-1 small">
                                 {data.completed
                                     ? "This event has been completed"
-                                    : "Remove attendees from any response list"}
+                                    : isAdmin
+                                        ? "Remove attendees from any response list"
+                                        : "You can remove +1 guests you've added"}
                             </p>
                         </div>
                         <div className="event-card-body">
@@ -287,7 +296,7 @@ export default function EditEvent() {
                                     attendees={data.accepted}
                                     onRemove={confirmRemove}
                                     removingKey={removingKey}
-                                    locked={data.completed}
+                                    canRemove={canRemove}
                                 />
                                 <AttendeeColumn
                                     title="Maybe"
@@ -295,7 +304,7 @@ export default function EditEvent() {
                                     attendees={data.maybe}
                                     onRemove={confirmRemove}
                                     removingKey={removingKey}
-                                    locked={data.completed}
+                                    canRemove={canRemove}
                                 />
                                 <AttendeeColumn
                                     title="Declined"
@@ -303,7 +312,7 @@ export default function EditEvent() {
                                     attendees={data.declined}
                                     onRemove={confirmRemove}
                                     removingKey={removingKey}
-                                    locked={data.completed}
+                                    canRemove={canRemove}
                                 />
                             </div>
                         </div>

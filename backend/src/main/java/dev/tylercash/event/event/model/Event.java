@@ -1,19 +1,17 @@
 package dev.tylercash.event.event.model;
 
-import dev.tylercash.event.event.model.converter.SetOfAttendeesConverter;
 import dev.tylercash.event.event.model.converter.SetOfNotificationsConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
 @Table
@@ -26,42 +24,55 @@ public class Event {
     @GeneratedValue
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;
+
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long messageId;
+
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long serverId;
+
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long channelId;
+
     @NotNull
     private String name;
+
     @NotNull
     private String creator;
+
     private String description = "";
     private String location = "";
     private Integer capacity = 0;
     private Integer cost = 0;
-    @Convert(converter = SetOfAttendeesConverter.class)
+
+    @Transient
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Set<Attendee> accepted = new HashSet<>();
-    @Convert(converter = SetOfAttendeesConverter.class)
+
+    @Transient
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Set<Attendee> declined = new HashSet<>();
-    @Convert(converter = SetOfAttendeesConverter.class)
+
+    @Transient
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Set<Attendee> maybe = new HashSet<>();
+
     @Convert(converter = SetOfNotificationsConverter.class)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Set<Notification> notifications = new HashSet<>();
+
     @Enumerated(EnumType.STRING)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private EventState state = EventState.PLANNED;
+
     @NotNull
     @Column(name = "date_time")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
+
     private String immichAlbumId;
     private String immichShareKey;
 
@@ -69,7 +80,18 @@ public class Event {
     @Transient
     private boolean notifyOnCreate = true;
 
-    public Event(long messageId, long serverId, long channelId, String name, String creator, ZonedDateTime dateTime, String description) {
+    // Resolved creator display name for rendering
+    @Transient
+    private String creatorDisplayName;
+
+    public Event(
+            long messageId,
+            long serverId,
+            long channelId,
+            String name,
+            String creator,
+            ZonedDateTime dateTime,
+            String description) {
         super();
         this.messageId = messageId;
         this.serverId = serverId;

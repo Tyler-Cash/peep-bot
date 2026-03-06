@@ -1,5 +1,9 @@
 package dev.tylercash.event.global;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.security.UserInfoDto;
@@ -9,10 +13,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.server.ResponseStatusException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SecurityControllerTest {
@@ -30,7 +30,8 @@ class SecurityControllerTest {
         when(config.getGuildId()).thenReturn(GUILD_ID);
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(principal.getAttribute("username")).thenReturn(USERNAME);
-        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID))).thenReturn(true);
+        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
 
         SecurityController controller = new SecurityController(discordService, config);
         UserInfoDto result = controller.isLoggedIn(principal);
@@ -49,7 +50,8 @@ class SecurityControllerTest {
         when(config.getGuildId()).thenReturn(GUILD_ID);
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(principal.getAttribute("username")).thenReturn(USERNAME);
-        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID))).thenReturn(false);
+        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
 
         SecurityController controller = new SecurityController(discordService, config);
         UserInfoDto result = controller.isLoggedIn(principal);

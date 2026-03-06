@@ -1,29 +1,17 @@
 package dev.tylercash.event.discord;
 
+import static dev.tylercash.event.discord.DiscordConfiguration.*;
+import static dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName;
+import static dev.tylercash.event.discord.listener.ButtonInteractionListener.*;
+import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE;
+import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.channel.concrete.Category;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.components.actionrow.ActionRow;
-import net.dv8tion.jda.api.components.buttons.Button;
-import net.dv8tion.jda.api.requests.restaction.ChannelAction;
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
-import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
-import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,13 +20,24 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import static dev.tylercash.event.discord.DiscordConfiguration.*;
-import static dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName;
-import static dev.tylercash.event.discord.listener.ButtonInteractionListener.*;
-import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE;
-import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import lombok.AllArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.concrete.Category;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.requests.restaction.ChannelAction;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Log4j2
 @Service
@@ -52,11 +51,11 @@ public class DiscordService {
 
     public TextChannel createEventChannel(Event event) {
         Category category = getEventCategory(discordConfiguration.getGuildId());
-        ChannelAction<TextChannel> textChannelChannelAction = category.createTextChannel(DiscordUtil.getChannelNameFromEvent(event))
+        ChannelAction<TextChannel> textChannelChannelAction = category.createTextChannel(
+                        DiscordUtil.getChannelNameFromEvent(event))
                 .setPosition(99);
         return textChannelChannelAction.complete();
     }
-
 
     public void updateChannelName(Event event) {
         TextChannel channel = getChannel(event);
@@ -77,7 +76,8 @@ public class DiscordService {
         if (categories.size() > 1) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Found multiple matching channels");
         } else if (categories.stream().findFirst().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No category found called \"" + EVENT_CATEGORY + "\"");
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "No category found called \"" + EVENT_CATEGORY + "\"");
         }
         return categories.get(0);
     }
@@ -94,8 +94,7 @@ public class DiscordService {
                         Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
                         Button.secondary(DECLINED, DECLINED_EMOJI),
                         Button.secondary(MAYBE, MAYBE_EMOJI),
-                        Button.secondary(PLUS_ONE_ID, PLUS_ONE))
-                ));
+                        Button.secondary(PLUS_ONE_ID, PLUS_ONE))));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
             addNotificationToMessage(messageBuilder, rolesToMention);
@@ -109,10 +108,10 @@ public class DiscordService {
     private void addNotificationToMessage(MessageCreateBuilder messageBuilder, List<Role> rolesToMention) {
         if (notifyEventRoles.acquirePermission()) {
             try {
-                rolesToMention.forEach(role -> messageBuilder.mentionRoles(role.getId())
+                rolesToMention.forEach(role -> messageBuilder
+                        .mentionRoles(role.getId())
                         .addContent(role.getAsMention())
-                        .addContent("\n")
-                );
+                        .addContent("\n"));
                 notifyEventRoles.onSuccess();
             } catch (Exception e) {
                 notifyEventRoles.onError(e);
@@ -130,9 +129,7 @@ public class DiscordService {
     }
 
     public void removeEventButtons(Event event) {
-        getChannel(event)
-                .editMessageComponentsById(event.getMessageId())
-                .queue();
+        getChannel(event).editMessageComponentsById(event.getMessageId()).queue();
     }
 
     public Member getMemberFromServer(long serverId, long userId) {
@@ -147,8 +144,9 @@ public class DiscordService {
 
     public boolean isUserAdminOfServer(long serverId, long userId) {
         Member member = getMemberFromServer(serverId, userId);
-        return member != null && member.getRoles().stream()
-                .anyMatch(role -> role.getName().equalsIgnoreCase(discordConfiguration.getAdminRole()));
+        return member != null
+                && member.getRoles().stream()
+                        .anyMatch(role -> role.getName().equalsIgnoreCase(discordConfiguration.getAdminRole()));
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
@@ -209,10 +207,7 @@ public class DiscordService {
     public void archiveEventChannel(Event event) {
         TextChannel eventChannel = getChannel(event);
         Category category = getArchiveCategory(discordConfiguration.getGuildId());
-        eventChannel.getManager()
-                .setParent(category)
-                .sync()
-                .queue();
+        eventChannel.getManager().setParent(category).sync().queue();
         sortChannels(category, null);
     }
 
@@ -233,14 +228,12 @@ public class DiscordService {
             return;
         }
         TextChannel channel = getChannel(event);
-        Message message = channel.sendMessage("[Post photos of the event in the album!](<" + albumUrl + ">)").complete();
+        Message message = channel.sendMessage("[Post photos of the event in the album!](<" + albumUrl + ">)")
+                .complete();
         message.pin().queue();
-        event.getNotifications().add(
-                new Notification(
-                        NotificationType.ALBUM_LINK,
-                        ZonedDateTime.now(clock).toInstant(),
-                        message.getIdLong()
-                ));
+        event.getNotifications()
+                .add(new Notification(
+                        NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
     }
 
     public void sendMessageBeforeEvent(Event event) {
@@ -250,26 +243,26 @@ public class DiscordService {
         notifyEventRoles.executeRunnable(() -> {
             Guild server = jda.getGuildById(discordConfiguration.getGuildId());
             MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
-                    .addContent("**" + event.getName() + "**  starting at " +
-                            "<t:" + event.getDateTime().toEpochSecond() + ":t>\n"
-                    );
+                    .addContent("**" + event.getName() + "**  starting at " + "<t:"
+                            + event.getDateTime().toEpochSecond() + ":t>\n");
             event.getAccepted().stream()
-                    .filter(user -> !user.getSnowflake().isBlank())
-                    .map(user -> getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(user.getSnowflake())))
-                    .filter(user -> user.getRoles().stream().anyMatch(role -> role.getName().equals("pre-event-notification")))
+                    .filter(user ->
+                            user.getSnowflake() != null && !user.getSnowflake().isBlank())
+                    .map(user ->
+                            getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(user.getSnowflake())))
+                    .filter(user -> user.getRoles().stream()
+                            .anyMatch(role -> role.getName().equals("pre-event-notification")))
                     .forEach(user -> messageBuilder.addContent(user.getAsMention() + " "));
             log.info("Sending {} alert for \"{}\"", NotificationType.START_OF_EVENT, event.getName());
 
-            event.getNotifications().add(
-                    new Notification(
+            event.getNotifications()
+                    .add(new Notification(
                             NotificationType.START_OF_EVENT,
                             ZonedDateTime.now(clock).toInstant(),
-                            server.getChannelById(TextChannel.class, event.getChannelId()).sendMessage(
-                                    messageBuilder
-                                            .build()
-                            ).complete().getIdLong()
-                    ));
+                            server.getChannelById(TextChannel.class, event.getChannelId())
+                                    .sendMessage(messageBuilder.build())
+                                    .complete()
+                                    .getIdLong()));
         });
     }
-
 }

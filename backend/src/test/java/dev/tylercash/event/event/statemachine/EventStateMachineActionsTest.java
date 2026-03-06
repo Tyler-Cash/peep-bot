@@ -1,28 +1,28 @@
 package dev.tylercash.event.event.statemachine;
 
-import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.discord.DiscordService;
-import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.event.model.EventState;
-import dev.tylercash.event.event.model.NotificationType;
-import dev.tylercash.event.immich.ImmichService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.statemachine.StateContext;
-import org.springframework.statemachine.ExtendedState;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+
+import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.EventService;
+import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.event.model.NotificationType;
+import dev.tylercash.event.immich.ImmichService;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.statemachine.ExtendedState;
+import org.springframework.statemachine.StateContext;
 
 class EventStateMachineActionsTest {
 
@@ -31,6 +31,7 @@ class EventStateMachineActionsTest {
     private DiscordService discordService;
     private EventRepository eventRepository;
     private ImmichService immichService;
+    private EventService eventService;
     private EventStateMachineActions actions;
 
     @BeforeEach
@@ -38,7 +39,8 @@ class EventStateMachineActionsTest {
         discordService = mock(DiscordService.class);
         eventRepository = mock(EventRepository.class);
         immichService = mock(ImmichService.class);
-        actions = new EventStateMachineActions(discordService, eventRepository, immichService, CLOCK);
+        eventService = mock(EventService.class);
+        actions = new EventStateMachineActions(discordService, eventRepository, immichService, CLOCK, eventService);
     }
 
     @SuppressWarnings("unchecked")
@@ -51,7 +53,7 @@ class EventStateMachineActionsTest {
     }
 
     @Test
-    @DisplayName("preEventNotifyAction sends notification and sets state to NOTIFIED")
+    @DisplayName("preEventNotifyAction populates attendance, sends notification, and sets state to NOTIFIED")
     void preEventNotify() {
         Event event = new Event();
         event.setName("Test");
@@ -59,6 +61,7 @@ class EventStateMachineActionsTest {
 
         actions.preEventNotifyAction().execute(contextWithEvent(event));
 
+        verify(eventService).populateAttendance(event);
         verify(discordService).sendMessageBeforeEvent(event);
         assertEquals(EventState.NOTIFIED, event.getState());
         verify(eventRepository).save(event);
@@ -113,8 +116,25 @@ class EventStateMachineActionsTest {
 
         verify(discordService).removeEventButtons(event);
         assertEquals(EventState.COMPLETED, event.getState());
-        assertTrue(event.getNotifications().stream()
-                .anyMatch(n -> n.getType() == NotificationType.ATTENDANCE_LOCKED));
+        assertTrue(event.getNotifications().stream().anyMatch(n -> n.getType() == NotificationType.ATTENDANCE_LOCKED));
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("cancelAction populates attendance, updates message, and sets state to ARCHIVED")
+    void cancel() {
+        Event event = new Event();
+        event.setName("Test");
+        event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(1));
+
+        actions.cancelAction().execute(contextWithEvent(event));
+
+        verify(eventService).populateAttendance(event);
+        verify(discordService).removeEventButtons(event);
+        verify(discordService).updateEventMessage(event);
+        verify(discordService).updateChannelName(event);
+        verify(discordService).archiveEventChannel(event);
+        assertEquals(EventState.ARCHIVED, event.getState());
         verify(eventRepository).save(event);
     }
 

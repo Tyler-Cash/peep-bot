@@ -3,6 +3,7 @@ package dev.tylercash.event.event.statemachine;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -10,8 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Log4j2
 @Component
@@ -26,8 +25,7 @@ public class EventLifecyclePoller {
     @Scheduled(fixedRate = 60000)
     @SchedulerLock(name = "eventLifecyclePoller")
     public void poll() {
-        Page<Event> events = eventRepository.findAllByStateNotIn(PAGE,
-                List.of(EventState.DELETED));
+        Page<Event> events = eventRepository.findAllByStateNotIn(PAGE, List.of(EventState.DELETED));
 
         for (Event event : events) {
             try {

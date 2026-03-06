@@ -22,11 +22,9 @@ public class EventStateMachineService {
         StateMachine<EventState, EventStateMachineEvent> sm = stateMachineFactory.getStateMachine();
         sm.stopReactively().block();
 
-        sm.getStateMachineAccessor().doWithAllRegions(accessor ->
-                accessor.resetStateMachineReactively(
-                        new DefaultStateMachineContext<>(event.getState(), null, null, null)
-                ).block()
-        );
+        sm.getStateMachineAccessor().doWithAllRegions(accessor -> accessor.resetStateMachineReactively(
+                        new DefaultStateMachineContext<>(event.getState(), null, null, null))
+                .block());
 
         sm.getExtendedState().getVariables().put("event", event);
         sm.startReactively().block();

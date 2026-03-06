@@ -308,3 +308,201 @@ databaseChangeLog:
             indexName: idx_event_channel_id
             tableName: event
             unique: true
+  - changeSet:
+      id: create discord_user_cache table
+      author: claude
+      changes:
+        - createTable:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create attendance table
+      author: claude
+      changes:
+        - createTable:
+            tableName: attendance
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_attendance_event
+                    references: event(id)
+              - column:
+                  name: snowflake
+                  type: text
+              - column:
+                  name: name
+                  type: text
+              - column:
+                  name: status
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: owner_snowflake
+                  type: text
+              - column:
+                  name: recorded_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: snowflake
+            indexName: idx_attendance_event_snowflake
+            tableName: attendance
+        - createIndex:
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: name
+            indexName: idx_attendance_event_name
+            tableName: attendance
+  - changeSet:
+      id: migrate event creator to snowflake
+      author: claude
+      comment: >
+        Best-effort migration of event.creator from username to snowflake.
+        Matches creator name against accepted attendee names. Events where
+        no match is found retain their original creator value.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event e
+              SET creator = sub.snowflake
+              FROM (
+                SELECT DISTINCT ON (ev.id) ev.id AS event_id, elem->>'snowflake' AS snowflake
+                FROM event ev,
+                LATERAL json_array_elements(
+                  CASE WHEN ev.accepted IS NOT NULL AND ev.accepted != '' THEN ev.accepted::json ELSE '[]'::json END
+                ) AS elem
+                WHERE elem->>'snowflake' IS NOT NULL
+                AND elem->>'snowflake' != ''
+                AND elem->>'name' = ev.creator
+                ORDER BY ev.id
+              ) sub
+              WHERE e.id = sub.event_id
+  - changeSet:
+      id: seed discord_user_cache from existing data
+      author: claude
+      comment: >
+        Extract unique (snowflake, name) pairs from existing JSON attendee
+        columns and populate the discord_user_cache table.
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO discord_user_cache (snowflake, display_name, updated_at)
+              SELECT DISTINCT ON (elem->>'snowflake')
+                elem->>'snowflake',
+                elem->>'name',
+                NOW()
+              FROM event e,
+              LATERAL (
+                SELECT json_array_elements(
+                  CASE WHEN e.accepted IS NOT NULL AND e.accepted != '' THEN e.accepted::json ELSE '[]'::json END
+                ) AS elem
+                UNION ALL
+                SELECT json_array_elements(
+                  CASE WHEN e.declined IS NOT NULL AND e.declined != '' THEN e.declined::json ELSE '[]'::json END
+                )
+                UNION ALL
+                SELECT json_array_elements(
+                  CASE WHEN e.maybe IS NOT NULL AND e.maybe != '' THEN e.maybe::json ELSE '[]'::json END
+                )
+              ) sub
+              WHERE elem->>'snowflake' IS NOT NULL
+              AND elem->>'snowflake' != ''
+              ORDER BY elem->>'snowflake', elem->>'name'
+              ON CONFLICT (snowflake) DO NOTHING
+  - changeSet:
+      id: migrate attendee json to attendance table
+      author: claude
+      comment: >
+        Migrate existing JSON attendee data from event columns into the
+        attendance table. Discord users get snowflake set; +1 guests get
+        name set with owner_snowflake pointing to the event creator.
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO attendance (event_id, snowflake, name, status, owner_snowflake, recorded_at)
+              SELECT
+                e.id,
+                CASE WHEN elem->>'snowflake' IS NOT NULL AND elem->>'snowflake' != '' THEN elem->>'snowflake' ELSE NULL END,
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN elem->>'name' ELSE NULL END,
+                'ACCEPTED',
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN e.creator ELSE NULL END,
+                COALESCE((elem->>'instant')::timestamptz, NOW())
+              FROM event e,
+              LATERAL json_array_elements(
+                CASE WHEN e.accepted IS NOT NULL AND e.accepted != '' THEN e.accepted::json ELSE '[]'::json END
+              ) AS elem
+        - sql:
+            sql: >
+              INSERT INTO attendance (event_id, snowflake, name, status, owner_snowflake, recorded_at)
+              SELECT
+                e.id,
+                CASE WHEN elem->>'snowflake' IS NOT NULL AND elem->>'snowflake' != '' THEN elem->>'snowflake' ELSE NULL END,
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN elem->>'name' ELSE NULL END,
+                'DECLINED',
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN e.creator ELSE NULL END,
+                COALESCE((elem->>'instant')::timestamptz, NOW())
+              FROM event e,
+              LATERAL json_array_elements(
+                CASE WHEN e.declined IS NOT NULL AND e.declined != '' THEN e.declined::json ELSE '[]'::json END
+              ) AS elem
+        - sql:
+            sql: >
+              INSERT INTO attendance (event_id, snowflake, name, status, owner_snowflake, recorded_at)
+              SELECT
+                e.id,
+                CASE WHEN elem->>'snowflake' IS NOT NULL AND elem->>'snowflake' != '' THEN elem->>'snowflake' ELSE NULL END,
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN elem->>'name' ELSE NULL END,
+                'MAYBE',
+                CASE WHEN elem->>'snowflake' IS NULL OR elem->>'snowflake' = '' THEN e.creator ELSE NULL END,
+                COALESCE((elem->>'instant')::timestamptz, NOW())
+              FROM event e,
+              LATERAL json_array_elements(
+                CASE WHEN e.maybe IS NOT NULL AND e.maybe != '' THEN e.maybe::json ELSE '[]'::json END
+              ) AS elem
+  - changeSet:
+      id: drop old attendee json columns
+      author: claude
+      changes:
+        - dropColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: accepted
+              - column:
+                  name: declined
+              - column:
+                  name: maybe
