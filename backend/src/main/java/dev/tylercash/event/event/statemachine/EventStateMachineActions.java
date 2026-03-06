@@ -78,6 +78,24 @@ public class EventStateMachineActions {
         };
     }
 
+    public Action<EventState, EventStateMachineEvent> cancelAction() {
+        return context -> {
+            Event event = context.getExtendedState().get("event", Event.class);
+            log.info("Cancelling event: {}", event.getName());
+            event.setName("[CANCELLED] " + event.getName());
+            discordService.removeEventButtons(event);
+            discordService.updateEventMessage(event);
+            discordService.updateChannelName(event);
+            event.getNotifications().add(new Notification(
+                    NotificationType.ATTENDANCE_LOCKED,
+                    ZonedDateTime.now(clock).toInstant(),
+                    0
+            ));
+            event.setState(EventState.COMPLETED);
+            eventRepository.save(event);
+        };
+    }
+
     public Action<EventState, EventStateMachineEvent> archiveAction() {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);

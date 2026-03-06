@@ -4,6 +4,8 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
+import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.immich.ImmichService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
     private final ImmichService immichService;
+    private final EventStateMachineService stateMachineService;
     private final Clock clock;
 
     public String createEvent(Event event) {
@@ -77,6 +80,17 @@ public class EventService {
     public boolean isCompleted(Event event) {
         return event.getState().ordinal() >= EventState.COMPLETED.ordinal()
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
+    }
+
+    public void cancelEvent(UUID id) {
+        Event event = getEvent(id);
+        if (isCompleted(event)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is already completed or cancelled");
+        }
+        boolean transitioned = stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL);
+        if (!transitioned) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cancel event");
+        }
     }
 
     @Transactional

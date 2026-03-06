@@ -78,6 +78,18 @@ public class EventController {
         return new EventDetailDto(event, eventService.isCompleted(event));
     }
 
+    @PostMapping(path = "/{id}/cancel")
+    public Map<String, String> cancelEvent(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        eventService.cancelEvent(id);
+        return Map.of("message", "Event cancelled");
+    }
+
     @DeleteMapping(path = "/{id}/attendee")
     public Map<String, String> removeAttendee(
             @PathVariable UUID id,

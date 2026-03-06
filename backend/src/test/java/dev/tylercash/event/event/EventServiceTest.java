@@ -4,10 +4,14 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
+import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.immich.ImmichService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.ZonedDateTime;
@@ -15,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +34,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getAccepted().add(Attendee.createDiscordAttendee("12345", "Alice"));
@@ -48,7 +53,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getDeclined().add(Attendee.createDiscordAttendee("99999", "Bob"));
@@ -67,7 +72,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         event.getMaybe().add(Attendee.createDiscordAttendee("77777", "Carol"));
@@ -86,7 +91,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         // createDiscordAttendee(null, name) creates "[+1] name" as the stored name
@@ -107,7 +112,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee target = Attendee.createDiscordAttendee("11111", "Target");
@@ -129,7 +134,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee attendee = Attendee.createDiscordAttendee("11111", "Alice");
@@ -150,7 +155,7 @@ class EventServiceTest {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         ImmichService immichService = mock(ImmichService.class);
-        EventService service = new EventService(discordService, eventRepository, immichService, Clock.systemDefaultZone());
+        EventService service = new EventService(discordService, eventRepository, immichService, mock(EventStateMachineService.class), Clock.systemDefaultZone());
 
         Event event = buildEvent();
         Attendee guest = Attendee.createDiscordAttendee(null, "Eve");
@@ -164,5 +169,64 @@ class EventServiceTest {
 
         assertThat(event.getMaybe()).isEmpty();
         verify(eventRepository).save(event);
+    }
+
+    @Test
+    void cancelEvent_throwsBadRequest_whenEventAlreadyCompleted() {
+        EventRepository eventRepository = mock(EventRepository.class);
+        DiscordService discordService = mock(DiscordService.class);
+        ImmichService immichService = mock(ImmichService.class);
+        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+
+        Event event = buildEvent();
+        event.setState(EventState.COMPLETED);
+
+        UUID id = UUID.randomUUID();
+        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEvent(id))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("already completed or cancelled");
+
+        verifyNoInteractions(stateMachineService);
+    }
+
+    @Test
+    void cancelEvent_callsAttemptTransition_withCancelEvent() {
+        EventRepository eventRepository = mock(EventRepository.class);
+        DiscordService discordService = mock(DiscordService.class);
+        ImmichService immichService = mock(ImmichService.class);
+        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+
+        Event event = buildEvent();
+
+        UUID id = UUID.randomUUID();
+        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL)).thenReturn(true);
+
+        service.cancelEvent(id);
+
+        verify(stateMachineService).attemptTransition(event, EventStateMachineEvent.CANCEL);
+    }
+
+    @Test
+    void cancelEvent_throwsInternalServerError_whenTransitionFails() {
+        EventRepository eventRepository = mock(EventRepository.class);
+        DiscordService discordService = mock(DiscordService.class);
+        ImmichService immichService = mock(ImmichService.class);
+        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
+        EventService service = new EventService(discordService, eventRepository, immichService, stateMachineService, Clock.systemDefaultZone());
+
+        Event event = buildEvent();
+
+        UUID id = UUID.randomUUID();
+        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.cancelEvent(id))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Failed to cancel event");
     }
 }

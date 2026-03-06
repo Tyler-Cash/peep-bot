@@ -5,5 +5,6 @@ public enum EventStateMachineEvent {
     POST_ALBUM,
     COMPLETE,
     ARCHIVE,
-    DELETE
+    DELETE,
+    CANCEL
 }

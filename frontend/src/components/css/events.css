@@ -589,6 +589,103 @@
     cursor: not-allowed;
 }
 
+/* ============================================
+   Confirmation Modal
+   ============================================ */
+.confirm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    max-width: 460px;
+    width: 90%;
+}
+
+.confirm-modal-header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.confirm-modal-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.confirm-modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.confirm-modal-body p {
+    font-size: 0.925rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.confirm-modal-footer {
+    padding: 1rem 1.5rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-confirm-danger {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.925rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-confirm-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-confirm-cancel {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.925rem;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-cancel:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-confirm-cancel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 @media (max-width: 600px) {
     .attendees-grid {
         grid-template-columns: 1fr;

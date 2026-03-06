@@ -134,6 +134,10 @@ export const eventBotApi = createApi({
             }),
             invalidatesTags: (result, error, {id}) => [{type: 'Event', id}],
         }),
+        cancelEvent: builder.mutation({
+            query: ({id}) => ({url: `event/${id}/cancel`, method: 'POST'}),
+            invalidatesTags: (result, error, {id}) => [{type: 'Event', id}, 'Event'],
+        }),
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
@@ -146,5 +150,6 @@ export const {
     useCreateEventMutation,
     usePatchEventMutation,
     useRemoveAttendeeMutation,
+    useCancelEventMutation,
     useIsLoggedInQuery,
 } = eventBotApi;

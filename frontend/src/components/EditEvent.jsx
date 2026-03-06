@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation} from "../api/eventBotApi";
+import {useGetEventQuery, usePatchEventMutation, useRemoveAttendeeMutation, useCancelEventMutation} from "../api/eventBotApi";
 import Navbar from "./Navbar";
+import ConfirmModal from "./ConfirmModal";
 import {useForm} from "react-hook-form";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {useSelector} from "react-redux";
@@ -51,8 +52,10 @@ export default function EditEvent() {
     const {data, error, isFetching} = useGetEventQuery({"id": id})
     const [patchEvent] = usePatchEventMutation({})
     const [removeAttendee] = useRemoveAttendeeMutation()
+    const [cancelEvent, {isLoading: isCancelling}] = useCancelEventMutation()
     const isAdmin = useSelector(state => state.auth.isAdmin)
     const [removingKey, setRemovingKey] = useState(null)
+    const [confirmAction, setConfirmAction] = useState(null)
 
     const {
         register,
@@ -97,8 +100,42 @@ export default function EditEvent() {
             console.error("Failed to remove attendee", e);
         } finally {
             setRemovingKey(null);
+            setConfirmAction(null);
         }
     }
+
+    const confirmRemove = (attendee) => {
+        setConfirmAction({
+            title: 'Remove Attendee',
+            message: `Remove ${attendee.name} from this event?`,
+            confirmLabel: 'Remove',
+            confirmColorClass: 'btn-confirm-danger',
+            onConfirm: () => handleRemove(attendee),
+        });
+    };
+
+    const handleCancelEvent = async () => {
+        try {
+            await cancelEvent({id}).unwrap();
+            setConfirmAction(null);
+            navigate('/', {state: {toast: 'Event cancelled successfully'}});
+        } catch (e) {
+            setConfirmAction(null);
+            setError("root", {
+                message: "Failed to cancel event. " + (e.data?.message || e.message || "Please try again later.")
+            });
+        }
+    };
+
+    const confirmCancel = () => {
+        setConfirmAction({
+            title: 'Cancel Event',
+            message: 'This will cancel the event, lock attendance, and remove Discord interaction buttons. The event name will be prefixed with "[CANCELLED]". This cannot be undone.',
+            confirmLabel: 'Cancel Event',
+            confirmColorClass: 'btn-confirm-danger',
+            onConfirm: handleCancelEvent,
+        });
+    };
 
     useEffect(() => {
         if (data) {
@@ -214,6 +251,20 @@ export default function EditEvent() {
                     </form>
                 </div>
 
+                {isAdmin && data && !data.completed && (
+                    <div className="event-card mt-3">
+                        <div className="event-card-header">
+                            <h4 className="mb-0">Event Actions</h4>
+                            <p className="text-muted mb-0 mt-1 small">Administrative actions for this event</p>
+                        </div>
+                        <div className="event-card-body">
+                            <button type="button" className="btn-confirm-danger" onClick={confirmCancel} disabled={isCancelling}>
+                                Cancel Event
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {isAdmin && data && (
                     <div className="event-card mt-3">
                         <div className="event-card-header">
@@ -230,7 +281,7 @@ export default function EditEvent() {
                                     title="Accepted"
                                     colorClass="attendee-col-header--accepted"
                                     attendees={data.accepted}
-                                    onRemove={handleRemove}
+                                    onRemove={confirmRemove}
                                     removingKey={removingKey}
                                     locked={data.completed}
                                 />
@@ -238,7 +289,7 @@ export default function EditEvent() {
                                     title="Maybe"
                                     colorClass="attendee-col-header--maybe"
                                     attendees={data.maybe}
-                                    onRemove={handleRemove}
+                                    onRemove={confirmRemove}
                                     removingKey={removingKey}
                                     locked={data.completed}
                                 />
@@ -246,7 +297,7 @@ export default function EditEvent() {
                                     title="Declined"
                                     colorClass="attendee-col-header--declined"
                                     attendees={data.declined}
-                                    onRemove={handleRemove}
+                                    onRemove={confirmRemove}
                                     removingKey={removingKey}
                                     locked={data.completed}
                                 />
@@ -255,6 +306,17 @@ export default function EditEvent() {
                     </div>
                 )}
             </div>
+
+            <ConfirmModal
+                show={!!confirmAction}
+                title={confirmAction?.title}
+                message={confirmAction?.message}
+                confirmLabel={confirmAction?.confirmLabel}
+                confirmColorClass={confirmAction?.confirmColorClass}
+                onConfirm={confirmAction?.onConfirm}
+                onCancel={() => setConfirmAction(null)}
+                isLoading={isCancelling || !!removingKey}
+            />
         </div>
     )
 }
