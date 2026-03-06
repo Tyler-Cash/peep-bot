@@ -56,7 +56,7 @@ function AttendeeColumn({ title, colorClass, attendees, onRemove, removingKey, c
 export default function EditEvent() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { data, error, isFetching } = useGetEventQuery({ id: id });
+    const { data, isFetching } = useGetEventQuery({ id: id });
     const [patchEvent] = usePatchEventMutation({});
     const [removeAttendee] = useRemoveAttendeeMutation();
     const [cancelEvent, { isLoading: isCancelling }] = useCancelEventMutation();
@@ -164,7 +164,7 @@ export default function EditEvent() {
             setValue('capacity', parseInt(data.capacity || '0'));
             setValue('dateTime', eventDate.tz('Australia/Sydney').format('YYYY-MM-DD HH:mm:ss'));
         }
-    }, [data]);
+    }, [data, setValue]);
 
     if (isFetching) {
         return (

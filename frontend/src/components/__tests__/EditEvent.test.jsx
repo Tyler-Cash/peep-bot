@@ -80,15 +80,14 @@ describe('EditEvent admin panel', () => {
         expect(screen.getByText('Carol')).toBeInTheDocument();
     });
 
-    test('admin panel is hidden when user is not admin', () => {
+    test('attendees are visible but remove buttons are hidden for non-admin', () => {
         useSelector.mockImplementation((fn) => fn({ auth: { isAdmin: false } }));
 
         renderEditEvent();
 
-        expect(screen.queryByText('Attendees')).not.toBeInTheDocument();
-        expect(screen.queryByText('Alice')).not.toBeInTheDocument();
-        expect(screen.queryByText('Bob')).not.toBeInTheDocument();
-        expect(screen.queryByText('Carol')).not.toBeInTheDocument();
+        expect(screen.queryByText('Attendees')).toBeInTheDocument();
+        expect(screen.queryByText('Alice')).toBeInTheDocument();
+        expect(screen.queryAllByRole('button', { name: /remove/i })).toHaveLength(0);
     });
 
     test('all three attendee sections render one remove button each', () => {

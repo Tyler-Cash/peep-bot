@@ -25,7 +25,7 @@ export default function Layout() {
                 }, 200);
             }, 3000);
         }
-    }, [location.state?.toast]);
+    }, [location.state?.toast, location.pathname, navigate]);
 
     return (
         <div className="app-layout">

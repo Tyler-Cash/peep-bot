@@ -65,7 +65,7 @@ function EmptyIllustration() {
 }
 
 function Events() {
-    const { data, error, isLoading } = useGetEventsQuery();
+    const { data, isLoading } = useGetEventsQuery();
     let navbar = <Navbar focus="LIST" />;
 
     if (isLoading || data == null) {

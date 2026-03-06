@@ -8,7 +8,7 @@ export default function LoginSuccess() {
 
     useEffect(() => {
         dispatch(loginSuccess());
-    }, []);
+    }, [dispatch]);
 
     return <Navigate to={'/'} />;
 }

@@ -6,7 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import moment from 'moment-timezone';
 import './css/events.css';
 
-export default function CreateEvent(props) {
+export default function CreateEvent() {
     const [createEvent] = useCreateEventMutation({});
     const navigate = useNavigate();
 

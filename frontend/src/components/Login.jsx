@@ -1,12 +1,11 @@
 import { Navigate, redirectDocument } from 'react-router-dom';
 import './css/login.css';
-import Navbar from './Navbar';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsLoggedInQuery } from '../api/eventBotApi';
 import { loginSuccess, logout } from '../reducers/authReducer';
 import { backendUrl } from '../api/backendUrl';
 
-export default function Login(props) {
+export default function Login() {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const dispatch = useDispatch();
     const { data, error, isFetching, isSuccess } = useIsLoggedInQuery();
