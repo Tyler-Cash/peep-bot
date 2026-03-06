@@ -1,0 +1,5 @@
+dev.tylercash:
+  cors:
+    allowed-origins: https://event-staging.tylercash.dev
+  frontend:
+    hostname: event-staging.tylercash.dev
