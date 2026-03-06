@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 class DiscordUserCacheServiceTest {
@@ -33,8 +34,11 @@ class DiscordUserCacheServiceTest {
         attendanceRepository = mock(AttendanceRepository.class);
         discordService = mock(DiscordService.class);
         discordConfiguration = mock(DiscordConfiguration.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<DiscordService> discordServiceProvider = mock(ObjectProvider.class);
+        lenient().when(discordServiceProvider.getObject()).thenReturn(discordService);
         service = new DiscordUserCacheService(
-                cacheRepository, attendanceRepository, discordService, discordConfiguration);
+                cacheRepository, attendanceRepository, discordServiceProvider, discordConfiguration);
     }
 
     @Nested

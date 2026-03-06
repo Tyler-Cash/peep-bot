@@ -127,6 +127,7 @@ Navigate to `http://localhost:5173/login` and click "Log in with Discord". The O
 
 # Run tests (uses H2 + Testcontainers)
 ./gradlew test
+./gradlew e2eTest
 
 # Build executable jar
 ./gradlew bootJar

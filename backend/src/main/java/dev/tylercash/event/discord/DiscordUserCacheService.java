@@ -10,23 +10,33 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Member;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Log4j2
 @Service
-@RequiredArgsConstructor
 public class DiscordUserCacheService {
     private static final int REFRESH_BATCH_SIZE = 10;
     private static final long STALE_MINUTES = 30;
 
     private final DiscordUserCacheRepository cacheRepository;
     private final AttendanceRepository attendanceRepository;
-    private final DiscordService discordService;
+    private final ObjectProvider<DiscordService> discordServiceProvider;
     private final DiscordConfiguration discordConfiguration;
+
+    public DiscordUserCacheService(
+            DiscordUserCacheRepository cacheRepository,
+            AttendanceRepository attendanceRepository,
+            ObjectProvider<DiscordService> discordServiceProvider,
+            DiscordConfiguration discordConfiguration) {
+        this.cacheRepository = cacheRepository;
+        this.attendanceRepository = attendanceRepository;
+        this.discordServiceProvider = discordServiceProvider;
+        this.discordConfiguration = discordConfiguration;
+    }
 
     public void upsertUser(String snowflake, String displayName) {
         cacheRepository.save(new DiscordUserCache(snowflake, displayName, Instant.now()));
@@ -76,8 +86,9 @@ public class DiscordUserCacheService {
 
         for (String snowflake : toRefresh) {
             try {
-                Member member = discordService.getMemberFromServer(
-                        discordConfiguration.getGuildId(), Long.parseLong(snowflake));
+                Member member = discordServiceProvider
+                        .getObject()
+                        .getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake));
                 if (member != null) {
                     String displayName = DiscordUtil.getUserDisplayName(member);
                     upsertUser(snowflake, displayName);
