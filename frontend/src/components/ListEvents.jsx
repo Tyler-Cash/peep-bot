@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import moment from "moment-timezone";
 import './css/events.css';
 import {Link} from "react-router-dom";
+import {backendUrl} from "../api/backendUrl";
 
 function SkeletonCard() {
     return (
@@ -127,7 +128,7 @@ export default function ListEvents() {
 
     useEffect(() => {
         if (!isLoading && !data) {
-            window.location.href = `${import.meta.env.VITE_BACKEND_URI}/api/oauth2/authorization/discord`;
+            window.location.href = `${backendUrl}/api/oauth2/authorization/discord`;
         }
     }, [isLoading, data]);
 

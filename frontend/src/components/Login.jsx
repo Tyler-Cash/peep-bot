@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import {useDispatch, useSelector} from "react-redux";
 import {useIsLoggedInQuery} from "../api/eventBotApi";
 import {loginSuccess, logout} from "../reducers/authReducer";
+import {backendUrl} from "../api/backendUrl";
 
 export default function Login(props) {
     const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
@@ -17,7 +18,7 @@ export default function Login(props) {
     }
 
     const handleClick = () => {
-        redirectDocument(import.meta.env.VITE_BACKEND_URI + '/api/oauth2/authorization/discord');
+        redirectDocument(backendUrl + '/api/oauth2/authorization/discord');
     };
 
     if (isFetching) {
@@ -54,7 +55,7 @@ export default function Login(props) {
                     Sign in with Discord to view and manage events for your server.
                 </p>
                 <a
-                    href={import.meta.env.VITE_BACKEND_URI + '/api/oauth2/authorization/discord'}
+                    href={backendUrl + '/api/oauth2/authorization/discord'}
                     className="btn-discord"
                     onClick={handleClick}
                 >

@@ -1,4 +1,5 @@
 import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
+import {backendUrl} from './backendUrl'
 
 // In-memory cache of the CSRF token for this tab/session.
 // You could also store it in Redux state if you prefer.
@@ -28,7 +29,7 @@ async function ensureCsrfToken(baseUrl) {
     return csrfTokenCache;
 }
 
-const baseUrl = `${import.meta.env.VITE_BACKEND_URI}/api/`;
+const baseUrl = `${backendUrl}/api/`;
 
 const baseQuery = fetchBaseQuery({
     baseUrl,
