@@ -9,10 +9,10 @@ import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.ActionRow;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.modals.Modal;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -37,13 +37,13 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private final EmbedService embedService;
 
     private static void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
-        TextInput plusOne = TextInput.create(PLUS_ONE_ID, PLUS_ONE, TextInputStyle.SHORT)
+        TextInput plusOne = TextInput.create(PLUS_ONE_ID, TextInputStyle.SHORT)
                 .setPlaceholder(MODAL_PLACEHOLDER)
                 .setRequiredRange(3, 20)
                 .build();
 
         Modal modal = Modal.create(PLUS_ONE_ID, PLUS_ONE)
-                .addComponents(ActionRow.of(plusOne))
+                .addComponents(Label.of(PLUS_ONE, plusOne))
                 .build();
         buttonInteractionEvent.replyModal(modal).queue();
     }
@@ -56,7 +56,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
             return;
         }
-        String eventType = buttonInteractionEvent.getButton().getId();
+        String eventType = buttonInteractionEvent.getButton().getCustomId();
         if (Objects.equals(eventType, PLUS_ONE_ID)) {
             replyWithModal(buttonInteractionEvent);
             return;

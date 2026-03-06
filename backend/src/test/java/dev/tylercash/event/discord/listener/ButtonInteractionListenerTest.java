@@ -9,10 +9,11 @@ import io.micrometer.core.instrument.Timer;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.interactions.components.LayoutComponent;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.components.ModalTopLevelComponentUnion;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.modals.Modal;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class ButtonInteractionListenerTest {
         when(result.buttonInteractionEvent.getMember().getId()).thenReturn(snowflake);
 
         when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
-        when(result.buttonInteractionEvent.getButton().getId()).thenReturn(ACCEPTED);
+        when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
         when(result.buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(result.eventRepository.findByMessageId(messageId)).thenReturn(event);
         when(result.embedService.getMessage(event, result.clock)).thenReturn(List.of(mock(MessageEmbed.class)));
@@ -91,7 +92,7 @@ class ButtonInteractionListenerTest {
         Result result = new Result(mock(Clock.class), mock(MetricsService.class), mock(EventRepository.class), mock(ButtonInteractionEvent.class), mock(ModalCallbackAction.class), mock(EmbedService.class));
         ButtonInteractionListener buttonInteractionListener = new ButtonInteractionListener(result.clock, result.metricsService, result.eventRepository, result.embedService);
         when(result.buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
-        when(result.buttonInteractionEvent.getButton().getId()).thenReturn(PLUS_ONE_ID);
+        when(result.buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
         when(result.buttonInteractionEvent.replyModal(any())).thenReturn(result.modalCallbackAction());
         when(result.eventRepository.findByMessageId(any())).thenReturn(mock(Event.class));
 
@@ -102,12 +103,12 @@ class ButtonInteractionListenerTest {
         assertEquals(1, actual.size());
         assertEquals(PLUS_ONE_ID, actual.get(0).getId());
         assertEquals(PLUS_ONE, actual.get(0).getTitle());
-        List<LayoutComponent> components = actual.get(0).getComponents();
+        List<ModalTopLevelComponentUnion> components = actual.get(0).getComponents();
         assertEquals(1, components.size());
-        assertEquals(1, components.get(0).getActionComponents().size());
-        TextInput textInput = (TextInput) components.get(0).getComponents().get(0);
-        assertEquals(PLUS_ONE_ID, textInput.getId());
-        assertEquals(PLUS_ONE, textInput.getLabel());
+        Label label = (Label) components.get(0);
+        assertEquals(PLUS_ONE, label.getLabel());
+        TextInput textInput = (TextInput) label.getChild();
+        assertEquals(PLUS_ONE_ID, textInput.getCustomId());
         assertEquals(MODAL_PLACEHOLDER, textInput.getPlaceHolder());
     }
 

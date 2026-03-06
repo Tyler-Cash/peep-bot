@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = PeepBotApplication.class, properties = {
+        "spring.main.allow-bean-definition-overriding=true",
         "spring.security.oauth2.client.registration.discord.client-id=test",
         "spring.security.oauth2.client.registration.discord.client-secret=test",
         "dev.tylercash.discord.token=dummy",

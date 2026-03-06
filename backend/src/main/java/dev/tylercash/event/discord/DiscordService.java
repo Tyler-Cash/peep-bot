@@ -14,7 +14,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -89,12 +90,12 @@ public class DiscordService {
         List<Role> rolesToMention = getRoles(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
                 .addEmbeds(embedService.getMessage(event, clock))
-                .addActionRow(List.of(
+                .addComponents(List.of(ActionRow.of(
                         Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
                         Button.secondary(DECLINED, DECLINED_EMOJI),
                         Button.secondary(MAYBE, MAYBE_EMOJI),
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))
-                );
+                ));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
             addNotificationToMessage(messageBuilder, rolesToMention);
