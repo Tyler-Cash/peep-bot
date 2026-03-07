@@ -23,7 +23,7 @@ public class EventLifecyclePoller {
     private final EventStateMachineService stateMachineService;
 
     @Scheduled(fixedRate = 60000)
-    @SchedulerLock(name = "eventLifecyclePoller")
+    @SchedulerLock(name = "eventLifecyclePoller", lockAtMostFor = "PT58S", lockAtLeastFor = "PT30S")
     public void poll() {
         Page<Event> events = eventRepository.findAllByStateNotIn(PAGE, List.of(EventState.DELETED));
 

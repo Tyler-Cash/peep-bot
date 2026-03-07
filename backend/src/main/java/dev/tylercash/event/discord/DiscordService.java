@@ -33,6 +33,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -76,8 +77,8 @@ public class DiscordService {
         if (categories.size() > 1) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Found multiple matching channels");
         } else if (categories.stream().findFirst().isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "No category found called \"" + EVENT_CATEGORY + "\"");
+            log.error("No Discord category found called '{}' for guild {}", categoryName, serverId);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Required Discord category not found");
         }
         return categories.get(0);
     }
@@ -134,7 +135,6 @@ public class DiscordService {
 
     public Member getMemberFromServer(long serverId, long userId) {
         Guild server = jda.getGuildById(serverId);
-        server.retrieveMemberById(userId).complete();
         return server.retrieveMemberById(userId).complete();
     }
 
@@ -150,12 +150,14 @@ public class DiscordService {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    @SchedulerLock(name = "sortActiveChannels", lockAtMostFor = "PT4M", lockAtLeastFor = "PT1M")
     public void sortActiveChannels() {
         Category category = getEventCategory(discordConfiguration.getGuildId());
         sortChannelsByEventDate(category, discordConfiguration.getSeperatorChannel());
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
+    @SchedulerLock(name = "sortArchiveChannels", lockAtMostFor = "PT4M", lockAtLeastFor = "PT1M")
     public void sortArchiveChannels() {
         Category category = getArchiveCategory(discordConfiguration.getGuildId());
         sortChannelsByChannelName(category);
@@ -248,7 +250,8 @@ public class DiscordService {
     private List<Role> getRoles(long serverId, String role) {
         List<Role> rolesByName = jda.getGuildById(serverId).getRolesByName(role, true);
         if (rolesByName.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No roles found matching name " + role);
+            log.error("No Discord roles found matching name '{}' for guild {}", role, serverId);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Required Discord role not found");
         }
         return rolesByName;
     }

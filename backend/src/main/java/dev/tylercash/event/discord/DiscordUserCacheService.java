@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Member;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,7 @@ public class DiscordUserCacheService {
     }
 
     @Scheduled(fixedDelay = 60, timeUnit = SECONDS)
+    @SchedulerLock(name = "refreshStaleEntries", lockAtMostFor = "PT55S", lockAtLeastFor = "PT10S")
     public void refreshStaleEntries() {
         Instant staleCutoff = Instant.now().minus(STALE_MINUTES, ChronoUnit.MINUTES);
         List<String> activeSnowflakes = attendanceRepository.findAllDistinctSnowflakes();

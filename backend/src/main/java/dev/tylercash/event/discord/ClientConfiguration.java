@@ -2,7 +2,6 @@ package dev.tylercash.event.discord;
 
 import dev.tylercash.event.discord.listener.ButtonInteractionListener;
 import dev.tylercash.event.discord.listener.ModalInteractionListener;
-import java.util.EnumSet;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import net.dv8tion.jda.api.JDA;
@@ -24,7 +23,7 @@ public class ClientConfiguration {
         return JDABuilder.createDefault(discordConfiguration.getToken())
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(modalInteractionListener)
-                .enableIntents(EnumSet.allOf(GatewayIntent.class))
+                .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .build()
                 .awaitReady();
     }

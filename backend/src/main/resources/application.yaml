@@ -32,6 +32,10 @@ server:
     context-path: /api/
 
 spring:
+  data:
+    web:
+      pageable:
+        max-page-size: 100
   session:
     cookie:
       name: SESSION

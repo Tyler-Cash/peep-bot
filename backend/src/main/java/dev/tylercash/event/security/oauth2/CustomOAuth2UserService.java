@@ -31,8 +31,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     "User {} not a member of the server. id: {}",
                     oAuth2User.getAttribute("username"),
                     oAuth2User.getAttribute("id"));
-            throw new OAuth2AuthenticationException(
-                    "User not a member of discord server " + discordConfiguration.getGuildId());
+            throw new OAuth2AuthenticationException("You do not have access to this application");
         }
         return oAuth2User;
     }

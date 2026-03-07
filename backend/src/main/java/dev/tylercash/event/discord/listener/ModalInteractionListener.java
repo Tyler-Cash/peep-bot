@@ -67,7 +67,14 @@ public class ModalInteractionListener extends ListenerAdapter {
         String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
         discordUserCacheService.upsertUser(ownerSnowflake, ownerDisplayName);
 
-        String plus1Name = interaction.getValues().get(0).getAsString();
+        String plus1Name = interaction.getValues().get(0).getAsString().trim();
+        if (plus1Name.isEmpty() || plus1Name.length() > 100) {
+            modalInteractionEvent
+                    .reply("Please provide a valid name (1-100 characters).")
+                    .setEphemeral(true)
+                    .queue();
+            return;
+        }
         attendanceService.recordAttendance(
                 event.getId(), null, "[+1] " + plus1Name, AttendanceStatus.ACCEPTED, ownerSnowflake);
 
