@@ -40,7 +40,7 @@ spring:
       same-site: Lax
     jdbc:
       initialize-schema: never
-      cleanup-cron: 0 * * * * *
+      cleanup-cron: 0 */10 * * * *
   datasource:
     driverClassName: org.postgresql.Driver
   security:

@@ -506,3 +506,12 @@ databaseChangeLog:
                   name: declined
               - column:
                   name: maybe
+  - changeSet:
+      id: purge all spring sessions
+      author: claude
+      comment: >
+        One-off purge of all sessions to clear bloat from old 365-day expiry.
+        New sessions will be created with 90-day expiry.
+      changes:
+        - sql:
+            sql: TRUNCATE spring_session_attributes, spring_session
