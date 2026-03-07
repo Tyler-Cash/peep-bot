@@ -69,7 +69,15 @@ const baseQueryWithCsrf = async (args, api, extraOptions) => {
     }
 
     // Proceed with the actual request; prepareHeaders will add X-XSRF-TOKEN if available
-    const result = await baseQuery(args, api, extraOptions);
+    let result = await baseQuery(args, api, extraOptions);
+
+    if (result.error && result.error.status === 429) {
+        const retryAfter = result.meta?.response?.headers?.get('Retry-After');
+        const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 5;
+        const waitMs = (isNaN(waitSeconds) ? 5 : waitSeconds) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        result = await baseQuery(args, api, extraOptions);
+    }
 
     if (result.error && result.error.status === 401) {
         window.location.href = `${baseUrl}oauth2/authorization/discord`;

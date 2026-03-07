@@ -14,6 +14,11 @@ dev.tylercash:
   frontend:
     protocol: https
     path: /
+  rate-limit:
+    read-capacity: 60
+    read-refill-seconds: 60
+    write-capacity: 5
+    write-refill-seconds: 60
 
 springdoc:
   show-oauth2-endpoints: true
@@ -32,6 +37,11 @@ server:
     context-path: /api/
 
 spring:
+  cache:
+    type: caffeine
+    cache-names: activeEvents,eventDetail
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=120s
   session:
     cookie:
       name: SESSION

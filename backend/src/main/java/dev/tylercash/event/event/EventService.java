@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,7 @@ public class EventService {
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
 
+    @CacheEvict(value = "activeEvents", allEntries = true)
     public String createEvent(Event event) {
         TextChannel channel = discordService.createEventChannel(event);
         try {
@@ -56,6 +60,7 @@ public class EventService {
         return "Created event for " + event.getName();
     }
 
+    @Cacheable(value = "eventDetail", key = "#id")
     public Event getEvent(UUID id) {
         Optional<Event> event = eventRepository.findById(id);
         if (event.isEmpty()) {
@@ -64,6 +69,11 @@ public class EventService {
         return event.get();
     }
 
+    @Caching(
+            evict = {
+                @CacheEvict(value = "activeEvents", allEntries = true),
+                @CacheEvict(value = "eventDetail", key = "#event.id")
+            })
     @Transactional
     public Event updateEvent(Event event) {
         discordService.updateEventMessage(event);
@@ -72,6 +82,7 @@ public class EventService {
         return event;
     }
 
+    @Cacheable("activeEvents")
     public Page<Event> getActiveEvents(Pageable pageable) {
         return eventRepository.findAllByStateNotIn(pageable, List.of(EventState.ARCHIVED, EventState.DELETED));
     }
@@ -81,6 +92,11 @@ public class EventService {
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
     }
 
+    @Caching(
+            evict = {
+                @CacheEvict(value = "activeEvents", allEntries = true),
+                @CacheEvict(value = "eventDetail", key = "#id")
+            })
     public void cancelEvent(UUID id) {
         Event event = getEvent(id);
         if (isCompleted(event)) {
@@ -92,6 +108,11 @@ public class EventService {
         }
     }
 
+    @Caching(
+            evict = {
+                @CacheEvict(value = "activeEvents", allEntries = true),
+                @CacheEvict(value = "eventDetail", key = "#id")
+            })
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
         Event event = getEvent(id);
