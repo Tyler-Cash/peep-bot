@@ -37,8 +37,7 @@ public class EventStateMachineGuards {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
             ZonedDateTime now = ZonedDateTime.now(clock);
-            return !immichConfiguration.isEnabled()
-                    && now.isAfter(event.getDateTime().plusHours(6));
+            return now.isAfter(event.getDateTime().plusHours(6));
         };
     }
 

@@ -53,19 +53,27 @@ public class EventStateMachineActions {
     public Action<EventState, EventStateMachineEvent> postAlbumAction() {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
+            boolean progressMade = false;
 
             if (event.getImmichAlbumId() == null) {
                 immichService
                         .createAlbum(event.getName(), event.getDescription())
-                        .ifPresent(event::setImmichAlbumId);
+                        .ifPresent(albumId -> {
+                            event.setImmichAlbumId(albumId);
+                        });
+                progressMade = event.getImmichAlbumId() != null;
             }
 
             if (event.getImmichAlbumId() != null && event.getImmichShareKey() == null) {
                 immichService.createSharedLink(event.getImmichAlbumId()).ifPresent(event::setImmichShareKey);
+                progressMade = progressMade || event.getImmichShareKey() != null;
             }
 
             if (event.getImmichShareKey() == null) {
                 log.warn("Cannot post album link for event '{}': no share key available", event.getName());
+                if (progressMade) {
+                    eventRepository.save(event);
+                }
                 return;
             }
 

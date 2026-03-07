@@ -111,6 +111,40 @@ class EventStateMachineActionsTest {
     }
 
     @Test
+    @DisplayName("postAlbumAction saves partial progress when album created but share link fails")
+    void postAlbum_savesPartialProgress() {
+        Event event = new Event();
+        event.setName("Test");
+        event.setDescription("Desc");
+        event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(2));
+
+        when(immichService.createAlbum(anyString(), anyString())).thenReturn(Optional.of("album-id"));
+        when(immichService.createSharedLink("album-id")).thenReturn(Optional.empty());
+
+        actions.postAlbumAction().execute(contextWithEvent(event));
+
+        assertEquals("album-id", event.getImmichAlbumId());
+        assertEquals(EventState.PLANNED, event.getState());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("postAlbumAction does not save when album creation fails entirely")
+    void postAlbum_noSaveOnTotalFailure() {
+        Event event = new Event();
+        event.setName("Test");
+        event.setDescription("Desc");
+        event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(2));
+
+        when(immichService.createAlbum(anyString(), anyString())).thenReturn(Optional.empty());
+
+        actions.postAlbumAction().execute(contextWithEvent(event));
+
+        assertEquals(EventState.PLANNED, event.getState());
+        verify(eventRepository, never()).save(event);
+    }
+
+    @Test
     @DisplayName("completeAction removes buttons and sets state to COMPLETED")
     void complete() {
         Event event = new Event();

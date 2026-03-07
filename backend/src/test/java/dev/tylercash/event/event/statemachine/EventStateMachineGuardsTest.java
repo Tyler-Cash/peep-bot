@@ -92,7 +92,7 @@ class EventStateMachineGuardsTest {
     }
 
     @Test
-    @DisplayName("completeFromNotifiedGuard: true when Immich disabled and 6h+ after event")
+    @DisplayName("completeFromNotifiedGuard: true when 6h+ after event with Immich disabled")
     void completeFromNotified_immichDisabled() {
         immichConfig.setEnabled(false);
         Event event = new Event();
@@ -101,11 +101,19 @@ class EventStateMachineGuardsTest {
     }
 
     @Test
-    @DisplayName("completeFromNotifiedGuard: false when Immich enabled")
+    @DisplayName("completeFromNotifiedGuard: true when 6h+ after event with Immich enabled (fallback)")
     void completeFromNotified_immichEnabled() {
         immichConfig.setEnabled(true);
         Event event = new Event();
         event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(7));
+        assertTrue(guards.completeFromNotifiedGuard().evaluate(contextWithEvent(event)));
+    }
+
+    @Test
+    @DisplayName("completeFromNotifiedGuard: false when less than 6h after event")
+    void completeFromNotified_tooSoon() {
+        Event event = new Event();
+        event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(3));
         assertFalse(guards.completeFromNotifiedGuard().evaluate(contextWithEvent(event)));
     }
 
