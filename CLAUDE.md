@@ -62,7 +62,7 @@ be passed as CLI args (see below).
 From `backend/`:
 
 ```bash
-./gradlew bootRun "--args=--spring.profiles.active=local \
+./gradlew bootRun "--args=--spring.profiles.active=local,nonprod \
   --spring.datasource.url=jdbc:postgresql://localhost:5432/peepbot \
   --spring.datasource.username=peepbot \
   --spring.datasource.password=peepbot \
@@ -123,7 +123,7 @@ Navigate to `http://localhost:5173/login` and click "Log in with Discord". The O
 
 ```bash
 # Run with local profile
-./gradlew bootRun "--args=--spring.profiles.active=local ..."
+./gradlew bootRun "--args=--spring.profiles.active=local,nonprod ..."
 
 # Run tests (uses H2 + Testcontainers)
 ./gradlew test

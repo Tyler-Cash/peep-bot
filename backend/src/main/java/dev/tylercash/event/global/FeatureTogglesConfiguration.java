@@ -9,4 +9,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "dev.tylercash.feature-toggles")
 public class FeatureTogglesConfiguration {
     private boolean removePlusOnesOnDecline = true;
+    private boolean archiveOrphanedChannels = false;
 }

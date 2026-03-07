@@ -11,9 +11,11 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
+import dev.tylercash.event.global.FeatureTogglesConfiguration;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -42,9 +44,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @AllArgsConstructor
 public class DiscordService {
+    private static final int ORPHAN_AGE_DAYS = 7;
+
     private final DiscordConfiguration discordConfiguration;
     private final EmbedService embedService;
     private final EventRepository eventRepository;
+    private final FeatureTogglesConfiguration featureToggles;
     private final RateLimiter notifyEventRoles;
     private final Clock clock;
     private final JDA jda;
@@ -198,15 +203,32 @@ public class DiscordService {
 
         withEvent.sort(Comparator.comparing(ch -> channelDateMap.get(ch.getIdLong())));
 
-        // Archive orphaned channels that have no matching event
-        Category archiveCategory = getArchiveCategory(discordConfiguration.getGuildId());
-        for (TextChannel orphan : withoutEvent) {
-            log.info("Moving orphaned channel '{}' to archive", orphan.getName());
-            orphan.getManager().setParent(archiveCategory).sync().queue();
+        if (!withoutEvent.isEmpty()) {
+            log.warn(
+                    "Found {} orphaned channel(s) in events category with no matching event: {}",
+                    withoutEvent.size(),
+                    withoutEvent.stream().map(TextChannel::getName).toList());
+        }
+
+        List<TextChannel> keptOrphans = new ArrayList<>();
+        if (featureToggles.isArchiveOrphanedChannels()) {
+            OffsetDateTime cutoff = OffsetDateTime.now(clock).minusDays(ORPHAN_AGE_DAYS);
+            Category archiveCategory = getArchiveCategory(discordConfiguration.getGuildId());
+            for (TextChannel orphan : withoutEvent) {
+                if (orphan.getTimeCreated().isBefore(cutoff)) {
+                    log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
+                    orphan.getManager().setParent(archiveCategory).sync().queue();
+                } else {
+                    keptOrphans.add(orphan);
+                }
+            }
+        } else {
+            keptOrphans.addAll(withoutEvent);
         }
 
         List<TextChannel> sorted = new ArrayList<>(before);
         sorted.addAll(withEvent);
+        sorted.addAll(keptOrphans);
 
         for (int i = 0; i < sorted.size(); i++) {
             sorted.get(i).getManager().setPosition(i).queue();
