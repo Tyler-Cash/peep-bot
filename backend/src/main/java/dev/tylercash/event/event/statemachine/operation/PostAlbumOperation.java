@@ -2,6 +2,7 @@ package dev.tylercash.event.event.statemachine.operation;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
@@ -10,6 +11,7 @@ import java.time.Clock;
 import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.guard.Guard;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ public class PostAlbumOperation {
     private final ImmichService immichService;
     private final DiscordService discordService;
     private final EventRepository eventRepository;
+    private final ObjectProvider<EventService> eventServiceProvider;
 
     public Guard<EventState, EventStateMachineEvent> guard() {
         return context -> {
@@ -38,6 +41,8 @@ public class PostAlbumOperation {
             String albumUrl = immichService.getShareUrl(event.getImmichShareKey());
             log.info("Posting album link for event: {}", event.getName());
             discordService.sendAlbumLink(event, albumUrl);
+            eventServiceProvider.getObject().populateAttendance(event);
+            discordService.updateEventMessage(event);
             event.setState(EventState.ALBUM_POSTED);
             eventRepository.save(event);
         };

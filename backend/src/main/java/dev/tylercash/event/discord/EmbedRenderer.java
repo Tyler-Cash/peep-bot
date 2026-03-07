@@ -40,14 +40,16 @@ public class EmbedRenderer {
             embed.addField("Location", event.getLocation(), false);
         }
 
-        String editUrl = frontendUrl + "event/" + event.getId();
         StringBuilder links = new StringBuilder();
-        links.append("[Add to Google calendar](<")
+        links.append("[Add to Google calendar](")
                 .append(GoogleCalendarService.getCalendarEventUrl(event))
-                .append(">)");
-        links.append(" | [Edit event](<").append(editUrl).append(">)");
+                .append(")");
+        if (event.getId() != null) {
+            String editUrl = frontendUrl + "event/" + event.getId();
+            links.append(" | [Edit event](").append(editUrl).append(")");
+        }
         if (albumUrl != null) {
-            links.append(" | [Photo album](<").append(albumUrl).append(">)");
+            links.append(" | [Photo album](").append(albumUrl).append(")");
         }
         embed.addField("Links", links.toString(), false);
         populateAttendeeSection(event, embed);

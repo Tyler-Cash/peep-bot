@@ -41,13 +41,15 @@ public class EventService {
 
     @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
+    @Transactional
     public String createEvent(Event event) {
         log.info("Creating event '{}' by creator {}", event.getName(), event.getCreator());
         TextChannel channel = discordService.createEventChannel(event);
         try {
+            event.setChannelId(channel.getIdLong());
+            eventRepository.save(event);
             Message message = discordService.postEventMessage(event, channel);
             event.setServerId(message.getGuildIdLong());
-            event.setChannelId(channel.getIdLong());
             event.setMessageId(message.getIdLong());
             eventRepository.save(event);
         } catch (Exception e) {

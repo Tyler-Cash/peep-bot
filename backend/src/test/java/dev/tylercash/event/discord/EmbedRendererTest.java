@@ -48,7 +48,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Edit event](<" + FRONTEND_URL + "event/" + eventId + ">)");
+        assertThat(linksField.getValue()).contains("[Edit event](" + FRONTEND_URL + "event/" + eventId + ")");
     }
 
     @Test
@@ -66,7 +66,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Add to Google calendar](<");
+        assertThat(linksField.getValue()).contains("[Add to Google calendar](");
     }
 
     @Test
@@ -86,7 +86,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Edit event](<http://localhost:5173/event/" + eventId + ">)");
+        assertThat(linksField.getValue()).contains("[Edit event](http://localhost:5173/event/" + eventId + ")");
     }
 
     @Test
@@ -104,7 +104,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Photo album](<" + albumUrl + ">)");
+        assertThat(linksField.getValue()).contains("[Photo album](" + albumUrl + ")");
     }
 
     @Test
@@ -122,6 +122,23 @@ class EmbedRendererTest {
 
         assertThat(linksField).isNotNull();
         assertThat(linksField.getValue()).doesNotContain("Photo album");
+    }
+
+    @Test
+    void embedOmitsEditLinkWhenEventIdIsNull() {
+        Event event = buildEvent();
+
+        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        MessageEmbed embed = embedBuilder.build();
+
+        List<MessageEmbed.Field> fields = embed.getFields();
+        MessageEmbed.Field linksField = fields.stream()
+                .filter(f -> "Links".equals(f.getName()))
+                .findFirst()
+                .orElse(null);
+
+        assertThat(linksField).isNotNull();
+        assertThat(linksField.getValue()).doesNotContain("Edit event");
     }
 
     @Test

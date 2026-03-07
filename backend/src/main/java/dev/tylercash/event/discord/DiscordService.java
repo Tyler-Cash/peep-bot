@@ -289,7 +289,7 @@ public class DiscordService {
             return;
         }
         TextChannel channel = getChannel(event);
-        Message message = channel.sendMessage("[Post photos of the event in the album!](<" + albumUrl + ">)")
+        Message message = channel.sendMessage("[Post photos of the event in the album!](" + albumUrl + ")")
                 .complete();
         message.pin().queue();
         event.getNotifications()

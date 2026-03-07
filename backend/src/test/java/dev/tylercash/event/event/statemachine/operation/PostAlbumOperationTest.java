@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
@@ -16,6 +17,7 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.statemachine.StateContext;
 
@@ -26,14 +28,19 @@ class PostAlbumOperationTest {
     private ImmichService immichService;
     private DiscordService discordService;
     private EventRepository eventRepository;
+    private EventService eventService;
     private PostAlbumOperation operation;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
         immichService = mock(ImmichService.class);
         discordService = mock(DiscordService.class);
         eventRepository = mock(EventRepository.class);
-        operation = new PostAlbumOperation(CLOCK, immichService, discordService, eventRepository);
+        eventService = mock(EventService.class);
+        ObjectProvider<EventService> eventServiceProvider = mock(ObjectProvider.class);
+        when(eventServiceProvider.getObject()).thenReturn(eventService);
+        operation = new PostAlbumOperation(CLOCK, immichService, discordService, eventRepository, eventServiceProvider);
     }
 
     @SuppressWarnings("unchecked")
@@ -73,6 +80,8 @@ class PostAlbumOperationTest {
         operation.action().execute(contextWithEvent(event));
 
         verify(discordService).sendAlbumLink(eq(event), eq("https://immich.example.com/share/share-key"));
+        verify(eventService).populateAttendance(event);
+        verify(discordService).updateEventMessage(event);
         assertEquals(EventState.ALBUM_POSTED, event.getState());
         verify(eventRepository).save(event);
     }
