@@ -35,6 +35,10 @@ RUN ["npm", "run", "build"]
 
 FROM nginx:1.29-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/Tyler-Cash/peep-bot"
+LABEL org.opencontainers.image.url="https://github.com/Tyler-Cash/peep-bot"
+LABEL org.opencontainers.image.description="Peep Bot frontend — React Discord event management UI"
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY static/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

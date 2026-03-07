@@ -2,10 +2,20 @@
   "branches": ["main"],
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
-    "@semantic-release/github",
-    ["@semantic-release/exec", {
-      "publishCmd": ".github/scripts/tag-and-push-images.sh ${nextRelease.version}"
-    }]
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "writerOpts": {
+          "footerPartial": "---\n\n### Container Images\n\n- `ghcr.io/tyler-cash/peep-bot-backend:{{version}}`\n- `ghcr.io/tyler-cash/peep-bot-frontend:{{version}}`\n"
+        }
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": ".github/scripts/tag-and-push-images.sh ${nextRelease.version}"
+      }
+    ],
+    "@semantic-release/github"
   ]
 }
