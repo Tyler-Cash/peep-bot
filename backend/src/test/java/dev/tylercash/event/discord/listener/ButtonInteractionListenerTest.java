@@ -61,7 +61,7 @@ class ButtonInteractionListenerTest {
                 eventServiceProvider,
                 attendanceService,
                 discordUserCacheService,
-                mock(dev.tylercash.event.discord.DiscordService.class));
+                mockDiscordServiceProvider());
 
         String nickname = "testNickname";
         String snowflake = "38943984983";
@@ -110,7 +110,7 @@ class ButtonInteractionListenerTest {
                 esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mock(dev.tylercash.event.discord.DiscordService.class));
+                mockDiscordServiceProvider());
 
         when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
@@ -140,7 +140,7 @@ class ButtonInteractionListenerTest {
                 esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mock(dev.tylercash.event.discord.DiscordService.class));
+                mockDiscordServiceProvider());
 
         Event futureEvent = mock(Event.class);
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
@@ -164,5 +164,12 @@ class ButtonInteractionListenerTest {
         TextInput textInput = (TextInput) label.getChild();
         assertEquals(PLUS_ONE_ID, textInput.getCustomId());
         assertEquals(MODAL_PLACEHOLDER, textInput.getPlaceHolder());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ObjectProvider<dev.tylercash.event.discord.DiscordService> mockDiscordServiceProvider() {
+        ObjectProvider<dev.tylercash.event.discord.DiscordService> provider = mock(ObjectProvider.class);
+        when(provider.getObject()).thenReturn(mock(dev.tylercash.event.discord.DiscordService.class));
+        return provider;
     }
 }

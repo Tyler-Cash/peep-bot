@@ -41,7 +41,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private final ObjectProvider<EventService> eventServiceProvider;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
-    private final DiscordService discordService;
+    private final ObjectProvider<DiscordService> discordServiceProvider;
 
     public ButtonInteractionListener(
             Clock clock,
@@ -51,7 +51,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService,
-            DiscordService discordService) {
+            ObjectProvider<DiscordService> discordServiceProvider) {
         this.clock = clock;
         this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
@@ -59,7 +59,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
         this.eventServiceProvider = eventServiceProvider;
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
-        this.discordService = discordService;
+        this.discordServiceProvider = discordServiceProvider;
     }
 
     private static void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
@@ -110,9 +110,9 @@ public class ButtonInteractionListener extends ListenerAdapter {
             AttendanceStatus resolvedStatus = attendanceService.flipAttendance(event.getId(), userId, null, status);
             try {
                 if (resolvedStatus == AttendanceStatus.REMOVED) {
-                    discordService.removeAllEventRoles(event, userId);
+                    discordServiceProvider.getObject().removeAllEventRoles(event, userId);
                 } else {
-                    discordService.assignEventRole(event, userId, resolvedStatus);
+                    discordServiceProvider.getObject().assignEventRole(event, userId, resolvedStatus);
                 }
             } catch (Exception e) {
                 log.warn("Failed to update Discord role for user {} on event '{}'", userId, event.getName(), e);
