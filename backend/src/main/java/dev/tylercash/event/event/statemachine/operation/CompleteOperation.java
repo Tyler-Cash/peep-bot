@@ -42,7 +42,7 @@ public class CompleteOperation {
                             NotificationType.ATTENDANCE_LOCKED,
                             ZonedDateTime.now(clock).toInstant(),
                             0));
-            event.setState(EventState.COMPLETED);
+            event.setState(EventState.POST_COMPLETED);
             eventRepository.save(event);
         };
     }

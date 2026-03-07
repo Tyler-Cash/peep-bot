@@ -84,7 +84,7 @@ class PreEventNotifyOperationTest {
 
         verify(eventService).populateAttendance(event);
         verify(discordService).sendMessageBeforeEvent(event);
-        assertEquals(EventState.NOTIFIED, event.getState());
+        assertEquals(EventState.PRE_NOTIFIED, event.getState());
         verify(eventRepository).save(event);
     }
 }

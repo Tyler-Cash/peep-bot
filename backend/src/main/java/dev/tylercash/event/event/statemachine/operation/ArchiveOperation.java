@@ -3,25 +3,37 @@ package dev.tylercash.event.event.statemachine.operation;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUtil;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import java.time.Clock;
 import java.time.ZonedDateTime;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.guard.Guard;
 import org.springframework.stereotype.Component;
 
 @Log4j2
 @Component
-@RequiredArgsConstructor
 public class ArchiveOperation {
 
     private final Clock clock;
     private final DiscordService discordService;
     private final EventRepository eventRepository;
+    private final ObjectProvider<EventService> eventServiceProvider;
+
+    public ArchiveOperation(
+            Clock clock,
+            DiscordService discordService,
+            EventRepository eventRepository,
+            ObjectProvider<EventService> eventServiceProvider) {
+        this.clock = clock;
+        this.discordService = discordService;
+        this.eventRepository = eventRepository;
+        this.eventServiceProvider = eventServiceProvider;
+    }
 
     public Guard<EventState, EventStateMachineEvent> guard() {
         return context -> {
@@ -42,6 +54,8 @@ public class ArchiveOperation {
             Event event = context.getExtendedState().get("event", Event.class);
             String eventName = DiscordUtil.getChannelNameFromEvent(event);
             log.info("Archiving event: {}", eventName);
+            eventServiceProvider.getObject().populateAttendance(event);
+            discordService.updateEventMessage(event);
             discordService.archiveEventChannel(event);
             event.setState(EventState.ARCHIVED);
             eventRepository.save(event);

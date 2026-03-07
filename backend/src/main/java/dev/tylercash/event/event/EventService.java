@@ -6,7 +6,6 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
-import dev.tylercash.event.immich.ImmichService;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
@@ -16,8 +15,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -33,7 +30,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
-    private final ImmichService immichService;
     private final EventStateMachineService stateMachineService;
     private final Clock clock;
     private final AttendanceService attendanceService;
@@ -44,25 +40,13 @@ public class EventService {
     @Transactional
     public String createEvent(Event event) {
         log.info("Creating event '{}' by creator {}", event.getName(), event.getCreator());
-        TextChannel channel = discordService.createEventChannel(event);
+        eventRepository.save(event);
         try {
-            event.setChannelId(channel.getIdLong());
-            eventRepository.save(event);
-            Message message = discordService.postEventMessage(event, channel);
-            event.setServerId(message.getGuildIdLong());
-            event.setMessageId(message.getIdLong());
-            eventRepository.save(event);
+            stateMachineService.attemptTransition(event, EventStateMachineEvent.INIT_CHANNEL);
         } catch (Exception e) {
-            channel.delete().queue();
-            throw e;
+            log.warn("Initial setup failed for event '{}', poller will retry", event.getName(), e);
         }
-        immichService.createAlbum(event.getName(), event.getDescription()).ifPresent(albumId -> {
-            event.setImmichAlbumId(albumId);
-            immichService.createSharedLink(albumId).ifPresent(event::setImmichShareKey);
-            eventRepository.save(event);
-        });
-        discordService.sortActiveChannels();
-        log.info("Created event '{}' with id={} channelId={}", event.getName(), event.getId(), event.getChannelId());
+        log.info("Created event '{}' with id={}", event.getName(), event.getId());
         return "Created event for " + event.getName();
     }
 
@@ -92,11 +76,12 @@ public class EventService {
 
     @Cacheable("activeEvents")
     public Page<Event> getActiveEvents(Pageable pageable) {
-        return eventRepository.findAllByStateNotIn(pageable, List.of(EventState.ARCHIVED, EventState.DELETED));
+        return eventRepository.findAllByStateNotIn(
+                pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED));
     }
 
     public boolean isCompleted(Event event) {
-        return event.getState().ordinal() >= EventState.COMPLETED.ordinal()
+        return event.getState().ordinal() >= EventState.POST_COMPLETED.ordinal()
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
     }
 

@@ -48,7 +48,7 @@ public class PreEventNotifyOperation {
             log.info("Sending pre-event notification for: {}", event.getName());
             eventServiceProvider.getObject().populateAttendance(event);
             discordService.sendMessageBeforeEvent(event);
-            event.setState(EventState.NOTIFIED);
+            event.setState(EventState.PRE_NOTIFIED);
             eventRepository.save(event);
         };
     }

@@ -60,7 +60,8 @@ class ButtonInteractionListenerTest {
                 embedService,
                 eventServiceProvider,
                 attendanceService,
-                discordUserCacheService);
+                discordUserCacheService,
+                mock(dev.tylercash.event.discord.DiscordService.class));
 
         String nickname = "testNickname";
         String snowflake = "38943984983";
@@ -108,7 +109,8 @@ class ButtonInteractionListenerTest {
                 mock(EmbedService.class),
                 esp,
                 mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class));
+                mock(DiscordUserCacheService.class),
+                mock(dev.tylercash.event.discord.DiscordService.class));
 
         when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
@@ -137,7 +139,8 @@ class ButtonInteractionListenerTest {
                 mock(EmbedService.class),
                 esp,
                 mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class));
+                mock(DiscordUserCacheService.class),
+                mock(dev.tylercash.event.discord.DiscordService.class));
 
         Event futureEvent = mock(Event.class);
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));

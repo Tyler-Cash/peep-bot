@@ -40,11 +40,15 @@ public class CancelOperation {
             Event event = context.getExtendedState().get("event", Event.class);
             log.info("Cancelling event: {}", event.getName());
             event.setName("[CANCELLED] " + event.getName());
-            discordService.removeEventButtons(event);
-            eventServiceProvider.getObject().populateAttendance(event);
-            discordService.updateEventMessage(event);
-            discordService.updateChannelName(event);
-            discordService.archiveEventChannel(event);
+            if (event.getMessageId() != 0) {
+                discordService.removeEventButtons(event);
+                eventServiceProvider.getObject().populateAttendance(event);
+                discordService.updateEventMessage(event);
+            }
+            if (event.getChannelId() != 0) {
+                discordService.updateChannelName(event);
+                discordService.archiveEventChannel(event);
+            }
             event.getNotifications()
                     .add(new Notification(
                             NotificationType.ATTENDANCE_LOCKED,

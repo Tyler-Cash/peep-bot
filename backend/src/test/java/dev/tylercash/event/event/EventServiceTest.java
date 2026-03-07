@@ -11,7 +11,6 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
-import dev.tylercash.event.immich.ImmichService;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -38,7 +37,6 @@ class EventServiceTest {
         return new EventService(
                 discordService,
                 eventRepository,
-                mock(ImmichService.class),
                 mock(EventStateMachineService.class),
                 Clock.systemDefaultZone(),
                 attendanceService,
@@ -96,7 +94,7 @@ class EventServiceTest {
         EventService service = createService(eventRepository, discordService, attendanceService, cacheService);
 
         Event event = buildEvent();
-        event.setState(EventState.COMPLETED);
+        event.setState(EventState.POST_COMPLETED);
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
@@ -115,14 +113,13 @@ class EventServiceTest {
         EventService service = new EventService(
                 discordService,
                 eventRepository,
-                mock(ImmichService.class),
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class));
 
         Event event = buildEvent();
-        event.setState(EventState.COMPLETED);
+        event.setState(EventState.POST_COMPLETED);
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
@@ -141,7 +138,6 @@ class EventServiceTest {
         EventService service = new EventService(
                 discordService,
                 eventRepository,
-                mock(ImmichService.class),
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
@@ -166,7 +162,6 @@ class EventServiceTest {
         EventService service = new EventService(
                 discordService,
                 eventRepository,
-                mock(ImmichService.class),
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),

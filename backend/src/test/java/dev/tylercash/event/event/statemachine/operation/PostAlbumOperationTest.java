@@ -82,7 +82,7 @@ class PostAlbumOperationTest {
         verify(discordService).sendAlbumLink(eq(event), eq("https://immich.example.com/share/share-key"));
         verify(eventService).populateAttendance(event);
         verify(discordService).updateEventMessage(event);
-        assertEquals(EventState.ALBUM_POSTED, event.getState());
+        assertEquals(EventState.POST_ALBUM_SHARED, event.getState());
         verify(eventRepository).save(event);
     }
 }

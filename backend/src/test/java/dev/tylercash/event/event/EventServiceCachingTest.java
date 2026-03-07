@@ -107,6 +107,7 @@ class EventServiceCachingTest {
                 "creator",
                 ZonedDateTime.now().plusDays(1),
                 "desc");
+        event.setState(dev.tylercash.event.event.model.EventState.PLANNED);
         return eventRepository.save(event).getId();
     }
 

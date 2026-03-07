@@ -109,6 +109,7 @@ class EventServiceIntegrationTest {
                 "creator",
                 ZonedDateTime.now().plusDays(1),
                 "desc");
+        event.setState(EventState.PLANNED);
         return eventRepository.save(event).getId();
     }
 

@@ -48,7 +48,7 @@ public class PrepareAlbumOperation {
                         event.getName(),
                         event.getImmichAlbumId(),
                         event.getImmichShareKey());
-                event.setState(EventState.ALBUM_READY);
+                event.setState(EventState.POST_ALBUM_READY);
                 eventRepository.save(event);
                 return;
             }

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
@@ -15,6 +16,7 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.statemachine.StateContext;
 
@@ -24,13 +26,18 @@ class ArchiveOperationTest {
 
     private DiscordService discordService;
     private EventRepository eventRepository;
+    private EventService eventService;
     private ArchiveOperation operation;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
         discordService = mock(DiscordService.class);
         eventRepository = mock(EventRepository.class);
-        operation = new ArchiveOperation(CLOCK, discordService, eventRepository);
+        eventService = mock(EventService.class);
+        ObjectProvider<EventService> eventServiceProvider = mock(ObjectProvider.class);
+        when(eventServiceProvider.getObject()).thenReturn(eventService);
+        operation = new ArchiveOperation(CLOCK, discordService, eventRepository, eventServiceProvider);
     }
 
     @SuppressWarnings("unchecked")
@@ -59,7 +66,7 @@ class ArchiveOperationTest {
     }
 
     @Test
-    @DisplayName("action archives channel and sets state to ARCHIVED")
+    @DisplayName("action re-renders message, archives channel, and sets state to ARCHIVED")
     void action() {
         Event event = new Event();
         event.setName("Test");
@@ -67,6 +74,8 @@ class ArchiveOperationTest {
 
         operation.action().execute(contextWithEvent(event));
 
+        verify(eventService).populateAttendance(event);
+        verify(discordService).updateEventMessage(event);
         verify(discordService).archiveEventChannel(event);
         assertEquals(EventState.ARCHIVED, event.getState());
         verify(eventRepository).save(event);

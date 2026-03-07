@@ -2,43 +2,28 @@ package dev.tylercash.event.event.statemachine.operation;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
-import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
-import java.time.Clock;
-import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.statemachine.action.Action;
-import org.springframework.statemachine.guard.Guard;
 import org.springframework.stereotype.Component;
 
 @Log4j2
 @Component
 @RequiredArgsConstructor
-public class DeleteOperation {
+public class InitRolesOperation {
 
-    private final Clock clock;
     private final DiscordService discordService;
     private final EventRepository eventRepository;
-
-    public Guard<EventState, EventStateMachineEvent> guard() {
-        return context -> {
-            Event event = context.getExtendedState().get("event", Event.class);
-            ZonedDateTime now = ZonedDateTime.now(clock);
-            return now.isAfter(event.getDateTime().plusMonths(3));
-        };
-    }
 
     public Action<EventState, EventStateMachineEvent> action() {
         return context -> {
             Event event = context.getExtendedState().get("event", Event.class);
-            String eventName = DiscordUtil.getChannelNameFromEvent(event);
-            log.info("Deleting event: {}", eventName);
-            discordService.deleteEventRoles(event);
-            discordService.deleteEventChannel(event);
-            event.setState(EventState.DELETED);
+            log.info("Creating Discord roles for event: {}", event.getName());
+            discordService.createEventRoles(event);
+            event.setState(EventState.INIT_ROLES);
             eventRepository.save(event);
         };
     }

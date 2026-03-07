@@ -54,6 +54,8 @@ class CancelOperationTest {
     void action() {
         Event event = new Event();
         event.setName("Test");
+        event.setMessageId(123L);
+        event.setChannelId(456L);
         event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(1));
 
         operation.action().execute(contextWithEvent(event));
@@ -64,6 +66,21 @@ class CancelOperationTest {
         verify(discordService).updateEventMessage(event);
         verify(discordService).updateChannelName(event);
         verify(discordService).archiveEventChannel(event);
+        assertEquals(EventState.ARCHIVED, event.getState());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("action skips Discord calls when event has no channel or message")
+    void action_fromCreatedState() {
+        Event event = new Event();
+        event.setName("Test");
+        event.setDateTime(ZonedDateTime.now(CLOCK).minusHours(1));
+
+        operation.action().execute(contextWithEvent(event));
+
+        assertEquals("[CANCELLED] Test", event.getName());
+        verifyNoInteractions(discordService);
         assertEquals(EventState.ARCHIVED, event.getState());
         verify(eventRepository).save(event);
     }

@@ -40,7 +40,8 @@ public class AttendanceService {
     }
 
     @Observed(name = "attendance.flip")
-    public void flipAttendance(UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
+    public AttendanceStatus flipAttendance(
+            UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
         log.info(
                 "Flipping attendance for event={} snowflake={} requestedStatus={}",
                 eventId,
@@ -65,6 +66,7 @@ public class AttendanceService {
         if (newStatus == AttendanceStatus.DECLINED && featureToggles.isRemovePlusOnesOnDecline() && snowflake != null) {
             cascadeRemoveOwnedPlusOnes(eventId, snowflake, latest);
         }
+        return newStatus;
     }
 
     public void removeAttendee(UUID eventId, String snowflake, String name) {

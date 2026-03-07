@@ -66,7 +66,7 @@ public class Event {
 
     @Enumerated(EnumType.STRING)
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    private EventState state = EventState.PLANNED;
+    private EventState state = EventState.CREATED;
 
     @NotNull
     @Column(name = "date_time")
@@ -75,6 +75,15 @@ public class Event {
 
     private String immichAlbumId;
     private String immichShareKey;
+
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Long acceptedRoleId;
+
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Long declinedRoleId;
+
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Long maybeRoleId;
 
     // Request only flag, do not persist
     @Transient

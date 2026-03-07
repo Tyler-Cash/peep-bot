@@ -271,7 +271,7 @@ public class DiscordService {
         sortChannelsByChannelName(category);
     }
 
-    private TextChannel getChannel(Event event) {
+    public TextChannel getChannel(Event event) {
         return jda.getChannelById(TextChannel.class, event.getChannelId());
     }
 
@@ -295,6 +295,89 @@ public class DiscordService {
         event.getNotifications()
                 .add(new Notification(
                         NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
+    }
+
+    @Observed(name = "discord.create-event-roles")
+    public void createEventRoles(Event event) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        String baseName = event.getName();
+        if (baseName.length() > 89) {
+            baseName = baseName.substring(0, 89);
+        }
+        if (event.getAcceptedRoleId() == null) {
+            Role accepted = guild.createRole().setName(baseName + " - Accepted").complete();
+            event.setAcceptedRoleId(accepted.getIdLong());
+        }
+        if (event.getDeclinedRoleId() == null) {
+            Role declined = guild.createRole().setName(baseName + " - Declined").complete();
+            event.setDeclinedRoleId(declined.getIdLong());
+        }
+        if (event.getMaybeRoleId() == null) {
+            Role maybe = guild.createRole().setName(baseName + " - Maybe").complete();
+            event.setMaybeRoleId(maybe.getIdLong());
+        }
+    }
+
+    @Observed(name = "discord.delete-event-roles")
+    public void deleteEventRoles(Event event) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        deleteRoleById(guild, event.getAcceptedRoleId());
+        deleteRoleById(guild, event.getDeclinedRoleId());
+        deleteRoleById(guild, event.getMaybeRoleId());
+    }
+
+    private void deleteRoleById(Guild guild, Long roleId) {
+        if (roleId == null) {
+            return;
+        }
+        Role role = guild.getRoleById(roleId);
+        if (role != null) {
+            role.delete().queue();
+        }
+    }
+
+    @Observed(name = "discord.assign-event-role")
+    public void assignEventRole(
+            Event event, String snowflake, dev.tylercash.event.event.model.AttendanceStatus status) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Member member = guild.retrieveMemberById(snowflake).complete();
+        if (member == null) {
+            return;
+        }
+        removeAllEventRolesFromMember(guild, event, member);
+        Long roleId =
+                switch (status) {
+                    case ACCEPTED -> event.getAcceptedRoleId();
+                    case DECLINED -> event.getDeclinedRoleId();
+                    case MAYBE -> event.getMaybeRoleId();
+                    default -> null;
+                };
+        if (roleId != null) {
+            Role role = guild.getRoleById(roleId);
+            if (role != null) {
+                guild.addRoleToMember(member, role).queue();
+            }
+        }
+    }
+
+    public void removeAllEventRoles(Event event, String snowflake) {
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Member member = guild.retrieveMemberById(snowflake).complete();
+        if (member != null) {
+            removeAllEventRolesFromMember(guild, event, member);
+        }
+    }
+
+    private void removeAllEventRolesFromMember(Guild guild, Event event, Member member) {
+        for (Long roleId : List.of(event.getAcceptedRoleId(), event.getDeclinedRoleId(), event.getMaybeRoleId())) {
+            if (roleId == null) {
+                continue;
+            }
+            Role role = guild.getRoleById(roleId);
+            if (role != null && member.getRoles().contains(role)) {
+                guild.removeRoleFromMember(member, role).queue();
+            }
+        }
     }
 
     @Observed(name = "discord.send-pre-event-notification")

@@ -67,6 +67,7 @@ class DeleteOperationTest {
 
         operation.action().execute(contextWithEvent(event));
 
+        verify(discordService).deleteEventRoles(event);
         verify(discordService).deleteEventChannel(event);
         assertEquals(EventState.DELETED, event.getState());
         verify(eventRepository).save(event);

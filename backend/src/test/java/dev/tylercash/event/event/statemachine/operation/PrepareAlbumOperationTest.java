@@ -69,12 +69,12 @@ class PrepareAlbumOperationTest {
 
         assertEquals("album-id", event.getImmichAlbumId());
         assertEquals("share-key", event.getImmichShareKey());
-        assertEquals(EventState.ALBUM_READY, event.getState());
+        assertEquals(EventState.POST_ALBUM_READY, event.getState());
         verify(eventRepository).save(event);
     }
 
     @Test
-    @DisplayName("action sets ALBUM_READY when album and share link already present")
+    @DisplayName("action sets POST_ALBUM_READY when album and share link already present")
     void action_alreadyPresent() {
         Event event = new Event();
         event.setName("Test");
@@ -83,7 +83,7 @@ class PrepareAlbumOperationTest {
 
         operation.action().execute(contextWithEvent(event));
 
-        assertEquals(EventState.ALBUM_READY, event.getState());
+        assertEquals(EventState.POST_ALBUM_READY, event.getState());
         verify(eventRepository).save(event);
         verifyNoInteractions(immichService);
     }
@@ -94,6 +94,7 @@ class PrepareAlbumOperationTest {
         Event event = new Event();
         event.setName("Test");
         event.setDescription("Desc");
+        event.setState(EventState.PRE_NOTIFIED);
 
         when(immichService.createAlbum(anyString(), anyString())).thenReturn(Optional.of("album-id"));
         when(immichService.createSharedLink("album-id")).thenReturn(Optional.empty());
@@ -102,7 +103,7 @@ class PrepareAlbumOperationTest {
 
         assertEquals("album-id", event.getImmichAlbumId());
         assertNull(event.getImmichShareKey());
-        assertEquals(EventState.PLANNED, event.getState());
+        assertEquals(EventState.PRE_NOTIFIED, event.getState());
         verify(eventRepository).save(event);
     }
 
@@ -112,13 +113,14 @@ class PrepareAlbumOperationTest {
         Event event = new Event();
         event.setName("Test");
         event.setDescription("Desc");
+        event.setState(EventState.PRE_NOTIFIED);
 
         when(immichService.createAlbum(anyString(), anyString())).thenReturn(Optional.empty());
 
         operation.action().execute(contextWithEvent(event));
 
         assertNull(event.getImmichAlbumId());
-        assertEquals(EventState.PLANNED, event.getState());
+        assertEquals(EventState.PRE_NOTIFIED, event.getState());
         verify(eventRepository, never()).save(event);
     }
 }

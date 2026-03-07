@@ -13,6 +13,9 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 @EnableStateMachineFactory
 public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<EventState, EventStateMachineEvent> {
 
+    private final InitChannelOperation initChannel;
+    private final InitRolesOperation initRoles;
+    private final InitCompleteOperation initComplete;
     private final PreEventNotifyOperation preEventNotify;
     private final PrepareAlbumOperation prepareAlbum;
     private final PostAlbumOperation postAlbum;
@@ -22,6 +25,9 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
     private final DeleteOperation delete;
 
     public EventStateMachineConfig(
+            InitChannelOperation initChannel,
+            InitRolesOperation initRoles,
+            InitCompleteOperation initComplete,
             PreEventNotifyOperation preEventNotify,
             PrepareAlbumOperation prepareAlbum,
             PostAlbumOperation postAlbum,
@@ -29,6 +35,9 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
             CancelOperation cancel,
             ArchiveOperation archive,
             DeleteOperation delete) {
+        this.initChannel = initChannel;
+        this.initRoles = initRoles;
+        this.initComplete = initComplete;
         this.preEventNotify = preEventNotify;
         this.prepareAlbum = prepareAlbum;
         this.postAlbum = postAlbum;
@@ -41,7 +50,7 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
     @Override
     public void configure(StateMachineStateConfigurer<EventState, EventStateMachineEvent> states) throws Exception {
         states.withStates()
-                .initial(EventState.PLANNED)
+                .initial(EventState.CREATED)
                 .states(EnumSet.allOf(EventState.class))
                 .end(EventState.DELETED);
     }
@@ -50,53 +59,95 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
     public void configure(StateMachineTransitionConfigurer<EventState, EventStateMachineEvent> transitions)
             throws Exception {
         transitions
-                // PLANNED -> NOTIFIED
+                // CREATED -> INIT_CHANNEL
+                .withExternal()
+                .source(EventState.CREATED)
+                .target(EventState.INIT_CHANNEL)
+                .event(EventStateMachineEvent.INIT_CHANNEL)
+                .action(initChannel.action())
+                .and()
+                // INIT_CHANNEL -> INIT_ROLES
+                .withExternal()
+                .source(EventState.INIT_CHANNEL)
+                .target(EventState.INIT_ROLES)
+                .event(EventStateMachineEvent.INIT_ROLES)
+                .action(initRoles.action())
+                .and()
+                // INIT_ROLES -> PLANNED
+                .withExternal()
+                .source(EventState.INIT_ROLES)
+                .target(EventState.PLANNED)
+                .event(EventStateMachineEvent.INIT_COMPLETE)
+                .action(initComplete.action())
+                .and()
+                // PLANNED -> PRE_NOTIFIED
                 .withExternal()
                 .source(EventState.PLANNED)
-                .target(EventState.NOTIFIED)
+                .target(EventState.PRE_NOTIFIED)
                 .event(EventStateMachineEvent.PRE_EVENT_NOTIFY)
                 .guard(preEventNotify.guard())
                 .action(preEventNotify.action())
                 .and()
-                // NOTIFIED -> ALBUM_READY
+                // PRE_NOTIFIED -> POST_ALBUM_READY
                 .withExternal()
-                .source(EventState.NOTIFIED)
-                .target(EventState.ALBUM_READY)
+                .source(EventState.PRE_NOTIFIED)
+                .target(EventState.POST_ALBUM_READY)
                 .event(EventStateMachineEvent.PREPARE_ALBUM)
                 .guard(prepareAlbum.guard())
                 .action(prepareAlbum.action())
                 .and()
-                // NOTIFIED -> COMPLETED (skip album)
+                // PRE_NOTIFIED -> POST_COMPLETED (skip album)
                 .withExternal()
-                .source(EventState.NOTIFIED)
-                .target(EventState.COMPLETED)
+                .source(EventState.PRE_NOTIFIED)
+                .target(EventState.POST_COMPLETED)
                 .event(EventStateMachineEvent.COMPLETE)
                 .guard(complete.guard())
                 .action(complete.action())
                 .and()
-                // ALBUM_READY -> ALBUM_POSTED
+                // POST_ALBUM_READY -> POST_ALBUM_SHARED
                 .withExternal()
-                .source(EventState.ALBUM_READY)
-                .target(EventState.ALBUM_POSTED)
+                .source(EventState.POST_ALBUM_READY)
+                .target(EventState.POST_ALBUM_SHARED)
                 .event(EventStateMachineEvent.POST_ALBUM)
                 .guard(postAlbum.guard())
                 .action(postAlbum.action())
                 .and()
-                // ALBUM_READY -> COMPLETED
+                // POST_ALBUM_READY -> POST_COMPLETED
                 .withExternal()
-                .source(EventState.ALBUM_READY)
-                .target(EventState.COMPLETED)
+                .source(EventState.POST_ALBUM_READY)
+                .target(EventState.POST_COMPLETED)
                 .event(EventStateMachineEvent.COMPLETE)
                 .guard(complete.guard())
                 .action(complete.action())
                 .and()
-                // ALBUM_POSTED -> COMPLETED
+                // POST_ALBUM_SHARED -> POST_COMPLETED
                 .withExternal()
-                .source(EventState.ALBUM_POSTED)
-                .target(EventState.COMPLETED)
+                .source(EventState.POST_ALBUM_SHARED)
+                .target(EventState.POST_COMPLETED)
                 .event(EventStateMachineEvent.COMPLETE)
                 .guard(complete.guard())
                 .action(complete.action())
+                .and()
+                // CREATED -> ARCHIVED (cancel)
+                .withExternal()
+                .source(EventState.CREATED)
+                .target(EventState.ARCHIVED)
+                .event(EventStateMachineEvent.CANCEL)
+                .action(cancel.action())
+                .and()
+                // INIT_CHANNEL -> ARCHIVED (cancel)
+                .withExternal()
+                .source(EventState.INIT_CHANNEL)
+                .target(EventState.ARCHIVED)
+                .event(EventStateMachineEvent.CANCEL)
+                .action(cancel.action())
+                .and()
+                // INIT_ROLES -> ARCHIVED (cancel)
+                .withExternal()
+                .source(EventState.INIT_ROLES)
+                .target(EventState.ARCHIVED)
+                .event(EventStateMachineEvent.CANCEL)
+                .action(cancel.action())
                 .and()
                 // PLANNED -> ARCHIVED (cancel)
                 .withExternal()
@@ -105,30 +156,30 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
                 .event(EventStateMachineEvent.CANCEL)
                 .action(cancel.action())
                 .and()
-                // NOTIFIED -> ARCHIVED (cancel)
+                // PRE_NOTIFIED -> ARCHIVED (cancel)
                 .withExternal()
-                .source(EventState.NOTIFIED)
+                .source(EventState.PRE_NOTIFIED)
                 .target(EventState.ARCHIVED)
                 .event(EventStateMachineEvent.CANCEL)
                 .action(cancel.action())
                 .and()
-                // ALBUM_READY -> ARCHIVED (cancel)
+                // POST_ALBUM_READY -> ARCHIVED (cancel)
                 .withExternal()
-                .source(EventState.ALBUM_READY)
+                .source(EventState.POST_ALBUM_READY)
                 .target(EventState.ARCHIVED)
                 .event(EventStateMachineEvent.CANCEL)
                 .action(cancel.action())
                 .and()
-                // ALBUM_POSTED -> ARCHIVED (cancel)
+                // POST_ALBUM_SHARED -> ARCHIVED (cancel)
                 .withExternal()
-                .source(EventState.ALBUM_POSTED)
+                .source(EventState.POST_ALBUM_SHARED)
                 .target(EventState.ARCHIVED)
                 .event(EventStateMachineEvent.CANCEL)
                 .action(cancel.action())
                 .and()
-                // COMPLETED -> ARCHIVED
+                // POST_COMPLETED -> ARCHIVED
                 .withExternal()
-                .source(EventState.COMPLETED)
+                .source(EventState.POST_COMPLETED)
                 .target(EventState.ARCHIVED)
                 .event(EventStateMachineEvent.ARCHIVE)
                 .guard(archive.guard())

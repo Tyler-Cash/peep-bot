@@ -14,39 +14,57 @@ class EventLifecyclePollerTest {
     private final EventLifecyclePoller poller = new EventLifecyclePoller(null, null, ObservationRegistry.NOOP);
 
     @Test
+    @DisplayName("CREATED state maps to INIT_CHANNEL signal")
+    void created() {
+        assertEquals(List.of(EventStateMachineEvent.INIT_CHANNEL), poller.signalsForState(EventState.CREATED));
+    }
+
+    @Test
+    @DisplayName("INIT_CHANNEL state maps to INIT_ROLES signal")
+    void initChannel() {
+        assertEquals(List.of(EventStateMachineEvent.INIT_ROLES), poller.signalsForState(EventState.INIT_CHANNEL));
+    }
+
+    @Test
+    @DisplayName("INIT_ROLES state maps to INIT_COMPLETE signal")
+    void initRoles() {
+        assertEquals(List.of(EventStateMachineEvent.INIT_COMPLETE), poller.signalsForState(EventState.INIT_ROLES));
+    }
+
+    @Test
     @DisplayName("PLANNED state maps to PRE_EVENT_NOTIFY signal")
     void planned() {
         assertEquals(List.of(EventStateMachineEvent.PRE_EVENT_NOTIFY), poller.signalsForState(EventState.PLANNED));
     }
 
     @Test
-    @DisplayName("NOTIFIED state maps to PREPARE_ALBUM and COMPLETE signals")
-    void notified() {
-        List<EventStateMachineEvent> signals = poller.signalsForState(EventState.NOTIFIED);
+    @DisplayName("PRE_NOTIFIED state maps to PREPARE_ALBUM and COMPLETE signals")
+    void preNotified() {
+        List<EventStateMachineEvent> signals = poller.signalsForState(EventState.PRE_NOTIFIED);
         assertEquals(2, signals.size());
         assertEquals(EventStateMachineEvent.PREPARE_ALBUM, signals.get(0));
         assertEquals(EventStateMachineEvent.COMPLETE, signals.get(1));
     }
 
     @Test
-    @DisplayName("ALBUM_READY state maps to POST_ALBUM and COMPLETE signals")
-    void albumReady() {
-        List<EventStateMachineEvent> signals = poller.signalsForState(EventState.ALBUM_READY);
+    @DisplayName("POST_ALBUM_READY state maps to POST_ALBUM and COMPLETE signals")
+    void postAlbumReady() {
+        List<EventStateMachineEvent> signals = poller.signalsForState(EventState.POST_ALBUM_READY);
         assertEquals(2, signals.size());
         assertEquals(EventStateMachineEvent.POST_ALBUM, signals.get(0));
         assertEquals(EventStateMachineEvent.COMPLETE, signals.get(1));
     }
 
     @Test
-    @DisplayName("ALBUM_POSTED state maps to COMPLETE signal")
-    void albumPosted() {
-        assertEquals(List.of(EventStateMachineEvent.COMPLETE), poller.signalsForState(EventState.ALBUM_POSTED));
+    @DisplayName("POST_ALBUM_SHARED state maps to COMPLETE signal")
+    void postAlbumShared() {
+        assertEquals(List.of(EventStateMachineEvent.COMPLETE), poller.signalsForState(EventState.POST_ALBUM_SHARED));
     }
 
     @Test
-    @DisplayName("COMPLETED state maps to ARCHIVE signal")
-    void completed() {
-        assertEquals(List.of(EventStateMachineEvent.ARCHIVE), poller.signalsForState(EventState.COMPLETED));
+    @DisplayName("POST_COMPLETED state maps to ARCHIVE signal")
+    void postCompleted() {
+        assertEquals(List.of(EventStateMachineEvent.ARCHIVE), poller.signalsForState(EventState.POST_COMPLETED));
     }
 
     @Test
