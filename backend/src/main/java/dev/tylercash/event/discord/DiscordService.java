@@ -7,6 +7,7 @@ import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
@@ -16,10 +17,8 @@ import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.JDA;
@@ -45,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class DiscordService {
     private final DiscordConfiguration discordConfiguration;
     private final EmbedService embedService;
+    private final EventRepository eventRepository;
     private final RateLimiter notifyEventRoles;
     private final Clock clock;
     private final JDA jda;
@@ -151,21 +151,18 @@ public class DiscordService {
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortActiveChannels() {
-        sortChannels(getEventCategory(discordConfiguration.getGuildId()), discordConfiguration.getSeperatorChannel());
+        Category category = getEventCategory(discordConfiguration.getGuildId());
+        sortChannelsByEventDate(category, discordConfiguration.getSeperatorChannel());
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortArchiveChannels() {
-        sortChannels(getArchiveCategory(discordConfiguration.getGuildId()), null);
+        Category category = getArchiveCategory(discordConfiguration.getGuildId());
+        sortChannelsByChannelName(category);
     }
 
-    public void sortChannels(Category eventCategory, String separator) {
+    public void sortChannelsByEventDate(Category eventCategory, String separator) {
         List<TextChannel> channels = eventCategory.getTextChannels();
-
-        DateTimeFormatter monthParser = new DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern("MMM")
-                .toFormatter(Locale.ENGLISH);
 
         int separatorIndex = -1;
         for (int i = 0; i < channels.size(); i++) {
@@ -176,24 +173,57 @@ public class DiscordService {
         }
 
         List<TextChannel> before;
-        List<TextChannel> after;
+        List<TextChannel> toSort;
         if (separatorIndex != -1) {
             before = channels.subList(0, separatorIndex + 1);
-            after = channels.subList(separatorIndex + 1, channels.size());
+            toSort = channels.subList(separatorIndex + 1, channels.size());
         } else {
             before = List.of();
-            after = channels;
+            toSort = channels;
         }
 
-        List<TextChannel> sortedAfter = after.stream()
-                .sorted(Comparator.comparing(channel -> getMonthDayFromChannelName(channel, monthParser)))
-                .toList();
+        List<Long> channelIds = toSort.stream().map(TextChannel::getIdLong).toList();
+        Map<Long, ZonedDateTime> channelDateMap = eventRepository.findByChannelIdIn(channelIds).stream()
+                .collect(Collectors.toMap(Event::getChannelId, Event::getDateTime));
+
+        List<TextChannel> withEvent = new ArrayList<>();
+        List<TextChannel> withoutEvent = new ArrayList<>();
+        for (TextChannel ch : toSort) {
+            if (channelDateMap.containsKey(ch.getIdLong())) {
+                withEvent.add(ch);
+            } else {
+                withoutEvent.add(ch);
+            }
+        }
+
+        withEvent.sort(Comparator.comparing(ch -> channelDateMap.get(ch.getIdLong())));
+
+        // Archive orphaned channels that have no matching event
+        Category archiveCategory = getArchiveCategory(discordConfiguration.getGuildId());
+        for (TextChannel orphan : withoutEvent) {
+            log.info("Moving orphaned channel '{}' to archive", orphan.getName());
+            orphan.getManager().setParent(archiveCategory).sync().queue();
+        }
 
         List<TextChannel> sorted = new ArrayList<>(before);
-        sorted.addAll(sortedAfter);
+        sorted.addAll(withEvent);
 
         for (int i = 0; i < sorted.size(); i++) {
             sorted.get(i).getManager().setPosition(i).queue();
+        }
+    }
+
+    public void sortChannelsByChannelName(Category category) {
+        DateTimeFormatter monthParser = new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern("MMM")
+                .toFormatter(Locale.ENGLISH);
+
+        List<TextChannel> channels = new ArrayList<>(category.getTextChannels());
+        channels.sort(Comparator.comparing(channel -> getMonthDayFromChannelName(channel, monthParser)));
+
+        for (int i = 0; i < channels.size(); i++) {
+            channels.get(i).getManager().setPosition(i).queue();
         }
     }
 
@@ -208,7 +238,7 @@ public class DiscordService {
         TextChannel eventChannel = getChannel(event);
         Category category = getArchiveCategory(discordConfiguration.getGuildId());
         eventChannel.getManager().setParent(category).sync().queue();
-        sortChannels(category, null);
+        sortChannelsByChannelName(category);
     }
 
     private TextChannel getChannel(Event event) {
