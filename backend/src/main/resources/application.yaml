@@ -72,18 +72,18 @@ management:
         enabled: true
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/traces
     metrics:
       export:
         enabled: true
-        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/metrics
         step: 30s
         resource-attributes:
           service.name: ${spring.application.name}
     logging:
       export:
         enabled: true
-        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/logs
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/logs
   tracing:
     sampling:
       probability: 1.0
