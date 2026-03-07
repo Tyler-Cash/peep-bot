@@ -389,3 +389,30 @@ input[type='datetime-local'] {
 .event-form-label {
     transition: color 0.2s ease;
 }
+
+/* --- Environment banner --- */
+.env-banner {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    text-align: center;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.env-banner--local {
+    background-color: #f59e0b;
+    color: #1a1d23;
+}
+
+.env-banner--staging {
+    background-color: #3b82f6;
+    color: #f0f2f5;
+}
+
+.env-banner--test {
+    background-color: #ef4444;
+    color: #f0f2f5;
+}

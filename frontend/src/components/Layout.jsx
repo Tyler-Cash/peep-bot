@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import EnvironmentBanner from './EnvironmentBanner';
 
 export default function Layout() {
     const location = useLocation();
@@ -29,6 +30,7 @@ export default function Layout() {
 
     return (
         <div className="app-layout">
+            <EnvironmentBanner />
             <div className="toast-container" role="status" aria-live="polite">
                 {toast && (
                     <div className={`toast-message ${exiting ? 'toast-exit' : ''}`}>
