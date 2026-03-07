@@ -69,7 +69,9 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.6.0'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.6.0'
-    implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    implementation 'io.micrometer:micrometer-registry-otlp'
     implementation("net.dv8tion:JDA:6.3.1") {
         exclude module: 'opus-java'
     }

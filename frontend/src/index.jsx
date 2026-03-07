@@ -1,3 +1,6 @@
+import { initTelemetry } from './telemetry';
+initTelemetry();
+
 import React from 'react';
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
