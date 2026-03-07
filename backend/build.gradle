@@ -75,7 +75,7 @@ dependencies {
     implementation("net.dv8tion:JDA:6.3.1") {
         exclude module: 'opus-java'
     }
-    implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.0'
+    implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
