@@ -8,9 +8,9 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.global.MetricsService;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -25,7 +25,7 @@ public class ModalInteractionListener extends ListenerAdapter {
     public static final String PLUS_ONE = "Add +1";
     public static final String PLUS_ONE_ID = "plus1";
     private final Clock clock;
-    private final MetricsService metricsService;
+    private final ObservationRegistry observationRegistry;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
     private final ObjectProvider<EventService> eventServiceProvider;
@@ -34,14 +34,14 @@ public class ModalInteractionListener extends ListenerAdapter {
 
     public ModalInteractionListener(
             Clock clock,
-            MetricsService metricsService,
+            ObservationRegistry observationRegistry,
             EventRepository eventRepository,
             EmbedService embedService,
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService) {
         this.clock = clock;
-        this.metricsService = metricsService;
+        this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
         this.embedService = embedService;
         this.eventServiceProvider = eventServiceProvider;
@@ -51,7 +51,12 @@ public class ModalInteractionListener extends ListenerAdapter {
 
     @Override
     public void onModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
-        long startTime = System.nanoTime();
+        Observation.createNotStarted("discord.modal-interaction", observationRegistry)
+                .lowCardinalityKeyValue("interaction.type", "modal")
+                .observe(() -> handleModalInteraction(modalInteractionEvent));
+    }
+
+    private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
         Event event = eventRepository.findByChannelId(
                 modalInteractionEvent.getChannel().getIdLong());
@@ -76,14 +81,10 @@ public class ModalInteractionListener extends ListenerAdapter {
                 .editMessageEmbeds(embedService.getMessage(event, clock))
                 .queue();
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000;
-        metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
         log.info(
-                "User {} adding +1 '{}' on event {}, taking {}ms",
+                "User {} adding +1 '{}' on event {}",
                 modalInteractionEvent.getUser().getEffectiveName(),
                 plus1Name,
-                event.getName(),
-                duration);
+                event.getName());
     }
 }

@@ -5,6 +5,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
+import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -65,6 +66,7 @@ public class DiscordUserCacheService {
                 .collect(Collectors.toMap(DiscordUserCache::getSnowflake, DiscordUserCache::getDisplayName));
     }
 
+    @Observed(name = "discord.refresh-user-cache")
     @Scheduled(fixedDelay = 60, timeUnit = SECONDS)
     public void refreshStaleEntries() {
         Instant staleCutoff = Instant.now().minus(STALE_MINUTES, ChronoUnit.MINUTES);

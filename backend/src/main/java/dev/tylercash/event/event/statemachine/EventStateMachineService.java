@@ -2,6 +2,7 @@ package dev.tylercash.event.event.statemachine;
 
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.support.MessageBuilder;
@@ -18,7 +19,13 @@ public class EventStateMachineService {
 
     private final StateMachineFactory<EventState, EventStateMachineEvent> stateMachineFactory;
 
+    @Observed(name = "statemachine.attempt-transition")
     public boolean attemptTransition(Event event, EventStateMachineEvent signal) {
+        log.info(
+                "Attempting transition for event '{}' signal={} currentState={}",
+                event.getName(),
+                signal,
+                event.getState());
         StateMachine<EventState, EventStateMachineEvent> sm = stateMachineFactory.getStateMachine();
         sm.stopReactively().block();
 
@@ -35,6 +42,13 @@ public class EventStateMachineService {
         EventState stateAfter = event.getState();
         sm.stopReactively().block();
 
-        return !stateBefore.equals(stateAfter);
+        boolean transitioned = !stateBefore.equals(stateAfter);
+        log.info(
+                "Transition result for event '{}': before={} after={} transitioned={}",
+                event.getName(),
+                stateBefore,
+                stateAfter,
+                transitioned);
+        return transitioned;
     }
 }

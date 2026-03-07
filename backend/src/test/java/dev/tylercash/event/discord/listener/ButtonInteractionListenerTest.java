@@ -15,8 +15,7 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.global.MetricsService;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -44,7 +43,6 @@ class ButtonInteractionListenerTest {
     @Test
     void onButtonInteractionWhenAcceptingEvent() {
         Clock fixedClock = Clock.fixed(Instant.parse("2025-01-01T12:00:00Z"), ZoneId.of("UTC"));
-        MetricsService metricsService = mock(MetricsService.class);
         EventRepository eventRepository = mock(EventRepository.class);
         ButtonInteractionEvent buttonInteractionEvent = mock(ButtonInteractionEvent.class);
         EmbedService embedService = mock(EmbedService.class);
@@ -57,7 +55,7 @@ class ButtonInteractionListenerTest {
 
         ButtonInteractionListener listener = new ButtonInteractionListener(
                 fixedClock,
-                metricsService,
+                ObservationRegistry.NOOP,
                 eventRepository,
                 embedService,
                 eventServiceProvider,
@@ -87,7 +85,6 @@ class ButtonInteractionListenerTest {
         when(embedService.getMessage(event, fixedClock)).thenReturn(List.of(mock(MessageEmbed.class)));
         when(buttonInteractionEvent.editMessageEmbeds(embedService.getMessage(event, fixedClock)))
                 .thenReturn(mock(MessageEditCallbackAction.class));
-        when(metricsService.getDiscordMessageComponentEventTimer()).thenReturn(mock(Timer.class));
 
         listener.onButtonInteraction(buttonInteractionEvent);
 
@@ -106,7 +103,7 @@ class ButtonInteractionListenerTest {
         ObjectProvider<EventService> esp = mock(ObjectProvider.class);
         ButtonInteractionListener listener = new ButtonInteractionListener(
                 mock(Clock.class),
-                mock(MetricsService.class),
+                ObservationRegistry.NOOP,
                 eventRepository,
                 mock(EmbedService.class),
                 esp,
@@ -135,7 +132,7 @@ class ButtonInteractionListenerTest {
 
         ButtonInteractionListener listener = new ButtonInteractionListener(
                 fixedClock,
-                mock(MetricsService.class),
+                ObservationRegistry.NOOP,
                 eventRepository,
                 mock(EmbedService.class),
                 esp,

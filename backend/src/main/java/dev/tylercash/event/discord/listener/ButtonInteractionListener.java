@@ -11,10 +11,10 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.global.MetricsService;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.components.label.Label;
@@ -34,7 +34,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
     public static final String MAYBE = "maybe";
     public static final String MODAL_PLACEHOLDER = "Enter name of +1";
     private final Clock clock;
-    private final MetricsService metricsService;
+    private final ObservationRegistry observationRegistry;
     private final EventRepository eventRepository;
     private final EmbedService embedService;
     private final ObjectProvider<EventService> eventServiceProvider;
@@ -43,14 +43,14 @@ public class ButtonInteractionListener extends ListenerAdapter {
 
     public ButtonInteractionListener(
             Clock clock,
-            MetricsService metricsService,
+            ObservationRegistry observationRegistry,
             EventRepository eventRepository,
             EmbedService embedService,
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService) {
         this.clock = clock;
-        this.metricsService = metricsService;
+        this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
         this.embedService = embedService;
         this.eventServiceProvider = eventServiceProvider;
@@ -72,7 +72,12 @@ public class ButtonInteractionListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
-        long startTime = System.nanoTime();
+        Observation.createNotStarted("discord.button-interaction", observationRegistry)
+                .lowCardinalityKeyValue("interaction.type", "button")
+                .observe(() -> handleButtonInteraction(buttonInteractionEvent));
+    }
+
+    private void handleButtonInteraction(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
         Event event = eventRepository.findByMessageId(buttonInteractionEvent.getMessageIdLong());
         if (event == null) {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
@@ -106,15 +111,11 @@ public class ButtonInteractionListener extends ListenerAdapter {
                 .editMessageEmbeds(embedService.getMessage(event, clock))
                 .complete();
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000;
-        metricsService.getDiscordMessageComponentEventTimer().record(duration, TimeUnit.MILLISECONDS);
         log.info(
-                "User {} interacting with status {} on event {}, taking {}ms",
+                "User {} interacting with status {} on event {}",
                 buttonInteractionEvent.getMember().getEffectiveName(),
                 eventType,
-                event.getName(),
-                duration);
+                event.getName());
     }
 
     private AttendanceStatus mapButtonToStatus(String buttonId) {

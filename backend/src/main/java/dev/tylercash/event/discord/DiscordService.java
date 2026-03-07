@@ -13,6 +13,7 @@ import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
 import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.micrometer.observation.annotation.Observed;
 import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -54,6 +55,7 @@ public class DiscordService {
     private final Clock clock;
     private final JDA jda;
 
+    @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
         Category category = getEventCategory(discordConfiguration.getGuildId());
         ChannelAction<TextChannel> textChannelChannelAction = category.createTextChannel(
@@ -91,6 +93,7 @@ public class DiscordService {
         return getChannelCategory(serverId, EVENT_CATEGORY);
     }
 
+    @Observed(name = "discord.post-message")
     public Message postEventMessage(Event event, TextChannel channel) {
         List<Role> rolesToMention = getRoles(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
@@ -127,6 +130,7 @@ public class DiscordService {
         }
     }
 
+    @Observed(name = "discord.update-message")
     public void updateEventMessage(Event event) {
         getChannel(event)
                 .editMessageEmbedsById(event.getMessageId(), embedService.getMessage(event, clock))
@@ -154,12 +158,14 @@ public class DiscordService {
                         .anyMatch(role -> role.getName().equalsIgnoreCase(discordConfiguration.getAdminRole()));
     }
 
+    @Observed(name = "discord.sort-active-channels")
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortActiveChannels() {
         Category category = getEventCategory(discordConfiguration.getGuildId());
         sortChannelsByEventDate(category, discordConfiguration.getSeperatorChannel());
     }
 
+    @Observed(name = "discord.sort-archive-channels")
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortArchiveChannels() {
         Category category = getArchiveCategory(discordConfiguration.getGuildId());
@@ -249,6 +255,7 @@ public class DiscordService {
         }
     }
 
+    @Observed(name = "discord.delete-channel")
     public void deleteEventChannel(Event event) {
         jda.getGuildById(discordConfiguration.getGuildId())
                 .getChannelById(TextChannel.class, event.getChannelId())
@@ -256,6 +263,7 @@ public class DiscordService {
                 .queue();
     }
 
+    @Observed(name = "discord.archive-channel")
     public void archiveEventChannel(Event event) {
         TextChannel eventChannel = getChannel(event);
         Category category = getArchiveCategory(discordConfiguration.getGuildId());
@@ -275,6 +283,7 @@ public class DiscordService {
         return rolesByName;
     }
 
+    @Observed(name = "discord.send-album-link")
     public void sendAlbumLink(Event event, String albumUrl) {
         if (event.getNotifications().contains(new Notification(NotificationType.ALBUM_LINK))) {
             return;
@@ -288,6 +297,7 @@ public class DiscordService {
                         NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
     }
 
+    @Observed(name = "discord.send-pre-event-notification")
     public void sendMessageBeforeEvent(Event event) {
         if (event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT))) {
             return;

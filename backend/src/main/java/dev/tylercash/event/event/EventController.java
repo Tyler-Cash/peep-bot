@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+@Log4j2
 @RestController
 @AllArgsConstructor
 @RequestMapping(value = "/event")
@@ -47,6 +49,7 @@ public class EventController {
     public Map<String, String> createEvent(
             @RequestBody @Valid EventDto event, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
+        log.info("User {} creating event '{}'", discordId, event.getName());
         Member member =
                 discordService.getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
         String displayName = DiscordUtil.getUserDisplayName(member);
@@ -74,6 +77,8 @@ public class EventController {
     @PatchMapping
     public Map<String, String> updateEvent(
             @RequestBody @Valid EventUpdateDto eventDto, @AuthenticationPrincipal OAuth2User principal) {
+        String adminDiscordIdForLog = principal.getAttribute("id");
+        log.info("User {} updating event id={}", adminDiscordIdForLog, eventDto.getId());
         Event event = eventService.getEvent(eventDto.getId());
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
@@ -136,6 +141,7 @@ public class EventController {
     @PostMapping(path = "/{id}/cancel")
     public Map<String, String> cancelEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
+        log.info("User {} cancelling event id={}", discordId, id);
         if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
@@ -159,6 +165,7 @@ public class EventController {
             @RequestParam(required = false) String name,
             @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
+        log.info("User {} removing attendee from event id={} snowflake={} name={}", discordId, id, snowflake, name);
         boolean isAdmin =
                 discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
 

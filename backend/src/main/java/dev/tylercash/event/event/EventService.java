@@ -7,6 +7,7 @@ import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.immich.ImmichService;
+import io.micrometer.observation.annotation.Observed;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
 import java.time.ZonedDateTime;
@@ -38,8 +39,10 @@ public class EventService {
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
 
+    @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
     public String createEvent(Event event) {
+        log.info("Creating event '{}' by creator {}", event.getName(), event.getCreator());
         TextChannel channel = discordService.createEventChannel(event);
         try {
             Message message = discordService.postEventMessage(event, channel);
@@ -57,6 +60,7 @@ public class EventService {
             eventRepository.save(event);
         });
         discordService.sortActiveChannels();
+        log.info("Created event '{}' with id={} channelId={}", event.getName(), event.getId(), event.getChannelId());
         return "Created event for " + event.getName();
     }
 
@@ -74,8 +78,10 @@ public class EventService {
                 @CacheEvict(value = "activeEvents", allEntries = true),
                 @CacheEvict(value = "eventDetail", key = "#event.id")
             })
+    @Observed(name = "event.update")
     @Transactional
     public Event updateEvent(Event event) {
+        log.info("Updating event '{}' id={}", event.getName(), event.getId());
         discordService.updateEventMessage(event);
         discordService.updateChannelName(event);
         eventRepository.save(event);
@@ -97,7 +103,9 @@ public class EventService {
                 @CacheEvict(value = "activeEvents", allEntries = true),
                 @CacheEvict(value = "eventDetail", key = "#id")
             })
+    @Observed(name = "event.cancel")
     public void cancelEvent(UUID id) {
+        log.info("Cancelling event id={}", id);
         Event event = getEvent(id);
         if (isCompleted(event)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is already completed or cancelled");
@@ -113,8 +121,10 @@ public class EventService {
                 @CacheEvict(value = "activeEvents", allEntries = true),
                 @CacheEvict(value = "eventDetail", key = "#id")
             })
+    @Observed(name = "event.remove-attendee")
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
+        log.info("Removing attendee from event id={} snowflake={} name={}", id, snowflake, name);
         Event event = getEvent(id);
         if (isCompleted(event)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance is locked for this event");

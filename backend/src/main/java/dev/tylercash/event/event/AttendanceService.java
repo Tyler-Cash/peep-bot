@@ -5,6 +5,7 @@ import dev.tylercash.event.event.model.AttendanceRecord;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
+import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final FeatureTogglesConfiguration featureToggles;
 
+    @Observed(name = "attendance.record")
     public void recordAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus status, String ownerSnowflake) {
         attendanceRepository.save(new AttendanceRecord(eventId, snowflake, name, status, ownerSnowflake));
@@ -37,7 +39,13 @@ public class AttendanceService {
         return new AttendanceSummary(accepted, declined, maybe);
     }
 
+    @Observed(name = "attendance.flip")
     public void flipAttendance(UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
+        log.info(
+                "Flipping attendance for event={} snowflake={} requestedStatus={}",
+                eventId,
+                snowflake,
+                requestedStatus);
         List<AttendanceRecord> latest = attendanceRepository.findLatestPerAttendee(eventId);
         AttendanceRecord current = latest.stream()
                 .filter(r -> matchesIdentity(r, snowflake, name))
@@ -51,6 +59,7 @@ public class AttendanceService {
             newStatus = requestedStatus;
         }
 
+        log.info("Resolved attendance for event={} snowflake={} newStatus={}", eventId, snowflake, newStatus);
         recordAttendance(eventId, snowflake, name, newStatus, null);
 
         if (newStatus == AttendanceStatus.DECLINED && featureToggles.isRemovePlusOnesOnDecline() && snowflake != null) {

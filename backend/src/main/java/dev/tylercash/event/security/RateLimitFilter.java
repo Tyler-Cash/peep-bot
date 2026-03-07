@@ -14,11 +14,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Log4j2
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -60,6 +62,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } else {
             long retryAfterSeconds = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill()) + 1;
+            log.warn(
+                    "Rate limit exceeded for key={} method={} path={} retryAfter={}s",
+                    key,
+                    request.getMethod(),
+                    request.getServletPath(),
+                    retryAfterSeconds);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);

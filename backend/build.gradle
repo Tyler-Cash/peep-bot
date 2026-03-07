@@ -78,6 +78,8 @@ dependencies {
     implementation("net.dv8tion:JDA:6.3.1") {
         exclude module: 'opus-java'
     }
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
     implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
 
     annotationProcessor 'org.projectlombok:lombok'

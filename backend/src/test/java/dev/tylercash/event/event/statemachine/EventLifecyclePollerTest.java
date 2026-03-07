@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.tylercash.event.event.model.EventState;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class EventLifecyclePollerTest {
 
-    private final EventLifecyclePoller poller = new EventLifecyclePoller(null, null);
+    private final EventLifecyclePoller poller = new EventLifecyclePoller(null, null, ObservationRegistry.NOOP);
 
     @Test
     @DisplayName("PLANNED state maps to PRE_EVENT_NOTIFY signal")

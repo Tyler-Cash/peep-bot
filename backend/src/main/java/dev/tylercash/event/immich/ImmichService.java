@@ -1,5 +1,6 @@
 package dev.tylercash.event.immich;
 
+import io.micrometer.observation.annotation.Observed;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.log4j.Log4j2;
@@ -17,6 +18,7 @@ public class ImmichService {
         this.immichRestClient = immichRestClient;
     }
 
+    @Observed(name = "immich.create-album")
     public Optional<String> createAlbum(String name, String description) {
         if (!immichConfiguration.isEnabled()) {
             return Optional.empty();
@@ -42,6 +44,7 @@ public class ImmichService {
         }
     }
 
+    @Observed(name = "immich.create-shared-link")
     public Optional<String> createSharedLink(String albumId) {
         if (!immichConfiguration.isEnabled()) {
             return Optional.empty();

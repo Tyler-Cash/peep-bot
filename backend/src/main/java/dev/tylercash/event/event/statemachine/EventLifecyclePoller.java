@@ -3,6 +3,9 @@ package dev.tylercash.event.event.statemachine;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -21,15 +24,20 @@ public class EventLifecyclePoller {
 
     private final EventRepository eventRepository;
     private final EventStateMachineService stateMachineService;
+    private final ObservationRegistry observationRegistry;
 
+    @Observed(name = "lifecycle.poll")
     @Scheduled(fixedRate = 60000)
     @SchedulerLock(name = "eventLifecyclePoller")
     public void poll() {
         Page<Event> events = eventRepository.findAllByStateNotIn(PAGE, List.of(EventState.DELETED));
+        log.info("Lifecycle poll processing {} events", events.getTotalElements());
 
         for (Event event : events) {
             try {
-                processEvent(event);
+                Observation.createNotStarted("lifecycle.process-event", observationRegistry)
+                        .lowCardinalityKeyValue("event.state", event.getState().name())
+                        .observe(() -> processEvent(event));
             } catch (Exception e) {
                 log.error("Error processing event lifecycle for '{}'", event.getName(), e);
             }
