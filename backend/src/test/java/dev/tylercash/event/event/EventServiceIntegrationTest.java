@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
@@ -50,6 +51,9 @@ class EventServiceIntegrationTest {
 
     @MockitoBean
     DiscordService discordService;
+
+    @MockitoBean
+    DiscordInitializationService discordInitializationService;
 
     @Container
     public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");

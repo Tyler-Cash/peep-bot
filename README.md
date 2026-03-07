@@ -1,55 +1,129 @@
-## Discord server bot
+# Peep Bot
 
-Bot to help manage my server with friends
+A Discord-integrated event management app. Create and manage events through a web UI, with automatic posting and RSVP tracking in your Discord server.
 
-### Dev environment
+![Events list](docs/image/events-list.png)
+![Event attendees](docs/image/attendees.png)
+![Discord event registration](docs/image/discord-event-registration.png)
 
-#### Architecture
+## Getting Started
 
-The way local development will work is we'll run the FE and BE independently, then use `docker-compose.yml` to run our
-DB and nginx proxy.
+### Prerequisites
 
-The nginx proxy is used to simplify CORS requests so that we don't have to deal with that stuff when developing locally.
+- **Java 21**
+- **Node.js 20.19+ or 22.12+**
+- **Docker** (for PostgreSQL)
 
-#### Startup
+### 1. Start the database
 
-Create a file at `backend/src/main/resources/application-local.yaml`, with the contents below
+```bash
+docker-compose up -d
+```
 
-Both the `spring.security.oauth2` (OAuth2 tab) and `dev.tylercash.discord.token` (Bot tab) can be retrieved from
-the [Discord Developer Portal](https://discord.com/developers/applications).
+### 2. Configure secrets
 
-The guild ID can be retrieved from your discord client by right clicking a server and selecting "Copy server ID"
+Create `backend/src/main/resources/application-local.yaml` (gitignored):
 
 ```yaml
 dev.tylercash:
   discord:
-    token: ""
-    guild-id: 0
+    token: "<discord-bot-token>"
+    guild-id: <discord-guild-id>
+  cors:
+    allowed-origins: http://localhost:5173
 
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/peepbot
+    username: peepbot
+    password: peepbot
   security:
     oauth2:
       client:
         registration:
           discord:
-            client-id: ""
-            client-secret: ""
+            client-id: "<oauth2-client-id>"
+            client-secret: "<oauth2-client-secret>"
+  devtools:
+    restart:
+      enabled: false
+  session:
+    cookie:
+      secure: false
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
 ```
 
-In IntelliJ I've provided a Docker 'Run All' run configuration which will start everything up
+The OAuth2 credentials and bot token are found in the [Discord Developer Portal](https://discord.com/developers/applications). The guild ID can be copied by right-clicking your server in Discord and selecting "Copy Server ID".
 
-#### Setup Discord server
+### 3. Start the backend
 
-Create a category in the server called "outings"
+```bash
+cd backend
+./gradlew bootRun "--args=--spring.profiles.active=local"
+```
 
-Create a channel in the category (Default `memories`)
+The backend starts on `http://localhost:8080/api/`. Swagger UI is available at `http://localhost:8080/api/swagger-ui.html`.
 
-![Image showing default discord configuration](docs/image/discord-outings-category-example.png)
+### 4. Start the frontend
 
-### Access components
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-You can access the frontend at http://localhost:8000/
+The frontend starts on `http://localhost:5173`. Log in at `http://localhost:5173/login`.
 
-You can access the backend docs at http://localhost:8000/api/swagger-ui.html
+![Empty events page](docs/image/empty-events.png)
 
-You can access the DB at localhost:5432
+The backend automatically creates the required Discord categories (`outings`, `outings-archive`) and the `organising` separator channel on startup if they don't already exist.
+
+## Seeding Test Data
+
+A script is provided to populate a running instance with sample events:
+
+```bash
+./scripts/seed-events.sh <base-url> <session-cookie>
+```
+
+For example, against a local instance:
+
+```bash
+./scripts/seed-events.sh http://localhost:8080/api "your-session-cookie-value"
+```
+
+To get your `SESSION` cookie:
+1. Log in via the frontend
+2. Open browser DevTools → Application → Cookies
+3. Copy the value of the `SESSION` cookie
+
+The script creates five sample events (hikes, movie nights, BBQs, trivia, laser tag) and requires `curl` and `jq`.
+
+## Common Commands
+
+### Backend
+
+```bash
+./gradlew test              # Run tests
+./gradlew e2eTest           # Run end-to-end tests
+./gradlew spotlessCheck     # Check formatting
+./gradlew spotlessApply     # Auto-fix formatting
+./gradlew bootJar           # Build executable jar
+./gradlew bootBuildImage    # Build Docker image
+```
+
+### Frontend
+
+```bash
+npm run dev            # Dev server
+npm run build          # Production build
+npm run lint           # ESLint check
+npm run lint:fix       # ESLint auto-fix
+npm run format         # Prettier format
+npm run format:check   # Prettier check
+```
