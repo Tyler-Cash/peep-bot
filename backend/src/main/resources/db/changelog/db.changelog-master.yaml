@@ -515,3 +515,16 @@ databaseChangeLog:
       changes:
         - sql:
             sql: TRUNCATE spring_session_attributes, spring_session
+  - changeSet:
+      id: migrate notified events with album data to album_ready
+      author: claude
+      comment: >
+        Events in NOTIFIED state that already have Immich album and shared link
+        should be in the new ALBUM_READY state so the poller sends POST_ALBUM.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'ALBUM_READY'
+              WHERE state = 'NOTIFIED'
+              AND immich_album_id IS NOT NULL
+              AND immich_share_key IS NOT NULL

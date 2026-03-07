@@ -20,9 +20,18 @@ class EventLifecyclePollerTest {
     }
 
     @Test
-    @DisplayName("NOTIFIED state maps to POST_ALBUM and COMPLETE signals")
+    @DisplayName("NOTIFIED state maps to PREPARE_ALBUM and COMPLETE signals")
     void notified() {
         List<EventStateMachineEvent> signals = poller.signalsForState(EventState.NOTIFIED);
+        assertEquals(2, signals.size());
+        assertEquals(EventStateMachineEvent.PREPARE_ALBUM, signals.get(0));
+        assertEquals(EventStateMachineEvent.COMPLETE, signals.get(1));
+    }
+
+    @Test
+    @DisplayName("ALBUM_READY state maps to POST_ALBUM and COMPLETE signals")
+    void albumReady() {
+        List<EventStateMachineEvent> signals = poller.signalsForState(EventState.ALBUM_READY);
         assertEquals(2, signals.size());
         assertEquals(EventStateMachineEvent.POST_ALBUM, signals.get(0));
         assertEquals(EventStateMachineEvent.COMPLETE, signals.get(1));

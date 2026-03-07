@@ -55,7 +55,8 @@ public class EventLifecyclePoller {
     List<EventStateMachineEvent> signalsForState(EventState state) {
         return switch (state) {
             case PLANNED -> List.of(EventStateMachineEvent.PRE_EVENT_NOTIFY);
-            case NOTIFIED -> List.of(EventStateMachineEvent.POST_ALBUM, EventStateMachineEvent.COMPLETE);
+            case NOTIFIED -> List.of(EventStateMachineEvent.PREPARE_ALBUM, EventStateMachineEvent.COMPLETE);
+            case ALBUM_READY -> List.of(EventStateMachineEvent.POST_ALBUM, EventStateMachineEvent.COMPLETE);
             case ALBUM_POSTED -> List.of(EventStateMachineEvent.COMPLETE);
             case COMPLETED -> List.of(EventStateMachineEvent.ARCHIVE);
             case ARCHIVED -> List.of(EventStateMachineEvent.DELETE);
