@@ -19,7 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
-public class RequestContextFilter extends OncePerRequestFilter {
+public class MdcRequestFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
