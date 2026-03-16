@@ -23,11 +23,7 @@ public class EventStateMachineService {
     @Observed(name = "statemachine.attempt-transition")
     public boolean attemptTransition(Event event, EventStateMachineEvent signal) {
         MDC.put("eventId", event.getId().toString());
-        log.info(
-                "Attempting transition for event '{}' signal={} currentState={}",
-                event.getName(),
-                signal,
-                event.getState());
+        log.debug("Attempting transition signal={} currentState={}", signal, event.getState());
         StateMachine<EventState, EventStateMachineEvent> sm = stateMachineFactory.getStateMachine();
         sm.stopReactively().block();
 
@@ -45,12 +41,11 @@ public class EventStateMachineService {
         sm.stopReactively().block();
 
         boolean transitioned = !stateBefore.equals(stateAfter);
-        log.info(
-                "Transition result for event '{}': before={} after={} transitioned={}",
-                event.getName(),
-                stateBefore,
-                stateAfter,
-                transitioned);
+        if (transitioned) {
+            log.info("Event '{}' transitioned {} -> {} via {}", event.getName(), stateBefore, stateAfter, signal);
+        } else {
+            log.debug("No transition for signal={} state={}", signal, stateBefore);
+        }
         return transitioned;
     }
 }
