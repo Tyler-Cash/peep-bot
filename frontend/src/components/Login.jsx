@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useIsLoggedInQuery } from '../api/eventBotApi';
 import { loginSuccess, logout } from '../reducers/authReducer';
 import { backendUrl } from '../api/backendUrl';
+import logger from '../utils/logger';
 
 export default function Login() {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -12,7 +13,7 @@ export default function Login() {
     if (isSuccess) {
         dispatch(loginSuccess(data));
     } else if (error) {
-        console.log(error);
+        logger.warn('Login check failed', error);
         dispatch(logout());
     }
 
