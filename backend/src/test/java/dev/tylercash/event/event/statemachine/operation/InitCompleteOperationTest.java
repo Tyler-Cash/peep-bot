@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.statemachine.ExtendedState;
 import org.springframework.statemachine.StateContext;
 
@@ -23,14 +25,19 @@ class InitCompleteOperationTest {
     private ImmichService immichService;
     private DiscordService discordService;
     private EventRepository eventRepository;
+    private EventService eventService;
     private InitCompleteOperation operation;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
         immichService = mock(ImmichService.class);
         discordService = mock(DiscordService.class);
         eventRepository = mock(EventRepository.class);
-        operation = new InitCompleteOperation(immichService, discordService, eventRepository);
+        eventService = mock(EventService.class);
+        ObjectProvider<EventService> esp = mock(ObjectProvider.class);
+        when(esp.getObject()).thenReturn(eventService);
+        operation = new InitCompleteOperation(immichService, discordService, eventRepository, esp);
     }
 
     @SuppressWarnings("unchecked")
