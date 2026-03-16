@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
 
-@Log4j2
+@Slf4j
 @AllArgsConstructor
 public class EmbedRenderer {
     private final Event event;

@@ -9,10 +9,10 @@ import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-@Log4j2
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AttendanceService {

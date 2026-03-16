@@ -7,11 +7,11 @@ import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.immich.ImmichService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
-@Log4j2
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class InitCompleteOperation {

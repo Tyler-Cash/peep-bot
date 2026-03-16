@@ -6,13 +6,13 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
-@Log4j2
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class InitChannelOperation {
