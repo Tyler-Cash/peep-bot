@@ -17,7 +17,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.Objects;
 import lombok.NonNull;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.textinput.TextInput;
 import net.dv8tion.jda.api.components.textinput.TextInputStyle;
@@ -27,7 +27,7 @@ import net.dv8tion.jda.api.modals.Modal;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
-@Log4j2
+@Slf4j
 @Component
 public class ButtonInteractionListener extends ListenerAdapter {
     public static final String ACCEPTED = "accepted";

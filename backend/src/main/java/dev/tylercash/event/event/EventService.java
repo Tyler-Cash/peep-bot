@@ -14,7 +14,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -24,7 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-@Log4j2
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventService {
@@ -41,6 +42,7 @@ public class EventService {
     public String createEvent(Event event) {
         log.info("Creating event '{}' by creator {}", event.getName(), event.getCreator());
         eventRepository.save(event);
+        MDC.put("eventId", event.getId().toString());
         try {
             stateMachineService.attemptTransition(event, EventStateMachineEvent.INIT_CHANNEL);
         } catch (Exception e) {
@@ -67,6 +69,7 @@ public class EventService {
     @Observed(name = "event.update")
     @Transactional
     public Event updateEvent(Event event) {
+        MDC.put("eventId", event.getId().toString());
         log.info("Updating event '{}' id={}", event.getName(), event.getId());
         discordService.updateEventMessage(event);
         discordService.updateChannelName(event);
@@ -92,6 +95,7 @@ public class EventService {
             })
     @Observed(name = "event.cancel")
     public void cancelEvent(UUID id) {
+        MDC.put("eventId", id.toString());
         log.info("Cancelling event id={}", id);
         Event event = getEvent(id);
         if (isCompleted(event)) {
