@@ -143,6 +143,7 @@ class ButtonInteractionListenerTest {
                 mockDiscordServiceProvider());
 
         Event futureEvent = mock(Event.class);
+        when(futureEvent.getId()).thenReturn(UUID.randomUUID());
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
         when(eventService.isCompleted(futureEvent)).thenReturn(false);
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
