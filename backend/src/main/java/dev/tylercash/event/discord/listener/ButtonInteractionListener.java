@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.textinput.TextInput;
 import net.dv8tion.jda.api.components.textinput.TextInputStyle;
@@ -87,6 +88,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
             return;
         }
+        MDC.put("eventId", event.getId().toString());
         if (eventServiceProvider.getObject().isCompleted(event)) {
             buttonInteractionEvent
                     .reply("Attendance is locked for this event.")

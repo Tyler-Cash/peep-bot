@@ -5,6 +5,7 @@ import dev.tylercash.event.event.model.EventState;
 import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
@@ -21,6 +22,7 @@ public class EventStateMachineService {
 
     @Observed(name = "statemachine.attempt-transition")
     public boolean attemptTransition(Event event, EventStateMachineEvent signal) {
+        MDC.put("eventId", event.getId().toString());
         log.info(
                 "Attempting transition for event '{}' signal={} currentState={}",
                 event.getName(),

@@ -115,6 +115,7 @@ public class EventService {
     @Observed(name = "event.remove-attendee")
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
+        MDC.put("eventId", id.toString());
         log.info("Removing attendee from event id={} snowflake={} name={}", id, snowflake, name);
         Event event = getEvent(id);
         if (isCompleted(event)) {
