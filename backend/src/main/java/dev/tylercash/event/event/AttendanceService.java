@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -22,6 +23,7 @@ public class AttendanceService {
     @Observed(name = "attendance.record")
     public void recordAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus status, String ownerSnowflake) {
+        MDC.put("eventId", eventId.toString());
         attendanceRepository.save(new AttendanceRecord(eventId, snowflake, name, status, ownerSnowflake));
     }
 
@@ -42,6 +44,7 @@ public class AttendanceService {
     @Observed(name = "attendance.flip")
     public AttendanceStatus flipAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
+        MDC.put("eventId", eventId.toString());
         log.info(
                 "Flipping attendance for event={} snowflake={} requestedStatus={}",
                 eventId,

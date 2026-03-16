@@ -37,6 +37,8 @@ public class EventLifecyclePoller {
             try {
                 Observation.createNotStarted("lifecycle.process-event", observationRegistry)
                         .lowCardinalityKeyValue("event.state", event.getState().name())
+                        .highCardinalityKeyValue("event.id", event.getId().toString())
+                        .highCardinalityKeyValue("event.name", event.getName())
                         .observe(() -> processEvent(event));
             } catch (Exception e) {
                 log.error("Error processing event lifecycle for '{}'", event.getName(), e);

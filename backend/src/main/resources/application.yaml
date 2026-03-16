@@ -96,5 +96,5 @@ management:
         endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/logs
   tracing:
     sampling:
-      probability: 1.0
+      probability: 1.0 # 100% sampling — appropriate for low-traffic hobby project
 

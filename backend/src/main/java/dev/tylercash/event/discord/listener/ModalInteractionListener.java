@@ -13,6 +13,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
@@ -67,6 +68,7 @@ public class ModalInteractionListener extends ListenerAdapter {
                     .queue();
             return;
         }
+        MDC.put("eventId", event.getId().toString());
 
         String ownerSnowflake = modalInteractionEvent.getUser().getId();
         String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
