@@ -13,10 +13,10 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
