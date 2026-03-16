@@ -2,12 +2,12 @@ package dev.tylercash.event.immich;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Data
-@Log4j2
+@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "dev.tylercash.immich")
 public class ImmichConfiguration {

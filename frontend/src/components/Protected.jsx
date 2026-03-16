@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsLoggedInQuery } from '../api/eventBotApi';
 import { loginSuccess, logout } from '../reducers/authReducer';
+import logger from '../utils/logger';
 
 const Protected = ({ children }) => {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -11,7 +12,7 @@ const Protected = ({ children }) => {
     if (isSuccess) {
         dispatch(loginSuccess(data));
     } else if (error) {
-        console.log(error);
+        logger.warn('Auth check failed', error);
         dispatch(logout());
     }
     if (isLoading) return null;

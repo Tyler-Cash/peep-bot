@@ -9,10 +9,11 @@ import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
-@Log4j2
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AttendanceService {
@@ -22,6 +23,7 @@ public class AttendanceService {
     @Observed(name = "attendance.record")
     public void recordAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus status, String ownerSnowflake) {
+        MDC.put("eventId", eventId.toString());
         attendanceRepository.save(new AttendanceRecord(eventId, snowflake, name, status, ownerSnowflake));
     }
 
@@ -42,6 +44,7 @@ public class AttendanceService {
     @Observed(name = "attendance.flip")
     public AttendanceStatus flipAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
+        MDC.put("eventId", eventId.toString());
         log.info(
                 "Flipping attendance for event={} snowflake={} requestedStatus={}",
                 eventId,

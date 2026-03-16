@@ -3,11 +3,11 @@ package dev.tylercash.event.immich;
 import io.micrometer.observation.annotation.Observed;
 import java.util.Map;
 import java.util.Optional;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-@Log4j2
+@Slf4j
 @Service
 public class ImmichService {
     private final ImmichConfiguration immichConfiguration;

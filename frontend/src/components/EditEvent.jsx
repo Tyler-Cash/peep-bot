@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import moment from 'moment-timezone/builds/moment-timezone-with-data-10-year-range.js';
+import logger from '../utils/logger';
 import './css/events.css';
 
 function AttendeeColumn({ title, colorClass, attendees, onRemove, removingKey, canRemove }) {
@@ -96,13 +97,9 @@ export default function EditEvent() {
                     setError(error.field, { message: error.defaultMessage });
                 });
             } else {
+                const traceRef = e.data?.traceId ? ` (ref: ${e.data.traceId})` : '';
                 setError('root', {
-                    message:
-                        'Something went wrong. Please try again later. Error details: ' +
-                        e.message +
-                        ' (Code: ' +
-                        e.status +
-                        ')',
+                    message: `Something went wrong. Please try again later.${traceRef}`,
                 });
             }
         }
@@ -115,7 +112,7 @@ export default function EditEvent() {
         try {
             await removeAttendee({ id, snowflake: attendee.snowflake, name: attendee.name }).unwrap();
         } catch (e) {
-            console.error('Failed to remove attendee', e);
+            logger.error('Failed to remove attendee', e);
         } finally {
             setRemovingKey(null);
             setConfirmAction(null);
@@ -139,8 +136,9 @@ export default function EditEvent() {
             navigate('/', { state: { toast: 'Event cancelled successfully' } });
         } catch (e) {
             setConfirmAction(null);
+            const traceRef = e.data?.traceId ? ` (ref: ${e.data.traceId})` : '';
             setError('root', {
-                message: 'Failed to cancel event. ' + (e.data?.message || e.message || 'Please try again later.'),
+                message: `Failed to cancel event. ${e.data?.error || e.message || 'Please try again later.'}${traceRef}`,
             });
         }
     };

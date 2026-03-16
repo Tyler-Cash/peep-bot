@@ -33,16 +33,9 @@ export default function CreateEvent() {
                     setError(error.field, { message: error.defaultMessage });
                 });
             } else {
+                const traceRef = e.data?.traceId ? ` (ref: ${e.data.traceId})` : '';
                 setError('root', {
-                    message:
-                        'This is probably cooked tbh. Try again later?\nmessage: ' +
-                        e.message +
-                        '\ncode: ' +
-                        e.status +
-                        '\ntime:' +
-                        new Date().toString() +
-                        '\nstacktrace: ' +
-                        e.stack,
+                    message: `Something went wrong. Please try again later.${traceRef}`,
                 });
             }
         }
