@@ -12,6 +12,7 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventDto;
+import dev.tylercash.event.event.model.EventUpdateDto;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -271,6 +272,69 @@ class EventControllerTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN))
                 .hasMessageContaining("You can only remove +1 guests that you added");
+    }
+
+    @Test
+    void updateEvent_nonAdminNonCreatorCannotUpdate_returns403() {
+        EventControllerTestContext ctx = setupRemoveAttendeeContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event event = new Event();
+        event.setCreator("someone_else");
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> ctx.controller.updateEvent(updateDto, ctx.principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN))
+                .hasMessageContaining("Only the creator or an admin can update the event");
+    }
+
+    @Test
+    void updateEvent_creatorCanUpdate() {
+        EventControllerTestContext ctx = setupRemoveAttendeeContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event event = new Event();
+        event.setId(eventId);
+        event.setName("Old Name");
+        event.setCreator(DISCORD_ID);
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        ctx.controller.updateEvent(updateDto, ctx.principal);
+
+        verify(ctx.eventService).updateEvent(event);
+    }
+
+    @Test
+    void updateEvent_adminCanUpdate() {
+        EventControllerTestContext ctx = setupRemoveAttendeeContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event event = new Event();
+        event.setId(eventId);
+        event.setName("Old Name");
+        event.setCreator("someone_else");
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+
+        ctx.controller.updateEvent(updateDto, ctx.principal);
+
+        verify(ctx.eventService).updateEvent(event);
     }
 
     private static dev.tylercash.event.event.model.Attendee capturedAttendee(ArgumentCaptor<Event> eventCaptor) {
