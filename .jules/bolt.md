@@ -1,0 +1,3 @@
+## 2026-03-12 - [N+1 DB Calls in Attendee Name Resolution]
+**Learning:** The `EventService.populateAttendance` method performed an N+1 database lookup pattern when handling attendees whose display names were not in the `DiscordUserCache`. `DiscordUserCacheService.getDisplayNames` only returned found entries, causing `EventService` to call `getDisplayName` (which hits the DB) for every missing entry in a loop.
+**Action:** Always ensure bulk-lookup services return a complete map for all requested keys (including fallbacks) to prevent downstream callers from falling back to individual database queries in loops.

@@ -155,8 +155,8 @@ public class EventService {
         for (AttendanceRecord record : records) {
             String displayName;
             if (record.getSnowflake() != null) {
-                displayName = nameMap.getOrDefault(
-                        record.getSnowflake(), discordUserCacheService.getDisplayName(record.getSnowflake()));
+                // nameMap is pre-populated by getDisplayNames and guaranteed to contain fallback for missing entries
+                displayName = nameMap.get(record.getSnowflake());
             } else {
                 displayName = record.getName();
             }
