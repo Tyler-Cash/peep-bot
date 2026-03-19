@@ -118,6 +118,16 @@ class DiscordUserCacheServiceTest {
 
             assertThat(result).hasSize(1).containsEntry("1", "Alice");
         }
+
+        @Test
+        @DisplayName("returns map with fallback names for missing snowflakes")
+        void returnsFallbackForMissing() {
+            when(cacheRepository.findAllBySnowflakeIn(Set.of("123456789"))).thenReturn(Collections.emptyList());
+
+            Map<String, String> result = service.getDisplayNames(List.of("123456789"));
+
+            assertThat(result).hasSize(1).containsEntry("123456789", "Unknown User (#6789)");
+        }
     }
 
     @Nested

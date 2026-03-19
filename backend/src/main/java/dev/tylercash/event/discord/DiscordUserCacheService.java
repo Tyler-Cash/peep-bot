@@ -50,7 +50,7 @@ public class DiscordUserCacheService {
         return cacheRepository
                 .findById(snowflake)
                 .map(DiscordUserCache::getDisplayName)
-                .orElse("Unknown User (#" + snowflake.substring(Math.max(0, snowflake.length() - 4)) + ")");
+                .orElseGet(() -> formatFallbackName(snowflake));
     }
 
     public Map<String, String> getDisplayNames(Collection<String> snowflakes) {
@@ -62,8 +62,21 @@ public class DiscordUserCacheService {
         if (unique.isEmpty()) {
             return Map.of();
         }
-        return cacheRepository.findAllBySnowflakeIn(unique).stream()
+
+        Map<String, String> results = cacheRepository.findAllBySnowflakeIn(unique).stream()
                 .collect(Collectors.toMap(DiscordUserCache::getSnowflake, DiscordUserCache::getDisplayName));
+
+        // Ensure all requested unique snowflakes have a value in the map to avoid N+1 lookups downstream
+        unique.forEach(s -> results.putIfAbsent(s, formatFallbackName(s)));
+
+        return results;
+    }
+
+    private String formatFallbackName(String snowflake) {
+        if (snowflake == null || snowflake.isBlank()) {
+            return "Unknown User";
+        }
+        return "Unknown User (#" + snowflake.substring(Math.max(0, snowflake.length() - 4)) + ")";
     }
 
     @Observed(name = "discord.refresh-user-cache")
