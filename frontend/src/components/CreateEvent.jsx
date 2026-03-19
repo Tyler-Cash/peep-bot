@@ -14,8 +14,11 @@ export default function CreateEvent() {
         register,
         handleSubmit,
         setError,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm();
+
+    const description = watch('description', '');
 
     const onSubmit = async (data) => {
         try {
@@ -78,14 +81,20 @@ export default function CreateEvent() {
                             </div>
 
                             <div className="event-form-group">
-                                <label className="event-form-label" htmlFor="description">
-                                    Description
-                                </label>
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <label className="event-form-label mb-0" htmlFor="description">
+                                        Description
+                                    </label>
+                                    <span className="character-count" aria-live="polite">
+                                        {description.length} / 3800
+                                    </span>
+                                </div>
                                 <textarea
                                     id="description"
                                     className={`form-control event-form-input ${errors.description ? 'is-invalid' : ''}`}
                                     placeholder="Give people a reason to come..."
                                     rows="4"
+                                    maxLength={3800}
                                     {...register('description')}
                                 />
                                 <div className="invalid-feedback">{errors.description?.message}</div>
@@ -101,9 +110,13 @@ export default function CreateEvent() {
                                             id="capacity"
                                             type="number"
                                             className={`form-control event-form-input ${errors.capacity ? 'is-invalid' : ''}`}
-                                            placeholder="0 = unlimited"
+                                            placeholder="e.g. 20"
+                                            aria-describedby="capacity-help"
                                             {...register('capacity')}
                                         />
+                                        <div id="capacity-help" className="event-form-helper">
+                                            Enter 0 for unlimited capacity.
+                                        </div>
                                         <div className="invalid-feedback">{errors.capacity?.message}</div>
                                     </div>
                                 </div>
