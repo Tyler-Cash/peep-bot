@@ -44,20 +44,18 @@ public class PrepareAlbumOperation {
 
             if (event.getImmichAlbumId() != null && event.getImmichShareKey() != null) {
                 log.info(
-                        "Album prepared for event '{}': albumId={}, shareKey={}",
+                        "Album prepared for event '{}': albumId={}",
                         event.getName(),
-                        event.getImmichAlbumId(),
-                        event.getImmichShareKey());
+                        event.getImmichAlbumId());
                 event.setState(EventState.POST_ALBUM_READY);
                 eventRepository.save(event);
                 return;
             }
 
             log.warn(
-                    "Album preparation incomplete for event '{}': albumId={}, shareKey={}",
+                    "Album preparation incomplete for event '{}': albumId={}",
                     event.getName(),
-                    event.getImmichAlbumId(),
-                    event.getImmichShareKey());
+                    event.getImmichAlbumId());
             if (progressMade) {
                 eventRepository.save(event);
             }

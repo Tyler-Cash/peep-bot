@@ -77,9 +77,19 @@ public class EventController {
     @PatchMapping
     public Map<String, String> updateEvent(
             @RequestBody @Valid EventUpdateDto eventDto, @AuthenticationPrincipal OAuth2User principal) {
-        String adminDiscordIdForLog = principal.getAttribute("id");
-        log.info("User {} updating event id={}", adminDiscordIdForLog, eventDto.getId());
+        String discordId = principal.getAttribute("id");
+        log.info("User {} updating event id={}", discordId, eventDto.getId());
         Event event = eventService.getEvent(eventDto.getId());
+
+        // Security check: Only the event creator or a Discord admin can modify the event (IDOR protection)
+        boolean isAdmin =
+                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+        boolean isCreator = Objects.equals(event.getCreator(), discordId);
+
+        if (!isAdmin && !isCreator) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator or an admin can update the event");
+        }
+
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
             event.setDateTime(eventDto.getDateTime());
@@ -91,10 +101,9 @@ public class EventController {
         if (Objects.nonNull(eventDto.getName()) && !eventDto.getName().isBlank()) {
             event.setName(eventDto.getName());
         }
-        String adminDiscordId = principal.getAttribute("id");
         eventDto.getAccepted()
                 .forEach(attendeeName -> attendanceService.recordAttendance(
-                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, adminDiscordId));
+                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
         eventService.populateAttendance(event);
         eventService.updateEvent(event);
         return Map.of("message", "Updated event for " + event.getName());
