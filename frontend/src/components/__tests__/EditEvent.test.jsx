@@ -10,6 +10,7 @@ vi.mock('react-hook-form', () => ({
         handleSubmit: () => (e) => e?.preventDefault?.(),
         setError: vi.fn(),
         setValue: vi.fn(),
+        watch: vi.fn(),
         formState: { errors: {}, isSubmitting: false },
     }),
 }));
