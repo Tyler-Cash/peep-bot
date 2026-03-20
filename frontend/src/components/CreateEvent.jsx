@@ -14,6 +14,7 @@ export default function CreateEvent() {
         register,
         handleSubmit,
         setError,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm();
 
@@ -72,6 +73,7 @@ export default function CreateEvent() {
                                     {...register('name', {
                                         required: 'Please provide an event name',
                                         minLength: { value: 3, message: 'Name must be at least 3 characters' },
+                                        maxLength: { value: 80, message: 'Name cannot exceed 80 characters' },
                                     })}
                                 />
                                 <div className="invalid-feedback">{errors.name?.message}</div>
@@ -86,8 +88,18 @@ export default function CreateEvent() {
                                     className={`form-control event-form-input ${errors.description ? 'is-invalid' : ''}`}
                                     placeholder="Give people a reason to come..."
                                     rows="4"
-                                    {...register('description')}
+                                    {...register('description', {
+                                        maxLength: { value: 3800, message: 'Description cannot exceed 3800 characters' },
+                                    })}
+                                    aria-describedby="description-counter"
                                 />
+                                <div
+                                    id="description-counter"
+                                    className={`char-counter ${watch('description')?.length > 3500 ? 'limit-near' : ''} ${watch('description')?.length >= 3800 ? 'limit-reached' : ''}`}
+                                    aria-live="polite"
+                                >
+                                    {watch('description')?.length || 0} / 3800
+                                </div>
                                 <div className="invalid-feedback">{errors.description?.message}</div>
                             </div>
 
