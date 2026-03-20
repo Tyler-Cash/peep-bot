@@ -143,7 +143,7 @@ public class DiscordService {
 
     public Member getMemberFromServer(long serverId, long userId) {
         Guild server = jda.getGuildById(serverId);
-        server.retrieveMemberById(userId).complete();
+        // Optimization: Removed redundant .complete() call to reduce network latency and Discord API quota usage.
         return server.retrieveMemberById(userId).complete();
     }
 
