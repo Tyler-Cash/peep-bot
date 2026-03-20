@@ -12,6 +12,7 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventDto;
+import dev.tylercash.event.event.model.EventUpdateDto;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -41,11 +42,12 @@ class EventControllerTest {
         OAuth2User principal = mock(OAuth2User.class);
         Member member = mock(Member.class);
 
-        when(discordConfiguration.getGuildId()).thenReturn(GUILD_ID);
-        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
-        when(discordService.getMemberFromServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        lenient().when(discordConfiguration.getGuildId()).thenReturn(GUILD_ID);
+        lenient().when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+        lenient()
+                .when(discordService.getMemberFromServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(member);
-        when(member.getNickname()).thenReturn(DISPLAY_NAME);
+        lenient().when(member.getNickname()).thenReturn(DISPLAY_NAME);
 
         EventController controller = new EventController(
                 eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
@@ -271,6 +273,79 @@ class EventControllerTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN))
                 .hasMessageContaining("You can only remove +1 guests that you added");
+    }
+
+    @Test
+    void updateEvent_nonAdminNonCreator_failsWith403() {
+        EventControllerTestContext ctx = setupContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setName("Updated Name");
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event existingEvent = new Event();
+        existingEvent.setId(eventId);
+        existingEvent.setCreator("other_user"); // Not DISCORD_ID
+        existingEvent.setName("Original Name");
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(existingEvent);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> ctx.controller.updateEvent(updateDto, ctx.principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN))
+                .hasMessageContaining("You are not authorized to update this event");
+    }
+
+    @Test
+    void updateEvent_creatorCanUpdate() {
+        EventControllerTestContext ctx = setupContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setName("Updated Name");
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event existingEvent = new Event();
+        existingEvent.setId(eventId);
+        existingEvent.setCreator(DISCORD_ID);
+        existingEvent.setName("Original Name");
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(existingEvent);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        Map<String, String> result = ctx.controller.updateEvent(updateDto, ctx.principal);
+
+        assertThat(result).containsEntry("message", "Updated event for Updated Name");
+        verify(ctx.eventService).updateEvent(existingEvent);
+    }
+
+    @Test
+    void updateEvent_adminCanUpdate() {
+        EventControllerTestContext ctx = setupContext();
+        UUID eventId = UUID.randomUUID();
+        EventUpdateDto updateDto = new EventUpdateDto();
+        updateDto.setId(eventId);
+        updateDto.setName("Updated Name");
+        updateDto.setAccepted(java.util.Set.of());
+
+        Event existingEvent = new Event();
+        existingEvent.setId(eventId);
+        existingEvent.setCreator("other_user");
+        existingEvent.setName("Original Name");
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(existingEvent);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+
+        Map<String, String> result = ctx.controller.updateEvent(updateDto, ctx.principal);
+
+        assertThat(result).containsEntry("message", "Updated event for Updated Name");
+        verify(ctx.eventService).updateEvent(existingEvent);
     }
 
     private static dev.tylercash.event.event.model.Attendee capturedAttendee(ArgumentCaptor<Event> eventCaptor) {

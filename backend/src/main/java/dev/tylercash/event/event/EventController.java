@@ -80,6 +80,17 @@ public class EventController {
         String adminDiscordIdForLog = principal.getAttribute("id");
         log.info("User {} updating event id={}", adminDiscordIdForLog, eventDto.getId());
         Event event = eventService.getEvent(eventDto.getId());
+
+        String currentUserId = principal.getAttribute("id");
+        boolean isAdmin =
+                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(currentUserId));
+        boolean isCreator = Objects.equals(event.getCreator(), currentUserId);
+
+        if (!isAdmin && !isCreator) {
+            log.warn("User {} unauthorized to update event id={}", currentUserId, event.getId());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update this event");
+        }
+
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
             event.setDateTime(eventDto.getDateTime());
