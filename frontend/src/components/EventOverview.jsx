@@ -1,15 +1,22 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import moment from 'moment-timezone';
 import './css/events.css';
 
-export default function EventOverview(props) {
-    const eventMoment = moment(props.date).tz(moment.tz.guess(true));
-    const dayNum = eventMoment.format('D');
-    const monthAbbr = eventMoment.format('MMM').toUpperCase();
-    const dayName = eventMoment.format('ddd').toUpperCase();
-    const timeStr = eventMoment.format('h:mm A');
-    const acceptedCount = props.acceptedCount || 0;
+const EventOverview = React.memo(function EventOverview(props) {
+    const { date, name, description, acceptedCount: propAcceptedCount, id } = props;
+
+    const { dayNum, monthAbbr, dayName, timeStr } = useMemo(() => {
+        const eventMoment = moment(date).tz(moment.tz.guess(true));
+        return {
+            dayNum: eventMoment.format('D'),
+            monthAbbr: eventMoment.format('MMM').toUpperCase(),
+            dayName: eventMoment.format('ddd').toUpperCase(),
+            timeStr: eventMoment.format('h:mm A'),
+        };
+    }, [date]);
+
+    const acceptedCount = propAcceptedCount || 0;
 
     return (
         <div className="event-overview-card">
@@ -21,8 +28,8 @@ export default function EventOverview(props) {
                 <span className="event-date-badge-time">{timeStr}</span>
             </div>
             <div className="event-overview-content">
-                <h5 className="event-overview-name">{props.name}</h5>
-                {props.description && <p className="event-overview-description">{props.description}</p>}
+                <h5 className="event-overview-name">{name}</h5>
+                {description && <p className="event-overview-description">{description}</p>}
                 <div className="event-overview-footer">
                     {acceptedCount > 0 ? (
                         <span className="attendee-count-chip">
@@ -40,7 +47,7 @@ export default function EventOverview(props) {
                     ) : (
                         <span />
                     )}
-                    <Link to={`/event/${props.id}`} className="btn-edit-card">
+                    <Link to={`/event/${id}`} className="btn-edit-card">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="13"
@@ -56,4 +63,6 @@ export default function EventOverview(props) {
             </div>
         </div>
     );
-}
+});
+
+export default EventOverview;
