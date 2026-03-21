@@ -14,8 +14,11 @@ export default function CreateEvent() {
         register,
         handleSubmit,
         setError,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm();
+
+    const description = watch('description', '');
 
     const onSubmit = async (data) => {
         try {
@@ -86,8 +89,16 @@ export default function CreateEvent() {
                                     className={`form-control event-form-input ${errors.description ? 'is-invalid' : ''}`}
                                     placeholder="Give people a reason to come..."
                                     rows="4"
+                                    aria-describedby="description-counter"
                                     {...register('description')}
                                 />
+                                <div
+                                    id="description-counter"
+                                    className="small text-muted text-end mt-1 fw-medium"
+                                    aria-live="polite"
+                                >
+                                    {description.length} / 3800 characters
+                                </div>
                                 <div className="invalid-feedback">{errors.description?.message}</div>
                             </div>
 

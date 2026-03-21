@@ -1,0 +1,42 @@
+Downloading https://services.gradle.org/distributions/gradle-9.4.0-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%..............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.4.0!
+
+Here are the highlights of this release:
+ - Java 26 support
+ - Non-class-based JVM tests
+ - Enhanced console progress bar
+
+For more details see https://docs.gradle.org/9.4.0/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :compileJava
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:48: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus"))
+                                             ^
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:46: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/actuator/health"))
+                                             ^
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:44: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**"))
+                                             ^
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:42: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**"))
+                                             ^
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:40: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html"))
+                                             ^
+/app/backend/src/main/java/dev/tylercash/event/security/WebSecurityConfig.java:38: warning: [removal] AntPathRequestMatcher in org.springframework.security.web.util.matcher has been deprecated and marked for removal
+                        .requestMatchers(new AntPathRequestMatcher("/auth/is-logged-in"))
+                                             ^
+6 warnings
+
+> Task :cyclonedxBom
+Unknown keyword meta:enum - you should define your own Meta Schema. If the keyword is irrelevant for validation, just use a NonValidationKeyword or if it should generate annotations AnnotationKeyword
+Unknown keyword deprecated - you should define your own Meta Schema. If the keyword is irrelevant for validation, just use a NonValidationKeyword or if it should generate annotations AnnotationKeyword
+
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
