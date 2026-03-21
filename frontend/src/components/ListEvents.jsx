@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import EventOverview from './EventOverview';
 import { useGetEventsQuery, useIsLoggedInQuery } from '../api/eventBotApi';
 import Navbar from './Navbar';
@@ -84,7 +84,9 @@ function Events() {
         );
     }
 
-    const sorted = data.slice().sort((a, b) => moment(a.dateTime).diff(moment(b.dateTime)));
+    const sorted = useMemo(() => {
+        return data.slice().sort((a, b) => moment(a.dateTime).diff(moment(b.dateTime)));
+    }, [data]);
 
     if (sorted.length > 0) {
         return (
