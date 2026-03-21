@@ -53,7 +53,7 @@ dependencyManagement {
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.17.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.ibm.icu:icu4j:78.2'
+    implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.0.Final'
     implementation 'org.liquibase:liquibase-core'
