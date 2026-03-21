@@ -1,0 +1,82 @@
+
+> event-bot@0.1.0 dev /app/frontend
+> vite
+
+
+  VITE v7.3.1  ready in 356 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+(!) Failed to run dependency scan. Skipping dependency pre-bundling. Error: The following dependencies are imported but could not be resolved:
+
+  redux (imported by /app/frontend/src/reducers/rootReducer.js)
+
+Are they installed?
+    at file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:31903:33
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:34111:15
+8:48:43 PM [vite] (client) Pre-transform error: Failed to resolve import "redux" from "src/reducers/rootReducer.js". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/frontend/src/reducers/rootReducer.js:1:33
+  1  |  import { combineReducers } from 'redux';
+     |                                   ^
+  2  |  import authReducer from './authReducer';
+  3  |  import { eventBotApi } from '../api/eventBotApi';
+8:48:45 PM [vite] (client) ✨ new dependencies optimized: react-dom/client, react-router-dom, react-cookie, react-redux, @reduxjs/toolkit/query, @opentelemetry/sdk-trace-web, @opentelemetry/sdk-trace-base, @opentelemetry/exporter-trace-otlp-http, @opentelemetry/resources, @opentelemetry/semantic-conventions, @opentelemetry/context-zone, @opentelemetry/instrumentation, @opentelemetry/instrumentation-fetch, @opentelemetry/instrumentation-document-load, web-vitals, @reduxjs/toolkit, react-hook-form, moment-timezone, moment-timezone/builds/moment-timezone-with-data-10-year-range.js, @reduxjs/toolkit/query/react, prop-types
+8:48:45 PM [vite] (client) ✨ optimized dependencies changed. reloading
+8:48:46 PM [vite] Internal server error: Failed to resolve import "redux" from "src/reducers/rootReducer.js". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/frontend/src/reducers/rootReducer.js:1:33
+  1  |  import { combineReducers } from 'redux';
+     |                                   ^
+  2  |  import authReducer from './authReducer';
+  3  |  import { eventBotApi } from '../api/eventBotApi';
+      at TransformPluginContext._formatLog (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28999:43)
+      at TransformPluginContext.error (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28996:14)
+      at normalizeUrl (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27119:18)
+      at async file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27177:32
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27145:4)
+      at async EnvironmentPluginContainer.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28797:14)
+      at async loadAndTransform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:22670:26)
+      at async viteTransformMiddleware (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:24542:20)
+8:48:46 PM [vite] (client) Pre-transform error: Failed to resolve import "redux" from "src/reducers/rootReducer.js". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/frontend/src/reducers/rootReducer.js:1:33
+  1  |  import { combineReducers } from 'redux';
+     |                                   ^
+  2  |  import authReducer from './authReducer';
+  3  |  import { eventBotApi } from '../api/eventBotApi';
+8:48:47 PM [vite] Internal server error: Failed to resolve import "redux" from "src/reducers/rootReducer.js". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/frontend/src/reducers/rootReducer.js:1:33
+  1  |  import { combineReducers } from 'redux';
+     |                                   ^
+  2  |  import authReducer from './authReducer';
+  3  |  import { eventBotApi } from '../api/eventBotApi';
+      at TransformPluginContext._formatLog (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28999:43)
+      at TransformPluginContext.error (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28996:14)
+      at normalizeUrl (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27119:18)
+      at async file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27177:32
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27145:4)
+      at async EnvironmentPluginContainer.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28797:14)
+      at async loadAndTransform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:22670:26)
+      at async viteTransformMiddleware (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:24542:20)
+8:49:03 PM [vite] Internal server error: Failed to resolve import "redux" from "src/reducers/rootReducer.js". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /app/frontend/src/reducers/rootReducer.js:1:33
+  1  |  import { combineReducers } from 'redux';
+     |                                   ^
+  2  |  import authReducer from './authReducer';
+  3  |  import { eventBotApi } from '../api/eventBotApi';
+      at TransformPluginContext._formatLog (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28999:43)
+      at TransformPluginContext.error (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28996:14)
+      at normalizeUrl (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27119:18)
+      at async file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27177:32
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:27145:4)
+      at async EnvironmentPluginContainer.transform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:28797:14)
+      at async loadAndTransform (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:22670:26)
+      at async viteTransformMiddleware (file:///app/frontend/node_modules/.pnpm/vite@7.3.1_@types+node@25.5.0/node_modules/vite/dist/node/chunks/config.js:24542:20)
+8:49:12 PM [vite] (client) hmr update /src/store.js
