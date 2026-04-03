@@ -17,12 +17,14 @@ vi.mock('react-hook-form', () => ({
 const mockRemoveAttendee = vi.fn();
 const mockPatchEvent = vi.fn();
 const mockCancelEvent = vi.fn();
+const mockCreatePrivateChannel = vi.fn();
 
 vi.mock('../../api/eventBotApi', () => ({
     useGetEventQuery: vi.fn(),
     usePatchEventMutation: () => [mockPatchEvent],
     useRemoveAttendeeMutation: () => [mockRemoveAttendee],
     useCancelEventMutation: () => [mockCancelEvent, { isLoading: false }],
+    useCreatePrivateChannelMutation: () => [mockCreatePrivateChannel, { isLoading: false }],
 }));
 
 vi.mock('react-redux', async (importOriginal) => {

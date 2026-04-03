@@ -14,6 +14,7 @@ public class EventDetailDto extends EventDto {
     private List<AttendeeDto> declined;
     private List<AttendeeDto> maybe;
     private boolean completed;
+    private boolean hasPrivateChannel;
 
     public EventDetailDto(Event event, boolean completed) {
         super(event);
@@ -21,6 +22,7 @@ public class EventDetailDto extends EventDto {
         this.declined = toSortedList(event.getDeclined());
         this.maybe = toSortedList(event.getMaybe());
         this.completed = completed;
+        this.hasPrivateChannel = event.getPrivateChannelId() != null;
     }
 
     public EventDetailDto(Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap) {
@@ -29,6 +31,7 @@ public class EventDetailDto extends EventDto {
         this.declined = toSortedRecordList(summary.declined(), nameMap);
         this.maybe = toSortedRecordList(summary.maybe(), nameMap);
         this.completed = completed;
+        this.hasPrivateChannel = event.getPrivateChannelId() != null;
     }
 
     private static List<AttendeeDto> toSortedList(Set<Attendee> attendees) {

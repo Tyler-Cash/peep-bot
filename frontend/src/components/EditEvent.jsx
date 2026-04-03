@@ -4,6 +4,7 @@ import {
     usePatchEventMutation,
     useRemoveAttendeeMutation,
     useCancelEventMutation,
+    useCreatePrivateChannelMutation,
 } from '../api/eventBotApi';
 import Navbar from './Navbar';
 import ConfirmModal from './ConfirmModal';
@@ -61,6 +62,7 @@ export default function EditEvent() {
     const [patchEvent] = usePatchEventMutation({});
     const [removeAttendee] = useRemoveAttendeeMutation();
     const [cancelEvent, { isLoading: isCancelling }] = useCancelEventMutation();
+    const [createPrivateChannel, { isLoading: isCreatingChannel }] = useCreatePrivateChannelMutation();
     const isAdmin = useSelector((state) => state.auth.isAdmin);
     const discordId = useSelector((state) => state.auth.discordId);
     const [removingKey, setRemovingKey] = useState(null);
@@ -151,6 +153,30 @@ export default function EditEvent() {
             confirmLabel: 'Cancel Event',
             confirmColorClass: 'btn-confirm-danger',
             onConfirm: handleCancelEvent,
+        });
+    };
+
+    const handleCreatePrivateChannel = async () => {
+        try {
+            await createPrivateChannel({ id }).unwrap();
+            setConfirmAction(null);
+        } catch (e) {
+            setConfirmAction(null);
+            const traceRef = e.data?.traceId ? ` (ref: ${e.data.traceId})` : '';
+            setError('root', {
+                message: `Failed to create private channel. ${e.data?.error || e.message || 'Please try again later.'}${traceRef}`,
+            });
+        }
+    };
+
+    const confirmCreatePrivateChannel = () => {
+        setConfirmAction({
+            title: 'Create Private Channel',
+            message:
+                'Only create a private channel if you need to share a private address or sensitive location. Do not use it for general chat — keep discussion in the main event channel.',
+            confirmLabel: 'Create Private Channel',
+            confirmColorClass: 'btn-event',
+            onConfirm: handleCreatePrivateChannel,
         });
     };
 
@@ -295,6 +321,16 @@ export default function EditEvent() {
                             <p className="text-muted mb-0 mt-1 small">Administrative actions for this event</p>
                         </div>
                         <div className="event-card-body">
+                            {!data.hasPrivateChannel && (
+                                <button
+                                    type="button"
+                                    className="btn-event"
+                                    onClick={confirmCreatePrivateChannel}
+                                    disabled={isCreatingChannel}
+                                >
+                                    Create Private Channel
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 className="btn-confirm-danger"
@@ -359,7 +395,7 @@ export default function EditEvent() {
                 confirmColorClass={confirmAction?.confirmColorClass}
                 onConfirm={confirmAction?.onConfirm}
                 onCancel={() => setConfirmAction(null)}
-                isLoading={isCancelling || !!removingKey}
+                isLoading={isCancelling || isCreatingChannel || !!removingKey}
             />
         </div>
     );

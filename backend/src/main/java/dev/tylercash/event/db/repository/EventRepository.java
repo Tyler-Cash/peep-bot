@@ -28,5 +28,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     List<Event> findByChannelIdIn(List<Long> channelIds);
 
+    List<Event> findByPrivateChannelIdIn(List<Long> channelIds);
+
     Page<Event> findByState(Pageable pageable, EventState state);
 }

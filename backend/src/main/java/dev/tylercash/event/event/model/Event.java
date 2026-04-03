@@ -85,6 +85,9 @@ public class Event {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long maybeRoleId;
 
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Long privateChannelId;
+
     // Request only flag, do not persist
     @Transient
     private boolean notifyOnCreate = true;

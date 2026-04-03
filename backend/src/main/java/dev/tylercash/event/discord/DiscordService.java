@@ -12,6 +12,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
+import dev.tylercash.event.security.dev.DevUserProperties;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
@@ -54,6 +56,7 @@ public class DiscordService {
     private final RateLimiter notifyEventRoles;
     private final Clock clock;
     private final JDA jda;
+    private final Optional<DevUserProperties> devUserProperties;
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
@@ -152,6 +155,9 @@ public class DiscordService {
     }
 
     public boolean isUserAdminOfServer(long serverId, long userId) {
+        if (devUserProperties.isPresent() && devUserProperties.get().isForceAdmin()) {
+            return true;
+        }
         Member member = getMemberFromServer(serverId, userId);
         return member != null
                 && member.getRoles().stream()
@@ -196,18 +202,24 @@ public class DiscordService {
         List<Long> channelIds = toSort.stream().map(TextChannel::getIdLong).toList();
         Map<Long, ZonedDateTime> channelDateMap = eventRepository.findByChannelIdIn(channelIds).stream()
                 .collect(Collectors.toMap(Event::getChannelId, Event::getDateTime));
+        Map<Long, Long> privateToMainChannelId = eventRepository.findByPrivateChannelIdIn(channelIds).stream()
+                .filter(e -> e.getPrivateChannelId() != null)
+                .collect(Collectors.toMap(Event::getPrivateChannelId, Event::getChannelId));
 
-        List<TextChannel> withEvent = new ArrayList<>();
+        List<TextChannel> mainEventChannels = new ArrayList<>();
+        List<TextChannel> privateEventChannels = new ArrayList<>();
         List<TextChannel> withoutEvent = new ArrayList<>();
         for (TextChannel ch : toSort) {
             if (channelDateMap.containsKey(ch.getIdLong())) {
-                withEvent.add(ch);
+                mainEventChannels.add(ch);
+            } else if (privateToMainChannelId.containsKey(ch.getIdLong())) {
+                privateEventChannels.add(ch);
             } else {
                 withoutEvent.add(ch);
             }
         }
 
-        withEvent.sort(Comparator.comparing(ch -> channelDateMap.get(ch.getIdLong())));
+        mainEventChannels.sort(Comparator.comparing(ch -> channelDateMap.get(ch.getIdLong())));
 
         if (!withoutEvent.isEmpty()) {
             log.warn(
@@ -233,7 +245,13 @@ public class DiscordService {
         }
 
         List<TextChannel> sorted = new ArrayList<>(before);
-        sorted.addAll(withEvent);
+        for (TextChannel mainCh : mainEventChannels) {
+            sorted.add(mainCh);
+            privateEventChannels.stream()
+                    .filter(pc -> Objects.equals(privateToMainChannelId.get(pc.getIdLong()), mainCh.getIdLong()))
+                    .findFirst()
+                    .ifPresent(sorted::add);
+        }
         sorted.addAll(keptOrphans);
 
         for (int i = 0; i < sorted.size(); i++) {
@@ -261,6 +279,46 @@ public class DiscordService {
                 .getChannelById(TextChannel.class, event.getChannelId())
                 .delete()
                 .queue();
+    }
+
+    @Observed(name = "discord.create-private-channel")
+    public void createPrivateEventChannel(Event event) {
+        if (event.getPrivateChannelId() != null) {
+            return;
+        }
+        if (event.getAcceptedRoleId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Event roles have not been created yet — please wait and try again");
+        }
+        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Category category = getEventCategory(discordConfiguration.getGuildId());
+        String channelName = DiscordUtil.getChannelNameFromEvent(event) + "-private";
+        TextChannel channel = category.createTextChannel(channelName)
+                .addRolePermissionOverride(guild.getPublicRole().getIdLong(), 0L, Permission.VIEW_CHANNEL.getRawValue())
+                .addRolePermissionOverride(
+                        event.getAcceptedRoleId(),
+                        Permission.VIEW_CHANNEL.getRawValue()
+                                | Permission.MESSAGE_SEND.getRawValue()
+                                | Permission.MESSAGE_HISTORY.getRawValue(),
+                        0L)
+                .complete();
+        event.setPrivateChannelId(channel.getIdLong());
+        Message alert = channel.sendMessage(
+                        "⚠️ **Private Channel** — This channel is for sharing private event details (e.g. address) only. "
+                                + "Please keep all discussion in the main event channel. Do not chat here.")
+                .complete();
+        alert.pin().queue();
+    }
+
+    @Observed(name = "discord.delete-private-channel")
+    public void deletePrivateEventChannel(Event event) {
+        if (event.getPrivateChannelId() == null) {
+            return;
+        }
+        TextChannel channel = jda.getChannelById(TextChannel.class, event.getPrivateChannelId());
+        if (channel != null) {
+            channel.delete().queue();
+        }
     }
 
     @Observed(name = "discord.archive-channel")
