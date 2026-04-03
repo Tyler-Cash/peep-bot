@@ -309,7 +309,7 @@ public class DiscordService {
                 .complete();
         alert.pin().complete();
         channel.getHistory().retrievePast(5).complete().stream()
-                .filter(m -> m.getType() == net.dv8tion.jda.api.entities.MessageType.CHANNEL_PINNED_MESSAGE)
+                .filter(m -> m.getType() == net.dv8tion.jda.api.entities.MessageType.CHANNEL_PINNED_ADD)
                 .forEach(m -> m.delete().queue());
     }
 
