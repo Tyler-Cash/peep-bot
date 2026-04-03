@@ -47,6 +47,8 @@ public class CancelOperation {
             }
             if (event.getChannelId() != 0) {
                 discordService.updateChannelName(event);
+                discordService.deletePrivateEventChannel(event);
+                event.setPrivateChannelId(null);
                 discordService.archiveEventChannel(event);
             }
             event.getNotifications()

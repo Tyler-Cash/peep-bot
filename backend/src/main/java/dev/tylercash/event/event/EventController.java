@@ -150,6 +150,26 @@ public class EventController {
     }
 
     @Operation(
+            summary = "Create a private channel",
+            description = "Admin-only: creates a private Discord channel for accepted attendees")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Private channel created"),
+        @ApiResponse(responseCode = "403", description = "Admin role required"),
+        @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PostMapping(path = "/{id}/private-channel")
+    public Map<String, String> createPrivateChannel(
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        log.info("User {} creating private channel for event id={}", discordId, id);
+        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        eventService.createPrivateChannel(id);
+        return Map.of("message", "Private channel created");
+    }
+
+    @Operation(
             summary = "Remove an attendee",
             description =
                     "Removes an attendee from the event. Admins can remove anyone; non-admins can only remove their own +1s.")

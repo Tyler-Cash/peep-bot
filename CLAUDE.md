@@ -57,6 +57,23 @@ spring:
 You also need to set the datasource URL and local-specific overrides. These can either go in `application-local.yaml` or
 be passed as CLI args (see below).
 
+#### Dev Auto-Login (optional)
+
+To skip Discord OAuth2 login during local development, add to `application-local.yaml`:
+
+```yaml
+dev.tylercash:
+  dev-user:
+    enabled: true
+    username: "dev-user"
+    discord-id: "YOUR_DISCORD_ID"
+    force-admin: true
+```
+
+When `enabled: true` and the `local` profile is active, all requests are automatically authenticated as the configured
+mock user. Set `force-admin: true` to bypass Discord role checks for admin operations. The Discord bot token and OAuth2
+credentials are still needed if you want the bot functionality to work, but web login is bypassed.
+
 ### 3. Start the Backend
 
 From `backend/`:

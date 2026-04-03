@@ -1,9 +1,11 @@
 package dev.tylercash.event.security;
 
+import dev.tylercash.event.security.dev.DevAutoLoginFilter;
 import dev.tylercash.event.security.oauth2.CustomOAuth2UserService;
 import dev.tylercash.event.security.oauth2.RedirectToFrontendAfterAuth;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -27,6 +29,9 @@ public class WebSecurityConfig {
     private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RateLimitFilter rateLimitFilter;
+
+    @Autowired(required = false)
+    private DevAutoLoginFilter devAutoLoginFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -56,6 +61,9 @@ public class WebSecurityConfig {
                 .oauth2Login(
                         oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                                 .successHandler(redirectToFrontendAfterAuth));
+        if (devAutoLoginFilter != null) {
+            http.addFilterBefore(devAutoLoginFilter, AnonymousAuthenticationFilter.class);
+        }
         return http.build();
     }
 

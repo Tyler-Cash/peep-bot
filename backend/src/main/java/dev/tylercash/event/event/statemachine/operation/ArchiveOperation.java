@@ -56,6 +56,8 @@ public class ArchiveOperation {
             log.info("Archiving event: {}", eventName);
             eventServiceProvider.getObject().populateAttendance(event);
             discordService.updateEventMessage(event);
+            discordService.deletePrivateEventChannel(event);
+            event.setPrivateChannelId(null);
             discordService.archiveEventChannel(event);
             event.setState(EventState.ARCHIVED);
             eventRepository.save(event);

@@ -545,6 +545,23 @@ databaseChangeLog:
                   name: maybe_role_id
                   type: bigint
   - changeSet:
+      id: add private channel column
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: private_channel_id
+                  type: bigint
+        - createIndex:
+            columns:
+              - column:
+                  name: private_channel_id
+            indexName: idx_event_private_channel_id
+            tableName: event
+            unique: true
+  - changeSet:
       id: rename event states
       author: claude
       comment: Rename states to follow phase-based naming convention.

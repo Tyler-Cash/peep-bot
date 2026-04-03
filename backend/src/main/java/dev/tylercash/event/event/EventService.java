@@ -126,6 +126,21 @@ public class EventService {
         updateEvent(event);
     }
 
+    @Caching(
+            evict = {
+                @CacheEvict(value = "activeEvents", allEntries = true),
+                @CacheEvict(value = "eventDetail", key = "#id")
+            })
+    @Observed(name = "event.create-private-channel")
+    @Transactional
+    public void createPrivateChannel(UUID id) {
+        MDC.put("eventId", id.toString());
+        log.info("Creating private channel for event id={}", id);
+        Event event = getEvent(id);
+        discordService.createPrivateEventChannel(event);
+        eventRepository.save(event);
+    }
+
     public void populateAttendance(Event event) {
         AttendanceSummary summary = attendanceService.getCurrentAttendance(event.getId());
 

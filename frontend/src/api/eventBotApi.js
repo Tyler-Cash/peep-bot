@@ -152,6 +152,10 @@ export const eventBotApi = createApi({
             query: ({ id }) => ({ url: `event/${id}/cancel`, method: 'POST' }),
             invalidatesTags: (result, error, { id }) => [{ type: 'Event', id }, 'Event'],
         }),
+        createPrivateChannel: builder.mutation({
+            query: ({ id }) => ({ url: `event/${id}/private-channel`, method: 'POST' }),
+            invalidatesTags: (result, error, { id }) => [{ type: 'Event', id }],
+        }),
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
@@ -165,5 +169,6 @@ export const {
     usePatchEventMutation,
     useRemoveAttendeeMutation,
     useCancelEventMutation,
+    useCreatePrivateChannelMutation,
     useIsLoggedInQuery,
 } = eventBotApi;

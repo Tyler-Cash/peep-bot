@@ -2,6 +2,7 @@ package dev.tylercash.event.event.statemachine.operation;
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
@@ -23,6 +24,13 @@ public class InitRolesOperation {
             Event event = context.getExtendedState().get("event", Event.class);
             log.info("Creating Discord roles for event: {}", event.getName());
             discordService.createEventRoles(event);
+            if (event.getCreator() != null && !event.getCreator().isBlank()) {
+                try {
+                    discordService.assignEventRole(event, event.getCreator(), AttendanceStatus.ACCEPTED);
+                } catch (Exception e) {
+                    log.warn("Failed to assign accepted role to creator {}", event.getCreator(), e);
+                }
+            }
             event.setState(EventState.INIT_ROLES);
             eventRepository.save(event);
         };
