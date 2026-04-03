@@ -175,7 +175,7 @@ export default function EditEvent() {
             message:
                 'Only create a private channel if you need to share a private address or sensitive location. Do not use it for general chat — keep discussion in the main event channel.',
             confirmLabel: 'Create Private Channel',
-            confirmColorClass: 'btn-event',
+            confirmColorClass: 'btn-confirm-primary',
             onConfirm: handleCreatePrivateChannel,
         });
     };
@@ -324,7 +324,7 @@ export default function EditEvent() {
                             {!data.hasPrivateChannel && (
                                 <button
                                     type="button"
-                                    className="btn-event"
+                                    className="btn-confirm-primary"
                                     onClick={confirmCreatePrivateChannel}
                                     disabled={isCreatingChannel}
                                 >

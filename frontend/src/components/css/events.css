@@ -675,6 +675,29 @@
     cursor: not-allowed;
 }
 
+.btn-confirm-primary {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.925rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: rgba(88, 101, 242, 0.12);
+    color: #818cf8;
+    border: 1px solid rgba(88, 101, 242, 0.25);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-primary:hover:not(:disabled) {
+    background: rgba(88, 101, 242, 0.2);
+    color: #a5b4fc;
+    border-color: rgba(88, 101, 242, 0.4);
+}
+
+.btn-confirm-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .btn-confirm-cancel {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-subtle);
