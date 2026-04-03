@@ -37,7 +37,7 @@ ext {
     // Overriding Spring dependency versions for security and consistency
     set('spring-framework.version', '6.2.16')
     set('spring-data-bom.version', '2025.0.9')
-    set('spring-security.version', '6.5.8')
+    set('spring-security.version', '6.5.9')
     set('spring-session.version', '3.5.2')
     set('spring-retry.version', '2.0.10')
     set('jackson-bom.version', '2.21.1')
@@ -156,9 +156,9 @@ tasks.named("bootJar") {
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
     environment.putAll([
-        "BP_OCI_SOURCE": "https://github.com/Tyler-Cash/peep-bot",
-        "BP_OCI_URL": "https://github.com/Tyler-Cash/peep-bot",
-        "BP_OCI_DESCRIPTION": "Peep Bot backend — Spring Boot Discord event management API",
+            "BP_OCI_SOURCE"     : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_URL"        : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_DESCRIPTION": "Peep Bot backend — Spring Boot Discord event management API",
     ])
 }
 
