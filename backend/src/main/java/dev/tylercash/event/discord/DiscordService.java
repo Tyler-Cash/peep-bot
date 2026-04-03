@@ -304,10 +304,13 @@ public class DiscordService {
                 .complete();
         event.setPrivateChannelId(channel.getIdLong());
         Message alert = channel.sendMessage(
-                        "⚠️ **Private Channel** — This channel is for sharing private event details (e.g. address) only. "
+                        "⚠️ **Private Channel** — This channel is for sharing private event details only. "
                                 + "Please keep all discussion in the main event channel. Do not chat here.")
                 .complete();
-        alert.pin().queue();
+        alert.pin().complete();
+        channel.getHistory().retrievePast(5).complete().stream()
+                .filter(m -> m.getType() == net.dv8tion.jda.api.entities.MessageType.CHANNEL_PINNED_MESSAGE)
+                .forEach(m -> m.delete().queue());
     }
 
     @Observed(name = "discord.delete-private-channel")
