@@ -24,7 +24,13 @@
       "labels": ["major"]
     },
     {
+      "groupName": "vite major",
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": ["vite", "@vitejs/plugin-react", "vitest", "@vitest/coverage-v8"]
+    },
+    {
       "groupName": "vite",
+      "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": ["vite", "@vitejs/plugin-react"]
     },
     {
@@ -38,6 +44,32 @@
     {
       "groupName": "prop-types",
       "matchPackageNames": ["prop-types", "@types/prop-types"]
+    },
+    {
+      "groupName": "eslint major",
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/js",
+        "eslint-plugin-react",
+        "eslint-plugin-react-hooks",
+        "eslint-config-prettier"
+      ]
+    },
+    {
+      "groupName": "spring-boot major",
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": [
+        "org.springframework.boot",
+        "org.springframework.cloud:spring-cloud-dependencies",
+        "org.springdoc:springdoc-openapi-starter-webmvc-ui"
+      ]
+    },
+    {
+      "matchPackageNames": [
+        "org.springframework.cloud:spring-cloud-dependencies"
+      ],
+      "automerge": false
     }
   ]
 }
