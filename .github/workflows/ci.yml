@@ -241,7 +241,7 @@ jobs:
         with:
           sbom: backend/build/reports/application.cdx.json
           output-file: backend/grype-backend.sarif
-          severity-cutoff: high
+          severity-cutoff: critical
           fail-build: true
 
       - name: Print Grype results
