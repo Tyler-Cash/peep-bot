@@ -63,6 +63,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
     implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
+    implementation 'org.jfree:jfreechart:1.5.4'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

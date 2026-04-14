@@ -572,3 +572,5 @@ databaseChangeLog:
               UPDATE event SET state = 'POST_ALBUM_READY' WHERE state = 'ALBUM_READY';
               UPDATE event SET state = 'POST_ALBUM_SHARED' WHERE state = 'ALBUM_POSTED';
               UPDATE event SET state = 'POST_COMPLETED' WHERE state = 'COMPLETED';
+  - include:
+      file: db/changelog/contract/db.changelog-contract.yaml
