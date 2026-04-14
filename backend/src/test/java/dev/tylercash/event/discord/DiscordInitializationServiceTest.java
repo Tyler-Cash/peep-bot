@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
@@ -21,6 +22,7 @@ class DiscordInitializationServiceTest {
     private Guild guild;
     private DiscordConfiguration config;
     private DiscordChannelService discordChannelService;
+    private ContractConfiguration contractConfig;
     private DiscordInitializationService service;
 
     @BeforeEach
@@ -31,8 +33,9 @@ class DiscordInitializationServiceTest {
         config.setGuildId(123L);
         config.setSeperatorChannel("organising");
         discordChannelService = mock(DiscordChannelService.class);
+        contractConfig = new ContractConfiguration();
         when(jda.getGuildById(123L)).thenReturn(guild);
-        service = new DiscordInitializationService(jda, config, discordChannelService);
+        service = new DiscordInitializationService(jda, config, discordChannelService, contractConfig);
     }
 
     @SuppressWarnings("unchecked")
