@@ -292,10 +292,10 @@ public class ContractService {
     }
 
     private String slugify(String title) {
-        return title.toLowerCase()
+        String slug = title.toLowerCase()
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .replaceAll("\\s+", "-")
-                .replaceAll("-+", "-")
-                .substring(0, Math.min(title.length(), 90));
+                .replaceAll("-+", "-");
+        return slug.substring(0, Math.min(slug.length(), 90));
     }
 }
