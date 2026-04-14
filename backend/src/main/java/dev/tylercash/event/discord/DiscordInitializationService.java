@@ -3,6 +3,7 @@ package dev.tylercash.event.discord;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_ARCHIVE_CATEGORY;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_CATEGORY;
 
+import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class DiscordInitializationService {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
     private final DiscordChannelService discordChannelService;
+    private final ContractConfiguration contractConfig;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeGuild() {
@@ -32,6 +34,7 @@ public class DiscordInitializationService {
 
         Category outings = ensureCategory(guild, EVENT_CATEGORY);
         ensureCategory(guild, EVENT_ARCHIVE_CATEGORY);
+        ensureCategory(guild, contractConfig.getCategoryName());
         ensureSeparatorChannel(outings);
     }
 
