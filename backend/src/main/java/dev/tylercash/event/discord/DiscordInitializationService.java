@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class DiscordInitializationService {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
+    private final DiscordChannelService discordChannelService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeGuild() {
@@ -35,13 +36,7 @@ public class DiscordInitializationService {
     }
 
     Category ensureCategory(Guild guild, String categoryName) {
-        List<Category> categories = guild.getCategoriesByName(categoryName, true);
-        if (!categories.isEmpty()) {
-            log.info("Category '{}' already exists", categoryName);
-            return categories.get(0);
-        }
-        log.info("Creating category '{}'", categoryName);
-        return guild.createCategory(categoryName).complete();
+        return discordChannelService.getOrCreateCategory(guild, categoryName);
     }
 
     void ensureSeparatorChannel(Category category) {
