@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,12 +26,34 @@ public class ClientConfiguration {
 
     @Bean
     public JDA jda() throws InterruptedException {
-        return JDABuilder.createDefault(discordConfiguration.getToken())
+        JDA jda = JDABuilder.createDefault(discordConfiguration.getToken())
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(modalInteractionListener)
                 .addEventListeners(slashCommandListener)
                 .enableIntents(EnumSet.allOf(GatewayIntent.class))
                 .build()
                 .awaitReady();
+
+        jda.getGuildById(discordConfiguration.getGuildId())
+                .updateCommands()
+                .addCommands(
+                        Commands.slash("balance", "Check your peep coin balance"),
+                        Commands.slash("contract", "Prediction contract commands")
+                                .addSubcommands(
+                                        new SubcommandData("create", "Create a new prediction contract"),
+                                        new SubcommandData("trade", "Trade on a prediction contract")
+                                                .addOption(OptionType.STRING, "contract", "Contract ID", true)
+                                                .addOption(OptionType.STRING, "outcome", "Outcome ID", true)
+                                                .addOption(
+                                                        OptionType.STRING, "amount", "Amount of coins to spend", true),
+                                        new SubcommandData("resolve", "Resolve a prediction contract")
+                                                .addOption(OptionType.STRING, "contract", "Contract ID", true)
+                                                .addOption(OptionType.STRING, "outcome", "Winning outcome ID", true),
+                                        new SubcommandData("cancel", "Cancel a prediction contract")
+                                                .addOption(OptionType.STRING, "contract", "Contract ID", true),
+                                        new SubcommandData("list", "List open prediction contracts")))
+                .queue();
+
+        return jda;
     }
 }
