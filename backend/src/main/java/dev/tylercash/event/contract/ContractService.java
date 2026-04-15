@@ -13,11 +13,11 @@ import java.time.Clock;
 import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,6 +32,7 @@ public class ContractService {
     private final UserBalanceService balanceService;
     private final LmsrService lmsr;
     private final ContractGraphService graphService;
+    private final ContractPinnedMessageService pinnedMessageService;
     private final DiscordChannelService channelService;
     private final DiscordMessageService messageService;
     private final DiscordAuthService authService;
@@ -41,6 +42,7 @@ public class ContractService {
     private final Clock clock;
     private final ObjectMapper objectMapper;
 
+    @CacheEvict(value = "openContracts", allEntries = true)
     @Transactional
     public Contract createContract(
             String creatorSnowflake, String title, String description, List<String> outcomeLabels, long seedAmount) {
@@ -90,7 +92,7 @@ public class ContractService {
         contract.setState(ContractState.INIT_CHANNEL);
 
         byte[] chart = graphService.renderChart(contract.getOutcomes(), List.of(), contract.getCreatedAt());
-        MessageEmbed embed = buildEmbed(contract);
+        net.dv8tion.jda.api.entities.MessageEmbed embed = pinnedMessageService.buildEmbed(contract);
         net.dv8tion.jda.api.entities.Message msg =
                 messageService.sendEmbedWithAttachment(channel, List.of(embed), chart, "chart.png");
         contract.setMessageId(msg.getIdLong());
@@ -99,7 +101,7 @@ public class ContractService {
     }
 
     @Transactional
-    public void trade(UUID contractId, UUID outcomeId, String snowflake, long coinAmount) {
+    public long trade(UUID contractId, UUID outcomeId, String snowflake, long coinAmount) {
         Contract contract = getOpenContract(contractId);
 
         long maxTrade = balanceService.getMaxTrade(snowflake);
@@ -140,27 +142,27 @@ public class ContractService {
         trade.setTradedAt(clock.instant());
         tradeRepo.save(trade);
 
-        refreshPinnedMessage(contract);
+        pinnedMessageService.refresh(contract);
 
         double[] qAfter = getSharesArray(contract);
         double probAfter = lmsr.probability(qAfter, idx, b) * 100;
         double probBeforeVal = probBefore.get(targetOutcome.getId().toString()).asDouble() * 100;
-        long newBalance = balanceService.getBalance(snowflake);
         TextChannel channel = channelService.getTextChannel(contract.getChannelId());
         messageService.sendMessage(
                 channel,
                 String.format(
-                        "<@%s> bought %.1f shares of **%s** for **%d \uD83E\uDE99** \u00B7 %s %.0f%% \u2192 %.0f%% \u00B7 balance %d \uD83E\uDE99",
+                        "<@%s> bought %.1f shares of **%s** for **%d \uD83E\uDE99** \u00B7 %s %.0f%% \u2192 %.0f%%",
                         snowflake,
                         shares,
                         targetOutcome.getLabel(),
                         actualCost,
                         targetOutcome.getLabel(),
                         probBeforeVal,
-                        probAfter,
-                        newBalance));
+                        probAfter));
+        return actualCost;
     }
 
+    @CacheEvict(value = "openContracts", allEntries = true)
     @Transactional
     public void resolveContract(UUID contractId, UUID winningOutcomeId, String resolverSnowflake) {
         Contract contract = getOpenContract(contractId);
@@ -173,17 +175,24 @@ public class ContractService {
         List<ContractTrade> allTrades = tradeRepo.findByContractIdOrderByTradedAtAsc(contractId);
 
         Map<String, Double> winningShares = new HashMap<>();
+        Map<String, Long> losingSpend = new LinkedHashMap<>();
         long totalCostPaid = 0;
         for (ContractTrade t : allTrades) {
             totalCostPaid += t.getCostPaid();
             if (t.getOutcomeId().equals(winningOutcomeId)) {
                 winningShares.merge(t.getSnowflake(), t.getSharesBought(), Double::sum);
+            } else {
+                losingSpend.merge(t.getSnowflake(), t.getCostPaid(), Long::sum);
             }
         }
+        losingSpend.keySet().removeAll(winningShares.keySet());
+
+        Map<String, Long> payouts = new LinkedHashMap<>();
         long totalPayout = 0;
         for (Map.Entry<String, Double> entry : winningShares.entrySet()) {
             long payout = Math.round(entry.getValue());
             balanceService.credit(entry.getKey(), payout);
+            payouts.put(entry.getKey(), payout);
             totalPayout += payout;
         }
 
@@ -194,17 +203,37 @@ public class ContractService {
         contract.setState(ContractState.RESOLVED);
         contractRepo.save(contract);
 
-        refreshPinnedMessage(contract);
+        pinnedMessageService.refresh(contract);
+
+        StringBuilder msg = new StringBuilder();
+        msg.append(config.getEmoji().getSuccess())
+                .append(" **Prediction contract resolved!** Winning outcome: **")
+                .append(winner.getLabel())
+                .append("**\n");
+        if (!payouts.isEmpty()) {
+            msg.append("\n\uD83C\uDF89 **Winners**\n");
+            payouts.forEach((snowflake, payout) -> msg.append("\u2022 <@")
+                    .append(snowflake)
+                    .append("> \u2014 +")
+                    .append(payout)
+                    .append(" \uD83E\uDE99\n"));
+        }
+        if (!losingSpend.isEmpty()) {
+            msg.append("\n").append(config.getEmoji().getPoor()).append(" **Losers**\n");
+            losingSpend.forEach(
+                    (snowflake, spent) -> msg.append(config.getEmoji().getPoor())
+                            .append(" <@")
+                            .append(snowflake)
+                            .append("> \u2014 -")
+                            .append(spent)
+                            .append(" \uD83E\uDE99\n"));
+        }
 
         TextChannel channel = channelService.getTextChannel(contract.getChannelId());
-        messageService.sendMessage(
-                channel,
-                String.format(
-                        "\u2705 **Prediction contract resolved!** Winning outcome: **%s** \u00B7 %d \uD83E\uDE99 paid out to %d"
-                                + " traders",
-                        winner.getLabel(), totalPayout, winningShares.size()));
+        messageService.sendMessage(channel, msg.toString());
     }
 
+    @CacheEvict(value = "openContracts", allEntries = true)
     @Transactional
     public void cancelContract(UUID contractId, String resolverSnowflake) {
         Contract contract = getOpenContract(contractId);
@@ -222,8 +251,23 @@ public class ContractService {
         messageService.sendMessage(channel, "\u274C **Prediction contract cancelled.** All trades refunded.");
     }
 
+    @Cacheable("openContracts")
     public List<Contract> listOpenContracts() {
         return contractRepo.findByStateIn(List.of(ContractState.OPEN));
+    }
+
+    public Contract findOpenContractByTitle(String title) {
+        return contractRepo
+                .findFirstByStateInAndTitleIgnoreCase(List.of(ContractState.OPEN), title)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contract not found: " + title));
+    }
+
+    public List<ContractSummary> searchOpenContractNames(String query) {
+        return contractRepo.searchSummariesByStateInAndTitleContaining(List.of(ContractState.OPEN), query);
+    }
+
+    public List<ContractOutcome> getOpenContractOutcomes(UUID contractId) {
+        return getOpenContract(contractId).getOutcomes();
     }
 
     private Contract getOpenContract(UUID id) {
@@ -234,48 +278,6 @@ public class ContractService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Contract is not open");
         }
         return contract;
-    }
-
-    private void refreshPinnedMessage(Contract contract) {
-        List<ContractTrade> trades = tradeRepo.findByContractIdOrderByTradedAtAsc(contract.getId());
-        byte[] chart = graphService.renderChart(contract.getOutcomes(), trades, contract.getCreatedAt());
-        MessageEmbed embed = buildEmbed(contract);
-        messageService.editEmbedWithAttachment(
-                contract.getChannelId(), contract.getMessageId(), List.of(embed), chart, "chart.png");
-    }
-
-    private MessageEmbed buildEmbed(Contract contract) {
-        EmbedBuilder eb = new EmbedBuilder()
-                .setTitle("\uD83D\uDCC8 " + contract.getTitle())
-                .setColor(0xF0A732)
-                .setImage("attachment://chart.png");
-
-        StringBuilder desc = new StringBuilder();
-        desc.append("**State:** ").append(contract.getState().name()).append("\n");
-        if (contract.getDescription() != null) {
-            desc.append(contract.getDescription()).append("\n");
-        }
-        desc.append("\n**Outcomes:**\n");
-
-        double[] q = getSharesArray(contract);
-        double b = contract.getBParameter();
-        for (int i = 0; i < contract.getOutcomes().size(); i++) {
-            ContractOutcome o = contract.getOutcomes().get(i);
-            double prob = lmsr.probability(q, i, b) * 100;
-            desc.append(String.format("\u2022 **%s** \u2014 %.1f%%\n", o.getLabel(), prob));
-        }
-        desc.append("\nUse `/contract trade` to participate \u00B7 `/balance` to check coins");
-
-        eb.setDescription(desc.toString());
-
-        if (contract.getState() == ContractState.RESOLVED) {
-            contract.getOutcomes().stream()
-                    .filter(o -> o.getId().equals(contract.getWinningOutcomeId()))
-                    .findFirst()
-                    .ifPresent(w -> eb.setFooter("\u2705 Resolved: " + w.getLabel()));
-        }
-
-        return eb.build();
     }
 
     private double[] getSharesArray(Contract contract) {

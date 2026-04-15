@@ -75,9 +75,11 @@ public class DiscordService {
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
                 .addEmbeds(embedService.getMessage(event, clock))
                 .addComponents(List.of(ActionRow.of(
-                        Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
-                        Button.secondary(DECLINED, DECLINED_EMOJI),
-                        Button.secondary(MAYBE, MAYBE_EMOJI),
+                        Button.secondary(
+                                ACCEPTED, discordConfiguration.getEmoji().getAccepted()),
+                        Button.secondary(
+                                DECLINED, discordConfiguration.getEmoji().getDeclined()),
+                        Button.secondary(MAYBE, discordConfiguration.getEmoji().getMaybe()),
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
