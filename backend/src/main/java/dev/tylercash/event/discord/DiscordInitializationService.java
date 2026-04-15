@@ -3,6 +3,7 @@ package dev.tylercash.event.discord;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_ARCHIVE_CATEGORY;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_CATEGORY;
 
+import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 public class DiscordInitializationService {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
+    private final DiscordChannelService discordChannelService;
+    private final ContractConfiguration contractConfig;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeGuild() {
@@ -31,17 +34,12 @@ public class DiscordInitializationService {
 
         Category outings = ensureCategory(guild, EVENT_CATEGORY);
         ensureCategory(guild, EVENT_ARCHIVE_CATEGORY);
+        ensureCategory(guild, contractConfig.getCategoryName());
         ensureSeparatorChannel(outings);
     }
 
     Category ensureCategory(Guild guild, String categoryName) {
-        List<Category> categories = guild.getCategoriesByName(categoryName, true);
-        if (!categories.isEmpty()) {
-            log.info("Category '{}' already exists", categoryName);
-            return categories.get(0);
-        }
-        log.info("Creating category '{}'", categoryName);
-        return guild.createCategory(categoryName).complete();
+        return discordChannelService.getOrCreateCategory(guild, categoryName);
     }
 
     void ensureSeparatorChannel(Category category) {
