@@ -45,6 +45,10 @@ class MessageReceivedListenerTest {
         MessageReceivedEvent jdaEvent = mock(MessageReceivedEvent.class);
         Message message = mock(Message.class);
         MessageChannelUnion channel = mock(MessageChannelUnion.class);
+        net.dv8tion.jda.api.entities.User author = mock(net.dv8tion.jda.api.entities.User.class);
+        when(jdaEvent.isWebhookMessage()).thenReturn(false);
+        when(jdaEvent.getAuthor()).thenReturn(author);
+        when(author.isBot()).thenReturn(false);
         when(jdaEvent.getMessage()).thenReturn(message);
         when(jdaEvent.getChannel()).thenReturn(channel);
         when(channel.getIdLong()).thenReturn(channelId);
@@ -62,7 +66,7 @@ class MessageReceivedListenerTest {
         return attachment;
     }
 
-    private Event startedEventWithAlbum(long channelId) {
+    private Event startedEventWithAlbum() {
         Event event = new Event();
         event.setImmichAlbumId("album-123");
         event.setDateTime(ZonedDateTime.parse("2025-01-01T13:00:00Z")); // started 2h ago
@@ -73,6 +77,19 @@ class MessageReceivedListenerTest {
     void skipsWhenImmichDisabled() {
         immichConfiguration.setEnabled(false);
         listener.onMessageReceived(buildEvent(99L, List.of(mock(Message.Attachment.class))));
+        verifyNoInteractions(eventRepository, immichService);
+    }
+
+    @Test
+    void skipsMessagesFromBots() {
+        MessageReceivedEvent jdaEvent = mock(MessageReceivedEvent.class);
+        net.dv8tion.jda.api.entities.User author = mock(net.dv8tion.jda.api.entities.User.class);
+        when(jdaEvent.isWebhookMessage()).thenReturn(false);
+        when(jdaEvent.getAuthor()).thenReturn(author);
+        when(author.isBot()).thenReturn(true);
+
+        listener.onMessageReceived(jdaEvent);
+
         verifyNoInteractions(eventRepository, immichService);
     }
 
@@ -111,7 +128,7 @@ class MessageReceivedListenerTest {
 
     @Test
     void skipsNonMediaAttachments() {
-        Event event = startedEventWithAlbum(99L);
+        Event event = startedEventWithAlbum();
         when(eventRepository.findByChannelId(99L)).thenReturn(event);
 
         Message.Attachment docAttachment = mock(Message.Attachment.class);
@@ -123,7 +140,7 @@ class MessageReceivedListenerTest {
 
     @Test
     void uploadsImageAndAddsToAlbum() {
-        Event event = startedEventWithAlbum(99L);
+        Event event = startedEventWithAlbum();
         when(eventRepository.findByChannelId(99L)).thenReturn(event);
 
         byte[] imageData = new byte[] {1, 2, 3};
@@ -139,7 +156,7 @@ class MessageReceivedListenerTest {
 
     @Test
     void uploadsMultipleAttachmentsInOneBatch() {
-        Event event = startedEventWithAlbum(99L);
+        Event event = startedEventWithAlbum();
         when(eventRepository.findByChannelId(99L)).thenReturn(event);
 
         byte[] data1 = new byte[] {1};
@@ -157,7 +174,7 @@ class MessageReceivedListenerTest {
 
     @Test
     void uploadsVideoAttachment() {
-        Event event = startedEventWithAlbum(99L);
+        Event event = startedEventWithAlbum();
         when(eventRepository.findByChannelId(99L)).thenReturn(event);
 
         Message.Attachment attachment = mock(Message.Attachment.class);
@@ -177,7 +194,7 @@ class MessageReceivedListenerTest {
 
     @Test
     void doesNotCallAddAssetsWhenAllUploadsFail() {
-        Event event = startedEventWithAlbum(99L);
+        Event event = startedEventWithAlbum();
         when(eventRepository.findByChannelId(99L)).thenReturn(event);
 
         byte[] imageData = new byte[] {1};

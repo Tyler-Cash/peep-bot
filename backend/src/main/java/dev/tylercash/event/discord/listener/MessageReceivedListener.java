@@ -31,6 +31,9 @@ public class MessageReceivedListener extends ListenerAdapter {
         if (!immichConfiguration.isEnabled()) {
             return;
         }
+        if (event.isWebhookMessage() || event.getAuthor().isBot()) {
+            return;
+        }
         Message message = event.getMessage();
         List<Message.Attachment> attachments = message.getAttachments();
         if (attachments.isEmpty()) {
