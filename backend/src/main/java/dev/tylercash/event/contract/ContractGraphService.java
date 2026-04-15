@@ -44,8 +44,7 @@ public class ContractGraphService {
         new Color(0xE0, 0x91, 0xFF), // purple
     };
 
-    public byte[] renderChart(
-            List<ContractOutcome> outcomes, List<ContractTrade> trades, Instant createdAt, double b) {
+    public byte[] renderChart(List<ContractOutcome> outcomes, List<ContractTrade> trades, Instant createdAt, double b) {
         TimeSeriesCollection dataset = new TimeSeriesCollection();
         TimeSeries[] series = new TimeSeries[outcomes.size()];
         for (int i = 0; i < outcomes.size(); i++) {

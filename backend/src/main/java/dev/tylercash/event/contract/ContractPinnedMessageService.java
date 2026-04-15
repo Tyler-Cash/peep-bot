@@ -28,7 +28,8 @@ public class ContractPinnedMessageService {
     public void refresh(Contract contract) {
         try {
             List<ContractTrade> trades = tradeRepo.findByContractIdOrderByTradedAtAsc(contract.getId());
-            byte[] chart = graphService.renderChart(contract.getOutcomes(), trades, contract.getCreatedAt(), contract.getBParameter());
+            byte[] chart = graphService.renderChart(
+                    contract.getOutcomes(), trades, contract.getCreatedAt(), contract.getBParameter());
             MessageEmbed embed = buildEmbed(contract);
             messageService.editEmbedWithAttachment(
                     contract.getChannelId(), contract.getMessageId(), List.of(embed), chart, "chart.png");
