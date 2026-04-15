@@ -40,17 +40,28 @@ public class ClientConfiguration {
                         Commands.slash("balance", "Check your peep coin balance"),
                         Commands.slash("contract", "Prediction contract commands")
                                 .addSubcommands(
-                                        new SubcommandData("create", "Create a new prediction contract"),
+                                        new SubcommandData("create", "Create a new prediction contract")
+                                                .addOption(OptionType.STRING, "title", "The prediction question", true)
+                                                .addOption(OptionType.INTEGER, "seed", "Coins you stake as liquidity", true)
+                                                .addOption(OptionType.STRING, "outcome_1", "First outcome (blank = YES)", false)
+                                                .addOption(OptionType.STRING, "outcome_2", "Second outcome (blank = NO)", false)
+                                                .addOption(OptionType.STRING, "outcome_3", "Third outcome", false)
+                                                .addOption(OptionType.STRING, "outcome_4", "Fourth outcome", false)
+                                                .addOption(OptionType.STRING, "outcome_5", "Fifth outcome", false),
                                         new SubcommandData("trade", "Trade on a prediction contract")
-                                                .addOption(OptionType.STRING, "contract", "Contract ID", true)
-                                                .addOption(OptionType.STRING, "outcome", "Outcome ID", true)
+                                                .addOption(
+                                                        OptionType.STRING, "contract", "Contract name", true, true)
+                                                .addOption(OptionType.STRING, "outcome", "Outcome", true, true)
                                                 .addOption(
                                                         OptionType.STRING, "amount", "Amount of coins to spend", true),
                                         new SubcommandData("resolve", "Resolve a prediction contract")
-                                                .addOption(OptionType.STRING, "contract", "Contract ID", true)
-                                                .addOption(OptionType.STRING, "outcome", "Winning outcome ID", true),
+                                                .addOption(
+                                                        OptionType.STRING, "contract", "Contract name", true, true)
+                                                .addOption(
+                                                        OptionType.STRING, "outcome", "Winning outcome", true, true),
                                         new SubcommandData("cancel", "Cancel a prediction contract")
-                                                .addOption(OptionType.STRING, "contract", "Contract ID", true),
+                                                .addOption(
+                                                        OptionType.STRING, "contract", "Contract name", true, true),
                                         new SubcommandData("list", "List open prediction contracts")))
                 .queue();
 
