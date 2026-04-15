@@ -68,21 +68,13 @@ class ContractSlashCommandListenerImplTest {
         return m;
     }
 
-    private OptionMapping longOption(long value) {
-        OptionMapping m = mock(OptionMapping.class);
-        lenient().when(m.getAsLong()).thenReturn(value);
-        return m;
-    }
-
     @Test
     void createWithExplicitOutcomes() {
         OptionMapping title = stringOption("Will we hit 100 members?");
-        OptionMapping seed = longOption(500L);
         OptionMapping o1 = stringOption("YES");
         OptionMapping o2 = stringOption("NO");
         OptionMapping o3 = stringOption("MAYBE");
         when(event.getOption("title")).thenReturn(title);
-        when(event.getOption("seed")).thenReturn(seed);
         when(event.getOption("outcome_1")).thenReturn(o1);
         when(event.getOption("outcome_2")).thenReturn(o2);
         when(event.getOption("outcome_3")).thenReturn(o3);
@@ -92,16 +84,14 @@ class ContractSlashCommandListenerImplTest {
         listener.handleSlashCommand(event);
 
         verify(contractService)
-                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO", "MAYBE"), 500L);
+                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO", "MAYBE"));
         verify(hook).sendMessage(contains("created"));
     }
 
     @Test
     void createDefaultsToYesNoWhenNoOutcomesProvided() {
         OptionMapping title = stringOption("Will we hit 100 members?");
-        OptionMapping seed = longOption(500L);
         when(event.getOption("title")).thenReturn(title);
-        when(event.getOption("seed")).thenReturn(seed);
         when(event.getOption("outcome_1")).thenReturn(null);
         when(event.getOption("outcome_2")).thenReturn(null);
         when(event.getOption("outcome_3")).thenReturn(null);
@@ -111,16 +101,14 @@ class ContractSlashCommandListenerImplTest {
         listener.handleSlashCommand(event);
 
         verify(contractService)
-                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"), 500L);
+                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"));
     }
 
     @Test
     void createDefaultsSecondOutcomeToNoWhenOnlyFirstProvided() {
         OptionMapping title = stringOption("Will we win?");
-        OptionMapping seed = longOption(200L);
         OptionMapping o1 = stringOption("WIN");
         when(event.getOption("title")).thenReturn(title);
-        when(event.getOption("seed")).thenReturn(seed);
         when(event.getOption("outcome_1")).thenReturn(o1);
         when(event.getOption("outcome_2")).thenReturn(null);
         when(event.getOption("outcome_3")).thenReturn(null);
@@ -129,6 +117,6 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract("user-123", "Will we win?", null, List.of("WIN", "NO"), 200L);
+        verify(contractService).createContract("user-123", "Will we win?", null, List.of("WIN", "NO"));
     }
 }

@@ -53,7 +53,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
     private void handleBalance(SlashCommandInteractionEvent event) {
         long balance = balanceService.getBalance(event.getUser().getId());
-        event.reply("Your balance: **" + balance + " " + contractConfig.getEmoji().getCoin() + " peep coins**")
+        event.reply("Your balance: **" + balance + " "
+                        + contractConfig.getEmoji().getCoin() + " peep coins**")
                 .setEphemeral(true)
                 .queue();
     }
@@ -62,7 +63,6 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
         event.deferReply(true).queue();
         try {
             String title = event.getOption("title").getAsString();
-            long seedAmount = event.getOption("seed").getAsLong();
 
             List<String> outcomeLabels = Stream.of("outcome_1", "outcome_2", "outcome_3", "outcome_4", "outcome_5")
                     .map(event::getOption)
@@ -76,7 +76,7 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             }
 
             String userId = event.getUser().getId();
-            contractService.createContract(userId, title, null, outcomeLabels, seedAmount);
+            contractService.createContract(userId, title, null, outcomeLabels);
 
             String emoji = contractConfig.getEmoji().getSuccess();
             event.getHook().sendMessage(emoji + " Prediction contract created!").queue();

@@ -13,6 +13,7 @@ public class ContractConfiguration {
     private long defaultBalance = 1000L;
     private long negativeTradeCap = 100L;
     private long minSeedAmount = 100L;
+    private long houseInitialShares = 100L;
     private Emoji emoji = new Emoji();
 
     @Data
