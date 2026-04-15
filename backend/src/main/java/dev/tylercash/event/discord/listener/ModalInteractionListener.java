@@ -1,6 +1,5 @@
 package dev.tylercash.event.discord.listener;
 
-import dev.tylercash.event.contract.ContractService;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.DiscordUtil;
@@ -12,8 +11,6 @@ import dev.tylercash.event.event.model.Event;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
-import java.util.Arrays;
-import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -35,7 +32,6 @@ public class ModalInteractionListener extends ListenerAdapter {
     private final ObjectProvider<EventService> eventServiceProvider;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
-    private final ObjectProvider<ContractService> contractServiceProvider;
 
     public ModalInteractionListener(
             Clock clock,
@@ -44,8 +40,7 @@ public class ModalInteractionListener extends ListenerAdapter {
             EmbedService embedService,
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
-            DiscordUserCacheService discordUserCacheService,
-            ObjectProvider<ContractService> contractServiceProvider) {
+            DiscordUserCacheService discordUserCacheService) {
         this.clock = clock;
         this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
@@ -53,7 +48,6 @@ public class ModalInteractionListener extends ListenerAdapter {
         this.eventServiceProvider = eventServiceProvider;
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
-        this.contractServiceProvider = contractServiceProvider;
     }
 
     @Override
@@ -66,8 +60,8 @@ public class ModalInteractionListener extends ListenerAdapter {
     private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
 
-        if ("contract_create".equals(interaction.getModalId())) {
-            handleContractCreateModal(modalInteractionEvent);
+        if (!PLUS_ONE_ID.equals(interaction.getModalId())) {
+            log.warn("Unrecognised modal ID: {}", interaction.getModalId());
             return;
         }
 
@@ -100,52 +94,5 @@ public class ModalInteractionListener extends ListenerAdapter {
                 modalInteractionEvent.getUser().getEffectiveName(),
                 plus1Name,
                 event.getName());
-    }
-
-    private void handleContractCreateModal(@NonNull ModalInteractionEvent modalInteractionEvent) {
-        ModalInteraction interaction = modalInteractionEvent.getInteraction();
-        modalInteractionEvent.deferReply(true).queue();
-
-        try {
-            String title = interaction.getValue("title").getAsString();
-            String description = interaction.getValue("description") != null
-                    ? interaction.getValue("description").getAsString()
-                    : null;
-            if (description != null && description.isBlank()) {
-                description = null;
-            }
-
-            String outcomesRaw = interaction.getValue("outcomes") != null
-                    ? interaction.getValue("outcomes").getAsString()
-                    : null;
-            List<String> outcomeLabels;
-            if (outcomesRaw == null || outcomesRaw.isBlank()) {
-                outcomeLabels = List.of("YES", "NO");
-            } else {
-                outcomeLabels = Arrays.stream(outcomesRaw.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .toList();
-            }
-
-            long seedAmount =
-                    Long.parseLong(interaction.getValue("seed").getAsString().trim());
-
-            String userId = modalInteractionEvent.getUser().getId();
-            contractServiceProvider.getObject().createContract(userId, title, description, outcomeLabels, seedAmount);
-
-            modalInteractionEvent
-                    .getHook()
-                    .sendMessage("\u2705 Prediction contract created!")
-                    .setEphemeral(true)
-                    .queue();
-        } catch (Exception e) {
-            log.warn("Contract creation failed", e);
-            modalInteractionEvent
-                    .getHook()
-                    .sendMessage("\u274C Error: " + e.getMessage())
-                    .setEphemeral(true)
-                    .queue();
-        }
     }
 }
