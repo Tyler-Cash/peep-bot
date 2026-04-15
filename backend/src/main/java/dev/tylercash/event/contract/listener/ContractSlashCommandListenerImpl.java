@@ -9,14 +9,14 @@ import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordConfiguration;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.dv8tion.jda.api.components.label.Label;
-import net.dv8tion.jda.api.components.textinput.TextInput;
-import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.AutoCompleteQuery;
+import net.dv8tion.jda.api.interactions.commands.Command.Choice;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.modals.Modal;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -59,35 +59,31 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
     }
 
     private void handleCreate(SlashCommandInteractionEvent event) {
-        TextInput title = TextInput.create("title", TextInputStyle.SHORT)
-                .setPlaceholder("Will we hit 100 members by June?")
-                .setRequiredRange(5, 200)
-                .build();
+        event.deferReply(true).queue();
+        try {
+            String title = event.getOption("title").getAsString();
+            long seedAmount = event.getOption("seed").getAsLong();
 
-        TextInput description = TextInput.create("description", TextInputStyle.PARAGRAPH)
-                .setPlaceholder("Optional description")
-                .setRequired(false)
-                .build();
+            List<String> outcomeLabels = Stream.of("outcome_1", "outcome_2", "outcome_3", "outcome_4", "outcome_5")
+                    .map(event::getOption)
+                    .filter(o -> o != null && !o.getAsString().isBlank())
+                    .map(o -> o.getAsString().trim())
+                    .toList();
+            if (outcomeLabels.isEmpty()) {
+                outcomeLabels = List.of("YES", "NO");
+            } else if (outcomeLabels.size() == 1) {
+                outcomeLabels = List.of(outcomeLabels.get(0), "NO");
+            }
 
-        TextInput outcomes = TextInput.create("outcomes", TextInputStyle.SHORT)
-                .setPlaceholder("YES,NO")
-                .setRequired(false)
-                .build();
+            String userId = event.getUser().getId();
+            contractService.createContract(userId, title, null, outcomeLabels, seedAmount);
 
-        TextInput seed = TextInput.create("seed", TextInputStyle.SHORT)
-                .setPlaceholder("500")
-                .setRequiredRange(1, 10)
-                .build();
-
-        Modal modal = Modal.create("contract_create", "Create Prediction Contract")
-                .addComponents(
-                        Label.of("Title", title),
-                        Label.of("Description (optional)", description),
-                        Label.of("Outcomes (comma-separated, blank = YES/NO)", outcomes),
-                        Label.of("Seed amount (\uD83E\uDE99 coins you stake)", seed))
-                .build();
-
-        event.replyModal(modal).queue();
+            String emoji = contractConfig.getEmoji().getSuccess();
+            event.getHook().sendMessage(emoji + " Prediction contract created!").queue();
+        } catch (Exception e) {
+            log.warn("Contract creation failed", e);
+            event.getHook().sendMessage("\u274C Error: " + e.getMessage()).queue();
+        }
     }
 
     private void handleTrade(SlashCommandInteractionEvent event) {
@@ -100,20 +96,25 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             return;
         }
 
-        event.deferReply().queue();
+        event.deferReply(true).queue();
         try {
-            UUID contractId = UUID.fromString(contractIdStr);
-            UUID outcomeId = UUID.fromString(outcomeIdStr);
+            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            UUID outcomeId = contract.getOutcomes().stream()
+                    .filter(o -> o.getLabel().equalsIgnoreCase(outcomeIdStr))
+                    .map(ContractOutcome::getId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Outcome not found: " + outcomeIdStr));
             long amount = Long.parseLong(amountStr);
             if (amount <= 0) throw new IllegalArgumentException("Amount must be positive");
-            contractService.trade(contractId, outcomeId, event.getUser().getId(), amount);
-            event.getHook().sendMessage("Trade placed! \u2705").queue();
+            long actualCost = contractService.trade(contract.getId(), outcomeId, event.getUser().getId(), amount);
+            String emoji = contractConfig.getEmoji().getSuccess();
+            String reply = actualCost < amount
+                    ? String.format("Trade placed! %s · Spent **%d** of **%d** \uD83E\uDE99 (rounding to nearest coin)", emoji, actualCost, amount)
+                    : "Trade placed! " + emoji;
+            event.getHook().sendMessage(reply).queue();
         } catch (Exception e) {
             log.warn("Trade failed", e);
-            event.getHook()
-                    .sendMessage("Trade failed: " + e.getMessage())
-                    .setEphemeral(true)
-                    .queue();
+            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
         }
     }
 
@@ -133,19 +134,19 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             return;
         }
 
-        event.deferReply().queue();
+        event.deferReply(true).queue();
         try {
-            contractService.resolveContract(
-                    UUID.fromString(contractIdStr),
-                    UUID.fromString(outcomeIdStr),
-                    event.getUser().getId());
-            event.getHook().sendMessage("\u2705 Contract resolved!").queue();
+            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            UUID outcomeId = contract.getOutcomes().stream()
+                    .filter(o -> o.getLabel().equalsIgnoreCase(outcomeIdStr))
+                    .map(ContractOutcome::getId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Outcome not found: " + outcomeIdStr));
+            contractService.resolveContract(contract.getId(), outcomeId, event.getUser().getId());
+            event.getHook().sendMessage(contractConfig.getEmoji().getSuccess() + " Contract resolved!").queue();
         } catch (Exception e) {
             log.warn("Resolve failed", e);
-            event.getHook()
-                    .sendMessage("Resolve failed: " + e.getMessage())
-                    .setEphemeral(true)
-                    .queue();
+            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
         }
     }
 
@@ -164,19 +165,16 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             return;
         }
 
-        event.deferReply().queue();
+        event.deferReply(true).queue();
         try {
-            contractService.cancelContract(
-                    UUID.fromString(contractIdStr), event.getUser().getId());
+            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            contractService.cancelContract(contract.getId(), event.getUser().getId());
             event.getHook()
                     .sendMessage("\u274C Contract cancelled. All trades refunded.")
                     .queue();
         } catch (Exception e) {
             log.warn("Cancel failed", e);
-            event.getHook()
-                    .sendMessage("Cancel failed: " + e.getMessage())
-                    .setEphemeral(true)
-                    .queue();
+            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
         }
     }
 
@@ -202,6 +200,39 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             }
         }
         event.reply(sb.toString()).setEphemeral(true).queue();
+    }
+
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        AutoCompleteQuery focused = event.getFocusedOption();
+        String typed = focused.getValue().toLowerCase();
+
+        if ("contract".equals(focused.getName())) {
+            List<Choice> choices = contractService.searchOpenContractNames(typed).stream()
+                    .limit(25)
+                    .map(s -> new Choice(s.title(), s.title()))
+                    .toList();
+            event.replyChoices(choices).queue();
+        } else if ("outcome".equals(focused.getName())) {
+            String contractTitle = event.getOption("contract") != null
+                    ? event.getOption("contract").getAsString()
+                    : null;
+            if (contractTitle == null || contractTitle.isBlank()) {
+                event.replyChoices(List.of()).queue();
+                return;
+            }
+            try {
+                List<Choice> choices = contractService.findOpenContractByTitle(contractTitle).getOutcomes().stream()
+                        .filter(o -> o.getLabel().toLowerCase().contains(typed))
+                        .map(o -> new Choice(o.getLabel(), o.getLabel()))
+                        .toList();
+                event.replyChoices(choices).queue();
+            } catch (Exception e) {
+                event.replyChoices(List.of()).queue();
+            }
+        } else {
+            event.replyChoices(List.of()).queue();
+        }
     }
 
     private String getOption(SlashCommandInteractionEvent event, String name) {
