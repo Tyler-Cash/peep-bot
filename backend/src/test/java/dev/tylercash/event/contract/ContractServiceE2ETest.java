@@ -56,8 +56,7 @@ class ContractServiceE2ETest {
         balanceService.credit(creator, 500L);
         balanceService.credit(trader, 500L);
 
-        Contract contract =
-                contractService.createContract(creator, "E2E Test Contract", null, List.of("YES", "NO"));
+        Contract contract = contractService.createContract(creator, "E2E Test Contract", null, List.of("YES", "NO"));
 
         ContractOutcome yes = contract.getOutcomes().stream()
                 .filter(o -> o.getLabel().equals("YES"))

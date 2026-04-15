@@ -3,12 +3,6 @@ package dev.tylercash.event.contract;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.contract.model.ContractTrade;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.io.ByteArrayOutputStream;
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
@@ -24,25 +18,31 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
+
 @Slf4j
 @Service
 @AllArgsConstructor
 public class ContractGraphService {
 
-    private final LmsrService lmsr;
-
     private static final Color BACKGROUND = new Color(0x1E, 0x1F, 0x22);
     private static final Color PLOT_BACKGROUND = new Color(0x2B, 0x2D, 0x31);
     private static final Color GRIDLINE = new Color(0x3D, 0x3F, 0x44);
     private static final Color TEXT = new Color(0xDC, 0xDD, 0xDE);
-
     private static final Color[] SERIES_COLORS = {
-        new Color(0x57, 0xF2, 0x87), // green (YES)
-        new Color(0xED, 0x42, 0x45), // red (NO)
-        new Color(0x5B, 0x65, 0xF2), // blue
-        new Color(0xF0, 0xA7, 0x32), // orange
-        new Color(0xE0, 0x91, 0xFF), // purple
+            new Color(0x57, 0xF2, 0x87), // green (YES)
+            new Color(0xED, 0x42, 0x45), // red (NO)
+            new Color(0x5B, 0x65, 0xF2), // blue
+            new Color(0xF0, 0xA7, 0x32), // orange
+            new Color(0xE0, 0x91, 0xFF), // purple
     };
+    private final LmsrService lmsr;
+    private final Clock clock;
 
     public byte[] renderChart(List<ContractOutcome> outcomes, List<ContractTrade> trades, Instant createdAt, double b) {
         TimeSeriesCollection dataset = new TimeSeriesCollection();
@@ -84,6 +84,15 @@ public class ContractGraphService {
                     value = lmsr.probability(q, i, b) * 100.0;
                 }
                 series[i].addOrUpdate(new Millisecond(Date.from(timestamp)), value);
+            }
+        }
+
+        // Ensure at least 2 points so DateAxis has a renderable range
+        if (trades.isEmpty()) {
+            Instant now = clock.instant();
+            Instant end = now.isAfter(createdAt) ? now : createdAt.plusSeconds(1);
+            for (TimeSeries s : series) {
+                s.addOrUpdate(new Millisecond(Date.from(end)), initialProb);
             }
         }
 

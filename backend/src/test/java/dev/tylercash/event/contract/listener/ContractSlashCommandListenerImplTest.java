@@ -100,8 +100,7 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService)
-                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"));
+        verify(contractService).createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"));
     }
 
     @Test
