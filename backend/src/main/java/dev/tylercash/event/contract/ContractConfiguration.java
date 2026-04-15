@@ -19,5 +19,6 @@ public class ContractConfiguration {
     public static class Emoji {
         private String success = "\u2705";
         private String poor = "\uD83D\uDCB8";
+        private String coin = "\uD83E\uDE99";
     }
 }

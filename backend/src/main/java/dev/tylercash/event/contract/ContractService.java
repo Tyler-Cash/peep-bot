@@ -152,11 +152,12 @@ public class ContractService {
         messageService.sendMessage(
                 channel,
                 String.format(
-                        "<@%s> bought %.1f shares of **%s** for **%d \uD83E\uDE99** \u00B7 %s %.0f%% \u2192 %.0f%%",
+                        "<@%s> bought %.1f shares of **%s** for **%d %s** \u00B7 %s %.0f%% \u2192 %.0f%%",
                         snowflake,
                         shares,
                         targetOutcome.getLabel(),
                         actualCost,
+                        config.getEmoji().getCoin(),
                         targetOutcome.getLabel(),
                         probBeforeVal,
                         probAfter));
@@ -217,7 +218,7 @@ public class ContractService {
                     .append(snowflake)
                     .append("> \u2014 +")
                     .append(payout)
-                    .append(" \uD83E\uDE99\n"));
+                    .append(" ").append(config.getEmoji().getCoin()).append("\n"));
         }
         if (!losingSpend.isEmpty()) {
             msg.append("\n").append(config.getEmoji().getPoor()).append(" **Losers**\n");
@@ -227,7 +228,7 @@ public class ContractService {
                             .append(snowflake)
                             .append("> \u2014 -")
                             .append(spent)
-                            .append(" \uD83E\uDE99\n"));
+                            .append(" ").append(config.getEmoji().getCoin()).append("\n"));
         }
 
         TextChannel channel = channelService.getTextChannel(contract.getChannelId());

@@ -58,11 +58,14 @@ public class ContractPinnedMessageService {
             ContractOutcome o = contract.getOutcomes().get(i);
             double prob = lmsr.probability(q, i, b);
             desc.append(String.format(
-                    "\u2022 **%s** \u2014 %.1f%% \u00B7 %.2f \uD83E\uDE99/share\n", o.getLabel(), prob * 100, prob));
+                    "\u2022 **%s** \u2014 %.1f%% \u00B7 %.2f %s/share \u00B7 %d shares\n",
+                    o.getLabel(), prob * 100, prob, config.getEmoji().getCoin(), Math.round(o.getSharesOutstanding())));
         }
         desc.append("\nUse `/contract trade` to participate \u00B7 `/balance` to check coins");
 
         eb.setDescription(desc.toString());
+        eb.addField("Created by", "<@" + contract.getCreatorSnowflake() + ">", true);
+        eb.setTimestamp(contract.getCreatedAt());
 
         if (contract.getState() == ContractState.RESOLVED) {
             contract.getOutcomes().stream()
