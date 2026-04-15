@@ -139,10 +139,13 @@ tasks.named("bootJar") {
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
+    buildpacks = [
+            "urn:cnb:builder:paketo-buildpacks/apt",
+            "urn:cnb:builder:paketo-buildpacks/java"
+    ]
     environment.putAll([
             "BP_OCI_SOURCE"     : "https://github.com/Tyler-Cash/peep-bot",
             "BP_OCI_URL"        : "https://github.com/Tyler-Cash/peep-bot",
             "BP_OCI_DESCRIPTION": "Peep Bot backend — Spring Boot Discord event management API",
     ])
 }
-
