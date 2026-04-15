@@ -1,5 +1,6 @@
 spring.application.name: peep-bot
 spring.main.lazy-initialization: true
+spring.main.headless: true
 
 dev.tylercash:
   discord:
