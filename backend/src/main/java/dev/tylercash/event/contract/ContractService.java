@@ -124,6 +124,10 @@ public class ContractService {
         double shares = lmsr.sharesToBuyForCost(q, idx, coinAmount, b);
         long actualCost = lmsr.costToBuy(q, idx, shares, b);
 
+        if (actualCost <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trade too small — minimum cost is 1 coin");
+        }
+
         balanceService.deduct(snowflake, actualCost);
 
         targetOutcome.setSharesOutstanding(targetOutcome.getSharesOutstanding() + shares);
