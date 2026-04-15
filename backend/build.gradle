@@ -134,18 +134,21 @@ spotless {
 
 tasks.named("bootJar") {
     launchScript()
-
+    from('Aptfile')
 }
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
+    builder = "paketobuildpacks/builder-jammy-full:latest"
     buildpacks = [
-            "urn:cnb:builder:paketo-buildpacks/apt",
-            "urn:cnb:builder:paketo-buildpacks/java"
+            "docker.io/paketobuildpacks/apt",         // Installs OS packages first
+            "urn:cnb:builder:paketo-buildpacks/java"  // Then proceeds with the standard Java build
     ]
     environment.putAll([
-            "BP_OCI_SOURCE"     : "https://github.com/Tyler-Cash/peep-bot",
-            "BP_OCI_URL"        : "https://github.com/Tyler-Cash/peep-bot",
-            "BP_OCI_DESCRIPTION": "Peep Bot backend — Spring Boot Discord event management API",
+            "BP_APT_FILE"          : "Aptfile",
+            "BP_OCI_SOURCE"        : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_URL"           : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_DESCRIPTION"   : "Peep Bot backend — Spring Boot Discord event management API",
+            "BP_JVM_TOOL_OPTIONS"  : "-Djava.awt.headless=true",
     ])
 }

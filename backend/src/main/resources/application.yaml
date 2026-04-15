@@ -1,6 +1,4 @@
 spring.application.name: peep-bot
-spring.main.lazy-initialization: true
-spring.main.headless: true
 
 dev.tylercash:
   discord:
@@ -38,9 +36,11 @@ server:
     context-path: /api/
 
 spring:
+  main:
+    lazy-initialization: true
   cache:
     type: caffeine
-    cache-names: activeEvents,eventDetail
+    cache-names: activeEvents,eventDetail,openContracts
     caffeine:
       spec: maximumSize=500,expireAfterWrite=120s
   session:
