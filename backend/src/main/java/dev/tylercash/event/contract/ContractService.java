@@ -89,7 +89,7 @@ public class ContractService {
 
         byte[] chart = graphService.renderChart(
                 contract.getOutcomes(), List.of(), contract.getCreatedAt(), contract.getBParameter());
-        net.dv8tion.jda.api.entities.MessageEmbed embed = pinnedMessageService.buildEmbed(contract);
+        net.dv8tion.jda.api.entities.MessageEmbed embed = pinnedMessageService.buildEmbed(contract, List.of());
         net.dv8tion.jda.api.entities.Message msg =
                 messageService.sendEmbedWithAttachment(channel, List.of(embed), chart, "chart.png");
         contract.setMessageId(msg.getIdLong());
