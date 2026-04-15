@@ -174,3 +174,14 @@ databaseChangeLog:
             columns:
               - column:
                   name: contract_id
+
+  - changeSet:
+      id: replace-title-btree-with-trgm
+      author: tylercash
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        - sql:
+            sql: DROP INDEX IF EXISTS idx_contract_title;
+        - sql:
+            sql: CREATE INDEX IF NOT EXISTS idx_contract_title_trgm ON contract USING gin(lower(title) gin_trgm_ops);

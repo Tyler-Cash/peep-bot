@@ -106,15 +106,20 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                     .orElseThrow(() -> new IllegalArgumentException("Outcome not found: " + outcomeIdStr));
             long amount = Long.parseLong(amountStr);
             if (amount <= 0) throw new IllegalArgumentException("Amount must be positive");
-            long actualCost = contractService.trade(contract.getId(), outcomeId, event.getUser().getId(), amount);
+            long actualCost = contractService.trade(
+                    contract.getId(), outcomeId, event.getUser().getId(), amount);
             String emoji = contractConfig.getEmoji().getSuccess();
             String reply = actualCost < amount
-                    ? String.format("Trade placed! %s · Spent **%d** of **%d** \uD83E\uDE99 (rounding to nearest coin)", emoji, actualCost, amount)
+                    ? String.format(
+                            "Trade placed! %s · Spent **%d** of **%d** \uD83E\uDE99 (rounding to nearest coin)",
+                            emoji, actualCost, amount)
                     : "Trade placed! " + emoji;
             event.getHook().sendMessage(reply).queue();
         } catch (Exception e) {
             log.warn("Trade failed", e);
-            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
+            event.getHook()
+                    .sendMessage("Whoops, something went wrong. Please try again.")
+                    .queue();
         }
     }
 
@@ -142,11 +147,16 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                     .map(ContractOutcome::getId)
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Outcome not found: " + outcomeIdStr));
-            contractService.resolveContract(contract.getId(), outcomeId, event.getUser().getId());
-            event.getHook().sendMessage(contractConfig.getEmoji().getSuccess() + " Contract resolved!").queue();
+            contractService.resolveContract(
+                    contract.getId(), outcomeId, event.getUser().getId());
+            event.getHook()
+                    .sendMessage(contractConfig.getEmoji().getSuccess() + " Contract resolved!")
+                    .queue();
         } catch (Exception e) {
             log.warn("Resolve failed", e);
-            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
+            event.getHook()
+                    .sendMessage("Whoops, something went wrong. Please try again.")
+                    .queue();
         }
     }
 
@@ -174,7 +184,9 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                     .queue();
         } catch (Exception e) {
             log.warn("Cancel failed", e);
-            event.getHook().sendMessage("Whoops, something went wrong. Please try again.").queue();
+            event.getHook()
+                    .sendMessage("Whoops, something went wrong. Please try again.")
+                    .queue();
         }
     }
 

@@ -1,5 +1,6 @@
 package dev.tylercash.event.contract.listener;
 
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 /**
@@ -7,4 +8,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
  */
 public interface ContractSlashCommandListener {
     void handleSlashCommand(SlashCommandInteractionEvent event);
+
+    void handleAutoComplete(CommandAutoCompleteInteractionEvent event);
 }

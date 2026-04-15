@@ -12,10 +12,10 @@ import dev.tylercash.event.discord.DiscordConfiguration;
 import java.util.List;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -91,12 +91,8 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract(
-                "user-123",
-                "Will we hit 100 members?",
-                null,
-                List.of("YES", "NO", "MAYBE"),
-                500L);
+        verify(contractService)
+                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO", "MAYBE"), 500L);
         verify(hook).sendMessage(contains("created"));
     }
 
@@ -114,12 +110,8 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract(
-                "user-123",
-                "Will we hit 100 members?",
-                null,
-                List.of("YES", "NO"),
-                500L);
+        verify(contractService)
+                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"), 500L);
     }
 
     @Test
@@ -137,11 +129,6 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract(
-                "user-123",
-                "Will we win?",
-                null,
-                List.of("WIN", "NO"),
-                200L);
+        verify(contractService).createContract("user-123", "Will we win?", null, List.of("WIN", "NO"), 200L);
     }
 }

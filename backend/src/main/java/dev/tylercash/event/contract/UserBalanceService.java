@@ -20,7 +20,7 @@ public class UserBalanceService {
 
     public long getMaxTrade(String snowflake) {
         long balance = getBalance(snowflake);
-        return balance < 0 ? config.getNegativeTradeCap() : balance;
+        return balance <= 0 ? config.getNegativeTradeCap() : balance;
     }
 
     @Transactional

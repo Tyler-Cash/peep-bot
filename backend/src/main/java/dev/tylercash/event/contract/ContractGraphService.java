@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -25,7 +26,10 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@AllArgsConstructor
 public class ContractGraphService {
+
+    private final LmsrService lmsr;
 
     private static final Color BACKGROUND = new Color(0x1E, 0x1F, 0x22);
     private static final Color PLOT_BACKGROUND = new Color(0x2B, 0x2D, 0x31);
@@ -40,7 +44,8 @@ public class ContractGraphService {
         new Color(0xE0, 0x91, 0xFF), // purple
     };
 
-    public byte[] renderChart(List<ContractOutcome> outcomes, List<ContractTrade> trades, Instant createdAt) {
+    public byte[] renderChart(
+            List<ContractOutcome> outcomes, List<ContractTrade> trades, Instant createdAt, double b) {
         TimeSeriesCollection dataset = new TimeSeriesCollection();
         TimeSeries[] series = new TimeSeries[outcomes.size()];
         for (int i = 0; i < outcomes.size(); i++) {
@@ -54,15 +59,32 @@ public class ContractGraphService {
             s.addOrUpdate(new Millisecond(Date.from(createdAt)), initialProb);
         }
 
-        // One data point per trade using prob_before snapshot
-        for (ContractTrade trade : trades) {
-            JsonNode probBefore = trade.getProbBefore();
+        // Each trade's effect is shown immediately at its timestamp using prob_after.
+        // prob_after for trade[i] = prob_before of trade[i+1] (already stored).
+        // For the final trade, calculate from current outcome shares.
+        for (int t = 0; t < trades.size(); t++) {
+            ContractTrade trade = trades.get(t);
+            JsonNode probAfter;
+            if (t + 1 < trades.size()) {
+                probAfter = trades.get(t + 1).getProbBefore();
+            } else {
+                probAfter = null; // will use calculated values below
+            }
+
+            Instant timestamp = trade.getTradedAt();
             for (int i = 0; i < outcomes.size(); i++) {
                 ContractOutcome outcome = outcomes.get(i);
-                JsonNode node = probBefore.get(outcome.getId().toString());
-                if (node != null) {
-                    series[i].addOrUpdate(new Millisecond(Date.from(trade.getTradedAt())), node.asDouble() * 100.0);
+                double value;
+                if (probAfter != null) {
+                    JsonNode node = probAfter.get(outcome.getId().toString());
+                    value = node != null ? node.asDouble() * 100.0 : initialProb;
+                } else {
+                    double[] q = outcomes.stream()
+                            .mapToDouble(ContractOutcome::getSharesOutstanding)
+                            .toArray();
+                    value = lmsr.probability(q, i, b) * 100.0;
                 }
+                series[i].addOrUpdate(new Millisecond(Date.from(timestamp)), value);
             }
         }
 
