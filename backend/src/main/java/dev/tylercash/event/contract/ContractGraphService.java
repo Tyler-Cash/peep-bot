@@ -3,6 +3,12 @@ package dev.tylercash.event.contract;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.contract.model.ContractTrade;
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
@@ -18,13 +24,6 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
-import java.io.ByteArrayOutputStream;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -35,11 +34,11 @@ public class ContractGraphService {
     private static final Color GRIDLINE = new Color(0x3D, 0x3F, 0x44);
     private static final Color TEXT = new Color(0xDC, 0xDD, 0xDE);
     private static final Color[] SERIES_COLORS = {
-            new Color(0x57, 0xF2, 0x87), // green (YES)
-            new Color(0xED, 0x42, 0x45), // red (NO)
-            new Color(0x5B, 0x65, 0xF2), // blue
-            new Color(0xF0, 0xA7, 0x32), // orange
-            new Color(0xE0, 0x91, 0xFF), // purple
+        new Color(0x57, 0xF2, 0x87), // green (YES)
+        new Color(0xED, 0x42, 0x45), // red (NO)
+        new Color(0x5B, 0x65, 0xF2), // blue
+        new Color(0xF0, 0xA7, 0x32), // orange
+        new Color(0xE0, 0x91, 0xFF), // purple
     };
     private final LmsrService lmsr;
     private final Clock clock;
