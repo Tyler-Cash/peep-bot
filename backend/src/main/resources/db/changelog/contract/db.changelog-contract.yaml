@@ -1,0 +1,187 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-user-balance-table
+      author: tylercash
+      changes:
+        - createTable:
+            tableName: user_balance
+            columns:
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: balance
+                  type: bigint
+                  defaultValueNumeric: 1000
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create-contract-table
+      author: tylercash
+      changes:
+        - createTable:
+            tableName: contract
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: title
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+              - column:
+                  name: state
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creator_snowflake
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: bigint
+              - column:
+                  name: message_id
+                  type: bigint
+              - column:
+                  name: server_id
+                  type: bigint
+              - column:
+                  name: b_parameter
+                  type: double precision
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seed_amount
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: winning_outcome_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create-contract-outcome-table
+      author: tylercash
+      changes:
+        - createTable:
+            tableName: contract_outcome
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: contract_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_contract_outcome_contract
+                    references: contract(id)
+              - column:
+                  name: label
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shares_outstanding
+                  type: double precision
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create-contract-trade-table
+      author: tylercash
+      changes:
+        - createTable:
+            tableName: contract_trade
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: contract_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_contract_trade_contract
+                    references: contract(id)
+              - column:
+                  name: outcome_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_contract_trade_outcome
+                    references: contract_outcome(id)
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shares_bought
+                  type: double precision
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cost_paid
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prob_before
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: traded_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_contract_trade_contract_id
+            tableName: contract_trade
+            columns:
+              - column:
+                  name: contract_id
+
+  - changeSet:
+      id: replace-title-btree-with-trgm
+      author: tylercash
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        - sql:
+            sql: DROP INDEX IF EXISTS idx_contract_title;
+        - sql:
+            sql: CREATE INDEX IF NOT EXISTS idx_contract_title_trgm ON contract USING gin(lower(title) gin_trgm_ops);
