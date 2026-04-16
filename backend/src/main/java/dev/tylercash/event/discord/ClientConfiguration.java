@@ -43,11 +43,6 @@ public class ClientConfiguration {
                                         new SubcommandData("create", "Create a new prediction contract")
                                                 .addOption(OptionType.STRING, "title", "The prediction question", true)
                                                 .addOption(
-                                                        OptionType.INTEGER,
-                                                        "seed",
-                                                        "Coins you stake as liquidity",
-                                                        true)
-                                                .addOption(
                                                         OptionType.STRING,
                                                         "outcome_1",
                                                         "First outcome (blank = YES)",

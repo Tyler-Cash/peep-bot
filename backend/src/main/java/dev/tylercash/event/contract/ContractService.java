@@ -45,24 +45,20 @@ public class ContractService {
     @CacheEvict(value = "openContracts", allEntries = true)
     @Transactional
     public Contract createContract(
-            String creatorSnowflake, String title, String description, List<String> outcomeLabels, long seedAmount) {
+            String creatorSnowflake, String title, String description, List<String> outcomeLabels) {
 
-        if (seedAmount < config.getMinSeedAmount()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Seed amount must be at least " + config.getMinSeedAmount() + " coins");
-        }
         if (outcomeLabels.size() < 2) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least 2 outcomes required");
         }
 
-        balanceService.deduct(creatorSnowflake, seedAmount);
+        long houseShares = config.getHouseInitialShares();
 
         Contract contract = new Contract();
         contract.setTitle(title);
         contract.setDescription(description);
         contract.setCreatorSnowflake(creatorSnowflake);
-        contract.setSeedAmount(seedAmount);
-        contract.setBParameter(LmsrService.computeB(seedAmount, outcomeLabels.size()));
+        contract.setSeedAmount(0L);
+        contract.setBParameter(LmsrService.computeB(houseShares, outcomeLabels.size()));
         contract.setState(ContractState.CREATED);
         contract.setServerId(discordConfig.getGuildId());
         contract.setCreatedAt(clock.instant());
@@ -73,7 +69,7 @@ public class ContractService {
             ContractOutcome outcome = new ContractOutcome();
             outcome.setContract(contract);
             outcome.setLabel(label);
-            outcome.setSharesOutstanding(0.0);
+            outcome.setSharesOutstanding(houseShares);
             outcomes.add(outcomeRepo.save(outcome));
         }
         contract.setOutcomes(outcomes);
@@ -91,8 +87,9 @@ public class ContractService {
         contract.setChannelId(channel.getIdLong());
         contract.setState(ContractState.INIT_CHANNEL);
 
-        byte[] chart = graphService.renderChart(contract.getOutcomes(), List.of(), contract.getCreatedAt(), contract.getBParameter());
-        net.dv8tion.jda.api.entities.MessageEmbed embed = pinnedMessageService.buildEmbed(contract);
+        byte[] chart = graphService.renderChart(
+                contract.getOutcomes(), List.of(), contract.getCreatedAt(), contract.getBParameter());
+        net.dv8tion.jda.api.entities.MessageEmbed embed = pinnedMessageService.buildEmbed(contract, List.of());
         net.dv8tion.jda.api.entities.Message msg =
                 messageService.sendEmbedWithAttachment(channel, List.of(embed), chart, "chart.png");
         contract.setMessageId(msg.getIdLong());
@@ -127,6 +124,10 @@ public class ContractService {
         double shares = lmsr.sharesToBuyForCost(q, idx, coinAmount, b);
         long actualCost = lmsr.costToBuy(q, idx, shares, b);
 
+        if (actualCost <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trade too small — minimum cost is 1 coin");
+        }
+
         balanceService.deduct(snowflake, actualCost);
 
         targetOutcome.setSharesOutstanding(targetOutcome.getSharesOutstanding() + shares);
@@ -151,11 +152,12 @@ public class ContractService {
         messageService.sendMessage(
                 channel,
                 String.format(
-                        "<@%s> bought %.1f shares of **%s** for **%d \uD83E\uDE99** \u00B7 %s %.0f%% \u2192 %.0f%%",
+                        "<@%s> bought %.1f shares of **%s** for **%d %s** \u00B7 %s %.0f%% \u2192 %.0f%%",
                         snowflake,
                         shares,
                         targetOutcome.getLabel(),
                         actualCost,
+                        config.getEmoji().getCoin(),
                         targetOutcome.getLabel(),
                         probBeforeVal,
                         probAfter));
@@ -196,8 +198,10 @@ public class ContractService {
             totalPayout += payout;
         }
 
-        long creatorReturn = contract.getSeedAmount() + totalCostPaid - totalPayout;
-        balanceService.credit(contract.getCreatorSnowflake(), creatorReturn);
+        long creatorReturn = Math.max(0, contract.getSeedAmount() + totalCostPaid - totalPayout);
+        if (creatorReturn > 0) {
+            balanceService.credit(contract.getCreatorSnowflake(), creatorReturn);
+        }
 
         contract.setWinningOutcomeId(winningOutcomeId);
         contract.setState(ContractState.RESOLVED);
@@ -216,7 +220,9 @@ public class ContractService {
                     .append(snowflake)
                     .append("> \u2014 +")
                     .append(payout)
-                    .append(" \uD83E\uDE99\n"));
+                    .append(" ")
+                    .append(config.getEmoji().getCoin())
+                    .append("\n"));
         }
         if (!losingSpend.isEmpty()) {
             msg.append("\n").append(config.getEmoji().getPoor()).append(" **Losers**\n");
@@ -226,7 +232,9 @@ public class ContractService {
                             .append(snowflake)
                             .append("> \u2014 -")
                             .append(spent)
-                            .append(" \uD83E\uDE99\n"));
+                            .append(" ")
+                            .append(config.getEmoji().getCoin())
+                            .append("\n"));
         }
 
         TextChannel channel = channelService.getTextChannel(contract.getChannelId());

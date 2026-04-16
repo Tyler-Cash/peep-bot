@@ -53,7 +53,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
     private void handleBalance(SlashCommandInteractionEvent event) {
         long balance = balanceService.getBalance(event.getUser().getId());
-        event.reply("Your balance: **" + balance + " \uD83E\uDE99 peep coins**")
+        event.reply("Your balance: **" + balance + " "
+                        + contractConfig.getEmoji().getCoin() + " peep coins**")
                 .setEphemeral(true)
                 .queue();
     }
@@ -62,7 +63,6 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
         event.deferReply(true).queue();
         try {
             String title = event.getOption("title").getAsString();
-            long seedAmount = event.getOption("seed").getAsLong();
 
             List<String> outcomeLabels = Stream.of("outcome_1", "outcome_2", "outcome_3", "outcome_4", "outcome_5")
                     .map(event::getOption)
@@ -76,7 +76,7 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             }
 
             String userId = event.getUser().getId();
-            contractService.createContract(userId, title, null, outcomeLabels, seedAmount);
+            contractService.createContract(userId, title, null, outcomeLabels);
 
             String emoji = contractConfig.getEmoji().getSuccess();
             event.getHook().sendMessage(emoji + " Prediction contract created!").queue();
@@ -111,8 +111,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             String emoji = contractConfig.getEmoji().getSuccess();
             String reply = actualCost < amount
                     ? String.format(
-                            "Trade placed! %s · Spent **%d** of **%d** \uD83E\uDE99 (rounding to nearest coin)",
-                            emoji, actualCost, amount)
+                            "Trade placed! %s · Spent **%d** of **%d** %s (rounding to nearest coin)",
+                            emoji, actualCost, amount, contractConfig.getEmoji().getCoin())
                     : "Trade placed! " + emoji;
             event.getHook().sendMessage(reply).queue();
         } catch (Exception e) {

@@ -13,11 +13,13 @@ public class ContractConfiguration {
     private long defaultBalance = 1000L;
     private long negativeTradeCap = 100L;
     private long minSeedAmount = 100L;
+    private long houseInitialShares = 100L;
     private Emoji emoji = new Emoji();
 
     @Data
     public static class Emoji {
         private String success = "\u2705";
         private String poor = "\uD83D\uDCB8";
+        private String coin = "\uD83E\uDE99";
     }
 }
