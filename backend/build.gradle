@@ -37,7 +37,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.0.Final'
+    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.1.Final'
     implementation 'org.liquibase:liquibase-core'
     implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
@@ -50,6 +50,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
     implementation 'org.springframework.security:spring-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
@@ -63,6 +64,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
+    implementation 'org.jfree:jfreechart:1.5.6'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.11'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
@@ -132,15 +135,15 @@ spotless {
 
 tasks.named("bootJar") {
     launchScript()
-
 }
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
+    builder = "paketobuildpacks/builder-jammy-full:latest"
     environment.putAll([
-            "BP_OCI_SOURCE"     : "https://github.com/Tyler-Cash/peep-bot",
-            "BP_OCI_URL"        : "https://github.com/Tyler-Cash/peep-bot",
-            "BP_OCI_DESCRIPTION": "Peep Bot backend — Spring Boot Discord event management API",
+            "BP_OCI_SOURCE"          : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_URL"             : "https://github.com/Tyler-Cash/peep-bot",
+            "BP_OCI_DESCRIPTION"     : "Peep Bot backend — Spring Boot Discord event management API",
+            "BPE_JAVA_TOOL_OPTIONS"  : "-Djava.awt.headless=true",
     ])
 }
-

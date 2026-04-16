@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
@@ -20,6 +21,8 @@ class DiscordInitializationServiceTest {
     private JDA jda;
     private Guild guild;
     private DiscordConfiguration config;
+    private DiscordChannelService discordChannelService;
+    private ContractConfiguration contractConfig;
     private DiscordInitializationService service;
 
     @BeforeEach
@@ -29,18 +32,10 @@ class DiscordInitializationServiceTest {
         config = new DiscordConfiguration();
         config.setGuildId(123L);
         config.setSeperatorChannel("organising");
+        discordChannelService = mock(DiscordChannelService.class);
+        contractConfig = new ContractConfiguration();
         when(jda.getGuildById(123L)).thenReturn(guild);
-        service = new DiscordInitializationService(jda, config);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Category mockCategoryCreation(String name) {
-        Category category = mock(Category.class);
-        when(category.getName()).thenReturn(name);
-        ChannelAction<Category> action = mock(ChannelAction.class);
-        when(guild.createCategory(name)).thenReturn(action);
-        when(action.complete()).thenReturn(category);
-        return category;
+        service = new DiscordInitializationService(jda, config, discordChannelService, contractConfig);
     }
 
     @SuppressWarnings("unchecked")
@@ -54,17 +49,22 @@ class DiscordInitializationServiceTest {
     @Test
     @DisplayName("creates all categories and separator channel when none exist")
     void initializeGuild_createsEverything() {
-        when(guild.getCategoriesByName(anyString(), eq(true))).thenReturn(Collections.emptyList());
+        Category outings = mock(Category.class);
+        when(outings.getName()).thenReturn("outings");
+        Category archive = mock(Category.class);
+        when(archive.getName()).thenReturn("outings-archive");
 
-        Category outings = mockCategoryCreation("outings");
-        mockCategoryCreation("outings-archive");
+        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+                .thenReturn(archive);
+
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 
         service.initializeGuild();
 
-        verify(guild).createCategory("outings");
-        verify(guild).createCategory("outings-archive");
+        verify(discordChannelService).getOrCreateCategory(guild, "outings");
+        verify(discordChannelService).getOrCreateCategory(guild, "outings-archive");
         verify(outings).createTextChannel("organising");
     }
 
@@ -76,8 +76,9 @@ class DiscordInitializationServiceTest {
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(guild.getCategoriesByName("outings", true)).thenReturn(List.of(outings));
-        when(guild.getCategoriesByName("outings-archive", true)).thenReturn(List.of(archive));
+        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+                .thenReturn(archive);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
@@ -85,7 +86,6 @@ class DiscordInitializationServiceTest {
 
         service.initializeGuild();
 
-        verify(guild, never()).createCategory(anyString());
         verify(outings, never()).createTextChannel(anyString());
     }
 
@@ -94,11 +94,12 @@ class DiscordInitializationServiceTest {
     void initializeGuild_createsOnlyMissing() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
+        Category archive = mock(Category.class);
+        when(archive.getName()).thenReturn("outings-archive");
 
-        when(guild.getCategoriesByName("outings", true)).thenReturn(List.of(outings));
-        when(guild.getCategoriesByName("outings-archive", true)).thenReturn(Collections.emptyList());
-
-        mockCategoryCreation("outings-archive");
+        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+                .thenReturn(archive);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
@@ -106,8 +107,8 @@ class DiscordInitializationServiceTest {
 
         service.initializeGuild();
 
-        verify(guild, never()).createCategory("outings");
-        verify(guild).createCategory("outings-archive");
+        verify(discordChannelService).getOrCreateCategory(guild, "outings");
+        verify(discordChannelService).getOrCreateCategory(guild, "outings-archive");
     }
 
     @Test
@@ -118,8 +119,9 @@ class DiscordInitializationServiceTest {
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(guild.getCategoriesByName("outings", true)).thenReturn(List.of(outings));
-        when(guild.getCategoriesByName("outings-archive", true)).thenReturn(List.of(archive));
+        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+                .thenReturn(archive);
 
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
@@ -136,9 +138,12 @@ class DiscordInitializationServiceTest {
 
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
-        when(guild.getCategoriesByName("outings", true)).thenReturn(List.of(outings));
-        when(guild.getCategoriesByName("outings-archive", true)).thenReturn(Collections.emptyList());
-        mockCategoryCreation("outings-archive");
+        Category archive = mock(Category.class);
+        when(archive.getName()).thenReturn("outings-archive");
+
+        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+                .thenReturn(archive);
 
         service.initializeGuild();
 

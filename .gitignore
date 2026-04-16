@@ -57,3 +57,8 @@ bin/
 !.releaserc.json
 *.csv
 npm_output.log
+### Worktrees and tooling ###
+discord-events-squash/
+.superpowers/
+.idea/jsLibraryMappings.xml
+.idea/db-forest-config.xml

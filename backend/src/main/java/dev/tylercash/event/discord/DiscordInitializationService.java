@@ -3,6 +3,7 @@ package dev.tylercash.event.discord;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_ARCHIVE_CATEGORY;
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_CATEGORY;
 
+import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
 public class DiscordInitializationService {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
+    private final DiscordChannelService discordChannelService;
+    private final ContractConfiguration contractConfig;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeGuild() {
@@ -31,17 +35,33 @@ public class DiscordInitializationService {
 
         Category outings = ensureCategory(guild, EVENT_CATEGORY);
         ensureCategory(guild, EVENT_ARCHIVE_CATEGORY);
+        ensureCategory(guild, contractConfig.getCategoryName());
         ensureSeparatorChannel(outings);
+        resolveEmojiFields(guild, discordConfiguration.getEmoji());
+        resolveEmojiFields(guild, contractConfig.getEmoji());
+    }
+
+    void resolveEmojiFields(Guild guild, Object emojiConfig) {
+        for (java.lang.reflect.Field field : emojiConfig.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            String name = field.getName();
+            List<RichCustomEmoji> matches = guild.getEmojisByName(name, true);
+            try {
+                if (!matches.isEmpty()) {
+                    String mention = matches.getFirst().getAsMention();
+                    log.info("Resolved custom emoji '{}' → {}", name, mention);
+                    field.set(emojiConfig, mention);
+                } else {
+                    log.info("No custom emoji named '{}' found; using default {}", name, field.get(emojiConfig));
+                }
+            } catch (IllegalAccessException e) {
+                log.warn("Could not resolve emoji field '{}'", name, e);
+            }
+        }
     }
 
     Category ensureCategory(Guild guild, String categoryName) {
-        List<Category> categories = guild.getCategoriesByName(categoryName, true);
-        if (!categories.isEmpty()) {
-            log.info("Category '{}' already exists", categoryName);
-            return categories.get(0);
-        }
-        log.info("Creating category '{}'", categoryName);
-        return guild.createCategory(categoryName).complete();
+        return discordChannelService.getOrCreateCategory(guild, categoryName);
     }
 
     void ensureSeparatorChannel(Category category) {

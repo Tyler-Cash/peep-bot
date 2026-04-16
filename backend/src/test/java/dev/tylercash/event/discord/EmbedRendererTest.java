@@ -18,6 +18,7 @@ class EmbedRendererTest {
 
     private static final String FRONTEND_URL = "https://event.tylercash.dev/";
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2025-06-15T10:00:00Z"), ZoneId.of("UTC"));
+    private static final DiscordConfiguration.Emoji DEFAULT_EMOJI = new DiscordConfiguration.Emoji();
 
     private static Event buildEvent() {
         Event event = new Event(
@@ -38,7 +39,8 @@ class EmbedRendererTest {
         UUID eventId = UUID.randomUUID();
         event.setId(eventId);
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         List<MessageEmbed.Field> fields = embed.getFields();
@@ -56,7 +58,8 @@ class EmbedRendererTest {
         Event event = buildEvent();
         event.setId(UUID.randomUUID());
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         List<MessageEmbed.Field> fields = embed.getFields();
@@ -76,7 +79,8 @@ class EmbedRendererTest {
         event.setId(eventId);
         String customFrontendUrl = "http://localhost:5173/";
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, customFrontendUrl, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, customFrontendUrl, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         List<MessageEmbed.Field> fields = embed.getFields();
@@ -95,7 +99,8 @@ class EmbedRendererTest {
         event.setId(UUID.randomUUID());
         String albumUrl = "https://immich.example.com/share/abc123";
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, albumUrl).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, albumUrl, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         MessageEmbed.Field linksField = embed.getFields().stream()
@@ -112,7 +117,8 @@ class EmbedRendererTest {
         Event event = buildEvent();
         event.setId(UUID.randomUUID());
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         MessageEmbed.Field linksField = embed.getFields().stream()
@@ -128,7 +134,8 @@ class EmbedRendererTest {
     void embedOmitsEditLinkWhenEventIdIsNull() {
         Event event = buildEvent();
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         List<MessageEmbed.Field> fields = embed.getFields();
@@ -146,7 +153,8 @@ class EmbedRendererTest {
         Event event = buildEvent();
         event.setId(UUID.randomUUID());
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         assertThat(embed.getTitle()).isEqualTo("Test Event");
@@ -158,7 +166,8 @@ class EmbedRendererTest {
         event.setId(UUID.randomUUID());
         event.setLocation("Sydney");
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         MessageEmbed.Field locationField = embed.getFields().stream()
@@ -176,7 +185,8 @@ class EmbedRendererTest {
         event.setId(UUID.randomUUID());
         event.setLocation("   ");
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         boolean hasLocation = embed.getFields().stream().anyMatch(f -> "Location".equals(f.getName()));
@@ -190,7 +200,8 @@ class EmbedRendererTest {
         event.setId(UUID.randomUUID());
         event.getAccepted().add(Attendee.createDiscordAttendee("12345", "Alice"));
 
-        EmbedBuilder embedBuilder = new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null).getEmbedBuilder();
+        EmbedBuilder embedBuilder =
+                new EmbedRenderer(event, FIXED_CLOCK, FRONTEND_URL, null, DEFAULT_EMOJI).getEmbedBuilder();
         MessageEmbed embed = embedBuilder.build();
 
         MessageEmbed.Field acceptedField = embed.getFields().stream()
