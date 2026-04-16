@@ -65,7 +65,7 @@ dependencies {
     implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
     implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
     implementation 'org.jfree:jfreechart:1.5.4'
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.11'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
