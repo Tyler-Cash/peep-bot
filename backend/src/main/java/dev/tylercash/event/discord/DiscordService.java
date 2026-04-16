@@ -1,7 +1,6 @@
 package dev.tylercash.event.discord;
 
 import static dev.tylercash.event.discord.DiscordConfiguration.*;
-import static dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName;
 import static dev.tylercash.event.discord.listener.ButtonInteractionListener.*;
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE;
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
@@ -12,21 +11,17 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
-import dev.tylercash.event.security.dev.DevUserProperties;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
@@ -35,8 +30,6 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.requests.restaction.ChannelAction;
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -56,62 +49,43 @@ public class DiscordService {
     private final RateLimiter notifyEventRoles;
     private final Clock clock;
     private final JDA jda;
-    private final Optional<DevUserProperties> devUserProperties;
+    private final DiscordChannelService discordChannelService;
+    private final DiscordMessageService discordMessageService;
+    private final DiscordRoleService discordRoleService;
+    private final DiscordAuthService discordAuthService;
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
-        Category category = getEventCategory(discordConfiguration.getGuildId());
-        ChannelAction<TextChannel> textChannelChannelAction = category.createTextChannel(
-                        DiscordUtil.getChannelNameFromEvent(event))
-                .setPosition(99);
-        return textChannelChannelAction.complete();
+        Category category = discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_CATEGORY);
+        return discordChannelService.createTextChannel(category, DiscordUtil.getChannelNameFromEvent(event));
     }
 
     public void updateChannelName(Event event) {
-        TextChannel channel = getChannel(event);
-        if (!DiscordUtil.getChannelNameFromEvent(event).equals(channel.getName())) {
-            channel.getManager()
-                    .setName(DiscordUtil.getChannelNameFromEvent(event))
-                    .queue();
-        }
-    }
-
-    private Category getArchiveCategory(long serverId) {
-        return getChannelCategory(serverId, EVENT_ARCHIVE_CATEGORY);
-    }
-
-    @NotNull
-    private Category getChannelCategory(long serverId, String categoryName) {
-        List<Category> categories = jda.getGuildById(serverId).getCategoriesByName(categoryName, true);
-        if (categories.size() > 1) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Found multiple matching channels");
-        } else if (categories.stream().findFirst().isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "No category found called \"" + EVENT_CATEGORY + "\"");
-        }
-        return categories.get(0);
+        discordChannelService.setChannelName(event.getChannelId(), DiscordUtil.getChannelNameFromEvent(event));
     }
 
     public @NotNull Category getEventCategory(long serverId) {
-        return getChannelCategory(serverId, EVENT_CATEGORY);
+        return discordChannelService.getCategoryByName(serverId, EVENT_CATEGORY);
     }
 
     @Observed(name = "discord.post-message")
     public Message postEventMessage(Event event, TextChannel channel) {
-        List<Role> rolesToMention = getRoles(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
+        List<Role> rolesToMention =
+                discordRoleService.getRolesByName(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
                 .addEmbeds(embedService.getMessage(event, clock))
                 .addComponents(List.of(ActionRow.of(
-                        Button.secondary(ACCEPTED, ACCEPTED_EMOJI),
-                        Button.secondary(DECLINED, DECLINED_EMOJI),
-                        Button.secondary(MAYBE, MAYBE_EMOJI),
+                        Button.secondary(
+                                ACCEPTED, discordConfiguration.getEmoji().getAccepted()),
+                        Button.secondary(
+                                DECLINED, discordConfiguration.getEmoji().getDeclined()),
+                        Button.secondary(MAYBE, discordConfiguration.getEmoji().getMaybe()),
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
             addNotificationToMessage(messageBuilder, rolesToMention);
         }
-        MessageCreateAction messageCreateAction = channel.sendMessage(messageBuilder.build());
-        Message message = messageCreateAction.complete();
+        Message message = channel.sendMessage(messageBuilder.build()).complete();
         message.pin().queue();
         return message;
     }
@@ -135,33 +109,24 @@ public class DiscordService {
 
     @Observed(name = "discord.update-message")
     public void updateEventMessage(Event event) {
-        getChannel(event)
-                .editMessageEmbedsById(event.getMessageId(), embedService.getMessage(event, clock))
-                .queue();
+        discordMessageService.editEmbeds(
+                event.getChannelId(), event.getMessageId(), embedService.getMessage(event, clock));
     }
 
     public void removeEventButtons(Event event) {
-        getChannel(event).editMessageComponentsById(event.getMessageId()).queue();
+        discordMessageService.editComponents(event.getChannelId(), event.getMessageId(), List.of());
     }
 
     public Member getMemberFromServer(long serverId, long userId) {
-        Guild server = jda.getGuildById(serverId);
-        server.retrieveMemberById(userId).complete();
-        return server.retrieveMemberById(userId).complete();
+        return discordAuthService.getMember(serverId, userId);
     }
 
     public boolean isUserMemberOfServer(long serverId, long userId) {
-        return getMemberFromServer(serverId, userId) != null;
+        return discordAuthService.isMember(serverId, userId);
     }
 
     public boolean isUserAdminOfServer(long serverId, long userId) {
-        if (devUserProperties.isPresent() && devUserProperties.get().isForceAdmin()) {
-            return true;
-        }
-        Member member = getMemberFromServer(serverId, userId);
-        return member != null
-                && member.getRoles().stream()
-                        .anyMatch(role -> role.getName().equalsIgnoreCase(discordConfiguration.getAdminRole()));
+        return discordAuthService.isEventAdmin(serverId, userId);
     }
 
     @Observed(name = "discord.sort-active-channels")
@@ -174,7 +139,8 @@ public class DiscordService {
     @Observed(name = "discord.sort-archive-channels")
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortArchiveChannels() {
-        Category category = getArchiveCategory(discordConfiguration.getGuildId());
+        Category category =
+                discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
         sortChannelsByChannelName(category);
     }
 
@@ -231,7 +197,8 @@ public class DiscordService {
         List<TextChannel> keptOrphans = new ArrayList<>();
         if (featureToggles.isArchiveOrphanedChannels()) {
             OffsetDateTime cutoff = OffsetDateTime.now(clock).minusDays(ORPHAN_AGE_DAYS);
-            Category archiveCategory = getArchiveCategory(discordConfiguration.getGuildId());
+            Category archiveCategory =
+                    discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
             for (TextChannel orphan : withoutEvent) {
                 if (orphan.getTimeCreated().isBefore(cutoff)) {
                     log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
@@ -260,25 +227,12 @@ public class DiscordService {
     }
 
     public void sortChannelsByChannelName(Category category) {
-        DateTimeFormatter monthParser = new DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern("MMM")
-                .toFormatter(Locale.ENGLISH);
-
-        List<TextChannel> channels = new ArrayList<>(category.getTextChannels());
-        channels.sort(Comparator.comparing(channel -> getMonthDayFromChannelName(channel, monthParser)));
-
-        for (int i = 0; i < channels.size(); i++) {
-            channels.get(i).getManager().setPosition(i).queue();
-        }
+        discordChannelService.sortChannelsByChannelName(category);
     }
 
     @Observed(name = "discord.delete-channel")
     public void deleteEventChannel(Event event) {
-        jda.getGuildById(discordConfiguration.getGuildId())
-                .getChannelById(TextChannel.class, event.getChannelId())
-                .delete()
-                .queue();
+        discordChannelService.deleteChannel(event.getChannelId());
     }
 
     @Observed(name = "discord.create-private-channel")
@@ -291,17 +245,10 @@ public class DiscordService {
                     HttpStatus.CONFLICT, "Event roles have not been created yet — please wait and try again");
         }
         Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
-        Category category = getEventCategory(discordConfiguration.getGuildId());
+        Category category = discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_CATEGORY);
         String channelName = DiscordUtil.getChannelNameFromEvent(event) + "-private";
-        TextChannel channel = category.createTextChannel(channelName)
-                .addRolePermissionOverride(guild.getPublicRole().getIdLong(), 0L, Permission.VIEW_CHANNEL.getRawValue())
-                .addRolePermissionOverride(
-                        event.getAcceptedRoleId(),
-                        Permission.VIEW_CHANNEL.getRawValue()
-                                | Permission.MESSAGE_SEND.getRawValue()
-                                | Permission.MESSAGE_HISTORY.getRawValue(),
-                        0L)
-                .complete();
+        TextChannel channel = discordChannelService.createPrivateTextChannel(
+                category, channelName, guild.getPublicRole().getIdLong(), event.getAcceptedRoleId());
         event.setPrivateChannelId(channel.getIdLong());
         Message alert = channel.sendMessage(
                         "⚠️ **Private Channel** — This channel is for sharing private event details only. "
@@ -318,30 +265,20 @@ public class DiscordService {
         if (event.getPrivateChannelId() == null) {
             return;
         }
-        TextChannel channel = jda.getChannelById(TextChannel.class, event.getPrivateChannelId());
-        if (channel != null) {
-            channel.delete().queue();
-        }
+        discordChannelService.deleteChannel(event.getPrivateChannelId());
     }
 
     @Observed(name = "discord.archive-channel")
     public void archiveEventChannel(Event event) {
-        TextChannel eventChannel = getChannel(event);
-        Category category = getArchiveCategory(discordConfiguration.getGuildId());
-        eventChannel.getManager().setParent(category).sync().queue();
-        sortChannelsByChannelName(category);
+        TextChannel eventChannel = discordChannelService.getTextChannel(event.getChannelId());
+        Category archiveCategory =
+                discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
+        discordChannelService.moveChannelToCategory(eventChannel, archiveCategory);
+        discordChannelService.sortChannelsByChannelName(archiveCategory);
     }
 
     public TextChannel getChannel(Event event) {
-        return jda.getChannelById(TextChannel.class, event.getChannelId());
-    }
-
-    private List<Role> getRoles(long serverId, String role) {
-        List<Role> rolesByName = jda.getGuildById(serverId).getRolesByName(role, true);
-        if (rolesByName.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No roles found matching name " + role);
-        }
-        return rolesByName;
+        return discordChannelService.getTextChannel(event.getChannelId());
     }
 
     @Observed(name = "discord.send-album-link")
@@ -366,15 +303,15 @@ public class DiscordService {
             baseName = baseName.substring(0, 89);
         }
         if (event.getAcceptedRoleId() == null) {
-            Role accepted = guild.createRole().setName(baseName + " - Accepted").complete();
+            Role accepted = discordRoleService.createRole(guild, baseName + " - Accepted");
             event.setAcceptedRoleId(accepted.getIdLong());
         }
         if (event.getDeclinedRoleId() == null) {
-            Role declined = guild.createRole().setName(baseName + " - Declined").complete();
+            Role declined = discordRoleService.createRole(guild, baseName + " - Declined");
             event.setDeclinedRoleId(declined.getIdLong());
         }
         if (event.getMaybeRoleId() == null) {
-            Role maybe = guild.createRole().setName(baseName + " - Maybe").complete();
+            Role maybe = discordRoleService.createRole(guild, baseName + " - Maybe");
             event.setMaybeRoleId(maybe.getIdLong());
         }
     }
@@ -382,19 +319,9 @@ public class DiscordService {
     @Observed(name = "discord.delete-event-roles")
     public void deleteEventRoles(Event event) {
         Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
-        deleteRoleById(guild, event.getAcceptedRoleId());
-        deleteRoleById(guild, event.getDeclinedRoleId());
-        deleteRoleById(guild, event.getMaybeRoleId());
-    }
-
-    private void deleteRoleById(Guild guild, Long roleId) {
-        if (roleId == null) {
-            return;
-        }
-        Role role = guild.getRoleById(roleId);
-        if (role != null) {
-            role.delete().queue();
-        }
+        discordRoleService.deleteRole(guild, event.getAcceptedRoleId());
+        discordRoleService.deleteRole(guild, event.getDeclinedRoleId());
+        discordRoleService.deleteRole(guild, event.getMaybeRoleId());
     }
 
     @Observed(name = "discord.assign-event-role")
@@ -405,7 +332,9 @@ public class DiscordService {
         if (member == null) {
             return;
         }
-        removeAllEventRolesFromMember(guild, event, member);
+        discordRoleService.removeRoleFromMember(guild, member, event.getAcceptedRoleId());
+        discordRoleService.removeRoleFromMember(guild, member, event.getDeclinedRoleId());
+        discordRoleService.removeRoleFromMember(guild, member, event.getMaybeRoleId());
         Long roleId =
                 switch (status) {
                     case ACCEPTED -> event.getAcceptedRoleId();
@@ -413,31 +342,16 @@ public class DiscordService {
                     case MAYBE -> event.getMaybeRoleId();
                     default -> null;
                 };
-        if (roleId != null) {
-            Role role = guild.getRoleById(roleId);
-            if (role != null) {
-                guild.addRoleToMember(member, role).queue();
-            }
-        }
+        discordRoleService.addRoleToMember(guild, member, roleId);
     }
 
     public void removeAllEventRoles(Event event, String snowflake) {
         Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
         Member member = guild.retrieveMemberById(snowflake).complete();
         if (member != null) {
-            removeAllEventRolesFromMember(guild, event, member);
-        }
-    }
-
-    private void removeAllEventRolesFromMember(Guild guild, Event event, Member member) {
-        for (Long roleId : List.of(event.getAcceptedRoleId(), event.getDeclinedRoleId(), event.getMaybeRoleId())) {
-            if (roleId == null) {
-                continue;
-            }
-            Role role = guild.getRoleById(roleId);
-            if (role != null && member.getRoles().contains(role)) {
-                guild.removeRoleFromMember(member, role).queue();
-            }
+            discordRoleService.removeRoleFromMember(guild, member, event.getAcceptedRoleId());
+            discordRoleService.removeRoleFromMember(guild, member, event.getDeclinedRoleId());
+            discordRoleService.removeRoleFromMember(guild, member, event.getMaybeRoleId());
         }
     }
 

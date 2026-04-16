@@ -59,6 +59,12 @@ public class ModalInteractionListener extends ListenerAdapter {
 
     private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
+
+        if (!PLUS_ONE_ID.equals(interaction.getModalId())) {
+            log.warn("Unrecognised modal ID: {}", interaction.getModalId());
+            return;
+        }
+
         Event event = eventRepository.findByChannelId(
                 modalInteractionEvent.getChannel().getIdLong());
         if (event == null || eventServiceProvider.getObject().isCompleted(event)) {
