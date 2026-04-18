@@ -39,11 +39,18 @@ public class MessageReceivedListener extends ListenerAdapter {
         if (attachments.isEmpty()) {
             return;
         }
-        Event dbEvent = eventRepository.findByChannelId(event.getChannel().getIdLong());
-        if (dbEvent == null || dbEvent.getImmichAlbumId() == null) {
+        long channelId = event.getChannel().getIdLong();
+        Event dbEvent = eventRepository.findByChannelId(channelId);
+        if (dbEvent == null) {
+            log.debug("Message with attachments in channel {} has no matching event — skipping", channelId);
+            return;
+        }
+        if (dbEvent.getImmichAlbumId() == null) {
+            log.info("Event '{}' has no Immich album yet — skipping attachment upload", dbEvent.getName());
             return;
         }
         if (ZonedDateTime.now(clock).isBefore(dbEvent.getDateTime())) {
+            log.info("Event '{}' has not started yet — skipping attachment upload", dbEvent.getName());
             return;
         }
         List<String> assetIds = new ArrayList<>();
@@ -62,6 +69,11 @@ public class MessageReceivedListener extends ListenerAdapter {
             }
         }
         if (!assetIds.isEmpty()) {
+            log.info(
+                    "Uploaded {} asset(s) from event '{}' channel to Immich album {}",
+                    assetIds.size(),
+                    dbEvent.getName(),
+                    dbEvent.getImmichAlbumId());
             immichService.addAssetsToAlbum(dbEvent.getImmichAlbumId(), assetIds);
         }
     }
