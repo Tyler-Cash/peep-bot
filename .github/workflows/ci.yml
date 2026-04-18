@@ -3,7 +3,6 @@ name: CI/CD
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-  priority: ${{ github.ref == 'refs/heads/main' && 1 || 0 }}
 
 on:
   push:
