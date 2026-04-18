@@ -44,7 +44,6 @@
     "format:check": "prettier --check \"src/**/*.{js,jsx,css}\""
   },
   "overrides": {
-    "//": "GHSA-xq3m-2v4x-88gg: force patched protobufjs pulled in transitively by @opentelemetry/otlp-transformer. Remove once that package upgrades past 7.5.4.",
     "protobufjs": ">=7.5.5"
   },
   "browserslist": {
