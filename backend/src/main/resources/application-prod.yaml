@@ -4,4 +4,5 @@ dev.tylercash:
   frontend:
     hostname: event.tylercash.dev
   immich:
+    enabled: true
     album-name-prefix: ""
