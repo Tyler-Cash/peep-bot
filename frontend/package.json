@@ -43,6 +43,9 @@
     "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,css}\""
   },
+  "overrides": {
+    "protobufjs": ">=7.5.5"
+  },
   "browserslist": {
     "production": [
       ">0.2%",
