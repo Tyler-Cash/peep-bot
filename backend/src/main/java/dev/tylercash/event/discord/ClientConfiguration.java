@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import dev.tylercash.event.discord.listener.ButtonInteractionListener;
+import dev.tylercash.event.discord.listener.MessageReceivedListener;
 import dev.tylercash.event.discord.listener.ModalInteractionListener;
 import dev.tylercash.event.discord.listener.SlashCommandListener;
 import java.util.EnumSet;
@@ -22,6 +23,7 @@ public class ClientConfiguration {
     private final ButtonInteractionListener buttonInteractionListener;
     private final ModalInteractionListener modalInteractionListener;
     private final SlashCommandListener slashCommandListener;
+    private final MessageReceivedListener messageReceivedListener;
     private final DiscordConfiguration discordConfiguration;
 
     @Bean
@@ -30,6 +32,7 @@ public class ClientConfiguration {
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(modalInteractionListener)
                 .addEventListeners(slashCommandListener)
+                .addEventListeners(messageReceivedListener)
                 .enableIntents(EnumSet.allOf(GatewayIntent.class))
                 .build()
                 .awaitReady();
