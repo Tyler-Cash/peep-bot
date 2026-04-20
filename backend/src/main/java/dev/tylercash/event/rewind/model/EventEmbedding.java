@@ -1,6 +1,8 @@
 package dev.tylercash.event.rewind.model;
 
+import dev.tylercash.event.rewind.VectorConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -23,6 +25,7 @@ public class EventEmbedding {
     @Column(name = "name_text", nullable = false)
     private String nameText;
 
+    @Convert(converter = VectorConverter.class)
     @Column(name = "embedding", columnDefinition = "vector(384)", nullable = false)
     private String embedding;
 
