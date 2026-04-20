@@ -5,9 +5,7 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.rewind.model.EventEmbedding;
 import java.time.OffsetDateTime;
-import java.time.format.TextStyle;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -22,15 +20,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmbeddingService {
 
     private final EmbeddingModel embeddingModel;
+    private final TextNormalisationService normalisationService;
     private final RewindConfiguration config;
     private final EventRepository eventRepository;
     private final EventEmbeddingRepository embeddingRepository;
 
     public EmbeddingService(
             @Autowired(required = false) EmbeddingModel embeddingModel,
+            TextNormalisationService normalisationService,
             RewindConfiguration config,
             EventRepository eventRepository,
             EventEmbeddingRepository embeddingRepository) {
+        this.normalisationService = normalisationService;
         this.config = config;
         this.eventRepository = eventRepository;
         this.embeddingRepository = embeddingRepository;
@@ -48,19 +49,7 @@ public class EmbeddingService {
     }
 
     String buildEmbeddingText(Event event) {
-        var sb = new StringBuilder(event.getName());
-        sb.append(" | ").append(event.getDateTime().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH));
-        if (event.getDescription() != null
-                && !event.getDescription().isBlank()
-                && !event.getDescription()
-                        .trim()
-                        .equalsIgnoreCase(event.getName().trim())) {
-            sb.append(" | ").append(event.getDescription().trim());
-        }
-        if (event.getCapacity() != null && event.getCapacity() > 0) {
-            sb.append(" | capacity: ").append(event.getCapacity());
-        }
-        return sb.toString();
+        return normalisationService.normalise(event.getName());
     }
 
     @Transactional
@@ -70,7 +59,7 @@ public class EmbeddingService {
             float[] raw = embeddingModel.embed(nameText);
             embeddingRepository.save(new EventEmbedding(eventId, nameText, toVectorString(raw), OffsetDateTime.now()));
         } catch (Exception e) {
-            log.error("Failed to embed event {}: {}", eventId, e.getMessage());
+            log.error("Failed to embed event: {}", e.getMessage());
         }
     }
 

@@ -73,6 +73,7 @@ dependencies {
     implementation 'org.jfree:jfreechart:1.5.6'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
     implementation 'org.springframework.ai:spring-ai-starter-model-transformers'
+    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

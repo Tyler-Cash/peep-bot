@@ -11,4 +11,5 @@ public class RewindConfiguration {
     private boolean enabled = true;
     private double clusterSimilarityThreshold = 0.72;
     private int backfillBatchSize = 20;
+    private boolean normalisationEnabled = false;
 }
