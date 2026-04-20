@@ -56,7 +56,7 @@ class EventServiceIntegrationTest {
     DiscordInitializationService discordInitializationService;
 
     @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @Autowired
     private EventService eventService;

@@ -572,5 +572,83 @@ databaseChangeLog:
               UPDATE event SET state = 'POST_ALBUM_READY' WHERE state = 'ALBUM_READY';
               UPDATE event SET state = 'POST_ALBUM_SHARED' WHERE state = 'ALBUM_POSTED';
               UPDATE event SET state = 'POST_COMPLETED' WHERE state = 'COMPLETED';
+  - changeSet:
+      id: add vector extension
+      author: claude
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS vector;
+  - changeSet:
+      id: create event_embedding table
+      author: claude
+      changes:
+        - sql:
+            splitStatements: true
+            sql: >
+              CREATE TABLE event_embedding (
+                event_id UUID PRIMARY KEY REFERENCES event(id),
+                name_text TEXT NOT NULL,
+                embedding vector(384) NOT NULL,
+                computed_at TIMESTAMP WITH TIME ZONE NOT NULL
+              );
+              CREATE INDEX idx_event_embedding_cosine ON event_embedding
+              USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
+  - changeSet:
+      id: create event_category table
+      author: claude
+      changes:
+        - createTable:
+            tableName: event_category
+            columns:
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_event_category_event
+                    references: event(id)
+              - column:
+                  name: category_label
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_centroid_event_id
+                  type: UUID
+              - column:
+                  name: assigned_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_event_category_label
+            tableName: event_category
+            columns:
+              - column:
+                  name: category_label
+  - changeSet:
+      id: add rewind performance indexes
+      author: claude
+      changes:
+        - createIndex:
+            indexName: idx_attendance_snowflake_status
+            tableName: attendance
+            columns:
+              - column:
+                  name: snowflake
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_event_date_time
+            tableName: event
+            columns:
+              - column:
+                  name: date_time
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml

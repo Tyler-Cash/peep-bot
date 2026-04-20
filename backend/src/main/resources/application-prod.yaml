@@ -6,3 +6,12 @@ dev.tylercash:
   immich:
     enabled: true
     album-name-prefix: ""
+  rewind:
+    normalisation-enabled: true
+
+spring:
+  ai:
+    ollama:
+      base-url: http://ollama:11434
+      chat:
+        enabled: true

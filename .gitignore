@@ -62,3 +62,4 @@ discord-events-squash/
 .superpowers/
 .idea/jsLibraryMappings.xml
 .idea/db-forest-config.xml
+.worktrees/
