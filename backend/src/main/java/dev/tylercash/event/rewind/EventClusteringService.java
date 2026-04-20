@@ -145,8 +145,7 @@ public class EventClusteringService {
 
     private String mostFrequentName(String[] names, List<Integer> members) {
         Map<String, Long> counts = members.stream()
-                .collect(Collectors.groupingBy(
-                        i -> extractEventName(names[i]).toLowerCase(), Collectors.counting()));
+                .collect(Collectors.groupingBy(i -> extractEventName(names[i]).toLowerCase(), Collectors.counting()));
         return counts.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .get()
