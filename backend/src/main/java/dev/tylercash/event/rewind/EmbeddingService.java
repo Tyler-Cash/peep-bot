@@ -1,9 +1,10 @@
 package dev.tylercash.event.rewind;
 
+import dev.tylercash.event.db.repository.EventEmbeddingRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import dev.tylercash.event.rewind.model.EventEmbedding;
+import java.time.OffsetDateTime;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
@@ -23,16 +24,16 @@ public class EmbeddingService {
     private final EmbeddingModel embeddingModel;
     private final RewindConfiguration config;
     private final EventRepository eventRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EventEmbeddingRepository embeddingRepository;
 
     public EmbeddingService(
             @Autowired(required = false) EmbeddingModel embeddingModel,
             RewindConfiguration config,
-            EventRepository eventRepository) {
+            EventRepository eventRepository,
+            EventEmbeddingRepository embeddingRepository) {
         this.config = config;
         this.eventRepository = eventRepository;
+        this.embeddingRepository = embeddingRepository;
         if (embeddingModel != null) {
             this.embeddingModel = embeddingModel;
             log.info("EmbeddingService initialized — semantic clustering enabled");
@@ -62,17 +63,8 @@ public class EmbeddingService {
     public void embedEvent(UUID eventId, String nameText) {
         if (!isEmbeddingsAvailable()) return;
         try {
-            float[] embedding = embeddingModel.embed(nameText);
-            String vectorStr = toVectorString(embedding);
-            entityManager
-                    .createNativeQuery("INSERT INTO event_embedding (event_id, name_text, embedding, computed_at) "
-                            + "VALUES (CAST(:eventId AS UUID), :nameText, :embedding::vector, NOW()) "
-                            + "ON CONFLICT (event_id) DO UPDATE SET name_text = :nameText, "
-                            + "embedding = :embedding::vector, computed_at = NOW()")
-                    .setParameter("eventId", eventId.toString())
-                    .setParameter("nameText", nameText)
-                    .setParameter("embedding", vectorStr)
-                    .executeUpdate();
+            float[] raw = embeddingModel.embed(nameText);
+            embeddingRepository.save(new EventEmbedding(eventId, nameText, toVectorString(raw), OffsetDateTime.now()));
         } catch (Exception e) {
             log.error("Failed to embed event {}: {}", eventId, e.getMessage());
         }
@@ -84,23 +76,12 @@ public class EmbeddingService {
     public void backfillMissingEmbeddings() {
         if (!isEmbeddingsAvailable()) return;
 
-        @SuppressWarnings("unchecked")
-        List<UUID> missingIds = entityManager
-                .createNativeQuery("SELECT e.id FROM event e "
-                        + "LEFT JOIN event_embedding ee ON e.id = ee.event_id "
-                        + "WHERE ee.event_id IS NULL "
-                        + "LIMIT :batchSize")
-                .setParameter("batchSize", config.getBackfillBatchSize())
-                .getResultList();
-
+        List<UUID> missingIds = embeddingRepository.findEventIdsWithoutEmbedding(config.getBackfillBatchSize());
         if (missingIds.isEmpty()) return;
 
         log.info("Backfilling embeddings for {} events", missingIds.size());
         for (UUID id : missingIds) {
-            eventRepository.findById(id).ifPresent(event -> {
-                String text = buildEmbeddingText(event);
-                embedEvent(event.getId(), text);
-            });
+            eventRepository.findById(id).ifPresent(event -> embedEvent(event.getId(), buildEmbeddingText(event)));
         }
     }
 
