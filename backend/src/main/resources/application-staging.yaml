@@ -3,3 +3,12 @@ dev.tylercash:
     allowed-origins: https://event-staging.tylercash.dev
   frontend:
     hostname: event-staging.tylercash.dev
+  rewind:
+    normalisation-enabled: true
+
+spring:
+  ai:
+    ollama:
+      base-url: http://ollama:11434
+      chat:
+        enabled: true
