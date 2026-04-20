@@ -6,6 +6,8 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -26,6 +28,7 @@ public class EventEmbedding {
     private String nameText;
 
     @Convert(converter = VectorConverter.class)
+    @JdbcTypeCode(SqlTypes.OTHER)
     @Column(name = "embedding", columnDefinition = "vector(384)", nullable = false)
     private String embedding;
 
