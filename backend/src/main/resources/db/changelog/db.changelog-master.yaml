@@ -575,6 +575,11 @@ databaseChangeLog:
   - changeSet:
       id: add vector extension
       author: claude
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'
       changes:
         - sql:
             sql: CREATE EXTENSION IF NOT EXISTS vector;
