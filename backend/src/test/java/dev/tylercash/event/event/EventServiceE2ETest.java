@@ -30,7 +30,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class EventServiceE2ETest {
 
     @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13-alpine");
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @Autowired
     private EventService eventService;
