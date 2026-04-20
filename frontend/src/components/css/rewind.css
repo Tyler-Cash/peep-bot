@@ -301,6 +301,13 @@
     font-weight: 600;
 }
 
+/* Duo network graph */
+.rewind-duo-graph {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
 /* Milestones */
 .rewind-milestone {
     background: var(--bg-elevated);

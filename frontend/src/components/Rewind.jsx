@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Navbar from './Navbar';
 import {
     useGetMyRewindStatsQuery,
@@ -8,6 +8,15 @@ import {
 } from '../api/eventBotApi';
 import { backendUrl } from '../api/backendUrl';
 import './css/rewind.css';
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatBarLabel(key) {
+    if (/^\d{4}-\d{2}$/.test(key)) {
+        return MONTH_ABBR[parseInt(key.slice(5)) - 1];
+    }
+    return key.slice(0, 3);
+}
 
 function StatCard({ label, value }) {
     return (
@@ -47,11 +56,88 @@ function BarChart({ data, label }) {
                                 style={{ height: `${Math.round((value / max) * 100)}%` }}
                             />
                         </div>
-                        <div className="rewind-bar-label">{key.length > 7 ? key.slice(5) : key}</div>
+                        <div className="rewind-bar-label">{formatBarLabel(key)}</div>
                         <div className="rewind-bar-count">{value}</div>
                     </div>
                 ))}
             </div>
+        </div>
+    );
+}
+
+function DuoGraph({ pairs }) {
+    if (!pairs || pairs.length === 0) return null;
+
+    const people = [...new Set(pairs.flatMap((p) => [p.user1, p.user2]))];
+    const n = people.length;
+    const size = 500;
+    const cx = size / 2;
+    const cy = size / 2;
+    const nodeR = 155;
+    const labelR = nodeR + 24;
+
+    const positions = Object.fromEntries(
+        people.map((name, i) => {
+            const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+            return [name, { x: cx + nodeR * Math.cos(angle), y: cy + nodeR * Math.sin(angle), angle }];
+        }),
+    );
+
+    const maxEvents = Math.max(...pairs.map((p) => p.sharedEvents));
+    const minEvents = Math.min(...pairs.map((p) => p.sharedEvents));
+    const range = maxEvents - minEvents || 1;
+
+    return (
+        <div className="rewind-section">
+            <h3 className="rewind-section-title">Best Duos</h3>
+            <svg viewBox={`0 0 ${size} ${size}`} className="rewind-duo-graph">
+                {pairs.map((pair, i) => {
+                    const from = positions[pair.user1];
+                    const to = positions[pair.user2];
+                    if (!from || !to) return null;
+                    const t = (pair.sharedEvents - minEvents) / range;
+                    return (
+                        <line
+                            key={i}
+                            x1={from.x}
+                            y1={from.y}
+                            x2={to.x}
+                            y2={to.y}
+                            stroke="var(--accent)"
+                            strokeWidth={1 + t * 3.5}
+                            strokeOpacity={0.2 + t * 0.65}
+                        >
+                            <title>
+                                {pair.user1} &amp; {pair.user2}: {pair.sharedEvents} events together
+                            </title>
+                        </line>
+                    );
+                })}
+                {people.map((name) => {
+                    const pos = positions[name];
+                    const lx = cx + labelR * Math.cos(pos.angle);
+                    const ly = cy + labelR * Math.sin(pos.angle);
+                    const cosA = Math.cos(pos.angle);
+                    const anchor = cosA > 0.15 ? 'start' : cosA < -0.15 ? 'end' : 'middle';
+                    const label = name.length > 18 ? name.slice(0, 17) + '…' : name;
+                    return (
+                        <g key={name}>
+                            <circle cx={pos.x} cy={pos.y} r={5} fill="var(--accent)" opacity={0.9} />
+                            <text
+                                x={lx}
+                                y={ly}
+                                textAnchor={anchor}
+                                dominantBaseline="middle"
+                                fill="var(--text-secondary)"
+                                fontSize="11"
+                                fontFamily="inherit"
+                            >
+                                {label}
+                            </text>
+                        </g>
+                    );
+                })}
+            </svg>
         </div>
     );
 }
@@ -121,17 +207,7 @@ function RewindContent({ year, mode }) {
             </div>
 
             {data.topSocialPairs?.length > 0 && (
-                <div className="rewind-section">
-                    <h3 className="rewind-section-title">Best Duos</h3>
-                    {data.topSocialPairs.slice(0, 10).map((pair, i) => (
-                        <div key={i} className="rewind-social-pair">
-                            <span className="rewind-pair-names">
-                                {pair.user1} &amp; {pair.user2}
-                            </span>
-                            <span className="rewind-count-badge">{pair.sharedEvents} events together</span>
-                        </div>
-                    ))}
-                </div>
+                <DuoGraph pairs={data.topSocialPairs.slice(0, 10)} />
             )}
 
             <BarChart data={data.eventsByMonth} label="Events by Month" />
@@ -164,8 +240,8 @@ function RewindContent({ year, mode }) {
 }
 
 function RewindPage() {
-    const [year, setYear] = useState(undefined);
-    const [mode, setMode] = useState('guild');
+    const [year, setYear] = React.useState(undefined);
+    const [mode, setMode] = React.useState('guild');
     const { data: years } = useGetRewindYearsQuery();
 
     return (
