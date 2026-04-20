@@ -215,9 +215,10 @@ public class RewindService {
         String firstQ = personal
                 ? "SELECT e.id, e.name, e.date_time FROM event e "
                         + "JOIN attendance a ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf
+                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED' AND e.date_time IS NOT NULL" + yf
                         + " ORDER BY e.date_time ASC LIMIT 1"
-                : "SELECT e.id, e.name, e.date_time FROM event e WHERE 1=1" + yf + " ORDER BY e.date_time ASC LIMIT 1";
+                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf
+                        + " ORDER BY e.date_time ASC LIMIT 1";
         var feq = em.createNativeQuery(firstQ);
         if (year != null) feq.setParameter("year", year);
         if (personal) feq.setParameter("snowflake", snowflake);
@@ -228,9 +229,10 @@ public class RewindService {
         String lastQ = personal
                 ? "SELECT e.id, e.name, e.date_time FROM event e "
                         + "JOIN attendance a ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf
+                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED' AND e.date_time IS NOT NULL" + yf
                         + " ORDER BY e.date_time DESC LIMIT 1"
-                : "SELECT e.id, e.name, e.date_time FROM event e WHERE 1=1" + yf + " ORDER BY e.date_time DESC LIMIT 1";
+                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf
+                        + " ORDER BY e.date_time DESC LIMIT 1";
         var leq = em.createNativeQuery(lastQ);
         if (year != null) leq.setParameter("year", year);
         if (personal) leq.setParameter("snowflake", snowflake);

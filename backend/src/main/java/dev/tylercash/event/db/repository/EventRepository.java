@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -31,4 +32,7 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findByPrivateChannelIdIn(List<Long> channelIds);
 
     Page<Event> findByState(Pageable pageable, EventState state);
+
+    @Query(value = "SELECT DISTINCT creator FROM event WHERE creator IS NOT NULL AND creator != ''", nativeQuery = true)
+    List<String> findAllDistinctCreatorSnowflakes();
 }
