@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "dev.tylercash.rewind")
 public class RewindConfiguration {
     private boolean enabled = true;
-    private double clusterSimilarityThreshold = 0.78;
+    private double clusterSimilarityThreshold = 0.72;
     private int backfillBatchSize = 20;
 }

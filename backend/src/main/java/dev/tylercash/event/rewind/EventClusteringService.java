@@ -145,16 +145,18 @@ public class EventClusteringService {
 
     private String mostFrequentName(String[] names, List<Integer> members) {
         Map<String, Long> counts = members.stream()
-                .collect(Collectors.groupingBy(i -> names[i].trim().toLowerCase(), Collectors.counting()));
-        String bestLower = counts.entrySet().stream()
+                .collect(Collectors.groupingBy(
+                        i -> extractEventName(names[i]).toLowerCase(), Collectors.counting()));
+        return counts.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .get()
-                .getKey();
-        return members.stream()
-                .filter(i -> names[i].trim().toLowerCase().equals(bestLower))
-                .findFirst()
-                .map(i -> names[i].trim())
-                .orElse(names[members.get(0)].trim());
+                .getKey()
+                .trim();
+    }
+
+    private String extractEventName(String nameText) {
+        int sep = nameText.indexOf(" | ");
+        return sep > 0 ? nameText.substring(0, sep).trim() : nameText.trim();
     }
 
     private double cosineSimilarity(List<Double> a, List<Double> b) {

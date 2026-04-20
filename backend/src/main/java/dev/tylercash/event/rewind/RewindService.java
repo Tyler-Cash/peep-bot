@@ -150,8 +150,11 @@ public class RewindService {
                 .collect(Collectors.toSet());
         Map<String, String> orgNames = userCacheService.getDisplayNames(orgSnowflakes);
         List<AttendeeStatDto> topOrganizers = orgRows.stream()
-                .map(r -> new AttendeeStatDto(
-                        orgNames.getOrDefault((String) r[0], "Unknown"), ((Number) r[1]).intValue()))
+                .map(r -> {
+                    String raw = (String) r[0];
+                    String name = orgNames.getOrDefault(raw, raw != null && !raw.isBlank() ? raw : "Unknown");
+                    return new AttendeeStatDto(name, ((Number) r[1]).intValue());
+                })
                 .collect(Collectors.toList());
 
         // Social pairs (guild-wide only)

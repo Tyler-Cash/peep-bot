@@ -50,7 +50,8 @@ public class EmbeddingService {
     String buildEmbeddingText(Event event) {
         var sb = new StringBuilder(event.getName());
         sb.append(" | ").append(event.getDateTime().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH));
-        if (event.getDescription() != null && !event.getDescription().isBlank()) {
+        if (event.getDescription() != null && !event.getDescription().isBlank()
+                && !event.getDescription().trim().equalsIgnoreCase(event.getName().trim())) {
             sb.append(" | ").append(event.getDescription().trim());
         }
         if (event.getCapacity() != null && event.getCapacity() > 0) {

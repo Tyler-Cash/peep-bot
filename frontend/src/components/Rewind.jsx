@@ -11,9 +11,10 @@ import './css/rewind.css';
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function formatBarLabel(key) {
+function formatBarLabel(key, multiYear) {
     if (/^\d{4}-\d{2}$/.test(key)) {
-        return MONTH_ABBR[parseInt(key.slice(5)) - 1];
+        const month = MONTH_ABBR[parseInt(key.slice(5)) - 1];
+        return multiYear ? `${month} '${key.slice(2, 4)}` : month;
     }
     return key.slice(0, 3);
 }
@@ -44,6 +45,8 @@ function BarChart({ data, label }) {
     const entries = Object.entries(data || {});
     if (entries.length === 0) return null;
     const max = Math.max(...entries.map(([, v]) => v), 1);
+    const years = new Set(entries.map(([k]) => k.slice(0, 4)));
+    const multiYear = years.size > 1;
     return (
         <div className="rewind-section">
             <h3 className="rewind-section-title">{label}</h3>
@@ -56,7 +59,7 @@ function BarChart({ data, label }) {
                                 style={{ height: `${Math.round((value / max) * 100)}%` }}
                             />
                         </div>
-                        <div className="rewind-bar-label">{formatBarLabel(key)}</div>
+                        <div className="rewind-bar-label">{formatBarLabel(key, multiYear)}</div>
                         <div className="rewind-bar-count">{value}</div>
                     </div>
                 ))}
