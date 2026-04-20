@@ -62,6 +62,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Cache ONNX model files
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: backend/src/main/resources/models
+          key: onnx-model-all-minilm-l6-v2
+
       - name: Make gradlew executable
         run: chmod +x gradlew
         working-directory: ./backend
@@ -116,6 +122,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Cache ONNX model files
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: backend/src/main/resources/models
+          key: onnx-model-all-minilm-l6-v2
+
       - name: Make gradlew executable
         run: chmod +x gradlew
         working-directory: ./backend
@@ -164,6 +176,12 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle*', 'backend/**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: Cache ONNX model files
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: backend/src/main/resources/models
+          key: onnx-model-all-minilm-l6-v2
 
       - name: Make gradlew executable
         run: chmod +x gradlew

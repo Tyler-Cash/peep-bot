@@ -1,0 +1,352 @@
+/* ============================================
+   Rewind Page
+   ============================================ */
+
+.rewind-container {
+    max-width: 860px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Header */
+.rewind-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.rewind-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.rewind-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Year selector */
+.rewind-year-select {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.rewind-year-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Mode toggle */
+.rewind-mode-toggle {
+    display: flex;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.rewind-mode-btn {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: none;
+    padding: 0.45rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition:
+        background 0.2s,
+        color 0.2s;
+}
+
+.rewind-mode-btn + .rewind-mode-btn {
+    border-left: 1px solid var(--border-muted);
+}
+
+.rewind-mode-btn.active {
+    background: rgba(88, 101, 242, 0.15);
+    color: var(--accent);
+}
+
+.rewind-mode-btn:hover:not(.active) {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+/* Info banner */
+.rewind-banner {
+    background: rgba(88, 101, 242, 0.08);
+    border: 1px solid rgba(88, 101, 242, 0.2);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Stats grid */
+.rewind-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 600px) {
+    .rewind-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.rewind-stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-top: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.rewind-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.1;
+}
+
+.rewind-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Section */
+.rewind-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.rewind-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+/* Progress bars */
+.rewind-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.rewind-progress-label {
+    width: 140px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+.rewind-progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rewind-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.rewind-progress-count {
+    width: 32px;
+    text-align: right;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+/* Two-column layout */
+.rewind-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .rewind-two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* List items */
+.rewind-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.rewind-list-item:last-child {
+    border-bottom: none;
+}
+
+/* Count badge */
+.rewind-count-badge {
+    background: rgba(88, 101, 242, 0.12);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Social pairs */
+.rewind-social-pair {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.rewind-social-pair:last-child {
+    border-bottom: none;
+}
+
+.rewind-pair-names {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Bar chart */
+.rewind-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.4rem;
+    height: 120px;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.rewind-bar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 36px;
+    flex: 1;
+}
+
+.rewind-bar-track {
+    width: 100%;
+    height: 80px;
+    background: var(--bg-elevated);
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.rewind-bar-fill {
+    width: 100%;
+    background: var(--accent);
+    border-radius: 4px 4px 0 0;
+    transition: height 0.4s ease;
+    min-height: 2px;
+    opacity: 0.8;
+}
+
+.rewind-bar-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.rewind-bar-count {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Duo network graph */
+.rewind-duo-graph {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Milestones */
+.rewind-milestone {
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.rewind-milestone-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+}
+
+.rewind-milestone-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rewind-milestone-date {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Content wrapper */
+.rewind-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
