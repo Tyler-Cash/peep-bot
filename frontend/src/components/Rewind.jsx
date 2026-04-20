@@ -206,9 +206,7 @@ function RewindContent({ year, mode }) {
                 )}
             </div>
 
-            {data.topSocialPairs?.length > 0 && (
-                <DuoGraph pairs={data.topSocialPairs.slice(0, 10)} />
-            )}
+            {data.topSocialPairs?.length > 0 && <DuoGraph pairs={data.topSocialPairs.slice(0, 10)} />}
 
             <BarChart data={data.eventsByMonth} label="Events by Month" />
             <BarChart data={data.eventsByDayOfWeek} label="Events by Day of Week" />
