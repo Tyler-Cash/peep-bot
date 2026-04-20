@@ -33,7 +33,7 @@ FROM development AS build
 
 RUN ["npm", "run", "build"]
 
-FROM nginx:1.29-alpine
+FROM nginx:1.30-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/Tyler-Cash/peep-bot"
 LABEL org.opencontainers.image.url="https://github.com/Tyler-Cash/peep-bot"
