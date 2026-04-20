@@ -48,6 +48,12 @@ export default function Navbar({ focus }) {
                             >
                                 Events
                             </Link>
+                            <Link
+                                className={'nav-breadcrumb-link' + (focus === 'REWIND' ? ' active' : '')}
+                                to="/rewind"
+                            >
+                                Rewind
+                            </Link>
                             {focus === 'CREATE' && (
                                 <>
                                     <span className="nav-breadcrumb-sep">/</span>

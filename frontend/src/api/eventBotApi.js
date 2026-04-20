@@ -159,6 +159,15 @@ export const eventBotApi = createApi({
         isLoggedIn: builder.query({
             query: () => `auth/is-logged-in`,
         }),
+        getRewindStats: builder.query({
+            query: ({ year } = {}) => (year ? `rewind?year=${year}` : 'rewind'),
+        }),
+        getMyRewindStats: builder.query({
+            query: ({ year } = {}) => (year ? `rewind/me?year=${year}` : 'rewind/me'),
+        }),
+        getRewindYears: builder.query({
+            query: () => 'rewind/years',
+        }),
     }),
 });
 
@@ -171,4 +180,7 @@ export const {
     useCancelEventMutation,
     useCreatePrivateChannelMutation,
     useIsLoggedInQuery,
+    useGetRewindStatsQuery,
+    useGetMyRewindStatsQuery,
+    useGetRewindYearsQuery,
 } = eventBotApi;

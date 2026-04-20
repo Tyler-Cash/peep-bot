@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Downloaded model files (bundled at build time, not committed) ###
+src/main/resources/models/
