@@ -4,10 +4,18 @@ plugins {
     id 'com.diffplug.spotless' version '8.4.0'
     id 'org.springframework.boot' version '3.5.13'
     id 'org.cyclonedx.bom' version '2.4.1'
+    id 'org.owasp.dependencycheck' version '12.2.1'
 }
 
 apply plugin: 'application'
 apply plugin: 'io.spring.dependency-management'
+
+ext {
+    set('spring-framework.version', '6.2.17')
+    set('spring-security.version', '6.5.9')
+    set('spring-session.version', '3.5.5')
+    set('spring-retry.version', '2.0.12')
+}
 
 group = 'dev.tylercash'
 version = '0.0.1-SNAPSHOT'
@@ -35,6 +43,8 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:1.0.5'
+        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2025.1.1'
+        mavenBom 'org.springframework.data:spring-data-bom:2025.0.10'
     }
 }
 
