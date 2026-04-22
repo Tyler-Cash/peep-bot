@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
+import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -24,6 +25,7 @@ class DiscordUserCacheServiceTest {
 
     private DiscordUserCacheRepository cacheRepository;
     private AttendanceRepository attendanceRepository;
+    private EventRepository eventRepository;
     private DiscordService discordService;
     private DiscordConfiguration discordConfiguration;
     private DiscordUserCacheService service;
@@ -32,13 +34,15 @@ class DiscordUserCacheServiceTest {
     void setUp() {
         cacheRepository = mock(DiscordUserCacheRepository.class);
         attendanceRepository = mock(AttendanceRepository.class);
+        eventRepository = mock(EventRepository.class);
         discordService = mock(DiscordService.class);
         discordConfiguration = mock(DiscordConfiguration.class);
         @SuppressWarnings("unchecked")
         ObjectProvider<DiscordService> discordServiceProvider = mock(ObjectProvider.class);
         lenient().when(discordServiceProvider.getObject()).thenReturn(discordService);
+        lenient().when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
         service = new DiscordUserCacheService(
-                cacheRepository, attendanceRepository, discordServiceProvider, discordConfiguration);
+                cacheRepository, attendanceRepository, eventRepository, discordServiceProvider, discordConfiguration);
     }
 
     @Nested

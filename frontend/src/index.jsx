@@ -17,6 +17,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import CreateEvent from './components/CreateEvent';
 import ListEvents from './components/ListEvents';
 import EditEvent from './components/EditEvent';
+import Rewind from './components/Rewind';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -53,6 +54,14 @@ const router = createBrowserRouter(
                     element={
                         <Protected>
                             <ListEvents />
+                        </Protected>
+                    }
+                />
+                <Route
+                    path="/rewind"
+                    element={
+                        <Protected>
+                            <Rewind />
                         </Protected>
                     }
                 />

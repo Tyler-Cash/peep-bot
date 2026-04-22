@@ -18,6 +18,11 @@ dev.tylercash:
     read-refill-seconds: 60
     write-capacity: 5
     write-refill-seconds: 60
+  rewind:
+    enabled: true
+    cluster-similarity-threshold: 0.72
+    backfill-batch-size: 20
+    normalisation-enabled: false
 
 springdoc:
   show-oauth2-endpoints: true
@@ -40,9 +45,27 @@ spring:
     lazy-initialization: true
   cache:
     type: caffeine
-    cache-names: activeEvents,eventDetail,openContracts
+    cache-names: activeEvents,eventDetail,openContracts,rewind
     caffeine:
       spec: maximumSize=500,expireAfterWrite=120s
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        enabled: false
+        model: qwen2.5:0.5b
+        options:
+          temperature: 0.0
+          num-predict: 15
+      embedding:
+        enabled: false  # use spring-ai-starter-model-transformers instead
+    embedding:
+      transformer:
+        enabled: true  # downloads ~45MB all-MiniLM-L6-v2 model from HuggingFace on first startup, cached locally after
+        tokenizer:
+          uri: classpath:/models/tokenizer.json
+        model:
+          uri: classpath:/models/model.onnx
   session:
     cookie:
       name: SESSION

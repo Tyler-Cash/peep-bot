@@ -4,6 +4,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
+import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
@@ -25,16 +26,19 @@ public class DiscordUserCacheService {
 
     private final DiscordUserCacheRepository cacheRepository;
     private final AttendanceRepository attendanceRepository;
+    private final EventRepository eventRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
     private final DiscordConfiguration discordConfiguration;
 
     public DiscordUserCacheService(
             DiscordUserCacheRepository cacheRepository,
             AttendanceRepository attendanceRepository,
+            EventRepository eventRepository,
             ObjectProvider<DiscordService> discordServiceProvider,
             DiscordConfiguration discordConfiguration) {
         this.cacheRepository = cacheRepository;
         this.attendanceRepository = attendanceRepository;
+        this.eventRepository = eventRepository;
         this.discordServiceProvider = discordServiceProvider;
         this.discordConfiguration = discordConfiguration;
     }
@@ -70,7 +74,8 @@ public class DiscordUserCacheService {
     @Scheduled(fixedDelay = 60, timeUnit = SECONDS)
     public void refreshStaleEntries() {
         Instant staleCutoff = Instant.now().minus(STALE_MINUTES, ChronoUnit.MINUTES);
-        List<String> activeSnowflakes = attendanceRepository.findAllDistinctSnowflakes();
+        List<String> activeSnowflakes = new ArrayList<>(attendanceRepository.findAllDistinctSnowflakes());
+        activeSnowflakes.addAll(eventRepository.findAllDistinctCreatorSnowflakes());
         if (activeSnowflakes.isEmpty()) {
             return;
         }

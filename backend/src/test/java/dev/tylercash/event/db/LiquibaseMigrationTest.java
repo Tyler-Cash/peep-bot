@@ -30,7 +30,7 @@ class LiquibaseMigrationTest {
     private static final int CHANGESETS_BEFORE_DATA_MIGRATION = 16;
 
     @Container
-    private static final PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:17-alpine");
+    private static final PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     private Connection createIsolatedConnection() throws Exception {
         String dbName = "test_" + UUID.randomUUID().toString().replace("-", "");
