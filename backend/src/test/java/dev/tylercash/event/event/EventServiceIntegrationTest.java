@@ -16,6 +16,10 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
@@ -206,6 +210,90 @@ class EventServiceIntegrationTest {
         Map<String, String> names = discordUserCacheService.getDisplayNames(List.of("batch1", "batch2", "missing"));
 
         assertThat(names).hasSize(2).containsEntry("batch1", "Alice").containsEntry("batch2", "Bob");
+    }
+
+    @Test
+    @DisplayName("flipAttendance toggles to REMOVED when the user clicks their current status again")
+    void flipAttendance_togglesOffWhenStatusMatchesCurrent() {
+        UUID eventId = createPersistedEvent();
+        attendanceService.recordAttendance(eventId, "user1", null, AttendanceStatus.ACCEPTED, null);
+
+        AttendanceStatus result = attendanceService.flipAttendance(eventId, "user1", null, AttendanceStatus.ACCEPTED);
+
+        assertThat(result).isEqualTo(AttendanceStatus.REMOVED);
+        List<AttendanceRecord> latest = attendanceRepository.findLatestPerAttendee(eventId);
+        assertThat(latest)
+                .filteredOn(r -> "user1".equals(r.getSnowflake()))
+                .singleElement()
+                .extracting(AttendanceRecord::getStatus)
+                .isEqualTo(AttendanceStatus.REMOVED);
+    }
+
+    @Test
+    @DisplayName("flipAttendance switches between statuses without toggling off")
+    void flipAttendance_switchesBetweenStatuses() {
+        UUID eventId = createPersistedEvent();
+        attendanceService.recordAttendance(eventId, "user1", null, AttendanceStatus.MAYBE, null);
+
+        AttendanceStatus result = attendanceService.flipAttendance(eventId, "user1", null, AttendanceStatus.ACCEPTED);
+
+        assertThat(result).isEqualTo(AttendanceStatus.ACCEPTED);
+    }
+
+    @Test
+    @DisplayName("flipAttendance cascades REMOVED to +1 guests owned by the user when they decline")
+    void flipAttendance_cascadeRemovesOwnedPlusOnesOnDecline() {
+        UUID eventId = createPersistedEvent();
+        attendanceService.recordAttendance(eventId, "owner", null, AttendanceStatus.ACCEPTED, null);
+        attendanceService.recordAttendance(eventId, null, "[+1] Guest A", AttendanceStatus.ACCEPTED, "owner");
+        attendanceService.recordAttendance(eventId, null, "[+1] Guest B", AttendanceStatus.ACCEPTED, "owner");
+
+        attendanceService.flipAttendance(eventId, "owner", null, AttendanceStatus.DECLINED);
+
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(eventId);
+        assertThat(summary.accepted()).isEmpty();
+        assertThat(summary.declined())
+                .singleElement()
+                .extracting(AttendanceRecord::getSnowflake)
+                .isEqualTo("owner");
+    }
+
+    @Test
+    @DisplayName("concurrent flipAttendance calls for different users each resolve to their requested status")
+    void concurrentFlipAttendance_independentUsers() throws Exception {
+        UUID eventId = createPersistedEvent();
+        int userCount = 20;
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(userCount);
+        try {
+            for (int i = 0; i < userCount; i++) {
+                String snowflake = "u" + i;
+                AttendanceStatus requested = i % 3 == 0
+                        ? AttendanceStatus.ACCEPTED
+                        : (i % 3 == 1 ? AttendanceStatus.DECLINED : AttendanceStatus.MAYBE);
+                executor.submit(() -> {
+                    try {
+                        start.await();
+                        attendanceService.flipAttendance(eventId, snowflake, null, requested);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        done.countDown();
+                    }
+                });
+            }
+            start.countDown();
+            assertThat(done.await(10, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            executor.shutdownNow();
+        }
+
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(eventId);
+        int totalRecorded = summary.accepted().size()
+                + summary.declined().size()
+                + summary.maybe().size();
+        assertThat(totalRecorded).isEqualTo(userCount);
     }
 
     @Test
