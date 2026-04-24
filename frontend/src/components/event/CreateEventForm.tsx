@@ -4,22 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
-import { CatTag } from "@/components/ui/CatTag";
+import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Peepo } from "@/components/Peepo";
-import { CATEGORIES, categoryMeta } from "@/lib/categories";
 import { dateStamp, timeLabel } from "@/lib/format";
-import { createEvent, useActiveGuild } from "@/lib/hooks";
-import type { Category } from "@/lib/types";
+import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
 export function CreateEventForm() {
   const router = useRouter();
   const guild = useActiveGuild();
+  const recentVenues = useRecentLocations();
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<Category>("food");
-  const [date, setDate] = useState(() => new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().slice(0, 16));
-  const [venue, setVenue] = useState("");
-  const [city, setCity] = useState("");
-  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(() =>
+    new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().slice(0, 16),
+  );
+  const [location, setLocation] = useState("");
+  const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,10 +29,8 @@ export function CreateEventForm() {
     try {
       const created = await createEvent(guild.id, {
         name,
-        category,
-        description,
-        location: venue,
-        city,
+        description: info,
+        ...(location.trim() ? { location } : {}),
         capacity,
         dateTime: new Date(date).toISOString(),
       });
@@ -44,7 +41,6 @@ export function CreateEventForm() {
   };
 
   const stamp = dateStamp(new Date(date).toISOString());
-  const cat = categoryMeta(category);
 
   return (
     <div className="mx-auto max-w-[820px] px-5 py-6">
@@ -62,17 +58,14 @@ export function CreateEventForm() {
         </div>
       </header>
 
-      {/* live preview */}
-      <div
-        className="relative rounded-[14px] border-[1.5px] border-ink shadow-chunky-md overflow-hidden p-4 flex items-start gap-3"
-        style={{ background: cat.bg, color: cat.ink }}
-      >
+      {/* live preview — neutral while the backend figures out the category */}
+      <div className="relative rounded-[14px] border-[1.5px] border-ink shadow-chunky-md overflow-hidden p-4 flex items-start gap-3 bg-paper3 text-ink">
         <span
-          className="absolute text-[140px] leading-none opacity-[0.2] select-none pointer-events-none"
-          style={{ right: -8, bottom: -40, transform: "rotate(-12deg)" }}
+          className="absolute opacity-[0.16] select-none pointer-events-none"
+          style={{ right: -12, bottom: -36, transform: "rotate(-12deg)" }}
           aria-hidden
         >
-          {cat.emoji}
+          <Peepo size={180} />
         </span>
         <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
           <span className="text-[10.5px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
@@ -82,13 +75,14 @@ export function CreateEventForm() {
           </span>
         </div>
         <div className="relative flex-1 min-w-0">
-          <CatTag category={category} />
+          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-2.5 py-0.5 text-[11px] font-extrabold shadow-chunky-sm text-mute uppercase tracking-[0.08em]">
+            category · auto-sorted
+          </span>
           <h2 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.03em] leading-[1.05]">
             {name || "your event title"}
           </h2>
           <p className="mt-1 text-[13.5px] font-semibold">
-            {timeLabel(new Date(date).toISOString())} · 📍 {venue || "venue"}
-            {city ? `, ${city}` : ""}
+            {timeLabel(new Date(date).toISOString())} · 📍 {location || "venue"}
           </p>
         </div>
       </div>
@@ -103,32 +97,6 @@ export function CreateEventForm() {
               required
               className={inputCls}
             />
-          </Field>
-
-          <Field label="category">
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(CATEGORIES) as Category[]).map((k) => {
-                const m = CATEGORIES[k];
-                const active = category === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setCategory(k)}
-                    className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3 py-1 text-[13px] font-extrabold shadow-chunky-sm transition-transform active:translate-x-[1px] active:translate-y-[1px]"
-                    style={{
-                      background: m.bg,
-                      color: m.ink,
-                      transform: active ? "translateY(-1px)" : undefined,
-                      boxShadow: active ? "3px 3px 0 #0E100D" : undefined,
-                    }}
-                  >
-                    <span aria-hidden>{m.emoji}</span>
-                    <span className="lowercase">{m.label}</span>
-                  </button>
-                );
-              })}
-            </div>
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -152,28 +120,19 @@ export function CreateEventForm() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="venue">
-              <input
-                value={venue}
-                onChange={(e) => setVenue(e.target.value)}
-                placeholder="where?"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="city">
-              <input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className={inputCls}
-              />
-            </Field>
-          </div>
+          <Field label="venue">
+            <LocationAutocomplete
+              value={location}
+              onChange={setLocation}
+              placeholder="where?"
+              recent={recentVenues}
+            />
+          </Field>
 
-          <Field label="description">
+          <Field label="info">
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={info}
+              onChange={(e) => setInfo(e.target.value)}
               rows={4}
               placeholder="what do people need to know?"
               className={inputCls + " resize-y"}
