@@ -15,8 +15,10 @@ vi.mock("@upstash/ratelimit", () => {
     .fn()
     .mockImplementationOnce(() => ({ limit: mockWindowLimit }))
     .mockImplementationOnce(() => ({ limit: mockHourlyLimit }));
-  MockRatelimit.slidingWindow = vi.fn(() => ({}));
-  MockRatelimit.fixedWindow = vi.fn(() => ({}));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (MockRatelimit as any).slidingWindow = vi.fn(() => ({}));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (MockRatelimit as any).fixedWindow = vi.fn(() => ({}));
   return { Ratelimit: MockRatelimit };
 });
 
