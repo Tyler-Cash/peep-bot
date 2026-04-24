@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Peepo } from "@/components/Peepo";
 import { Chunky } from "@/components/ui/Chunky";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
+import { useCurrentUser } from "@/lib/hooks";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
@@ -19,6 +21,11 @@ const features = [
 export function LoginHero() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { data: user } = useCurrentUser();
+
+  useEffect(() => {
+    if (user) router.replace("/");
+  }, [user, router]);
 
   const onContinue = () => {
     setLoading(true);
