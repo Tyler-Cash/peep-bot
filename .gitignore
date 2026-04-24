@@ -63,3 +63,4 @@ discord-events-squash/
 .idea/jsLibraryMappings.xml
 .idea/db-forest-config.xml
 .worktrees/
+.vercel/
