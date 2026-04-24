@@ -285,7 +285,7 @@ jobs:
           category: backend
 
   backend-push:
-    needs: [backend-test, backend-e2etest, backend-build, backend-sbom, frontend-sbom]
+    needs: [backend-test, backend-e2etest, backend-build, backend-sbom]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
@@ -313,17 +313,15 @@ jobs:
           gunzip -c /tmp/backend-image.tar.gz | docker load
           docker push "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
 
-  frontend:
+  frontend-ci:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Set up lowercase owner
-        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set up Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
@@ -336,69 +334,83 @@ jobs:
         run: npm ci
         working-directory: ./frontend
 
-      - name: Check code formatting
-        run: npx prettier --check "src/**/*.{js,jsx,css}"
+      - name: Lint
+        run: npm run lint
         working-directory: ./frontend
 
-      - name: Lint code
-        run: npx eslint src/
+      - name: Typecheck
+        run: npm run typecheck
         working-directory: ./frontend
 
-      - name: Run tests
-        run: npx vitest run
+      - name: Build
+        run: npm run build
         working-directory: ./frontend
+        env:
+          # Build on CI against the mock backend so lack of homelab access
+          # can't break the build. Production env vars live in Vercel.
+          NEXT_PUBLIC_API_MODE: mock
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Docker image
-        run: docker build . -t "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
-        working-directory: ./frontend
-
-      - name: Save Docker image
-        if: github.ref == 'refs/heads/main'
-        run: docker save "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest" | gzip > /tmp/frontend-image.tar.gz
-
-      - name: Upload Docker image artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: frontend-image
-          path: /tmp/frontend-image.tar.gz
-          retention-days: 1
-
-  frontend-push:
-    needs: [frontend, backend-sbom, frontend-sbom]
-    if: github.ref == 'refs/heads/main'
+  frontend-deploy:
+    # Deploy to Vercel only after frontend CI, backend tests, and security
+    # scans all pass. Production on main, preview for every PR.
+    needs: [frontend-ci, frontend-sbom, backend-test, backend-e2etest]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write
+      pull-requests: write
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - name: Set up lowercase owner
-        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: frontend-image
-          path: /tmp
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
 
-      - name: Load and push Docker image
+      - name: Determine deploy environment
+        id: env
         run: |
-          gunzip -c /tmp/frontend-image.tar.gz | docker load
-          docker push "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "prod_flag=--prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=preview" >> $GITHUB_OUTPUT
+            echo "prod_flag=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=${{ steps.env.outputs.environment }} --token=$VERCEL_TOKEN
+        working-directory: ./frontend
+
+      - name: Build with Vercel
+        run: vercel build ${{ steps.env.outputs.prod_flag }} --token=$VERCEL_TOKEN
+        working-directory: ./frontend
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt ${{ steps.env.outputs.prod_flag }} --token=$VERCEL_TOKEN)
+          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "Deployed to: $url"
+        working-directory: ./frontend
+
+      - name: Comment preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 # v2.9.1
+        with:
+          header: vercel-preview
+          message: |
+            🐸 Vercel preview deployed: ${{ steps.deploy.outputs.url }}
 
   frontend-sbom:
     needs: [changes]
@@ -449,7 +461,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-push, frontend-push]
+    needs: [backend-push, frontend-deploy]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -468,10 +480,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull latest images
-        run: |
-          docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
-          docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-frontend:latest"
+      - name: Pull latest backend image
+        run: docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0

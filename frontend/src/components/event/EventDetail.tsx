@@ -115,8 +115,7 @@ export function EventDetail({ id }: { id: string }) {
                   {data.name}
                 </h1>
                 <p className="mt-2 text-[16px] font-semibold">
-                  {stamp.weekday} · {timeLabel(data.dateTime)} · 📍 {data.location}
-                  {data.city ? `, ${data.city}` : ""} · 🎤 organized by {data.host}
+                  {stamp.weekday} · {timeLabel(data.dateTime)} · 📍 {data.location} · 🎤 organized by {data.host}
                 </p>
               </div>
             </div>

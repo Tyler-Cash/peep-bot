@@ -1,6 +1,18 @@
 import { http, HttpResponse } from "msw";
-import type { Category, EventDetailDto, EventDto, RsvpStatus } from "@/lib/types";
-import { currentUser, findEvent, guild, rewindStats, setRsvp, store } from "./fixtures";
+import type {
+  Category,
+  EventDetailDto,
+  EventDto,
+  RsvpStatus,
+} from "@/lib/types";
+import {
+  currentUser,
+  findEvent,
+  guild,
+  rewindStats,
+  setRsvp,
+  store,
+} from "./fixtures";
 
 const API = (path: string) => new RegExp(`(^|/api)${path}$`);
 
@@ -29,7 +41,9 @@ export const handlers = [
   http.get(API("/event"), () => {
     const now = Date.now();
     const list = store.events
-      .filter((e) => new Date(e.dateTime).getTime() >= now - 1000 * 60 * 60 * 24)
+      .filter(
+        (e) => new Date(e.dateTime).getTime() >= now - 1000 * 60 * 60 * 24,
+      )
       .sort((a, b) => +new Date(a.dateTime) - +new Date(b.dateTime))
       .map(stripDetail);
     return HttpResponse.json({ content: list, totalElements: list.length });
@@ -50,7 +64,6 @@ export const handlers = [
       name: body.name ?? "untitled",
       description: body.description ?? "",
       location: body.location ?? "",
-      city: body.city ?? "",
       capacity: body.capacity ?? 0,
       cost: body.cost ?? 0,
       dateTime: body.dateTime ?? now,
@@ -90,14 +103,18 @@ export const handlers = [
   }),
 
   http.post(API("/event/[0-9]+/rsvp"), async ({ request }) => {
-    const id = Number(new URL(request.url).pathname.split("/").slice(-2, -1)[0]);
+    const id = Number(
+      new URL(request.url).pathname.split("/").slice(-2, -1)[0],
+    );
     const body = (await request.json()) as { status: RsvpStatus | "none" };
     const ev = setRsvp(id, currentUser, body.status);
     return ev ? HttpResponse.json(ev) : new HttpResponse(null, { status: 404 });
   }),
 
   http.post(API("/event/[0-9]+/cancel"), ({ request }) => {
-    const id = Number(new URL(request.url).pathname.split("/").slice(-2, -1)[0]);
+    const id = Number(
+      new URL(request.url).pathname.split("/").slice(-2, -1)[0],
+    );
     const ev = findEvent(id);
     if (!ev) return new HttpResponse(null, { status: 404 });
     ev.state = "CANCELLED";
@@ -105,11 +122,15 @@ export const handlers = [
   }),
 
   http.get(API("/rewind"), ({ request }) => {
-    const year = Number(new URL(request.url).searchParams.get("year") ?? new Date().getFullYear());
+    const year = Number(
+      new URL(request.url).searchParams.get("year") ?? new Date().getFullYear(),
+    );
     return HttpResponse.json(rewindStats(year));
   }),
   http.get(API("/rewind/me"), ({ request }) => {
-    const year = Number(new URL(request.url).searchParams.get("year") ?? new Date().getFullYear());
+    const year = Number(
+      new URL(request.url).searchParams.get("year") ?? new Date().getFullYear(),
+    );
     return HttpResponse.json(rewindStats(year));
   }),
   http.get(API("/rewind/years"), () => HttpResponse.json([2024, 2025, 2026])),

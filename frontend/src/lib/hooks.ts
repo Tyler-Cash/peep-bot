@@ -11,7 +11,7 @@ import type {
   UserInfo,
 } from "./types";
 
-const fetcher = <T,>(path: string) => apiFetch<T>(path);
+const fetcher = <T>(path: string) => apiFetch<T>(path);
 
 const ACTIVE_GUILD_KEY = "peepbot.activeGuild";
 
@@ -53,7 +53,31 @@ export function useEvents() {
 export function useEvent(id: number | string) {
   const guild = useActiveGuild();
   const key = guild && id ? (["event", guild.id, String(id)] as const) : null;
-  return useSWR<EventDetailDto>(key, () => fetcher<EventDetailDto>(`/event/${id}`));
+  return useSWR<EventDetailDto>(key, () =>
+    fetcher<EventDetailDto>(`/event/${id}`),
+  );
+}
+
+/**
+ * Recent/popular venues for the active guild, derived from the events we've
+ * already loaded. Returns distinct location strings sorted by frequency.
+ * No extra network — shares the SWR cache with useEvents(), which is itself
+ * keyed by active guild id, so switching guilds automatically re-derives
+ * this list from that guild's events. When we outgrow the feed's history,
+ * swap this to a dedicated per-guild endpoint without touching callers.
+ */
+export function useRecentLocations(limit = 8): string[] {
+  const { data } = useEvents();
+  const events = data?.content ?? [];
+  const counts = new Map<string, number>();
+  for (const e of events) {
+    if (!e.location) continue;
+    counts.set(e.location, (counts.get(e.location) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([loc]) => loc);
 }
 
 export function useRewind(year: number, scope: "guild" | "me" = "guild") {
@@ -65,12 +89,18 @@ export function useRewind(year: number, scope: "guild" | "me" = "guild") {
 }
 
 export function invalidateEvents(guildId: string) {
-  return globalMutate((k) => Array.isArray(k) && k[0] === "events" && k[1] === guildId);
+  return globalMutate(
+    (k) => Array.isArray(k) && k[0] === "events" && k[1] === guildId,
+  );
 }
 
 export function invalidateEvent(guildId: string, eventId: number | string) {
   return globalMutate(
-    (k) => Array.isArray(k) && k[0] === "event" && k[1] === guildId && k[2] === String(eventId),
+    (k) =>
+      Array.isArray(k) &&
+      k[0] === "event" &&
+      k[1] === guildId &&
+      k[2] === String(eventId),
   );
 }
 
@@ -83,7 +113,10 @@ export async function submitRsvp(
     method: "POST",
     body: JSON.stringify({ status }),
   });
-  await Promise.all([invalidateEvents(guildId), invalidateEvent(guildId, eventId)]);
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
 }
 
 export async function createEvent(guildId: string, body: Partial<EventDto>) {

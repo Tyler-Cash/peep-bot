@@ -1,4 +1,10 @@
-import type { Attendee, EventDetailDto, Guild, RewindStats, UserInfo } from "@/lib/types";
+import type {
+  Attendee,
+  EventDetailDto,
+  Guild,
+  RewindStats,
+  UserInfo,
+} from "@/lib/types";
 
 type Seed = { name: string; hue: string; snowflake: string };
 
@@ -104,8 +110,7 @@ export const store = {
         "booking is under Mira. arrive by 6:45 or they pull the table. last round is always music — please someone who is not me take the pen.",
       dateTime: times[0],
       ...host("Mira"),
-      location: "The Glass Barrel",
-      city: "Fitzroy",
+      location: "The Glass Barrel, 44 Brunswick St, Fitzroy",
       capacity: 0,
       accepted: ["Mira", "Otis", "Lena", "Nim", "Koa", "Suki"].map(by),
       maybe: ["Bas", "Tobs"].map(by),
@@ -119,8 +124,7 @@ export const store = {
         "the weird new sci-fi one. 7pm showing, lobby at 6:45. ramen across the road after if anyone wants to keep the night going.",
       dateTime: times[1],
       ...host("Otis"),
-      location: "Lumen Cinema",
-      city: "Carlton",
+      location: "Lumen Cinema, 201 Lygon St, Carlton",
       capacity: 0,
       accepted: ["Otis", "Mira", "Bas", "Nim", "Suki", "Cal"].map(by),
       maybe: ["Lena", "Koa", "Wren"].map(by),
@@ -134,8 +138,7 @@ export const store = {
         "new talent night. doors 6:30, show starts 7, out by 8:15. $18 on the door, bring cash if you can.",
       dateTime: times[2],
       ...host("Lena"),
-      location: "Basement Bar",
-      city: "Brunswick",
+      location: "Basement Bar, 88 Sydney Rd, Brunswick",
       capacity: 40,
       accepted: ["Lena", "Mira", "Otis", "Koa"].map(by),
       maybe: ["Nim", "Suki", "Tobs"].map(by),
@@ -149,8 +152,7 @@ export const store = {
         "firing up the grill at 1. bringing the smoked brisket + slaw. nim is doing a lemon tart. byo drinks + anything green.",
       dateTime: times[3],
       ...host("Bas"),
-      location: "Bas's place",
-      city: "Northcote",
+      location: "Bas's place, Northcote",
       capacity: 12,
       accepted: ["Bas", "Nim", "Otis", "Mira", "Suki", "Cal", "Lena"].map(by),
       maybe: ["Koa"].map(by),
@@ -164,8 +166,7 @@ export const store = {
         "apollo bay → shelly beach section. 22km, about 7 hours moving. leave the city at 6am sharp. pack layers and lunch, water at the halfway hut.",
       dateTime: times[4],
       ...host("Koa"),
-      location: "Apollo Bay trailhead",
-      city: "Apollo Bay",
+      location: "Apollo Bay Trailhead, Great Ocean Walk",
       capacity: 0,
       accepted: ["Koa", "Otis", "Bas", "Cal"].map(by),
       maybe: ["Mira", "Nim"].map(by),
@@ -179,8 +180,7 @@ export const store = {
         "tournament format, 4 rounds, winner picks the next one. ordering from that dumpling place on the corner around 7.",
       dateTime: times[5],
       ...host("Suki"),
-      location: "Suki's apartment",
-      city: "Collingwood",
+      location: "Suki's apartment, Collingwood",
       capacity: 8,
       accepted: ["Suki", "Otis", "Tobs", "Wren"].map(by),
       maybe: ["Cal", "Lena"].map(by),
@@ -195,11 +195,21 @@ export const rewindStats = (year: number): RewindStats => ({
   eventsHosted: 14,
   totalRsvps: 162,
   topMoment: { eventId: 4, name: "bas's backyard cookout", category: "food" },
-  mostActiveMember: { name: "Otis", count: 12, hue: "#6AAE3E", avatarUrl: null },
+  mostActiveMember: {
+    name: "Otis",
+    count: 12,
+    hue: "#6AAE3E",
+    avatarUrl: null,
+  },
   newMembers: 3,
   attendanceStreak: seedPeople
     .slice(0, 6)
-    .map((p, i) => ({ name: p.name, count: 12 - i, hue: p.hue, avatarUrl: null })),
+    .map((p, i) => ({
+      name: p.name,
+      count: 12 - i,
+      hue: p.hue,
+      avatarUrl: null,
+    })),
   upcomingPreview: store.events.slice(0, 3).map((e) => {
     const { accepted, maybe, declined, ...rest } = e;
     void accepted;
@@ -213,7 +223,11 @@ export function findEvent(id: number) {
   return store.events.find((e) => e.id === id);
 }
 
-export function setRsvp(eventId: number, user: UserInfo, status: "going" | "maybe" | "declined" | "none") {
+export function setRsvp(
+  eventId: number,
+  user: UserInfo,
+  status: "going" | "maybe" | "declined" | "none",
+) {
   const ev = findEvent(eventId);
   if (!ev) return null;
   const me: Attendee = {
