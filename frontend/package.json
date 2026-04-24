@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "msw:init": "msw init public/ --save"
+    "msw:init": "msw init public/ --save",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "^15.1.0",
@@ -26,7 +28,8 @@
     "msw": "^2.4.9",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.5"
   },
   "msw": {
     "workerDirectory": [
