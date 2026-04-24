@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Peepo } from "@/components/Peepo";
 import { Chunky } from "@/components/ui/Chunky";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
