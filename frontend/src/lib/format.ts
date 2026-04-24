@@ -13,12 +13,29 @@ export function countdownLabel(iso: string): string {
   return `in ${months} mo`;
 }
 
-const monthsShort = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const monthsShort = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
 const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 export function dateStamp(iso: string) {
   const d = new Date(iso);
-  return { month: monthsShort[d.getMonth()], day: d.getDate(), weekday: weekdays[d.getDay()] };
+  return {
+    month: monthsShort[d.getMonth()],
+    day: d.getDate(),
+    weekday: weekdays[d.getDay()],
+  };
 }
 
 export function monthKey(iso: string) {
@@ -27,7 +44,20 @@ export function monthKey(iso: string) {
 }
 
 export function monthLabel(iso: string) {
-  const full = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  const full = [
+    "JANUARY",
+    "FEBRUARY",
+    "MARCH",
+    "APRIL",
+    "MAY",
+    "JUNE",
+    "JULY",
+    "AUGUST",
+    "SEPTEMBER",
+    "OCTOBER",
+    "NOVEMBER",
+    "DECEMBER",
+  ];
   const d = new Date(iso);
   return full[d.getMonth()];
 }
