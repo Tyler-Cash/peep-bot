@@ -6,9 +6,11 @@ import { Peepo } from "@/components/Peepo";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useCurrentUser } from "@/lib/hooks";
+import { activateDevMode } from "@/lib/devMode";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+const SHOW_DEV_PANEL = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
 const features = [
   { emoji: "📅", title: "one thread", body: "all your plans live in #outings, off the main chat." },
@@ -33,6 +35,11 @@ export function LoginHero() {
       return;
     }
     window.location.href = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+  };
+
+  const onDevLogin = () => {
+    activateDevMode();
+    window.location.reload();
   };
 
   return (
@@ -110,6 +117,20 @@ export function LoginHero() {
             continue with Discord
             <span aria-hidden className="ml-0.5 text-[18px]">→</span>
           </button>
+
+          {SHOW_DEV_PANEL && (
+            <div className="mt-5 inline-flex items-center gap-3 rounded-[10px] border border-dashed border-ink/30 bg-white/60 px-4 py-2.5">
+              <span className="text-[11.5px] font-extrabold uppercase tracking-widest text-mute">
+                dev
+              </span>
+              <button
+                onClick={onDevLogin}
+                className="text-[13px] font-bold text-leafDk underline underline-offset-2 decoration-2"
+              >
+                log in as Otis →
+              </button>
+            </div>
+          )}
 
           <div className="mt-[46px] grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-[580px]">
             {features.map((f) => (
