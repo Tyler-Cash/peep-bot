@@ -20,6 +20,7 @@ import EditEvent from './components/EditEvent';
 import Rewind from './components/Rewind';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Analytics } from '@vercel/analytics/react';
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -86,6 +87,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Provider store={store}>
             <CookiesProvider defaultSetOptions={{ path: '/' }}>
                 <RouterProvider router={router} />
+                <Analytics />
             </CookiesProvider>
         </Provider>
     </React.StrictMode>,
