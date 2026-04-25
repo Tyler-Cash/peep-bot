@@ -30,8 +30,8 @@ describe("GET /api/places/autocomplete", () => {
 
   function setCookie(value?: string) {
     mockCookies.mockResolvedValue({
-      get: (name: string) => (name === "SESSION" && value ? { value } : undefined),
-    } as any);
+      get: (name: string) => (name === "SESSION" && value ? { value, name: "SESSION" } : undefined),
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
   }
 
   it("returns 401 when SESSION cookie is absent", async () => {

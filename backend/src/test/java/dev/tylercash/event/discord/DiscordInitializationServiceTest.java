@@ -23,6 +23,7 @@ class DiscordInitializationServiceTest {
     private DiscordConfiguration config;
     private DiscordChannelService discordChannelService;
     private ContractConfiguration contractConfig;
+    private DiscordUserCacheService discordUserCacheService;
     private DiscordInitializationService service;
 
     @BeforeEach
@@ -33,9 +34,10 @@ class DiscordInitializationServiceTest {
         config.setGuildId(123L);
         config.setSeperatorChannel("organising");
         discordChannelService = mock(DiscordChannelService.class);
+        discordUserCacheService = mock(DiscordUserCacheService.class);
         contractConfig = new ContractConfiguration();
         when(jda.getGuildById(123L)).thenReturn(guild);
-        service = new DiscordInitializationService(jda, config, discordChannelService, contractConfig);
+        service = new DiscordInitializationService(jda, config, discordChannelService, contractConfig, discordUserCacheService);
     }
 
     @SuppressWarnings("unchecked")
