@@ -650,5 +650,18 @@ databaseChangeLog:
             columns:
               - column:
                   name: date_time
+  - changeSet:
+      id: add avatar columns to discord_user_cache
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: avatar_bytes
+                  type: bytea
+              - column:
+                  name: avatar_content_type
+                  type: text
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
