@@ -390,7 +390,6 @@ jobs:
 
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=${{ steps.env.outputs.environment }} --token=$VERCEL_TOKEN
-        working-directory: ./frontend
 
       - name: Build with Vercel
         run: vercel build ${{ steps.env.outputs.prod_flag }} --token=$VERCEL_TOKEN
