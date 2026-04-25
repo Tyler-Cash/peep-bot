@@ -1,5 +1,5 @@
 import clsx from "@/lib/clsx";
-import { initials } from "@/lib/format";
+import { initials, stringToColor } from "@/lib/format";
 import { useState } from "react";
 
 export type AvatarRef = {
@@ -18,7 +18,7 @@ export function Avatar({
   className?: string;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const bg = who.hue ?? "#7BC24F";
+  const bg = who.hue ?? stringToColor(who.name);
 
   if (who.avatarUrl && !imgFailed) {
     return (
