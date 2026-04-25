@@ -114,7 +114,7 @@ export function FeedCard({ event }: { event: EventDto }) {
                 {event.name}
               </h2>
               <p className="mt-1 text-[13.5px] font-semibold">
-                {timeLabel(event.dateTime)} · 📍 {event.location}
+                {timeLabel(event.dateTime)}{event.location ? ` · 📍 ${event.location}` : ""}
               </p>
             </div>
           </div>
