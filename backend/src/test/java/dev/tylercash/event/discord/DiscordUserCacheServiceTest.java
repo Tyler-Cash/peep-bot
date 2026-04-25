@@ -108,7 +108,8 @@ class DiscordUserCacheServiceTest {
 
         @Test
         void returnsCachedName() {
-            DiscordUserCache cached = new DiscordUserCache("111", "Alice", Instant.now(), null, null, java.util.Collections.emptySet());
+            DiscordUserCache cached =
+                    new DiscordUserCache("111", "Alice", Instant.now(), null, null, java.util.Collections.emptySet());
             when(cacheRepository.findById("111")).thenReturn(Optional.of(cached));
 
             assertThat(buildService().getDisplayName("111")).isEqualTo("Alice");
@@ -166,7 +167,8 @@ class DiscordUserCacheServiceTest {
 
         @Test
         void filtersNullAndBlank() {
-            List<DiscordUserCache> entries = List.of(new DiscordUserCache("valid", "Valid", Instant.now(), null, null, java.util.Collections.emptySet()));
+            List<DiscordUserCache> entries = List.of(new DiscordUserCache(
+                    "valid", "Valid", Instant.now(), null, null, java.util.Collections.emptySet()));
             when(cacheRepository.findAllBySnowflakeIn(Set.of("valid"))).thenReturn(entries);
 
             Map<String, String> result = buildService().getDisplayNames(Arrays.asList("valid", null, "  "));
@@ -189,8 +191,13 @@ class DiscordUserCacheServiceTest {
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
-            DiscordUserCache stale =
-                    new DiscordUserCache(snowflake, "OldName", Instant.now().minus(60, ChronoUnit.MINUTES), null, null, java.util.Collections.emptySet());
+            DiscordUserCache stale = new DiscordUserCache(
+                    snowflake,
+                    "OldName",
+                    Instant.now().minus(60, ChronoUnit.MINUTES),
+                    null,
+                    null,
+                    java.util.Collections.emptySet());
             when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
 
             DiscordService discordService = mock(DiscordService.class);
@@ -227,8 +234,13 @@ class DiscordUserCacheServiceTest {
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
-            DiscordUserCache stale =
-                    new DiscordUserCache(snowflake, "OldName", Instant.now().minus(60, ChronoUnit.MINUTES), null, null, java.util.Collections.emptySet());
+            DiscordUserCache stale = new DiscordUserCache(
+                    snowflake,
+                    "OldName",
+                    Instant.now().minus(60, ChronoUnit.MINUTES),
+                    null,
+                    null,
+                    java.util.Collections.emptySet());
             when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
 
             DiscordService discordService = mock(DiscordService.class);

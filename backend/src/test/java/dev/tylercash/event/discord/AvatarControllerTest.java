@@ -21,7 +21,8 @@ class AvatarControllerTest {
     void getAvatar_returns200WithBytes_whenAvatarStored() {
         DiscordUserCacheRepository repo = mock(DiscordUserCacheRepository.class);
         byte[] bytes = new byte[] {1, 2, 3};
-        DiscordUserCache cached = new DiscordUserCache("123", "User", Instant.now(), bytes, "image/webp", java.util.Set.of(456L));
+        DiscordUserCache cached =
+                new DiscordUserCache("123", "User", Instant.now(), bytes, "image/webp", java.util.Set.of(456L));
         when(repo.findById("123")).thenReturn(Optional.of(cached));
         when(repo.haveSharedGuild("789", "123")).thenReturn(true);
 
@@ -55,7 +56,8 @@ class AvatarControllerTest {
     @Test
     void getAvatar_returns404_whenAvatarBytesNull() {
         DiscordUserCacheRepository repo = mock(DiscordUserCacheRepository.class);
-        DiscordUserCache cached = new DiscordUserCache("123", "User", Instant.now(), null, null, java.util.Collections.emptySet());
+        DiscordUserCache cached =
+                new DiscordUserCache("123", "User", Instant.now(), null, null, java.util.Collections.emptySet());
         when(repo.findById("123")).thenReturn(Optional.of(cached));
         when(repo.haveSharedGuild("789", "123")).thenReturn(true);
 

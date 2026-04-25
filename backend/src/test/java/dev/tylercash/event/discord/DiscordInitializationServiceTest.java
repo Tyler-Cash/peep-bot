@@ -37,7 +37,8 @@ class DiscordInitializationServiceTest {
         discordUserCacheService = mock(DiscordUserCacheService.class);
         contractConfig = new ContractConfiguration();
         when(jda.getGuildById(123L)).thenReturn(guild);
-        service = new DiscordInitializationService(jda, config, discordChannelService, contractConfig, discordUserCacheService);
+        service = new DiscordInitializationService(
+                jda, config, discordChannelService, contractConfig, discordUserCacheService);
     }
 
     @SuppressWarnings("unchecked")
