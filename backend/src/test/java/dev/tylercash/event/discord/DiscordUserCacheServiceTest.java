@@ -2,13 +2,19 @@ package dev.tylercash.event.discord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
-import java.util.Optional;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.utils.ImageProxy;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,21 +43,25 @@ class DiscordUserCacheServiceTest {
     @Mock
     AvatarDownloadService avatarDownloadService;
 
-    @Test
-    void upsertUser_downloadsAndStoresAvatar_whenUrlProvided() {
-        byte[] fakeBytes = new byte[] {1, 2, 3};
-        when(avatarDownloadService.download("https://cdn.discordapp.com/avatars/123/hash.webp"))
-                .thenReturn(Optional.of(new AvatarDownloadService.AvatarBytes(fakeBytes, "image/webp")));
-
-        DiscordUserCacheService service = new DiscordUserCacheService(
+    DiscordUserCacheService buildService() {
+        return new DiscordUserCacheService(
                 cacheRepository,
                 attendanceRepository,
                 eventRepository,
                 discordServiceProvider,
                 discordConfiguration,
                 avatarDownloadService);
+    }
 
-        service.upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
+    // ── upsertUser ──────────────────────────────────────────────────────────
+
+    @Test
+    void upsertUser_downloadsAndStoresAvatar_whenUrlProvided() {
+        byte[] fakeBytes = new byte[] {1, 2, 3};
+        when(avatarDownloadService.download("https://cdn.discordapp.com/avatars/123/hash.webp"))
+                .thenReturn(Optional.of(new AvatarDownloadService.AvatarBytes(fakeBytes, "image/webp")));
+
+        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -63,15 +73,7 @@ class DiscordUserCacheServiceTest {
     void upsertUser_savesWithNullAvatar_whenDownloadFails() {
         when(avatarDownloadService.download(any())).thenReturn(Optional.empty());
 
-        DiscordUserCacheService service = new DiscordUserCacheService(
-                cacheRepository,
-                attendanceRepository,
-                eventRepository,
-                discordServiceProvider,
-                discordConfiguration,
-                avatarDownloadService);
-
-        service.upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
+        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -81,19 +83,162 @@ class DiscordUserCacheServiceTest {
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsNull() {
-        DiscordUserCacheService service = new DiscordUserCacheService(
-                cacheRepository,
-                attendanceRepository,
-                eventRepository,
-                discordServiceProvider,
-                discordConfiguration,
-                avatarDownloadService);
-
-        service.upsertUser("123", "TestUser", null);
+        buildService().upsertUser("123", "TestUser", null);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
         assertThat(captor.getValue().getAvatarBytes()).isNull();
         verify(avatarDownloadService, never()).download(any());
+    }
+
+    @Test
+    void upsertUser_savesWithNullAvatar_whenUrlIsBlank() {
+        buildService().upsertUser("123", "TestUser", "   ");
+
+        ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
+        verify(cacheRepository).save(captor.capture());
+        assertThat(captor.getValue().getAvatarBytes()).isNull();
+        verify(avatarDownloadService, never()).download(any());
+    }
+
+    // ── getDisplayName ───────────────────────────────────────────────────────
+
+    @Nested
+    class GetDisplayNameFallback {
+
+        @Test
+        void returnsCachedName() {
+            DiscordUserCache cached = new DiscordUserCache("111", "Alice", Instant.now(), null, null);
+            when(cacheRepository.findById("111")).thenReturn(Optional.of(cached));
+
+            assertThat(buildService().getDisplayName("111")).isEqualTo("Alice");
+        }
+
+        @Test
+        void returnsUnknownUserWithSuffix() {
+            when(cacheRepository.findById("111223333")).thenReturn(Optional.empty());
+
+            assertThat(buildService().getDisplayName("111223333")).isEqualTo("Unknown User (#3333)");
+        }
+
+        @Test
+        void returnsUnknownForNull() {
+            assertThat(buildService().getDisplayName(null)).isEqualTo("Unknown User");
+            verifyNoInteractions(cacheRepository);
+        }
+
+        @Test
+        void returnsUnknownForBlank() {
+            assertThat(buildService().getDisplayName("  ")).isEqualTo("Unknown User");
+            verifyNoInteractions(cacheRepository);
+        }
+
+        @Test
+        void handlesShortSnowflake() {
+            when(cacheRepository.findById("12")).thenReturn(Optional.empty());
+
+            assertThat(buildService().getDisplayName("12")).isEqualTo("Unknown User (#12)");
+        }
+    }
+
+    // ── getDisplayNames (batch) ──────────────────────────────────────────────
+
+    @Nested
+    class GetDisplayNamesBatch {
+
+        @Test
+        void returnsBatchNames() {
+            List<DiscordUserCache> entries = List.of(
+                    new DiscordUserCache("a1", "Alice", Instant.now(), null, null),
+                    new DiscordUserCache("b2", "Bob", Instant.now(), null, null));
+            when(cacheRepository.findAllBySnowflakeIn(Set.of("a1", "b2"))).thenReturn(entries);
+
+            Map<String, String> result = buildService().getDisplayNames(Set.of("a1", "b2"));
+
+            assertThat(result).containsEntry("a1", "Alice").containsEntry("b2", "Bob");
+        }
+
+        @Test
+        void emptyForNull() {
+            assertThat(buildService().getDisplayNames(null)).isEmpty();
+            verifyNoInteractions(cacheRepository);
+        }
+
+        @Test
+        void filtersNullAndBlank() {
+            List<DiscordUserCache> entries = List.of(new DiscordUserCache("valid", "Valid", Instant.now(), null, null));
+            when(cacheRepository.findAllBySnowflakeIn(Set.of("valid"))).thenReturn(entries);
+
+            Map<String, String> result = buildService().getDisplayNames(Arrays.asList("valid", null, "  "));
+
+            assertThat(result).containsOnlyKeys("valid");
+        }
+    }
+
+    // ── refreshStaleEntries ──────────────────────────────────────────────────
+
+    @Nested
+    class RefreshStaleEntries {
+
+        @Test
+        void refreshesStaleEntries() {
+            long guildId = 999L;
+            String snowflake = "123456789012345678";
+            long snowflakeLong = Long.parseLong(snowflake);
+            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
+            when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
+
+            DiscordUserCache stale =
+                    new DiscordUserCache(snowflake, "OldName", Instant.now().minus(60, ChronoUnit.MINUTES), null, null);
+            when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
+
+            DiscordService discordService = mock(DiscordService.class);
+            Member member = mock(Member.class);
+            when(discordServiceProvider.getObject()).thenReturn(discordService);
+            when(discordService.getMemberFromServer(guildId, snowflakeLong)).thenReturn(member);
+            when(member.getNickname()).thenReturn("NewName");
+            when(member.getEffectiveName()).thenReturn("NewName");
+            ImageProxy avatarProxy = mock(ImageProxy.class);
+            when(member.getEffectiveAvatar()).thenReturn(avatarProxy);
+            when(avatarProxy.getUrl(256)).thenReturn("https://cdn.discordapp.com/avatars/" + snowflake + "/abc.webp");
+            when(avatarDownloadService.download(any())).thenReturn(Optional.empty());
+
+            buildService().refreshStaleEntries();
+
+            verify(cacheRepository).save(any(DiscordUserCache.class));
+        }
+
+        @Test
+        void skipsWhenNoActiveSnowflakes() {
+            when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of());
+            when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
+
+            buildService().refreshStaleEntries();
+
+            verifyNoInteractions(cacheRepository);
+        }
+
+        @Test
+        void handlesApiFailure() {
+            long guildId = 999L;
+            String snowflake = "987654321098765432";
+            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
+            when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
+
+            DiscordUserCache stale =
+                    new DiscordUserCache(snowflake, "OldName", Instant.now().minus(60, ChronoUnit.MINUTES), null, null);
+            when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
+
+            DiscordService discordService = mock(DiscordService.class);
+            when(discordServiceProvider.getObject()).thenReturn(discordService);
+            when(discordService.getMemberFromServer(anyLong(), anyLong()))
+                    .thenThrow(new RuntimeException("Discord API error"));
+
+            buildService().refreshStaleEntries();
+
+            verify(cacheRepository, never()).save(any());
+        }
     }
 }

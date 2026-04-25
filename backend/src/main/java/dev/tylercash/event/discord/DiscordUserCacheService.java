@@ -112,7 +112,7 @@ public class DiscordUserCacheService {
                         .getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake));
                 if (member != null) {
                     String displayName = DiscordUtil.getUserDisplayName(member);
-                    String avatarUrl = member.getEffectiveAvatarUrl() + "?size=256";
+                    String avatarUrl = member.getEffectiveAvatar().getUrl(256);
                     upsertUser(snowflake, displayName, avatarUrl);
                 }
             } catch (Exception e) {
