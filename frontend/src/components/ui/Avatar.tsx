@@ -1,5 +1,6 @@
 import clsx from "@/lib/clsx";
 import { initials } from "@/lib/format";
+import { useState } from "react";
 
 export type AvatarRef = {
   name: string;
@@ -16,8 +17,10 @@ export function Avatar({
   size?: number;
   className?: string;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const bg = who.hue ?? "#7BC24F";
-  if (who.avatarUrl) {
+
+  if (who.avatarUrl && !imgFailed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -30,6 +33,7 @@ export function Avatar({
           className,
         )}
         style={{ width: size, height: size }}
+        onError={() => setImgFailed(true)}
       />
     );
   }
