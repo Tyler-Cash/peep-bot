@@ -89,7 +89,7 @@ class ButtonInteractionListenerTest {
 
         listener.onButtonInteraction(buttonInteractionEvent);
 
-        verify(discordUserCacheService).upsertUser(snowflake, nickname);
+        verify(discordUserCacheService).upsertUser(snowflake, nickname, null);
         verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
         verify(eventService).populateAttendance(event);
         verify(buttonInteractionEvent).editMessageEmbeds(embedService.getMessage(event, fixedClock));

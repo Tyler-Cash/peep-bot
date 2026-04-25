@@ -192,20 +192,20 @@ class EventServiceIntegrationTest {
     @Test
     @DisplayName("discord_user_cache table exists and supports upsert + lookup")
     void discordUserCache_upsertAndLookup() {
-        discordUserCacheService.upsertUser("cache1", "OriginalName");
+        discordUserCacheService.upsertUser("cache1", "OriginalName", null);
 
         assertThat(discordUserCacheService.getDisplayName("cache1")).isEqualTo("OriginalName");
 
         // Upsert with new name
-        discordUserCacheService.upsertUser("cache1", "UpdatedName");
+        discordUserCacheService.upsertUser("cache1", "UpdatedName", null);
         assertThat(discordUserCacheService.getDisplayName("cache1")).isEqualTo("UpdatedName");
     }
 
     @Test
     @DisplayName("discord_user_cache batch lookup works against real database")
     void discordUserCache_batchLookup() {
-        discordUserCacheService.upsertUser("batch1", "Alice");
-        discordUserCacheService.upsertUser("batch2", "Bob");
+        discordUserCacheService.upsertUser("batch1", "Alice", null);
+        discordUserCacheService.upsertUser("batch2", "Bob", null);
 
         Map<String, String> names = discordUserCacheService.getDisplayNames(List.of("batch1", "batch2", "missing"));
 

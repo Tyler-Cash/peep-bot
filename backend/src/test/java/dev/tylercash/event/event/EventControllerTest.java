@@ -133,7 +133,7 @@ class EventControllerTest {
 
         ctx.controller.createEvent(eventDto, ctx.principal);
 
-        verify(ctx.discordUserCacheService).upsertUser(DISCORD_ID, DISPLAY_NAME);
+        verify(ctx.discordUserCacheService).upsertUser(DISCORD_ID, DISPLAY_NAME, null);
     }
 
     @Test

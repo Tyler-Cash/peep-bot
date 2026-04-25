@@ -55,7 +55,7 @@ public class EventController {
         String displayName = DiscordUtil.getUserDisplayName(member);
 
         Event newEvent = new Event(event, discordId);
-        discordUserCacheService.upsertUser(discordId, displayName);
+        discordUserCacheService.upsertUser(discordId, displayName, null);
         newEvent.getAccepted().add(Attendee.createDiscordAttendee(discordId, displayName));
 
         eventService.createEvent(newEvent);

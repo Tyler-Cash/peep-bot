@@ -121,7 +121,7 @@ class ModalInteractionListenerTest {
 
         listener.onModalInteraction(evt);
 
-        verify(discordUserCacheService).upsertUser(USER_ID, USER_NICKNAME);
+        verify(discordUserCacheService).upsertUser(USER_ID, USER_NICKNAME, null);
         verify(attendanceService)
                 .recordAttendance(event.getId(), null, "[+1] Guest Name", AttendanceStatus.ACCEPTED, USER_ID);
         verify(eventService).populateAttendance(event);

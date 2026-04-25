@@ -5,6 +5,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.AvatarDownloadService.AvatarBytes;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
@@ -29,22 +30,35 @@ public class DiscordUserCacheService {
     private final EventRepository eventRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
     private final DiscordConfiguration discordConfiguration;
+    private final AvatarDownloadService avatarDownloadService;
 
     public DiscordUserCacheService(
             DiscordUserCacheRepository cacheRepository,
             AttendanceRepository attendanceRepository,
             EventRepository eventRepository,
             ObjectProvider<DiscordService> discordServiceProvider,
-            DiscordConfiguration discordConfiguration) {
+            DiscordConfiguration discordConfiguration,
+            AvatarDownloadService avatarDownloadService) {
         this.cacheRepository = cacheRepository;
         this.attendanceRepository = attendanceRepository;
         this.eventRepository = eventRepository;
         this.discordServiceProvider = discordServiceProvider;
         this.discordConfiguration = discordConfiguration;
+        this.avatarDownloadService = avatarDownloadService;
     }
 
-    public void upsertUser(String snowflake, String displayName) {
-        cacheRepository.save(new DiscordUserCache(snowflake, displayName, Instant.now(), null, null));
+    public void upsertUser(String snowflake, String displayName, String avatarUrl) {
+        byte[] avatarBytes = null;
+        String avatarContentType = null;
+        if (avatarUrl != null && !avatarUrl.isBlank()) {
+            Optional<AvatarBytes> downloaded = avatarDownloadService.download(avatarUrl);
+            if (downloaded.isPresent()) {
+                avatarBytes = downloaded.get().bytes();
+                avatarContentType = downloaded.get().contentType();
+            }
+        }
+        cacheRepository.save(
+                new DiscordUserCache(snowflake, displayName, Instant.now(), avatarBytes, avatarContentType));
     }
 
     public String getDisplayName(String snowflake) {
@@ -98,7 +112,8 @@ public class DiscordUserCacheService {
                         .getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake));
                 if (member != null) {
                     String displayName = DiscordUtil.getUserDisplayName(member);
-                    upsertUser(snowflake, displayName);
+                    String avatarUrl = member.getEffectiveAvatarUrl() + "?size=256";
+                    upsertUser(snowflake, displayName, avatarUrl);
                 }
             } catch (Exception e) {
                 log.debug("Failed to refresh cache for snowflake {}: {}", snowflake, e.getMessage());

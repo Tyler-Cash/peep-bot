@@ -78,7 +78,7 @@ public class ModalInteractionListener extends ListenerAdapter {
 
         String ownerSnowflake = modalInteractionEvent.getUser().getId();
         String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
-        discordUserCacheService.upsertUser(ownerSnowflake, ownerDisplayName);
+        discordUserCacheService.upsertUser(ownerSnowflake, ownerDisplayName, null);
 
         String plus1Name = interaction.getValues().get(0).getAsString();
         attendanceService.recordAttendance(
