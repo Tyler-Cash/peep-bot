@@ -93,6 +93,9 @@ public class EventController {
         if (Objects.nonNull(eventDto.getName()) && !eventDto.getName().isBlank()) {
             event.setName(eventDto.getName());
         }
+        if (Objects.nonNull(eventDto.getLocation())) {
+            event.setLocation(eventDto.getLocation());
+        }
         String adminDiscordId = principal.getAttribute("id");
         eventDto.getAccepted()
                 .forEach(attendeeName -> attendanceService.recordAttendance(

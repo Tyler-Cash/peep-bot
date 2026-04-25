@@ -127,3 +127,26 @@ export async function createEvent(guildId: string, body: Partial<EventDto>) {
   await invalidateEvents(guildId);
   return created;
 }
+
+export async function updateEvent(
+  guildId: string,
+  eventId: number | string,
+  body: {
+    name?: string;
+    description?: string;
+    location?: string;
+    capacity?: number;
+    dateTime?: string;
+  },
+) {
+  // Backend EventUpdateDto: id (UUID), name, description, location, capacity, dateTime, accepted (Set<String>)
+  // `accepted` must be present (even if empty) to avoid a NullPointerException in the controller.
+  await apiFetch<{ message: string }>("/event", {
+    method: "PATCH",
+    body: JSON.stringify({ id: eventId, accepted: [], ...body }),
+  });
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
+}

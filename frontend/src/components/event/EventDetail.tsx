@@ -15,6 +15,7 @@ import {
   useEvent,
 } from "@/lib/hooks";
 import type { RsvpStatus } from "@/lib/types";
+import { PencilIcon } from "@/components/icons/PencilIcon";
 
 export function EventDetail({ id }: { id: string }) {
   const { data, mutate, isLoading } = useEvent(id);
@@ -107,15 +108,24 @@ export function EventDetail({ id }: { id: string }) {
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <CatTag category={data.category} />
-                  <CountdownChip iso={data.dateTime} />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CatTag category={data.category} />
+                    <CountdownChip iso={data.dateTime} />
+                  </div>
+                  <Link
+                    href={`/events/${id}/edit`}
+                    className="inline-flex items-center gap-1.5 rounded-[8px] border-[1.5px] border-current bg-white/80 px-2.5 py-1 text-[12px] font-extrabold tracking-[-0.01em] shadow-chunky-sm hover:bg-white/95 transition-colors"
+                  >
+                    <PencilIcon className="w-3.5 h-3.5" />
+                    edit
+                  </Link>
                 </div>
                 <h1 className="mt-2 text-[44px] sm:text-[52px] font-extrabold tracking-[-0.05em] leading-[0.98]">
                   {data.name}
                 </h1>
                 <p className="mt-2 text-[16px] font-semibold">
-                  {stamp.weekday} · {timeLabel(data.dateTime)}{data.location ? ` · 📍 ${data.location}` : ""} · 🎤 organized by {data.host}
+                  {stamp.weekday} · {timeLabel(data.dateTime)} · 🎤 organized by {data.host}
                 </p>
               </div>
             </div>
@@ -158,6 +168,26 @@ export function EventDetail({ id }: { id: string }) {
               {data.description}
             </p>
           </Slab>
+
+          {/* where */}
+          {data.location && (
+            <Slab className="p-5">
+              <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+                where
+              </span>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.location)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 flex items-center gap-2 text-[17px] font-semibold text-ink hover:text-ink2 group"
+              >
+                <span className="text-[20px] shrink-0">📍</span>
+                <span className="underline underline-offset-2 decoration-ink/30 group-hover:decoration-ink/60 transition-colors">
+                  {data.location}
+                </span>
+              </a>
+            </Slab>
+          )}
 
           {/* guest list */}
           <Slab className="p-5 flex flex-col gap-4">
