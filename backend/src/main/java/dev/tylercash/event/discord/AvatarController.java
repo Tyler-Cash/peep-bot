@@ -30,7 +30,9 @@ public class AvatarController {
         String ct = entry.getAvatarContentType();
         MediaType mediaType;
         try {
-            mediaType = (ct != null && !ct.isBlank()) ? MediaType.parseMediaType(ct) : MediaType.parseMediaType("image/webp");
+            mediaType = (ct != null && !ct.isBlank())
+                    ? MediaType.parseMediaType(ct)
+                    : MediaType.parseMediaType("image/webp");
         } catch (Exception e) {
             mediaType = MediaType.parseMediaType("image/webp");
         }

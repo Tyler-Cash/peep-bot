@@ -15,9 +15,8 @@ public class AvatarDownloadService {
 
     public record AvatarBytes(byte[] bytes, String contentType) {}
 
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+    private static final HttpClient HTTP =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     public Optional<AvatarBytes> download(String url) {
         if (url == null || url.isBlank()) {

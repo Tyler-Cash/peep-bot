@@ -1,16 +1,17 @@
 package dev.tylercash.event.discord;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.time.Instant;
-import java.util.Optional;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AvatarControllerTest {
@@ -18,7 +19,7 @@ class AvatarControllerTest {
     @Test
     void getAvatar_returns200WithBytes_whenAvatarStored() {
         DiscordUserCacheRepository repo = mock(DiscordUserCacheRepository.class);
-        byte[] bytes = new byte[]{1, 2, 3};
+        byte[] bytes = new byte[] {1, 2, 3};
         DiscordUserCache cached = new DiscordUserCache("123", "User", Instant.now(), bytes, "image/webp");
         when(repo.findById("123")).thenReturn(Optional.of(cached));
 

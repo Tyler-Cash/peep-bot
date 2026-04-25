@@ -30,8 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String username = oAuth2User.getAttribute("username");
         log.info("Authenticated user {}", username);
 
-        if (!discordService.isUserMemberOfServer(
-                discordConfiguration.getGuildId(), Long.parseLong(snowflake))) {
+        if (!discordService.isUserMemberOfServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake))) {
             log.warn("User {} not a member of the server. id: {}", username, snowflake);
             throw new OAuth2AuthenticationException(
                     "User not a member of discord server " + discordConfiguration.getGuildId());
