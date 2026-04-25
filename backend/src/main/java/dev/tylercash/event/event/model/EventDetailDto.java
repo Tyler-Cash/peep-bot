@@ -27,6 +27,11 @@ public class EventDetailDto extends EventDto {
 
     public EventDetailDto(Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap) {
         super(event);
+        String creator = event.getCreator();
+        if (creator != null && !creator.isBlank()) {
+            this.setHost(nameMap.getOrDefault(creator, creator));
+            this.setHostAvatarUrl("/api/avatar/" + creator);
+        }
         this.accepted = toSortedRecordList(summary.accepted(), nameMap);
         this.declined = toSortedRecordList(summary.declined(), nameMap);
         this.maybe = toSortedRecordList(summary.maybe(), nameMap);

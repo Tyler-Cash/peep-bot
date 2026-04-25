@@ -134,6 +134,11 @@ public class EventController {
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
 
+        // Include creator so EventDetailDto can resolve the host name
+        if (event.getCreator() != null && !event.getCreator().isBlank()) {
+            allSnowflakes.add(event.getCreator());
+        }
+
         Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
         return new EventDetailDto(event, completed, summary, nameMap);
     }
