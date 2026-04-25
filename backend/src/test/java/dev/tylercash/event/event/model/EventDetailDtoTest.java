@@ -2,8 +2,10 @@ package dev.tylercash.event.event.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class EventDetailDtoTest {
@@ -105,5 +107,71 @@ class EventDetailDtoTest {
         assertThat(dto.getAccepted().get(1).getSnowflake()).isEqualTo("a2");
         assertThat(dto.getMaybe().get(0).getSnowflake()).isEqualTo("m1");
         assertThat(dto.getMaybe().get(1).getSnowflake()).isEqualTo("m2");
+    }
+
+    private static AttendanceRecord buildRecord(String snowflake, String name) {
+        return new AttendanceRecord(
+                null, java.util.UUID.randomUUID(), snowflake, name, AttendanceStatus.ACCEPTED, null, Instant.now());
+    }
+
+    @Test
+    void fourArgConstructor_hostResolvedFromNameMap() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        Map<String, String> nameMap = Map.of("creator-snowflake", "Host Display Name");
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+
+        assertThat(dto.getHost()).isEqualTo("Host Display Name");
+    }
+
+    @Test
+    void fourArgConstructor_hostAvatarUrlUsesCreatorSnowflake() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        Map<String, String> nameMap = Map.of("creator-snowflake", "Host Display Name");
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+
+        assertThat(dto.getHostAvatarUrl()).isEqualTo("/api/avatar/creator-snowflake");
+    }
+
+    @Test
+    void fourArgConstructor_hostFallsBackToSnowflakeWhenNotInMap() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        Map<String, String> nameMap = Map.of();
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+
+        assertThat(dto.getHost()).isEqualTo("creator-snowflake");
+        assertThat(dto.getHostAvatarUrl()).isEqualTo("/api/avatar/creator-snowflake");
+    }
+
+    @Test
+    void fourArgConstructor_attendanceRecordsPopulatedFromSummary() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceRecord accepted = buildRecord("user-1", "Alice");
+        AttendanceRecord declined = buildRecord("user-2", "Bob");
+        AttendanceRecord maybe = buildRecord("user-3", "Charlie");
+        AttendanceSummary summary = new AttendanceSummary(List.of(accepted), List.of(declined), List.of(maybe));
+        Map<String, String> nameMap = Map.of(
+                "creator-snowflake", "Host",
+                "user-1", "Alice Resolved",
+                "user-2", "Bob Resolved",
+                "user-3", "Charlie Resolved");
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+
+        assertThat(dto.getAccepted()).hasSize(1);
+        assertThat(dto.getAccepted().get(0).getName()).isEqualTo("Alice Resolved");
+        assertThat(dto.getDeclined()).hasSize(1);
+        assertThat(dto.getDeclined().get(0).getName()).isEqualTo("Bob Resolved");
+        assertThat(dto.getMaybe()).hasSize(1);
+        assertThat(dto.getMaybe().get(0).getName()).isEqualTo("Charlie Resolved");
     }
 }

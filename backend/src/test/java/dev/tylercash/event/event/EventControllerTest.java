@@ -10,10 +10,11 @@ import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.AttendanceStatus;
+import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventDetailDto;
 import dev.tylercash.event.event.model.EventDto;
 import java.time.ZonedDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -279,6 +280,70 @@ class EventControllerTest {
                 .hasMessageContaining("You can only remove +1 guests that you added");
     }
 
+    private EventControllerTestContext setupGetEventContext() {
+        EventService eventService = mock(EventService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+
+        EventController controller = new EventController(
+                eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+        return new EventControllerTestContext(
+                controller, eventService, discordService, null, attendanceService, discordUserCacheService);
+    }
+
+    private Event buildFullEvent(UUID id, String creator) {
+        Event event = new Event();
+        event.setId(id);
+        event.setName("Detail Event");
+        event.setDescription("Detail description");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Location");
+        event.setCreator(creator);
+        return event;
+    }
+
+    @Test
+    void getEvent_creatorSnowflakeIncludedInLookupSet() {
+        EventControllerTestContext ctx = setupGetEventContext();
+        UUID eventId = UUID.randomUUID();
+        Event event = buildFullEvent(eventId, DISCORD_ID);
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.eventService.isCompleted(event)).thenReturn(false);
+        when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
+        when(ctx.discordUserCacheService.getDisplayNames(any())).thenReturn(Map.of(DISCORD_ID, "Host Name"));
+
+        ctx.controller.getEvent(eventId);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<String>> snowflakesCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(ctx.discordUserCacheService).getDisplayNames(snowflakesCaptor.capture());
+        assertThat(snowflakesCaptor.getValue()).contains(DISCORD_ID);
+    }
+
+    @Test
+    void getEvent_hostAndAvatarUrlPopulatedInReturnedDto() {
+        EventControllerTestContext ctx = setupGetEventContext();
+        UUID eventId = UUID.randomUUID();
+        Event event = buildFullEvent(eventId, DISCORD_ID);
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.eventService.isCompleted(event)).thenReturn(false);
+        when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
+        when(ctx.discordUserCacheService.getDisplayNames(any())).thenReturn(Map.of(DISCORD_ID, "Host Name"));
+
+        EventDetailDto result = ctx.controller.getEvent(eventId);
+
+        assertThat(result.getHost()).isEqualTo("Host Name");
+        assertThat(result.getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+    }
+
     private static dev.tylercash.event.event.model.Attendee capturedAttendee(ArgumentCaptor<Event> eventCaptor) {
         return eventCaptor.getValue().getAccepted().iterator().next();
     }
@@ -290,8 +355,8 @@ class EventControllerTest {
         DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
         AttendanceService attendanceService = mock(AttendanceService.class);
 
-        EventController controller =
-                new EventController(eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+        EventController controller = new EventController(
+                eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
         return new EventControllerTestContext(
                 controller, eventService, discordService, null, attendanceService, discordUserCacheService);
     }

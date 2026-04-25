@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -132,7 +133,7 @@ public class EventController {
                 .flatMap(s -> s)
                 .map(AttendanceRecord::getSnowflake)
                 .filter(s -> s != null && !s.isBlank())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(HashSet::new));
 
         // Include creator so EventDetailDto can resolve the host name
         if (event.getCreator() != null && !event.getCreator().isBlank()) {
