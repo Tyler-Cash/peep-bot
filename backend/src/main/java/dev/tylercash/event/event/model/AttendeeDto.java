@@ -9,12 +9,14 @@ public class AttendeeDto {
     private final String name;
     private final Instant instant;
     private final String ownerSnowflake;
+    private final String avatarUrl;
 
     public AttendeeDto(Attendee attendee) {
         this.snowflake = attendee.getSnowflake();
         this.name = attendee.getName();
         this.instant = attendee.getInstant();
         this.ownerSnowflake = null;
+        this.avatarUrl = attendee.getSnowflake() != null ? "/api/avatar/" + attendee.getSnowflake() : null;
     }
 
     public AttendeeDto(AttendanceRecord record, String resolvedName) {
@@ -22,5 +24,6 @@ public class AttendeeDto {
         this.name = resolvedName;
         this.instant = record.getRecordedAt();
         this.ownerSnowflake = record.getOwnerSnowflake();
+        this.avatarUrl = record.getSnowflake() != null ? "/api/avatar/" + record.getSnowflake() : null;
     }
 }
