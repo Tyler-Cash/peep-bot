@@ -39,6 +39,9 @@ public class EventDto {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
+    private String host;
+    private String hostAvatarUrl;
+
     // Transient request-only flag: whether to notify people when creating the event. Defaults to true.
     private Boolean notifyOnCreate = true;
 
@@ -50,6 +53,14 @@ public class EventDto {
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
+        String creator = event.getCreator();
+        this.host = event.getCreatorDisplayName(); // transient, may be null
+        this.hostAvatarUrl = (creator != null && !creator.isBlank()) ? "/api/avatar/" + creator : null;
         // Do not expose notifyOnCreate from entity; it's request-only and not persisted
+    }
+
+    public EventDto(Event event, String hostDisplayName) {
+        this(event);
+        this.host = hostDisplayName;
     }
 }

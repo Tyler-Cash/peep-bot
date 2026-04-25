@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -106,7 +107,13 @@ public class EventController {
     @ApiResponse(responseCode = "200", description = "Events retrieved successfully")
     @GetMapping
     public Page<EventDto> getEvents(@PageableDefault Pageable pageable) {
-        return eventService.getActiveEvents(pageable).map(EventDto::new);
+        Page<Event> events = eventService.getActiveEvents(pageable);
+        Set<String> creatorSnowflakes = events.stream()
+                .map(Event::getCreator)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(creatorSnowflakes);
+        return events.map(event -> new EventDto(event, nameMap.getOrDefault(event.getCreator(), event.getCreator())));
     }
 
     @Operation(summary = "Get event details", description = "Returns full event details including attendee lists")
@@ -120,7 +127,7 @@ public class EventController {
         boolean completed = eventService.isCompleted(event);
         AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
 
-        java.util.Set<String> allSnowflakes = Stream.of(
+        Set<String> allSnowflakes = Stream.of(
                         summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
                 .flatMap(s -> s)
                 .map(AttendanceRecord::getSnowflake)
