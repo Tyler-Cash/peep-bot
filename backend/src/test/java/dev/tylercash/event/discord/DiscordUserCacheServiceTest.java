@@ -53,7 +53,7 @@ class DiscordUserCacheServiceTest {
         @DisplayName("returns cached display name when found")
         void returnsCachedName() {
             when(cacheRepository.findById("12345"))
-                    .thenReturn(Optional.of(new DiscordUserCache("12345", "Alice", Instant.now())));
+                    .thenReturn(Optional.of(new DiscordUserCache("12345", "Alice", Instant.now(), null, null)));
 
             assertThat(service.getDisplayName("12345")).isEqualTo("Alice");
         }
@@ -98,8 +98,8 @@ class DiscordUserCacheServiceTest {
         void returnsBatchNames() {
             when(cacheRepository.findAllBySnowflakeIn(Set.of("1", "2")))
                     .thenReturn(List.of(
-                            new DiscordUserCache("1", "Alice", Instant.now()),
-                            new DiscordUserCache("2", "Bob", Instant.now())));
+                            new DiscordUserCache("1", "Alice", Instant.now(), null, null),
+                            new DiscordUserCache("2", "Bob", Instant.now(), null, null)));
 
             Map<String, String> result = service.getDisplayNames(List.of("1", "2"));
 
@@ -116,7 +116,7 @@ class DiscordUserCacheServiceTest {
         @DisplayName("filters out null and blank snowflakes")
         void filtersNullAndBlank() {
             when(cacheRepository.findAllBySnowflakeIn(Set.of("1")))
-                    .thenReturn(List.of(new DiscordUserCache("1", "Alice", Instant.now())));
+                    .thenReturn(List.of(new DiscordUserCache("1", "Alice", Instant.now(), null, null)));
 
             Map<String, String> result = service.getDisplayNames(Arrays.asList("1", null, "", "  "));
 
@@ -140,8 +140,8 @@ class DiscordUserCacheServiceTest {
             Instant freshTime = Instant.now();
             when(cacheRepository.findAllBySnowflakeIn(List.of("111", "222")))
                     .thenReturn(List.of(
-                            new DiscordUserCache("111", "OldName", staleTime),
-                            new DiscordUserCache("222", "FreshName", freshTime)));
+                            new DiscordUserCache("111", "OldName", staleTime, null, null),
+                            new DiscordUserCache("222", "FreshName", freshTime, null, null)));
 
             Member member = mock(Member.class);
             when(member.getNickname()).thenReturn("NewName");

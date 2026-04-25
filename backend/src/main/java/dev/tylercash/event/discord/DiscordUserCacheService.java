@@ -44,7 +44,7 @@ public class DiscordUserCacheService {
     }
 
     public void upsertUser(String snowflake, String displayName) {
-        cacheRepository.save(new DiscordUserCache(snowflake, displayName, Instant.now()));
+        cacheRepository.save(new DiscordUserCache(snowflake, displayName, Instant.now(), null, null));
     }
 
     public String getDisplayName(String snowflake) {
