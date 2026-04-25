@@ -38,6 +38,6 @@ public class SecurityController {
         String username = principal.getAttribute("username");
         boolean isAdmin =
                 discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(userSnowflake));
-        return new UserInfoDto(username, userSnowflake, isAdmin);
+        return new UserInfoDto(username, userSnowflake, isAdmin, "/api/avatar/" + userSnowflake);
     }
 }

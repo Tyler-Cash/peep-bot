@@ -9,4 +9,5 @@ public class UserInfoDto {
     private String username;
     private String discordId;
     private boolean admin;
+    private String avatarUrl;
 }
