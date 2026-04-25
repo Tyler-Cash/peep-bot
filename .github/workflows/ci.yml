@@ -353,7 +353,7 @@ jobs:
   frontend-deploy:
     # Deploy to Vercel only after frontend CI, backend tests, and security
     # scans all pass. Production on main, preview for every PR.
-    needs: [frontend-ci, frontend-sbom, backend-test, backend-e2etest]
+    needs: [release]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -394,7 +394,6 @@ jobs:
 
       - name: Build with Vercel
         run: vercel build ${{ steps.env.outputs.prod_flag }} --token=$VERCEL_TOKEN
-        working-directory: ./frontend
 
       - name: Deploy to Vercel
         id: deploy
@@ -402,7 +401,6 @@ jobs:
           url=$(vercel deploy --prebuilt ${{ steps.env.outputs.prod_flag }} --token=$VERCEL_TOKEN)
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "Deployed to: $url"
-        working-directory: ./frontend
 
       - name: Comment preview URL on PR
         if: github.event_name == 'pull_request'
@@ -461,7 +459,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-push, frontend-deploy]
+    needs: [backend-push, frontend-ci, frontend-sbom]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
