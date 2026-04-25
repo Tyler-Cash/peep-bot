@@ -13,13 +13,19 @@ import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventDto;
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.dv8tion.jda.api.entities.Member;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.server.ResponseStatusException;
@@ -275,6 +281,68 @@ class EventControllerTest {
 
     private static dev.tylercash.event.event.model.Attendee capturedAttendee(ArgumentCaptor<Event> eventCaptor) {
         return eventCaptor.getValue().getAccepted().iterator().next();
+    }
+
+    private EventControllerTestContext setupGetEventsContext() {
+        EventService eventService = mock(EventService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+
+        EventController controller =
+                new EventController(eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+        return new EventControllerTestContext(
+                controller, eventService, discordService, null, attendanceService, discordUserCacheService);
+    }
+
+    @Test
+    void getEvents_populatesHostFromCacheDisplayName() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        Event event = new Event();
+        event.setId(UUID.randomUUID());
+        event.setName("Test Event");
+        event.setDescription("A test event");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Test Location");
+        event.setCreator(DISCORD_ID);
+
+        Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
+        when(ctx.eventService.getActiveEvents(any())).thenReturn(eventPage);
+        when(ctx.discordUserCacheService.getDisplayNames(Set.of(DISCORD_ID)))
+                .thenReturn(Map.of(DISCORD_ID, "Resolved Name"));
+
+        Page<EventDto> result = ctx.controller.getEvents(PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHost()).isEqualTo("Resolved Name");
+        assertThat(result.getContent().get(0).getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+    }
+
+    @Test
+    void getEvents_fallsBackToSnowflakeWhenNotInCache() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        Event event = new Event();
+        event.setId(UUID.randomUUID());
+        event.setName("Test Event");
+        event.setDescription("A test event");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Test Location");
+        event.setCreator(DISCORD_ID);
+
+        Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
+        when(ctx.eventService.getActiveEvents(any())).thenReturn(eventPage);
+        when(ctx.discordUserCacheService.getDisplayNames(Set.of(DISCORD_ID))).thenReturn(Map.of());
+
+        Page<EventDto> result = ctx.controller.getEvents(PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHost()).isEqualTo(DISCORD_ID);
+        assertThat(result.getContent().get(0).getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
     }
 
     private record EventControllerTestContext(
