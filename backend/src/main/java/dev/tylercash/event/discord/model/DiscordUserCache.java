@@ -25,4 +25,11 @@ public class DiscordUserCache {
     private byte[] avatarBytes;
 
     private String avatarContentType;
+
+    @jakarta.persistence.ElementCollection
+    @jakarta.persistence.CollectionTable(
+            name = "discord_user_guild",
+            joinColumns = @jakarta.persistence.JoinColumn(name = "snowflake"))
+    @jakarta.persistence.Column(name = "guild_id")
+    private java.util.Set<Long> guildIds = new java.util.HashSet<>();
 }

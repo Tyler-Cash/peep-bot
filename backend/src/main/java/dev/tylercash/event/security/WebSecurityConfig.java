@@ -15,7 +15,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
@@ -52,8 +51,6 @@ public class WebSecurityConfig {
                         .requestMatchers("/actuator/health")
                         .permitAll()
                         .requestMatchers("/actuator/prometheus")
-                        .permitAll()
-                        .requestMatchers("/avatar/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())

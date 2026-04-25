@@ -663,5 +663,41 @@ databaseChangeLog:
               - column:
                   name: avatar_content_type
                   type: text
+  - changeSet:
+      id: add discord_user_guild table
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_guild_snowflake
+                    references: discord_user_cache(snowflake)
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            columnNames: snowflake, guild_id
+            tableName: discord_user_guild
+        - createIndex:
+            indexName: idx_user_guild_snowflake
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: snowflake
+        - createIndex:
+            indexName: idx_user_guild_guild_id
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: guild_id
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
+

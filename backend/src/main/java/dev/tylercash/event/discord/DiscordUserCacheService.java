@@ -57,8 +57,34 @@ public class DiscordUserCacheService {
                 avatarContentType = downloaded.get().contentType();
             }
         }
-        cacheRepository.save(
-                new DiscordUserCache(snowflake, displayName, Instant.now(), avatarBytes, avatarContentType));
+
+        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
+        DiscordUserCache user = existing.orElse(new DiscordUserCache(
+                snowflake, displayName, Instant.now(), avatarBytes, avatarContentType, new HashSet<>()));
+
+        user.setDisplayName(displayName);
+        user.setUpdatedAt(Instant.now());
+        user.setAvatarBytes(avatarBytes);
+        user.setAvatarContentType(avatarContentType);
+        user.getGuildIds().add(discordConfiguration.getGuildId());
+
+        cacheRepository.save(user);
+    }
+
+    public void registerIfMissing(String snowflake, String displayName, long guildId) {
+        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
+        if (existing.isEmpty()) {
+            DiscordUserCache newUser =
+                    new DiscordUserCache(snowflake, displayName, Instant.now(), null, null, new HashSet<>());
+            newUser.getGuildIds().add(guildId);
+            cacheRepository.save(newUser);
+        } else {
+            DiscordUserCache user = existing.get();
+            if (user.getGuildIds().add(guildId)) {
+                user.setUpdatedAt(Instant.now());
+                cacheRepository.save(user);
+            }
+        }
     }
 
     public String getDisplayName(String snowflake) {

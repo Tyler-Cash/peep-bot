@@ -1,7 +1,6 @@
 package dev.tylercash.event.security;
 
 import java.util.List;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -11,7 +10,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class CorsConfig {
 
-    @org.springframework.beans.factory.annotation.Value("${dev.tylercash.cors.allowed-origins:https://event.tylercash.dev}")
+    @org.springframework.beans.factory.annotation.Value(
+            "${dev.tylercash.cors.allowed-origins:https://event.tylercash.dev}")
     private List<String> allowedOrigins;
 
     @Bean
