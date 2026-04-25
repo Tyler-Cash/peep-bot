@@ -39,6 +39,10 @@ public class AvatarDownloadService {
                     .map(ct -> ct.split(";")[0].trim())
                     .orElse("image/webp");
             return Optional.of(new AvatarBytes(response.body(), contentType));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.debug("Avatar download interrupted for {}", url);
+            return Optional.empty();
         } catch (Exception e) {
             log.debug("Avatar download failed for {}: {}", url, e.getMessage());
             return Optional.empty();
