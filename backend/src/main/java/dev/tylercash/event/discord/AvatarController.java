@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,8 +27,13 @@ public class AvatarController {
             return ResponseEntity.notFound().build();
         }
         DiscordUserCache entry = cached.get();
-        MediaType mediaType = MediaType.parseMediaType(
-                entry.getAvatarContentType() != null ? entry.getAvatarContentType() : "image/webp");
+        String ct = entry.getAvatarContentType();
+        MediaType mediaType;
+        try {
+            mediaType = (ct != null && !ct.isBlank()) ? MediaType.parseMediaType(ct) : MediaType.parseMediaType("image/webp");
+        } catch (Exception e) {
+            mediaType = MediaType.parseMediaType("image/webp");
+        }
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
