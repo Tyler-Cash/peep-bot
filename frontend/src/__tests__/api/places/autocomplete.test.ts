@@ -1,11 +1,16 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 vi.mock("@/lib/rateLimiter");
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(),
+}));
 
+import { cookies } from "next/headers";
 import { checkPlacesRateLimit } from "@/lib/rateLimiter";
 import { GET } from "@/app/api/places/autocomplete/route";
 
 const mockRateLimit = vi.mocked(checkPlacesRateLimit);
+const mockCookies = vi.mocked(cookies);
 
 function req(url: string, cookie?: string): Request {
   return new Request(url, { headers: cookie ? { Cookie: cookie } : {} });
@@ -18,15 +23,25 @@ const AUTHED = (q = "test", tok = "abc") =>
 describe("GET /api/places/autocomplete", () => {
   beforeEach(() => {
     mockRateLimit.mockReset();
+    mockCookies.mockReset();
     delete process.env.GOOGLE_MAPS_KEY;
+    setCookie("test-sess");
   });
 
+  function setCookie(value?: string) {
+    mockCookies.mockResolvedValue({
+      get: (name: string) => (name === "SESSION" && value ? { value } : undefined),
+    } as any);
+  }
+
   it("returns 401 when SESSION cookie is absent", async () => {
+    setCookie(undefined);
     const res = await GET(req(`${BASE}?q=test&sessionToken=abc`));
     expect(res.status).toBe(401);
   });
 
   it("returns 200 [] for blank query without calling rate limiter", async () => {
+    setCookie("sess");
     const res = await GET(req(`${BASE}?q=+&sessionToken=abc`, "SESSION=sess"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);

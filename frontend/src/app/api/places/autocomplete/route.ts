@@ -1,14 +1,5 @@
+import { cookies } from "next/headers";
 import { checkPlacesRateLimit } from "@/lib/rateLimiter";
-
-function getCookie(req: Request, name: string): string | undefined {
-  const cookie = req.headers.get("cookie") ?? "";
-  for (const part of cookie.split(";")) {
-    const trimmed = part.trim();
-    const eq = trimmed.indexOf("=");
-    if (eq !== -1 && trimmed.slice(0, eq) === name)
-      return trimmed.slice(eq + 1);
-  }
-}
 
 type GoogleSuggestion = {
   placePrediction?: {
@@ -22,7 +13,8 @@ type GoogleSuggestion = {
 };
 
 export async function GET(req: Request) {
-  const sessionKey = getCookie(req, "SESSION");
+  const cookieStore = await cookies();
+  const sessionKey = cookieStore.get("SESSION")?.value;
   if (!sessionKey) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }

@@ -74,6 +74,7 @@ spring:
       http-only: true
       secure: true
       same-site: Lax
+      domain: .tylercash.dev
     jdbc:
       initialize-schema: never
       cleanup-cron: 0 */10 * * * *
