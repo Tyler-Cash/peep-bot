@@ -18,9 +18,11 @@ import net.dv8tion.jda.api.entities.Member;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@Transactional
 public class DiscordUserCacheService {
     private static final int REFRESH_BATCH_SIZE = 10;
     private static final long STALE_MINUTES = 30;
