@@ -52,6 +52,8 @@ public class WebSecurityConfig {
                         .permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus"))
                         .permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/avatar/**"))
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
