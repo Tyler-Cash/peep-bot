@@ -23,6 +23,8 @@ dev.tylercash:
     cluster-similarity-threshold: 0.72
     backfill-batch-size: 20
     normalisation-enabled: false
+  cors:
+    allowed-origins: https://event.tylercash.dev,https://event-staging.tylercash.dev
 
 springdoc:
   show-oauth2-endpoints: true
@@ -38,7 +40,7 @@ server:
     session:
       cookie:
         secure: true
-    context-path: /api/
+    context-path: /api
 
 spring:
   main:

@@ -29,6 +29,7 @@ public class WebSecurityConfig {
     private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RateLimitFilter rateLimitFilter;
+    private final org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource;
 
     @Autowired(required = false)
     private DevAutoLoginFilter devAutoLoginFilter;
@@ -40,26 +41,26 @@ public class WebSecurityConfig {
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling.authenticationEntryPoint(restAuthenticationEntryPoint))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(new AntPathRequestMatcher("/auth/is-logged-in"))
+                        .requestMatchers("/auth/is-logged-in")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html"))
+                        .requestMatchers("/swagger-ui.html")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**"))
+                        .requestMatchers("/swagger-ui/**")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**"))
+                        .requestMatchers("/v3/api-docs/**")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/health"))
+                        .requestMatchers("/actuator/health")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus"))
+                        .requestMatchers("/actuator/prometheus")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/avatar/**"))
+                        .requestMatchers("/avatar/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
                 .addFilterAfter(rateLimitFilter, AnonymousAuthenticationFilter.class)
-                .cors(org.springframework.security.config.Customizer.withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(
                         oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                                 .successHandler(redirectToFrontendAfterAuth));

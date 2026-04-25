@@ -9,14 +9,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@ConfigurationProperties(prefix = "dev.tylercash.cors")
 public class CorsConfig {
 
+    @org.springframework.beans.factory.annotation.Value("${dev.tylercash.cors.allowed-origins:https://event.tylercash.dev}")
     private List<String> allowedOrigins;
-
-    public void setAllowedOrigins(List<String> allowedOrigins) {
-        this.allowedOrigins = allowedOrigins;
-    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -24,6 +20,7 @@ public class CorsConfig {
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Set-Cookie"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
