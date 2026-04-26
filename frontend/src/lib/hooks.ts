@@ -110,7 +110,7 @@ export function invalidateEvent(guildId: string, eventId: number | string) {
 
 export async function submitRsvp(
   guildId: string,
-  eventId: number,
+  eventId: string,
   status: RsvpStatus | "none",
 ) {
   await apiFetch<EventDetailDto>(`/event/${eventId}/rsvp`, {

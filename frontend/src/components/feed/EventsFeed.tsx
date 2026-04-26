@@ -58,9 +58,9 @@ export function EventsFeed() {
   );
 }
 
-function renderWithMonthMarkers(events: Array<{ id: number; dateTime: string }>) {
+function renderWithMonthMarkers(events: Array<{ id: string; dateTime: string }>) {
   const out: React.ReactNode[] = [];
-  const groups: { key: string; items: Array<{ id: number; dateTime: string }> }[] = [];
+  const groups: { key: string; items: Array<{ id: string; dateTime: string }> }[] = [];
 
   for (const e of events) {
     const key = monthKey(e.dateTime);

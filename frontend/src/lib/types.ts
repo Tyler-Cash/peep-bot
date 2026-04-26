@@ -72,7 +72,7 @@ export type RewindStats = {
   year: number;
   eventsHosted: number;
   totalRsvps: number;
-  topMoment?: { eventId: number; name: string; category: Category } | null;
+  topMoment?: { eventId: string; name: string; category: Category } | null;
   mostActiveMember?: {
     name: string;
     count: number;

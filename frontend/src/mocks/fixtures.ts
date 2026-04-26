@@ -104,7 +104,7 @@ export const guild: Guild = {
 export const store = {
   events: [
     {
-      id: 1,
+      id: "1",
       name: "pub quiz at the glass barrel",
       category: "trivia",
       description:
@@ -118,7 +118,7 @@ export const store = {
       declined: ["Wren"].map(by),
     },
     {
-      id: 2,
+      id: "2",
       name: "late screening of moonshade",
       category: "movie",
       description:
@@ -132,7 +132,7 @@ export const store = {
       declined: [],
     },
     {
-      id: 3,
+      id: "3",
       name: "standup showcase — six sets in an hour",
       category: "comedy",
       description:
@@ -146,7 +146,7 @@ export const store = {
       declined: ["Bas", "Wren"].map(by),
     },
     {
-      id: 4,
+      id: "4",
       name: "bas's backyard cookout",
       category: "food",
       description:
@@ -160,7 +160,7 @@ export const store = {
       declined: ["Wren", "Tobs"].map(by),
     },
     {
-      id: 5,
+      id: "5",
       name: "great ocean walk — day trip",
       category: "outdoor",
       description:
@@ -174,7 +174,7 @@ export const store = {
       declined: ["Lena", "Suki"].map(by),
     },
     {
-      id: 6,
+      id: "6",
       name: "mario kart + takeout",
       category: "game",
       description:
@@ -188,14 +188,14 @@ export const store = {
       declined: ["Bas"].map(by),
     },
   ] as unknown as (EventDetailDto & { hostHue?: string })[],
-  nextId: 7,
+  nextId: 7, // integer counter; stringify when assigning to EventDetailDto.id
 };
 
 export const rewindStats = (year: number): RewindStats => ({
   year,
   eventsHosted: 14,
   totalRsvps: 162,
-  topMoment: { eventId: 4, name: "bas's backyard cookout", category: "food" },
+  topMoment: { eventId: "4", name: "bas's backyard cookout", category: "food" },
   mostActiveMember: {
     name: "Otis",
     count: 12,
@@ -220,12 +220,12 @@ export const rewindStats = (year: number): RewindStats => ({
   }),
 });
 
-export function findEvent(id: number) {
+export function findEvent(id: string) {
   return store.events.find((e) => e.id === id);
 }
 
 export function setRsvp(
-  eventId: number,
+  eventId: string,
   user: UserInfo,
   status: "going" | "maybe" | "declined" | "none",
 ) {

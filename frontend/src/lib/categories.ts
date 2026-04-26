@@ -1,7 +1,7 @@
 import type { Category } from "./types";
 
 export const CATEGORIES: Record<
-  Category,
+  Category | "unknown",
   { emoji?: string; label: string; bg: string; ink: string; dot: string }
 > = {
   movie: {

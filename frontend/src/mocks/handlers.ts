@@ -50,14 +50,14 @@ export const handlers = [
   }),
 
   http.get(API("/event/[0-9]+"), ({ request }) => {
-    const id = Number(new URL(request.url).pathname.split("/").pop());
+    const id = new URL(request.url).pathname.split("/").pop() ?? "";
     const ev = findEvent(id);
     return ev ? HttpResponse.json(ev) : new HttpResponse(null, { status: 404 });
   }),
 
   http.put(API("/event"), async ({ request }) => {
     const body = (await request.json()) as Partial<EventDto>;
-    const id = store.nextId++;
+    const id = String(store.nextId++);
     const now = new Date().toISOString();
     const created: EventDetailDto = {
       id,
@@ -88,7 +88,7 @@ export const handlers = [
   }),
 
   http.patch(API("/event"), async ({ request }) => {
-    const body = (await request.json()) as { id: number } & Partial<EventDto>;
+    const body = (await request.json()) as { id: string } & Partial<EventDto>;
     const ev = findEvent(body.id);
     if (!ev) return new HttpResponse(null, { status: 404 });
     Object.assign(ev, body);
@@ -96,25 +96,21 @@ export const handlers = [
   }),
 
   http.delete(API("/event"), ({ request }) => {
-    const id = Number(new URL(request.url).searchParams.get("id"));
+    const id = new URL(request.url).searchParams.get("id") ?? "";
     const i = store.events.findIndex((e) => e.id === id);
     if (i >= 0) store.events.splice(i, 1);
     return new HttpResponse(null, { status: 204 });
   }),
 
   http.post(API("/event/[0-9]+/rsvp"), async ({ request }) => {
-    const id = Number(
-      new URL(request.url).pathname.split("/").slice(-2, -1)[0],
-    );
+    const id = new URL(request.url).pathname.split("/").slice(-2, -1)[0];
     const body = (await request.json()) as { status: RsvpStatus | "none" };
     const ev = setRsvp(id, currentUser, body.status);
     return ev ? HttpResponse.json(ev) : new HttpResponse(null, { status: 404 });
   }),
 
   http.post(API("/event/[0-9]+/cancel"), ({ request }) => {
-    const id = Number(
-      new URL(request.url).pathname.split("/").slice(-2, -1)[0],
-    );
+    const id = new URL(request.url).pathname.split("/").slice(-2, -1)[0];
     const ev = findEvent(id);
     if (!ev) return new HttpResponse(null, { status: 404 });
     ev.state = "CANCELLED";
