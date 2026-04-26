@@ -29,7 +29,7 @@ export function EventsFeed() {
 
       <Link
         href="/events/new"
-        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-paper2 pl-4 pr-2 py-2 shadow-chunky-sm hover:bg-paper3 transition-colors"
+        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-paper2 pl-4 pr-3 py-2 shadow-chunky-sm hover:bg-paper3 transition-colors"
       >
         <span className="text-[15px] font-semibold text-mute flex-1">
           ＋ post an event to #outings…
