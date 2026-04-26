@@ -2,10 +2,14 @@ package dev.tylercash.event.discord;
 
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
+import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.entities.Member;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,33 +25,65 @@ import org.springframework.web.bind.annotation.RestController;
 public class AvatarController {
 
     private final DiscordUserCacheRepository cacheRepository;
-    private final java.util.Random random = new java.util.Random();
+    private final ObjectProvider<DiscordService> discordServiceProvider;
+    private final DiscordConfiguration discordConfiguration;
+    private final DiscordUserCacheService cacheService;
 
     @GetMapping("/{snowflake}")
     public ResponseEntity<byte[]> getAvatar(
             @PathVariable String snowflake, @AuthenticationPrincipal OAuth2User principal) {
-        String requesterSnowflake = principal != null ? principal.getAttribute("id") : null;
-        if (requesterSnowflake == null || !cacheRepository.haveSharedGuild(requesterSnowflake, snowflake)) {
-            return ResponseEntity.notFound().build();
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String viewerSnowflake = principal.getAttribute("id");
+        if (viewerSnowflake == null || !cacheRepository.haveSharedGuild(viewerSnowflake, snowflake)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         Optional<DiscordUserCache> cached = cacheRepository.findById(snowflake);
-        if (cached.isEmpty() || cached.get().getAvatarBytes() == null) {
-            return ResponseEntity.notFound().build();
+        if (cached.isPresent() && cached.get().getAvatarBytes() != null) {
+            DiscordUserCache entry = cached.get();
+            String ct = entry.getAvatarContentType();
+            MediaType mediaType;
+            try {
+                mediaType = (ct != null && !ct.isBlank())
+                        ? MediaType.parseMediaType(ct)
+                        : MediaType.parseMediaType("image/webp");
+            } catch (Exception e) {
+                mediaType = MediaType.parseMediaType("image/webp");
+            }
+            return ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
+                    .body(entry.getAvatarBytes());
         }
-        DiscordUserCache entry = cached.get();
-        String ct = entry.getAvatarContentType();
-        MediaType mediaType;
+
+        // Fallback: try to get from JDA and redirect or serve
         try {
-            mediaType = (ct != null && !ct.isBlank())
-                    ? MediaType.parseMediaType(ct)
-                    : MediaType.parseMediaType("image/webp");
+            DiscordService discordService = discordServiceProvider.getIfAvailable();
+            if (discordService != null) {
+                Member member = discordService.getMemberFromServer(
+                        discordConfiguration.getGuildId(), Long.parseLong(snowflake));
+                if (member != null) {
+                    String avatarUrl = member.getEffectiveAvatar().getUrl(256);
+                    // Trigger async cache update for next time
+                    cacheService.upsertUser(
+                            snowflake,
+                            DiscordUtil.getUserDisplayName(member),
+                            member.getUser().getName(),
+                            avatarUrl,
+                            discordConfiguration.getGuildId());
+
+                    return ResponseEntity.status(HttpStatus.FOUND)
+                            .location(URI.create(avatarUrl))
+                            .build();
+                }
+            }
         } catch (Exception e) {
-            mediaType = MediaType.parseMediaType("image/webp");
+            // Ignore and fall back to 404
         }
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
-                .body(entry.getAvatarBytes());
+
+        return ResponseEntity.notFound().build();
     }
 }

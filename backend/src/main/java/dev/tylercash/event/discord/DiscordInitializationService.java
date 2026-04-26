@@ -51,7 +51,10 @@ public class DiscordInitializationService {
                     .onSuccess(members -> {
                         members.forEach(member -> {
                             discordUserCacheService.registerIfMissing(
-                                    member.getId(), DiscordUtil.getUserDisplayName(member), guild.getIdLong());
+                                    member.getId(),
+                                    DiscordUtil.getUserDisplayName(member),
+                                    member.getUser().getName(),
+                                    guild.getIdLong());
                         });
                         log.info("Synced {} members for guild '{}'", members.size(), guild.getName());
                     })

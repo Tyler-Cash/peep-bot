@@ -709,6 +709,17 @@ databaseChangeLog:
               - column:
                   name: category_centroid_event_id
 
+  - changeSet:
+      id: add username column to discord_user_cache
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: username
+                  type: text
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

@@ -1,5 +1,6 @@
 package dev.tylercash.event.event.model;
 
+import dev.tylercash.event.discord.model.DiscordUserCache;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,22 +26,29 @@ public class EventDetailDto extends EventDto {
         this.hasPrivateChannel = event.getPrivateChannelId() != null;
     }
 
-    public EventDetailDto(Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap) {
-        this(event, completed, summary, nameMap, "unknown");
+    public EventDetailDto(
+            Event event, boolean completed, AttendanceSummary summary, Map<String, DiscordUserCache> userMap) {
+        this(event, completed, summary, userMap, "unknown");
     }
 
     public EventDetailDto(
-            Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap, String category) {
+            Event event,
+            boolean completed,
+            AttendanceSummary summary,
+            Map<String, DiscordUserCache> userMap,
+            String category) {
         super(event);
         this.setCategory(category == null || category.isBlank() ? "unknown" : category);
         String creator = event.getCreator();
         if (creator != null && !creator.isBlank()) {
-            this.setHost(nameMap.getOrDefault(creator, creator));
+            DiscordUserCache user = userMap.get(creator);
+            this.setHost(user != null ? user.getDisplayName() : creator);
+            this.setHostUsername(user != null ? user.getUsername() : null);
             this.setHostAvatarUrl("/api/avatar/" + creator);
         }
-        this.accepted = toSortedRecordList(summary.accepted(), nameMap);
-        this.declined = toSortedRecordList(summary.declined(), nameMap);
-        this.maybe = toSortedRecordList(summary.maybe(), nameMap);
+        this.accepted = toSortedRecordList(summary.accepted(), userMap);
+        this.declined = toSortedRecordList(summary.declined(), userMap);
+        this.maybe = toSortedRecordList(summary.maybe(), userMap);
         this.completed = completed;
         this.hasPrivateChannel = event.getPrivateChannelId() != null;
     }
@@ -52,16 +60,20 @@ public class EventDetailDto extends EventDto {
                 .toList();
     }
 
-    private static List<AttendeeDto> toSortedRecordList(List<AttendanceRecord> records, Map<String, String> nameMap) {
+    private static List<AttendeeDto> toSortedRecordList(
+            List<AttendanceRecord> records, Map<String, DiscordUserCache> userMap) {
         return records.stream()
                 .map(r -> {
                     String displayName;
+                    String username = null;
                     if (r.getSnowflake() != null) {
-                        displayName = nameMap.getOrDefault(r.getSnowflake(), r.getSnowflake());
+                        DiscordUserCache user = userMap.get(r.getSnowflake());
+                        displayName = user != null ? user.getDisplayName() : r.getSnowflake();
+                        username = user != null ? user.getUsername() : null;
                     } else {
                         displayName = r.getName();
                     }
-                    return new AttendeeDto(r, displayName);
+                    return new AttendeeDto(r, displayName, username);
                 })
                 .sorted(Comparator.comparing(a -> a.getInstant() != null ? a.getInstant() : java.time.Instant.EPOCH))
                 .toList();

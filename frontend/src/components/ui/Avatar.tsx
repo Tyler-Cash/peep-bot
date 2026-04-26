@@ -19,7 +19,7 @@ export function Avatar({
   className?: string;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const bg = who.hue ?? stringToColor(who.username ?? who.name);
+  const bg = who.hue ?? stringToColor(who.name);
 
   if (who.avatarUrl && !imgFailed) {
     return (

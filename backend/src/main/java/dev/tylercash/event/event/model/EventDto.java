@@ -43,6 +43,7 @@ public class EventDto {
     private ZonedDateTime dateTime;
 
     private String host;
+    private String hostUsername;
     private String hostAvatarUrl;
     private String category = "unknown";
 
@@ -64,13 +65,14 @@ public class EventDto {
         // Do not expose notifyOnCreate from entity; it's request-only and not persisted
     }
 
-    public EventDto(Event event, String hostDisplayName) {
+    public EventDto(Event event, String hostDisplayName, String hostUsername) {
         this(event);
         this.host = hostDisplayName;
+        this.hostUsername = hostUsername;
     }
 
-    public EventDto(Event event, String hostDisplayName, String category) {
-        this(event, hostDisplayName);
+    public EventDto(Event event, String hostDisplayName, String hostUsername, String category) {
+        this(event, hostDisplayName, hostUsername);
         this.category = category == null || category.isBlank() ? "unknown" : category;
     }
 }

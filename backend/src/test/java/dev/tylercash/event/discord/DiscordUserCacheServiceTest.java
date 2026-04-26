@@ -61,7 +61,8 @@ class DiscordUserCacheServiceTest {
         when(avatarDownloadService.download("https://cdn.discordapp.com/avatars/123/hash.webp"))
                 .thenReturn(Optional.of(new AvatarDownloadService.AvatarBytes(fakeBytes, "image/webp")));
 
-        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
+        buildService()
+                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -73,7 +74,8 @@ class DiscordUserCacheServiceTest {
     void upsertUser_savesWithNullAvatar_whenDownloadFails() {
         when(avatarDownloadService.download(any())).thenReturn(Optional.empty());
 
-        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
+        buildService()
+                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -83,7 +85,7 @@ class DiscordUserCacheServiceTest {
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsNull() {
-        buildService().upsertUser("123", "TestUser", null, 0L);
+        buildService().upsertUser("123", "TestUser", "test_user", null, 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -93,7 +95,7 @@ class DiscordUserCacheServiceTest {
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsBlank() {
-        buildService().upsertUser("123", "TestUser", "   ", 0L);
+        buildService().upsertUser("123", "TestUser", "test_user", "   ", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -108,8 +110,8 @@ class DiscordUserCacheServiceTest {
 
         @Test
         void returnsCachedName() {
-            DiscordUserCache cached =
-                    new DiscordUserCache("111", "Alice", Instant.now(), null, null, java.util.Collections.emptySet());
+            DiscordUserCache cached = new DiscordUserCache(
+                    "111", "Alice", "alice_user", Instant.now(), null, null, java.util.Collections.emptySet());
             when(cacheRepository.findById("111")).thenReturn(Optional.of(cached));
 
             assertThat(buildService().getDisplayName("111")).isEqualTo("Alice");
@@ -150,8 +152,10 @@ class DiscordUserCacheServiceTest {
         @Test
         void returnsBatchNames() {
             List<DiscordUserCache> entries = List.of(
-                    new DiscordUserCache("a1", "Alice", Instant.now(), null, null, java.util.Collections.emptySet()),
-                    new DiscordUserCache("b2", "Bob", Instant.now(), null, null, java.util.Collections.emptySet()));
+                    new DiscordUserCache(
+                            "a1", "Alice", "alice_u", Instant.now(), null, null, java.util.Collections.emptySet()),
+                    new DiscordUserCache(
+                            "b2", "Bob", "bob_u", Instant.now(), null, null, java.util.Collections.emptySet()));
             when(cacheRepository.findAllBySnowflakeIn(Set.of("a1", "b2"))).thenReturn(entries);
 
             Map<String, String> result = buildService().getDisplayNames(Set.of("a1", "b2"));
@@ -168,7 +172,7 @@ class DiscordUserCacheServiceTest {
         @Test
         void filtersNullAndBlank() {
             List<DiscordUserCache> entries = List.of(new DiscordUserCache(
-                    "valid", "Valid", Instant.now(), null, null, java.util.Collections.emptySet()));
+                    "valid", "Valid", "valid_u", Instant.now(), null, null, java.util.Collections.emptySet()));
             when(cacheRepository.findAllBySnowflakeIn(Set.of("valid"))).thenReturn(entries);
 
             Map<String, String> result = buildService().getDisplayNames(Arrays.asList("valid", null, "  "));
@@ -194,14 +198,18 @@ class DiscordUserCacheServiceTest {
             DiscordUserCache stale = new DiscordUserCache(
                     snowflake,
                     "OldName",
+                    "old_u",
                     Instant.now().minus(60, ChronoUnit.MINUTES),
                     null,
                     null,
-                    java.util.Collections.emptySet());
+                    new java.util.HashSet<>(List.of(guildId)));
             when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
 
             DiscordService discordService = mock(DiscordService.class);
             Member member = mock(Member.class);
+            net.dv8tion.jda.api.entities.User jdaUser = mock(net.dv8tion.jda.api.entities.User.class);
+            when(member.getUser()).thenReturn(jdaUser);
+            when(jdaUser.getName()).thenReturn("new_u");
             when(discordServiceProvider.getObject()).thenReturn(discordService);
             when(discordService.getMemberFromServer(guildId, snowflakeLong)).thenReturn(member);
             when(member.getNickname()).thenReturn("NewName");
@@ -237,6 +245,7 @@ class DiscordUserCacheServiceTest {
             DiscordUserCache stale = new DiscordUserCache(
                     snowflake,
                     "OldName",
+                    "old_u",
                     Instant.now().minus(60, ChronoUnit.MINUTES),
                     null,
                     null,

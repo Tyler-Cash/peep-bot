@@ -9,6 +9,7 @@ export type Category =
 export type Attendee = {
   snowflake: string | null;
   name: string;
+  username?: string | null;
   instant: string; // ISO
   ownerSnowflake?: string | null;
   avatarUrl?: string | null;
@@ -16,7 +17,7 @@ export type Attendee = {
 };
 
 export type EventDto = {
-  id: number;
+  id: string; // UUID in backend
   name: string;
   description: string;
   location: string;
@@ -24,6 +25,7 @@ export type EventDto = {
   cost?: number | null;
   dateTime: string; // ISO
   host: string;
+  hostUsername?: string | null;
   hostAvatarUrl?: string | null;
   category: Category;
   state?: "ACTIVE" | "CANCELLED" | "ARCHIVED";

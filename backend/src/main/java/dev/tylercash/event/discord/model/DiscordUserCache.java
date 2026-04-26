@@ -1,6 +1,8 @@
 package dev.tylercash.event.discord.model;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -19,6 +21,7 @@ public class DiscordUserCache {
     private String snowflake;
 
     private String displayName;
+    private String username;
     private Instant updatedAt;
 
     @Column(columnDefinition = "bytea")
@@ -26,10 +29,8 @@ public class DiscordUserCache {
 
     private String avatarContentType;
 
-    @jakarta.persistence.ElementCollection
-    @jakarta.persistence.CollectionTable(
-            name = "discord_user_guild",
-            joinColumns = @jakarta.persistence.JoinColumn(name = "snowflake"))
+    @ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
+    @CollectionTable(name = "discord_user_guild", joinColumns = @jakarta.persistence.JoinColumn(name = "snowflake"))
     @jakarta.persistence.Column(name = "guild_id")
     private java.util.Set<Long> guildIds = new java.util.HashSet<>();
 }
