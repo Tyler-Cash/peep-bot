@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
 import { CatTag } from "@/components/ui/CatTag";
@@ -9,18 +10,20 @@ import { RsvpGroup } from "./RsvpGroup";
 import { categoryMeta } from "@/lib/categories";
 import { dateStamp, timeLabel } from "@/lib/format";
 import {
+  removeAttendee,
   submitRsvp,
   useActiveGuild,
   useCurrentUser,
   useEvent,
 } from "@/lib/hooks";
-import type { RsvpStatus } from "@/lib/types";
+import type { Attendee, RsvpStatus } from "@/lib/types";
 import { PencilIcon } from "@/components/icons/PencilIcon";
 
 export function EventDetail({ id }: { id: string }) {
   const { data, mutate, isLoading } = useEvent(id);
   const { data: me } = useCurrentUser();
   const guild = useActiveGuild();
+  const [pendingRemove, setPendingRemove] = useState<Attendee | null>(null);
 
   if (isLoading || !data) {
     return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
@@ -65,6 +68,31 @@ export function EventDetail({ id }: { id: string }) {
       { revalidate: false },
     );
     await submitRsvp(guild.id, data.id, status);
+  };
+
+  const isAdmin = me?.admin ?? false;
+
+  const confirmRemove = async () => {
+    if (!pendingRemove || !guild || !data) return;
+    const attendee = pendingRemove;
+    setPendingRemove(null);
+    mutate(
+      (prev) => {
+        if (!prev) return prev;
+        const strip = (l: typeof prev.accepted) =>
+          l.filter(
+            (a) => !(a.snowflake === attendee.snowflake && a.name === attendee.name),
+          );
+        return {
+          ...prev,
+          accepted: strip(prev.accepted),
+          maybe: strip(prev.maybe),
+          declined: strip(prev.declined),
+        };
+      },
+      { revalidate: false },
+    );
+    await removeAttendee(guild.id, data.id, attendee.snowflake, attendee.name);
   };
 
   const rsvpHeadline =
@@ -128,6 +156,9 @@ export function EventDetail({ id }: { id: string }) {
                 </h1>
                 <p className="mt-2 text-[16px] font-semibold">
                   {stamp.weekday} · {timeLabel(data.dateTime)} · 🎤 organized by {data.host}
+                  {data.hostUsername && data.hostUsername !== data.host && (
+                    <span className="text-[14px] text-ink/70 font-medium ml-1">@{data.hostUsername}</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -196,9 +227,24 @@ export function EventDetail({ id }: { id: string }) {
             <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
               the guest list
             </span>
-            <RsvpGroup label="going" emoji="✅" people={data.accepted} />
-            <RsvpGroup label="maybe" emoji="🤔" people={data.maybe} />
-            <RsvpGroup label="can't make it" emoji="❌" people={data.declined} />
+            <RsvpGroup
+              label="going"
+              emoji="✅"
+              people={data.accepted}
+              onRemove={isAdmin ? setPendingRemove : undefined}
+            />
+            <RsvpGroup
+              label="maybe"
+              emoji="🤔"
+              people={data.maybe}
+              onRemove={isAdmin ? setPendingRemove : undefined}
+            />
+            <RsvpGroup
+              label="can't make it"
+              emoji="❌"
+              people={data.declined}
+              onRemove={isAdmin ? setPendingRemove : undefined}
+            />
           </Slab>
         </div>
 
@@ -221,6 +267,31 @@ export function EventDetail({ id }: { id: string }) {
           </div>
         </aside>
       </div>
+
+      {pendingRemove && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm"
+          onClick={() => setPendingRemove(null)}
+        >
+          <div
+            className="bg-paper rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg p-6 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-[20px] font-extrabold tracking-[-0.02em]">Remove attendee?</h2>
+            <p className="mt-2 text-[15px] text-ink2">
+              This will remove <strong>{pendingRemove.name}</strong> from the guest list.
+            </p>
+            <div className="mt-5 flex gap-3 justify-end">
+              <Chunky variant="paper" size="sm" onClick={() => setPendingRemove(null)}>
+                cancel
+              </Chunky>
+              <Chunky variant="ink" size="sm" onClick={confirmRemove}>
+                remove
+              </Chunky>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

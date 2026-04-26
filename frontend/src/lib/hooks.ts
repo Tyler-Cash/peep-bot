@@ -132,6 +132,24 @@ export async function createEvent(guildId: string, body: Partial<EventDto>) {
   return created;
 }
 
+export async function removeAttendee(
+  guildId: string,
+  eventId: number | string,
+  snowflake: string | null,
+  name: string,
+) {
+  const params = new URLSearchParams();
+  if (snowflake) params.set("snowflake", snowflake);
+  else params.set("name", name);
+  await apiFetch<{ message: string }>(`/event/${eventId}/attendee?${params}`, {
+    method: "DELETE",
+  });
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
+}
+
 export async function updateEvent(
   guildId: string,
   eventId: number | string,
