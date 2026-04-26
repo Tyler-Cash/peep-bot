@@ -257,7 +257,7 @@ export function EventDetail({ id }: { id: string }) {
             </span>
             <p className="mt-1 text-[28px] font-extrabold tracking-[-0.02em]"># {guild?.channel ?? "outings"}</p>
             <a
-              href={`https://discord.com/channels/${guild?.id ?? ""}/`}
+              href={`https://discord.com/channels/${guild?.id ?? ""}/${data.channelId ?? ""}/${data.messageId ?? ""}`}
               target="_blank"
               rel="noreferrer"
               className="mt-3 inline-flex"

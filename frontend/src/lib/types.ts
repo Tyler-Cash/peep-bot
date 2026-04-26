@@ -30,6 +30,8 @@ export type EventDto = {
   category: Category;
   state?: "ACTIVE" | "CANCELLED" | "ARCHIVED";
   notifyOnCreate?: boolean;
+  channelId?: string;
+  messageId?: string;
 };
 
 export type EventDetailDto = EventDto & {

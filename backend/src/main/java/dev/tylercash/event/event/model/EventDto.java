@@ -47,6 +47,9 @@ public class EventDto {
     private String hostAvatarUrl;
     private String category = "unknown";
 
+    private String channelId;
+    private String messageId;
+
     // Transient request-only flag: whether to notify people when creating the event. Defaults to true.
     private Boolean notifyOnCreate = true;
 
@@ -62,6 +65,8 @@ public class EventDto {
         String creator = event.getCreator();
         this.host = event.getCreatorDisplayName(); // transient, may be null
         this.hostAvatarUrl = (creator != null && !creator.isBlank()) ? "/api/avatar/" + creator : null;
+        this.channelId = String.valueOf(event.getChannelId());
+        this.messageId = String.valueOf(event.getMessageId());
         // Do not expose notifyOnCreate from entity; it's request-only and not persisted
     }
 
