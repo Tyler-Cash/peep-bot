@@ -193,14 +193,16 @@ export function EventDetail({ id }: { id: string }) {
           </Slab>
 
           {/* the plan */}
-          <Slab className="p-5">
-            <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
-              the plan
-            </span>
-            <p className="mt-2 text-[17px] leading-[1.6] text-ink2 whitespace-pre-line">
-              {data.description}
-            </p>
-          </Slab>
+          {data.description && (
+            <Slab className="p-5">
+              <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+                the plan
+              </span>
+              <p className="mt-2 text-[17px] leading-[1.6] text-ink2 whitespace-pre-line">
+                {data.description}
+              </p>
+            </Slab>
+          )}
 
           {/* where */}
           {data.location && (
