@@ -48,13 +48,13 @@ export async function apiFetch<T>(
     throw new BackendUnreachable();
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     if (
       typeof window !== "undefined" &&
       MODE === "live" &&
       !window.location.pathname.startsWith("/login")
     ) {
-      window.location.href = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+      window.location.href = "/login";
     }
     throw new Error("unauthorized");
   }
