@@ -105,7 +105,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
         String userId =
                 Objects.requireNonNull(buttonInteractionEvent.getMember()).getId();
         String displayName = DiscordUtil.getUserDisplayName(buttonInteractionEvent.getMember());
-        discordUserCacheService.upsertUser(userId, displayName, null);
+        discordUserCacheService.upsertUser(userId, displayName, null, event.getServerId());
 
         AttendanceStatus status = mapButtonToStatus(Objects.requireNonNull(eventType));
         if (status != null) {

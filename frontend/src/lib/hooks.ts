@@ -47,7 +47,9 @@ type EventsPage = { content: EventDto[]; totalElements: number };
 export function useEvents() {
   const guild = useActiveGuild();
   const key = guild ? (["events", guild.id] as const) : null;
-  return useSWR<EventsPage>(key, () => fetcher<EventsPage>("/event"));
+  return useSWR<EventsPage>(key, () =>
+    fetcher<EventsPage>(`/event?guildId=${guild!.id}`),
+  );
 }
 
 export function useEvent(id: number | string) {
@@ -84,7 +86,9 @@ export function useRewind(year: number, scope: "guild" | "me" = "guild") {
   const guild = useActiveGuild();
   const key = guild ? (["rewind", guild.id, scope, year] as const) : null;
   return useSWR<RewindStats>(key, () =>
-    fetcher<RewindStats>(`/rewind${scope === "me" ? "/me" : ""}?year=${year}`),
+    fetcher<RewindStats>(
+      `/rewind${scope === "me" ? "/me" : ""}?guildId=${guild!.id}&year=${year}`,
+    ),
   );
 }
 
@@ -122,7 +126,7 @@ export async function submitRsvp(
 export async function createEvent(guildId: string, body: Partial<EventDto>) {
   const created = await apiFetch<EventDetailDto>("/event", {
     method: "PUT",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, guildId }),
   });
   await invalidateEvents(guildId);
   return created;

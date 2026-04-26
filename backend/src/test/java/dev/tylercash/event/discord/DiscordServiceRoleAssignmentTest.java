@@ -66,6 +66,7 @@ class DiscordServiceRoleAssignmentTest {
         e.setName(name);
         e.setCreator("tester");
         e.setDateTime(ZonedDateTime.parse("2026-06-01T10:00:00Z"));
+        e.setServerId(GUILD_ID);
         return e;
     }
 

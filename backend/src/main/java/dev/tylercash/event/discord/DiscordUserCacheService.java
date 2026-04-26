@@ -49,7 +49,7 @@ public class DiscordUserCacheService {
         this.avatarDownloadService = avatarDownloadService;
     }
 
-    public void upsertUser(String snowflake, String displayName, String avatarUrl) {
+    public void upsertUser(String snowflake, String displayName, String avatarUrl, long guildId) {
         byte[] avatarBytes = null;
         String avatarContentType = null;
         if (avatarUrl != null && !avatarUrl.isBlank()) {
@@ -68,7 +68,7 @@ public class DiscordUserCacheService {
         user.setUpdatedAt(Instant.now());
         user.setAvatarBytes(avatarBytes);
         user.setAvatarContentType(avatarContentType);
-        user.getGuildIds().add(discordConfiguration.getGuildId());
+        user.getGuildIds().add(guildId);
 
         cacheRepository.save(user);
     }
@@ -141,7 +141,7 @@ public class DiscordUserCacheService {
                 if (member != null) {
                     String displayName = DiscordUtil.getUserDisplayName(member);
                     String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                    upsertUser(snowflake, displayName, avatarUrl);
+                    upsertUser(snowflake, displayName, avatarUrl, discordConfiguration.getGuildId());
                 }
             } catch (Exception e) {
                 log.debug("Failed to refresh cache for snowflake {}: {}", snowflake, e.getMessage());

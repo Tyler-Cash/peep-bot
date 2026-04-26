@@ -19,6 +19,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     Page<Event> findAllByStateNotIn(Pageable pageable, List<EventState> states);
 
+    Page<Event> findAllByStateNotInAndServerId(Pageable pageable, List<EventState> states, long serverId);
+
     Page<Event> findAllByStateIn(Pageable pageable, List<EventState> states);
 
     Optional<Event> findById(UUID id);

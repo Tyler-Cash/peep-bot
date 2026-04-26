@@ -3,6 +3,7 @@ package dev.tylercash.event.discord.listener;
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -121,7 +122,7 @@ class ModalInteractionListenerTest {
 
         listener.onModalInteraction(evt);
 
-        verify(discordUserCacheService).upsertUser(USER_ID, USER_NICKNAME, null);
+        verify(discordUserCacheService).upsertUser(eq(USER_ID), eq(USER_NICKNAME), eq(null), anyLong());
         verify(attendanceService)
                 .recordAttendance(event.getId(), null, "[+1] Guest Name", AttendanceStatus.ACCEPTED, USER_ID);
         verify(eventService).populateAttendance(event);

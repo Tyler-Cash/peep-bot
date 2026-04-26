@@ -25,39 +25,43 @@ public class RewindService {
     @PersistenceContext
     private EntityManager em;
 
-    @Cacheable(value = "rewind", key = "'guild-' + #year")
+    @Cacheable(value = "rewind", key = "'guild-' + #guildId + '-' + #year")
     @Transactional(readOnly = true)
-    public RewindStatsDto getGuildStats(Integer year) {
-        return buildStats(null, year);
+    public RewindStatsDto getGuildStats(long guildId, Integer year) {
+        return buildStats(null, year, guildId);
     }
 
-    @Cacheable(value = "rewind", key = "'user-' + #snowflake + '-' + #year")
+    @Cacheable(value = "rewind", key = "'user-' + #snowflake + '-' + #guildId + '-' + #year")
     @Transactional(readOnly = true)
-    public RewindStatsDto getUserStats(String snowflake, Integer year) {
-        return buildStats(snowflake, year);
+    public RewindStatsDto getUserStats(String snowflake, long guildId, Integer year) {
+        return buildStats(snowflake, year, guildId);
     }
 
     @SuppressWarnings("unchecked")
     @Transactional(readOnly = true)
-    public List<Integer> getYears() {
-        return em.createNativeQuery("SELECT DISTINCT EXTRACT(YEAR FROM date_time)::int FROM event ORDER BY 1 DESC")
+    public List<Integer> getYears(long guildId) {
+        return em.createNativeQuery(
+                        "SELECT DISTINCT EXTRACT(YEAR FROM date_time)::int FROM event WHERE server_id = :guildId ORDER BY 1 DESC")
+                .setParameter("guildId", guildId)
                 .getResultList();
     }
 
     @SuppressWarnings("unchecked")
-    private RewindStatsDto buildStats(String snowflake, Integer year) {
+    private RewindStatsDto buildStats(String snowflake, Integer year, long guildId) {
         boolean personal = snowflake != null;
         String yf = year != null ? " AND EXTRACT(YEAR FROM e.date_time) = :year" : "";
+        String gf = " AND e.server_id = :guildId";
 
         // Total events
         String totalEventsQ = personal
                 ? "SELECT COUNT(DISTINCT a.event_id) FROM attendance a "
                         + "JOIN event e ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf
-                : "SELECT COUNT(*) FROM event e WHERE 1=1" + yf;
+                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf + gf
+                : "SELECT COUNT(*) FROM event e WHERE 1=1" + yf + gf;
         var teq = em.createNativeQuery(totalEventsQ);
         if (year != null) teq.setParameter("year", year);
         if (personal) teq.setParameter("snowflake", snowflake);
+        teq.setParameter("guildId", guildId);
         int totalEvents = ((Number) teq.getSingleResult()).intValue();
 
         // Total unique attendees
@@ -66,35 +70,38 @@ public class RewindService {
                         + "JOIN event e ON a.event_id = e.id "
                         + "JOIN attendance a2 ON a.event_id = a2.event_id "
                         + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL "
-                        + "AND a2.snowflake = :snowflake AND a2.status = 'ACCEPTED'" + yf
+                        + "AND a2.snowflake = :snowflake AND a2.status = 'ACCEPTED'" + yf + gf
                 : "SELECT COUNT(DISTINCT a.snowflake) FROM attendance a "
                         + "JOIN event e ON a.event_id = e.id "
-                        + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf;
+                        + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf + gf;
         var uq = em.createNativeQuery(uniqueQ);
         if (year != null) uq.setParameter("year", year);
         if (personal) uq.setParameter("snowflake", snowflake);
+        uq.setParameter("guildId", guildId);
         int totalUniqueAttendees = ((Number) uq.getSingleResult()).intValue();
 
         // Total RSVPs
         String rsvpQ = personal
                 ? "SELECT COUNT(*) FROM attendance a "
                         + "JOIN event e ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status != 'REMOVED'" + yf
+                        + "WHERE a.snowflake = :snowflake AND a.status != 'REMOVED'" + yf + gf
                 : "SELECT COUNT(*) FROM attendance a " + "JOIN event e ON a.event_id = e.id WHERE a.status != 'REMOVED'"
-                        + yf;
+                        + yf + gf;
         var rq = em.createNativeQuery(rsvpQ);
         if (year != null) rq.setParameter("year", year);
         if (personal) rq.setParameter("snowflake", snowflake);
+        rq.setParameter("guildId", guildId);
         int totalRsvps = ((Number) rq.getSingleResult()).intValue();
 
         // Average group size (guild-wide: avg accepted per event)
         String avgQ = "SELECT COALESCE(AVG(cnt), 0) FROM ("
                 + "SELECT COUNT(*) as cnt FROM attendance a "
                 + "JOIN event e ON a.event_id = e.id "
-                + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf
+                + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf + gf
                 + " GROUP BY a.event_id) sub";
         var agq = em.createNativeQuery(avgQ);
         if (year != null) agq.setParameter("year", year);
+        agq.setParameter("guildId", guildId);
         double averageGroupSize = ((Number) agq.getSingleResult()).doubleValue();
 
         // Top categories
@@ -104,18 +111,19 @@ public class RewindService {
                         + "JOIN event e ON ec.event_id = e.id "
                         + "JOIN attendance a ON a.event_id = e.id "
                         + "AND a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL "
-                        + "WHERE a.snowflake = :snowflake" + yf
+                        + "WHERE a.snowflake = :snowflake" + yf + gf
                         + " GROUP BY ec.category_label ORDER BY ec DESC LIMIT 10"
                 : "SELECT ec.category_label, COUNT(DISTINCT e.id) as ec, COUNT(DISTINCT a.snowflake) as ta "
                         + "FROM event_category ec "
                         + "JOIN event e ON ec.event_id = e.id "
                         + "LEFT JOIN attendance a ON a.event_id = e.id "
                         + "AND a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL "
-                        + "WHERE 1=1" + yf
+                        + "WHERE 1=1" + yf + gf
                         + " GROUP BY ec.category_label ORDER BY ec DESC LIMIT 10";
         var cq = em.createNativeQuery(catQ);
         if (year != null) cq.setParameter("year", year);
         if (personal) cq.setParameter("snowflake", snowflake);
+        cq.setParameter("guildId", guildId);
         List<EventCategoryDto> topCategories = ((List<Object[]>) cq.getResultList())
                 .stream()
                         .map(r -> new EventCategoryDto(
@@ -125,10 +133,11 @@ public class RewindService {
         // Top attendees
         String attendeeQ = "SELECT a.snowflake, COUNT(DISTINCT a.event_id) as cnt "
                 + "FROM attendance a JOIN event e ON a.event_id = e.id "
-                + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf
+                + "WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf + gf
                 + " GROUP BY a.snowflake ORDER BY cnt DESC LIMIT 10";
         var aq = em.createNativeQuery(attendeeQ);
         if (year != null) aq.setParameter("year", year);
+        aq.setParameter("guildId", guildId);
         List<Object[]> attendeeRows = aq.getResultList();
         Set<String> attendeeSnowflakes =
                 attendeeRows.stream().map(r -> (String) r[0]).collect(Collectors.toSet());
@@ -143,10 +152,11 @@ public class RewindService {
                 .collect(Collectors.toList());
 
         // Top organizers
-        String orgQ = "SELECT e.creator, COUNT(*) as cnt FROM event e WHERE 1=1" + yf
+        String orgQ = "SELECT e.creator, COUNT(*) as cnt FROM event e WHERE 1=1" + yf + gf
                 + " GROUP BY e.creator ORDER BY cnt DESC LIMIT 10";
         var oq = em.createNativeQuery(orgQ);
         if (year != null) oq.setParameter("year", year);
+        oq.setParameter("guildId", guildId);
         List<Object[]> orgRows = oq.getResultList();
         Set<String> orgSnowflakes = orgRows.stream()
                 .map(r -> (String) r[0])
@@ -169,10 +179,11 @@ public class RewindService {
                     + "FROM attendance a1 "
                     + "JOIN attendance a2 ON a1.event_id = a2.event_id AND a1.snowflake < a2.snowflake "
                     + "JOIN event e ON a1.event_id = e.id "
-                    + "WHERE a1.status = 'ACCEPTED' AND a2.status = 'ACCEPTED'" + yf
+                    + "WHERE a1.status = 'ACCEPTED' AND a2.status = 'ACCEPTED'" + yf + gf
                     + " GROUP BY a1.snowflake, a2.snowflake ORDER BY shared DESC LIMIT 20";
             var pq = em.createNativeQuery(pairsQ);
             if (year != null) pq.setParameter("year", year);
+            pq.setParameter("guildId", guildId);
             List<Object[]> pairRows = pq.getResultList();
             Set<String> pairSnowflakes = new HashSet<>();
             pairRows.forEach(r -> {
@@ -192,13 +203,15 @@ public class RewindService {
         String monthQ = personal
                 ? "SELECT TO_CHAR(e.date_time, 'YYYY-MM') as month, COUNT(DISTINCT e.id) as cnt "
                         + "FROM event e JOIN attendance a ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf
+                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf + gf
                         + " GROUP BY month ORDER BY month"
-                : "SELECT TO_CHAR(e.date_time, 'YYYY-MM') as month, COUNT(*) as cnt " + "FROM event e WHERE 1=1" + yf
+                : "SELECT TO_CHAR(e.date_time, 'YYYY-MM') as month, COUNT(*) as cnt "
+                        + "FROM event e WHERE 1=1" + yf + gf
                         + " GROUP BY month ORDER BY month";
         var mq = em.createNativeQuery(monthQ);
         if (year != null) mq.setParameter("year", year);
         if (personal) mq.setParameter("snowflake", snowflake);
+        mq.setParameter("guildId", guildId);
         Map<String, Integer> eventsByMonth = new LinkedHashMap<>();
         ((List<Object[]>) mq.getResultList())
                 .forEach(r -> eventsByMonth.put((String) r[0], ((Number) r[1]).intValue()));
@@ -208,13 +221,15 @@ public class RewindService {
         String dowQ = personal
                 ? "SELECT EXTRACT(DOW FROM e.date_time)::int as dow, COUNT(DISTINCT e.id) as cnt "
                         + "FROM event e JOIN attendance a ON a.event_id = e.id "
-                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf
+                        + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED'" + yf + gf
                         + " GROUP BY dow ORDER BY dow"
-                : "SELECT EXTRACT(DOW FROM e.date_time)::int as dow, COUNT(*) as cnt " + "FROM event e WHERE 1=1" + yf
+                : "SELECT EXTRACT(DOW FROM e.date_time)::int as dow, COUNT(*) as cnt "
+                        + "FROM event e WHERE 1=1" + yf + gf
                         + " GROUP BY dow ORDER BY dow";
         var dq = em.createNativeQuery(dowQ);
         if (year != null) dq.setParameter("year", year);
         if (personal) dq.setParameter("snowflake", snowflake);
+        dq.setParameter("guildId", guildId);
         Map<String, Integer> eventsByDayOfWeek = new LinkedHashMap<>();
         ((List<Object[]>) dq.getResultList())
                 .forEach(r -> eventsByDayOfWeek.put(dayNames[((Number) r[0]).intValue()], ((Number) r[1]).intValue()));
@@ -224,12 +239,14 @@ public class RewindService {
                 ? "SELECT e.id, e.name, e.date_time FROM event e "
                         + "JOIN attendance a ON a.event_id = e.id "
                         + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED' AND e.date_time IS NOT NULL" + yf
+                        + gf
                         + " ORDER BY e.date_time ASC LIMIT 1"
-                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf
+                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf + gf
                         + " ORDER BY e.date_time ASC LIMIT 1";
         var feq = em.createNativeQuery(firstQ);
         if (year != null) feq.setParameter("year", year);
         if (personal) feq.setParameter("snowflake", snowflake);
+        feq.setParameter("guildId", guildId);
         List<Object[]> firstRows = feq.getResultList();
         EventSummaryDto firstEvent = firstRows.isEmpty() ? null : toEventSummary(firstRows.get(0));
 
@@ -238,12 +255,14 @@ public class RewindService {
                 ? "SELECT e.id, e.name, e.date_time FROM event e "
                         + "JOIN attendance a ON a.event_id = e.id "
                         + "WHERE a.snowflake = :snowflake AND a.status = 'ACCEPTED' AND e.date_time IS NOT NULL" + yf
+                        + gf
                         + " ORDER BY e.date_time DESC LIMIT 1"
-                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf
+                : "SELECT e.id, e.name, e.date_time FROM event e WHERE e.date_time IS NOT NULL" + yf + gf
                         + " ORDER BY e.date_time DESC LIMIT 1";
         var leq = em.createNativeQuery(lastQ);
         if (year != null) leq.setParameter("year", year);
         if (personal) leq.setParameter("snowflake", snowflake);
+        leq.setParameter("guildId", guildId);
         List<Object[]> lastRows = leq.getResultList();
         EventSummaryDto lastEvent = lastRows.isEmpty() ? null : toEventSummary(lastRows.get(0));
 
@@ -252,12 +271,14 @@ public class RewindService {
                 ? "SELECT COUNT(*) FROM attendance a "
                         + "JOIN event e ON a.event_id = e.id "
                         + "WHERE a.snowflake IS NULL AND a.status = 'ACCEPTED' AND a.owner_snowflake = :snowflake" + yf
+                        + gf
                 : "SELECT COUNT(*) FROM attendance a "
                         + "JOIN event e ON a.event_id = e.id "
-                        + "WHERE a.snowflake IS NULL AND a.status = 'ACCEPTED'" + yf;
+                        + "WHERE a.snowflake IS NULL AND a.status = 'ACCEPTED'" + yf + gf;
         var pog = em.createNativeQuery(plusQ);
         if (year != null) pog.setParameter("year", year);
         if (personal) pog.setParameter("snowflake", snowflake);
+        pog.setParameter("guildId", guildId);
         int totalPlusOneGuests = ((Number) pog.getSingleResult()).intValue();
 
         return new RewindStatsDto(

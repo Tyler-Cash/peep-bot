@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -13,7 +15,7 @@ public interface DiscordUserCacheRepository extends JpaRepository<DiscordUserCac
 
     List<DiscordUserCache> findAllByUpdatedAtBefore(Instant cutoff);
 
-    @org.springframework.data.jpa.repository.Query(
+    @Query(
             value =
                     """
             SELECT EXISTS (
@@ -23,7 +25,13 @@ public interface DiscordUserCacheRepository extends JpaRepository<DiscordUserCac
             )
             """,
             nativeQuery = true)
-    boolean haveSharedGuild(
-            @org.springframework.data.repository.query.Param("u1") String u1,
-            @org.springframework.data.repository.query.Param("u2") String u2);
+    boolean haveSharedGuild(@Param("u1") String u1, @Param("u2") String u2);
+
+    @Query(
+            value = "SELECT COUNT(*) > 0 FROM discord_user_guild WHERE snowflake = :snowflake AND guild_id = :guildId",
+            nativeQuery = true)
+    boolean isUserInGuild(@Param("snowflake") String snowflake, @Param("guildId") long guildId);
+
+    @Query(value = "SELECT guild_id FROM discord_user_guild WHERE snowflake = :snowflake", nativeQuery = true)
+    List<Long> findGuildIdsBySnowflake(@Param("snowflake") String snowflake);
 }

@@ -77,10 +77,10 @@ public class EventService {
         return event;
     }
 
-    @Cacheable("activeEvents")
-    public Page<Event> getActiveEvents(Pageable pageable) {
-        return eventRepository.findAllByStateNotIn(
-                pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED));
+    @Cacheable(value = "activeEvents", key = "#guildId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+    public Page<Event> getActiveEvents(Pageable pageable, long guildId) {
+        return eventRepository.findAllByStateNotInAndServerId(
+                pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED), guildId);
     }
 
     public boolean isCompleted(Event event) {

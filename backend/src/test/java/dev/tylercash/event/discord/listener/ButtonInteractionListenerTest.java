@@ -6,6 +6,8 @@ import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
@@ -89,7 +91,7 @@ class ButtonInteractionListenerTest {
 
         listener.onButtonInteraction(buttonInteractionEvent);
 
-        verify(discordUserCacheService).upsertUser(snowflake, nickname, null);
+        verify(discordUserCacheService).upsertUser(eq(snowflake), eq(nickname), eq(null), anyLong());
         verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
         verify(eventService).populateAttendance(event);
         verify(buttonInteractionEvent).editMessageEmbeds(embedService.getMessage(event, fixedClock));

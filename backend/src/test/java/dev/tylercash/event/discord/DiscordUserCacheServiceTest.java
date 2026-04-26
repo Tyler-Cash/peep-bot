@@ -61,7 +61,7 @@ class DiscordUserCacheServiceTest {
         when(avatarDownloadService.download("https://cdn.discordapp.com/avatars/123/hash.webp"))
                 .thenReturn(Optional.of(new AvatarDownloadService.AvatarBytes(fakeBytes, "image/webp")));
 
-        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
+        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -73,7 +73,7 @@ class DiscordUserCacheServiceTest {
     void upsertUser_savesWithNullAvatar_whenDownloadFails() {
         when(avatarDownloadService.download(any())).thenReturn(Optional.empty());
 
-        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp");
+        buildService().upsertUser("123", "TestUser", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -83,7 +83,7 @@ class DiscordUserCacheServiceTest {
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsNull() {
-        buildService().upsertUser("123", "TestUser", null);
+        buildService().upsertUser("123", "TestUser", null, 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
@@ -93,7 +93,7 @@ class DiscordUserCacheServiceTest {
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsBlank() {
-        buildService().upsertUser("123", "TestUser", "   ");
+        buildService().upsertUser("123", "TestUser", "   ", 0L);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());

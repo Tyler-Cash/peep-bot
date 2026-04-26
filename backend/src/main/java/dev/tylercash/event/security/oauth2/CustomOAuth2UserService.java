@@ -38,7 +38,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String avatarHash = oAuth2User.getAttribute("avatar");
         String avatarUrl = AvatarDownloadService.discordAvatarUrl(snowflake, avatarHash);
-        discordUserCacheService.upsertUser(snowflake, username != null ? username : snowflake, avatarUrl);
+        discordUserCacheService.upsertUser(
+                snowflake, username != null ? username : snowflake, avatarUrl, discordConfiguration.getGuildId());
 
         return oAuth2User;
     }
