@@ -16,7 +16,7 @@ public class TextNormalisationService {
             """
             Classify this event into exactly one of the following categories: %s. \
             Reply with the category name only. No explanation, no punctuation.
-            
+
             Event: "%s"
             Category:""";
 
