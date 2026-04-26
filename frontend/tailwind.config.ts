@@ -48,6 +48,7 @@ const config: Config = {
         "chunky-lg": "5px 5px 0 #0E100D",
         "chunky-leaf": "2px 2px 0 #4E8A2C",
         "chunky-active": "1px 1px 0 #0E100D",
+        "chunky-press": "inset 2px 2px 0 rgba(0,0,0,0.06)",
       },
       borderWidth: { "1.5": "1.5px" },
       fontFamily: {

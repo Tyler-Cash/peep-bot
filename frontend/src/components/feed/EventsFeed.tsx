@@ -29,7 +29,7 @@ export function EventsFeed() {
 
       <Link
         href="/events/new"
-        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-paper2 pl-4 pr-3 py-2 shadow-chunky-sm hover:bg-paper3 transition-colors"
+        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pl-4 pr-3 py-2 shadow-chunky-sm hover:bg-paper2 transition-colors"
       >
         <span className="text-[15px] font-semibold text-mute flex-1">
           ＋ post an event to #outings…
@@ -51,7 +51,7 @@ export function EventsFeed() {
         </div>
       )}
 
-      <section className="mt-4 divide-y divide-ink/10">
+      <section className="mt-4">
         {renderWithMonthMarkers(events)}
       </section>
     </div>
@@ -60,14 +60,23 @@ export function EventsFeed() {
 
 function renderWithMonthMarkers(events: Array<{ id: number; dateTime: string }>) {
   const out: React.ReactNode[] = [];
-  let lastKey: string | null = null;
+  const groups: { key: string; items: Array<{ id: number; dateTime: string }> }[] = [];
+
   for (const e of events) {
     const key = monthKey(e.dateTime);
-    if (key !== lastKey) {
-      out.push(<DayMarker key={`m-${key}`} label={monthLabel(e.dateTime)} />);
-      lastKey = key;
+    const tail = groups[groups.length - 1];
+    if (!tail || tail.key !== key) {
+      groups.push({ key, items: [e] });
+    } else {
+      tail.items.push(e);
     }
-    out.push(<FeedCard key={e.id} event={e as never} />);
+  }
+
+  for (const { key, items } of groups) {
+    out.push(<DayMarker key={`m-${key}`} label={monthLabel(items[0].dateTime)} />);
+    items.forEach((e, i) => {
+      out.push(<FeedCard key={e.id} event={e as never} last={i === items.length - 1} />);
+    });
   }
   return out;
 }

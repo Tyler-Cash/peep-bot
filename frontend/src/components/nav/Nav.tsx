@@ -17,7 +17,7 @@ export function Nav() {
     { label: "rewind", href: "/rewind" },
   ];
   return (
-    <nav className="sticky top-0 z-20 bg-paper border-b-[1.5px] border-ink">
+    <nav className="sticky top-0 z-20 bg-white border-b-[1.5px] border-ink">
       <div className="mx-auto flex max-w-[1200px] items-center gap-4 px-5 py-3">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center w-9 h-9 rounded-[8px] bg-leaf border-[1.5px] border-ink shadow-chunky-sm">

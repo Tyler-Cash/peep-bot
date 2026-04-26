@@ -151,7 +151,7 @@ export function CreateEventForm() {
 }
 
 const inputCls =
-  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper px-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
+  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

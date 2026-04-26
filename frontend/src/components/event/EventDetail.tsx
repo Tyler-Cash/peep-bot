@@ -276,7 +276,7 @@ export function EventDetail({ id }: { id: string }) {
           onClick={() => setPendingRemove(null)}
         >
           <div
-            className="bg-paper rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg p-6 max-w-sm w-full mx-4"
+            className="bg-white rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg p-6 max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-[20px] font-extrabold tracking-[-0.02em]">Remove attendee?</h2>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import clsx from "@/lib/clsx";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
 import { ReactionRow } from "@/components/ui/ReactionRow";
@@ -12,7 +13,7 @@ import { dateStamp, timeLabel } from "@/lib/format";
 import { submitRsvp, useActiveGuild, useCurrentUser, useEvent } from "@/lib/hooks";
 import type { EventDto, RsvpStatus } from "@/lib/types";
 
-export function FeedCard({ event }: { event: EventDto }) {
+export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const router = useRouter();
   const { data: detail, mutate } = useEvent(event.id);
   const { data: me } = useCurrentUser();
@@ -71,7 +72,7 @@ export function FeedCard({ event }: { event: EventDto }) {
   };
 
   return (
-    <article className="flex gap-3 px-3 py-3 rounded-[10px] transition-colors hover:bg-leaf/5">
+    <article className={clsx("flex gap-3 px-3 py-3 rounded-[10px] transition-colors hover:bg-leaf/5", !last && "border-b border-line")}>
       <Avatar
         who={{ name: event.host, username: event.hostUsername, avatarUrl: event.hostAvatarUrl }}
         size={40}
@@ -88,10 +89,10 @@ export function FeedCard({ event }: { event: EventDto }) {
         <Link
           href={`/events/${event.id}`}
           onClick={() => router.prefetch(`/events/${event.id}`)}
-          className="block mt-2 rounded-[14px] border-[1.5px] border-ink overflow-hidden shadow-chunky-md bg-paper"
+          className="block mt-2 rounded-[14px] border-[1.5px] border-ink overflow-hidden shadow-chunky bg-white"
         >
           <div
-            className="relative p-4 flex items-start gap-3"
+            className="relative p-4 flex items-start gap-3 border-b-[1.5px] border-ink"
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.emoji && (
@@ -120,7 +121,7 @@ export function FeedCard({ event }: { event: EventDto }) {
               </p>
             </div>
           </div>
-          <div className="bg-paper p-4">
+          <div className="bg-white p-4">
             <p className="text-[15px] text-ink2 line-clamp-2">{event.description}</p>
             <div className="mt-3 flex items-center gap-3 flex-wrap">
               <Avas people={ds.accepted} max={5} size={26} />

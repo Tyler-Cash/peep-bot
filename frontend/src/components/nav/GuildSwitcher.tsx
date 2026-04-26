@@ -17,7 +17,7 @@ function GuildPill({ guild }: { guild: Guild }) {
     <div
       className={clsx(
         "inline-flex items-center gap-2.5 rounded-[12px] border-[1.5px] border-ink bg-paper pl-1.5 pr-3 py-1.5 shadow-chunky-sm",
-        "select-none",
+        "select-none shrink-0",
       )}
       title={`${guild.name} · #${guild.channel}`}
     >
@@ -28,8 +28,8 @@ function GuildPill({ guild }: { guild: Guild }) {
         {guild.initials}
       </span>
       <span className="flex flex-col leading-none">
-        <span className="text-[13.5px] font-extrabold tracking-[-0.01em]">{guild.name}</span>
-        <span className="text-[11.5px] text-mute font-semibold mt-0.5">● #{guild.channel}</span>
+        <span className="text-[13.5px] font-extrabold tracking-[-0.01em] max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">{guild.name}</span>
+        <span className="text-[11.5px] text-mute font-semibold mt-0.5 whitespace-nowrap">● #{guild.channel}</span>
       </span>
     </div>
   );
