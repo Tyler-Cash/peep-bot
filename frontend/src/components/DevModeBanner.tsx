@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { isDevModeActive, deactivateDevMode } from "@/lib/devMode";
+import { api } from "@/lib/api";
+import { clearSwrCache } from "@/lib/swrCache";
 
 export function DevModeBanner() {
   const [active, setActive] = useState(false);
@@ -14,6 +16,12 @@ export function DevModeBanner() {
 
   const onDeactivate = () => {
     deactivateDevMode();
+    clearSwrCache();
+    document.cookie.split(";").forEach((c) => {
+      const name = c.split("=")[0].trim();
+      document.cookie = `${name}=; Max-Age=0; path=/`;
+    });
+    api.invalidateCsrf();
     window.location.reload();
   };
 
