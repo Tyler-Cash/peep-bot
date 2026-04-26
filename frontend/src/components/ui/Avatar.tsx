@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export type AvatarRef = {
   name: string;
+  username?: string | null;
   hue?: string;
   avatarUrl?: string | null;
 };
@@ -18,7 +19,7 @@ export function Avatar({
   className?: string;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const bg = who.hue ?? stringToColor(who.name);
+  const bg = who.hue ?? stringToColor(who.username ?? who.name);
 
   if (who.avatarUrl && !imgFailed) {
     return (

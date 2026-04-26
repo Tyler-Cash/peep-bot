@@ -73,14 +73,14 @@ export function FeedCard({ event }: { event: EventDto }) {
   return (
     <article className="flex gap-3 px-3 py-3 rounded-[10px] transition-colors hover:bg-leaf/5">
       <Avatar
-        who={{ name: event.host, avatarUrl: event.hostAvatarUrl, hue: "#7BC24F" }}
+        who={{ name: event.host, username: event.hostUsername, avatarUrl: event.hostAvatarUrl }}
         size={40}
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
         <header className="flex items-center gap-2 text-[13px]">
           <span className="font-extrabold text-ink">{event.host}</span>
-          <span className="text-mute">@{event.host.toLowerCase()} · posted recently</span>
+          <span className="text-mute">@{event.hostUsername ?? event.host.toLowerCase()} · posted recently</span>
           <span className="flex-1" />
           <CountdownChip iso={event.dateTime} />
         </header>
