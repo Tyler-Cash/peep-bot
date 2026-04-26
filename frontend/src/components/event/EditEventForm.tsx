@@ -38,6 +38,11 @@ export function EditEventForm({ id }: { id: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  const locationBias =
+    guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
+      ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
+      : undefined;
+
   // Populate fields once the event data arrives
   useEffect(() => {
     if (data && !initialized) {
@@ -190,6 +195,7 @@ export function EditEventForm({ id }: { id: string }) {
               onChange={setLocation}
               placeholder="where?"
               recent={recentVenues}
+              locationBias={locationBias}
             />
           </Field>
 

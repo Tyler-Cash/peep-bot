@@ -22,6 +22,11 @@ export function CreateEventForm() {
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
+  const locationBias =
+    guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
+      ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
+      : undefined;
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guild) return;
@@ -126,6 +131,7 @@ export function CreateEventForm() {
               onChange={setLocation}
               placeholder="where?"
               recent={recentVenues}
+              locationBias={locationBias}
             />
           </Field>
 
