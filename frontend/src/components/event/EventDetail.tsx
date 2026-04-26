@@ -92,13 +92,15 @@ export function EventDetail({ id }: { id: string }) {
             className="relative rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg overflow-hidden p-6"
             style={{ background: cat.bg, color: cat.ink }}
           >
-            <span
-              className="absolute text-[220px] leading-none opacity-[0.18] select-none pointer-events-none"
-              style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
-              aria-hidden
-            >
-              {cat.emoji}
-            </span>
+            {cat.emoji && (
+              <span
+                className="absolute text-[220px] leading-none opacity-[0.18] select-none pointer-events-none"
+                style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
+                aria-hidden
+              >
+                {cat.emoji}
+              </span>
+            )}
             <div className="relative flex items-start gap-4">
               <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-chunky-sm shrink-0">
                 <span className="text-[11px] font-extrabold tracking-[0.14em]">{stamp.month}</span>

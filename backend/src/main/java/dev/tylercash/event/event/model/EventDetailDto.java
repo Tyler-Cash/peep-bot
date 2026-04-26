@@ -26,7 +26,13 @@ public class EventDetailDto extends EventDto {
     }
 
     public EventDetailDto(Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap) {
+        this(event, completed, summary, nameMap, "unknown");
+    }
+
+    public EventDetailDto(
+            Event event, boolean completed, AttendanceSummary summary, Map<String, String> nameMap, String category) {
         super(event);
+        this.setCategory(category == null || category.isBlank() ? "unknown" : category);
         String creator = event.getCreator();
         if (creator != null && !creator.isBlank()) {
             this.setHost(nameMap.getOrDefault(creator, creator));

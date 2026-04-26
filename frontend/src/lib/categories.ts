@@ -2,7 +2,7 @@ import type { Category } from "./types";
 
 export const CATEGORIES: Record<
   Category,
-  { emoji: string; label: string; bg: string; ink: string; dot: string }
+  { emoji?: string; label: string; bg: string; ink: string; dot: string }
 > = {
   movie: {
     emoji: "🎬",
@@ -46,8 +46,14 @@ export const CATEGORIES: Record<
     ink: "#2E1A5A",
     dot: "#7849D4",
   },
+  unknown: {
+    label: "unknown",
+    bg: "#E5E7EB",
+    ink: "#374151",
+    dot: "#9CA3AF",
+  }
 };
 
 export function categoryMeta(c: Category | string | undefined) {
-  return CATEGORIES[(c as Category) ?? "outdoor"] ?? CATEGORIES.outdoor;
+  return CATEGORIES[(c as Category) ?? "unknown"] ?? CATEGORIES.unknown;
 }

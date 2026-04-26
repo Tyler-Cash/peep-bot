@@ -37,4 +37,18 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Query(value = "SELECT DISTINCT creator FROM event WHERE creator IS NOT NULL AND creator != ''", nativeQuery = true)
     List<String> findAllDistinctCreatorSnowflakes();
+
+    @Query(
+            value = "SELECT COALESCE(ec.category_label, 'unknown') FROM event e "
+                    + "LEFT JOIN event_category ec ON ec.event_id = e.id "
+                    + "WHERE e.id = :eventId",
+            nativeQuery = true)
+    String findCategoryByEventId(UUID eventId);
+
+    @Query(
+            value = "SELECT CAST(e.id AS text), COALESCE(ec.category_label, 'unknown') FROM event e "
+                    + "LEFT JOIN event_category ec ON ec.event_id = e.id "
+                    + "WHERE e.id IN :eventIds",
+            nativeQuery = true)
+    List<Object[]> findCategoriesByEventIds(List<UUID> eventIds);
 }

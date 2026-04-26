@@ -94,13 +94,15 @@ export function FeedCard({ event }: { event: EventDto }) {
             className="relative p-4 flex items-start gap-3"
             style={{ background: cat.bg, color: cat.ink }}
           >
-            <span
-              className="absolute text-[120px] leading-none opacity-[0.22] select-none pointer-events-none"
-              style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
-              aria-hidden
-            >
-              {cat.emoji}
-            </span>
+            {cat.emoji && (
+              <span
+                className="absolute text-[120px] leading-none opacity-[0.22] select-none pointer-events-none"
+                style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
+                aria-hidden
+              >
+                {cat.emoji}
+              </span>
+            )}
             <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
               <span className="text-[10.5px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
               <span className="text-[26px] font-extrabold leading-none tabular-nums">{stamp.day}</span>

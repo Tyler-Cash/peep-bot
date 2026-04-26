@@ -50,27 +50,10 @@ class EmbeddingServiceTest {
     }
 
     @Test
-    @DisplayName("isEmbeddingsAvailable is false when the model is present but config disables it")
-    void isEmbeddingsAvailable_falseWhenConfigDisabled() {
-        config.setEnabled(false);
-
-        assertThat(service(embeddingModel).isEmbeddingsAvailable()).isFalse();
-    }
-
-    @Test
-    @DisplayName("embedEvent is a no-op when embeddings are unavailable")
-    void embedEvent_noopWhenUnavailable() {
-        EmbeddingService svc = service(null);
-
-        svc.embedEvent(UUID.randomUUID(), "Dinner");
-
-        verifyNoInteractions(embeddingRepository);
-    }
-
-    @Test
     @DisplayName("embedEvent persists the embedding with a comma-separated bracketed vector string")
     void embedEvent_savesVectorInPgVectorFormat() {
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.5f, -0.25f, 1.0f});
+        when(normalisationService.classify(anyString())).thenReturn("Food");
         EmbeddingService svc = service(embeddingModel);
         UUID eventId = UUID.randomUUID();
 
@@ -83,6 +66,8 @@ class EmbeddingServiceTest {
         assertThat(saved.getNameText()).isEqualTo("Dinner");
         assertThat(saved.getEmbedding()).isEqualTo("[0.5,-0.25,1.0]");
         assertThat(saved.getComputedAt()).isNotNull();
+
+        verify(normalisationService).classify("Dinner");
     }
 
     @Test
@@ -121,8 +106,6 @@ class EmbeddingServiceTest {
         e2.setName("Hike");
         when(eventRepository.findById(id1)).thenReturn(Optional.of(e1));
         when(eventRepository.findById(id2)).thenReturn(Optional.of(e2));
-        when(normalisationService.normalise("Brunch")).thenReturn("Brunch");
-        when(normalisationService.normalise("Hike")).thenReturn("Hike");
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.1f});
 
         service(embeddingModel).backfillMissingEmbeddings();

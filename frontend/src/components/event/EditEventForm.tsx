@@ -91,7 +91,15 @@ export function EditEventForm({ id }: { id: string }) {
           className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] border-[1.5px] border-ink shadow-chunky-sm"
           style={{ background: cat.bg }}
         >
-          <span className="text-[18px]">{cat.emoji}</span>
+          {cat.emoji ? (
+            <span className="text-[18px]">{cat.emoji}</span>
+          ) : (
+            <span
+              aria-hidden
+              className="h-3 w-3 rounded-full"
+              style={{ background: cat.dot }}
+            />
+          )}
         </span>
         <div>
           <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
@@ -108,13 +116,15 @@ export function EditEventForm({ id }: { id: string }) {
         className="relative rounded-[14px] border-[1.5px] border-ink shadow-chunky-md overflow-hidden p-4 flex items-start gap-3"
         style={{ background: cat.bg, color: cat.ink }}
       >
-        <span
-          className="absolute text-[160px] leading-none opacity-[0.16] select-none pointer-events-none"
-          style={{ right: -12, bottom: -40, transform: "rotate(-12deg)" }}
-          aria-hidden
-        >
-          {cat.emoji}
-        </span>
+        {cat.emoji && (
+          <span
+            className="absolute text-[160px] leading-none opacity-[0.16] select-none pointer-events-none"
+            style={{ right: -12, bottom: -40, transform: "rotate(-12deg)" }}
+            aria-hidden
+          >
+            {cat.emoji}
+          </span>
+        )}
         <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
           <span className="text-[10.5px] font-extrabold tracking-[0.14em]">
             {stamp.month}

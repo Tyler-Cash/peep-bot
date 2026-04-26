@@ -44,6 +44,7 @@ public class EventDto {
 
     private String host;
     private String hostAvatarUrl;
+    private String category = "unknown";
 
     // Transient request-only flag: whether to notify people when creating the event. Defaults to true.
     private Boolean notifyOnCreate = true;
@@ -66,5 +67,10 @@ public class EventDto {
     public EventDto(Event event, String hostDisplayName) {
         this(event);
         this.host = hostDisplayName;
+    }
+
+    public EventDto(Event event, String hostDisplayName, String category) {
+        this(event, hostDisplayName);
+        this.category = category == null || category.isBlank() ? "unknown" : category;
     }
 }

@@ -47,9 +47,17 @@ export function Rewind() {
             className="mt-3 rounded-[14px] border-[1.5px] border-ink p-5 flex items-center gap-4 shadow-chunky-sm"
             style={{ background: topCat.bg, color: topCat.ink }}
           >
-            <span className="text-[72px]" aria-hidden>
-              {topCat.emoji}
-            </span>
+            {topCat.emoji ? (
+              <span className="text-[72px]" aria-hidden>
+                {topCat.emoji}
+              </span>
+            ) : (
+              <span
+                aria-hidden
+                className="h-10 w-10 rounded-full border-[1.5px] border-ink"
+                style={{ background: topCat.dot }}
+              />
+            )}
             <div>
               <CatTag category={data.topMoment.category} />
               <h2 className="mt-1.5 text-[32px] font-extrabold tracking-[-0.03em] leading-[1.05]">

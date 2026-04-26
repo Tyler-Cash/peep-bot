@@ -4,6 +4,8 @@ import dev.tylercash.event.db.repository.EventEmbeddingRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.rewind.model.EventEmbedding;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +26,9 @@ public class EmbeddingService {
     private final RewindConfiguration config;
     private final EventRepository eventRepository;
     private final EventEmbeddingRepository embeddingRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public EmbeddingService(
             @Autowired(required = false) EmbeddingModel embeddingModel,
@@ -48,8 +53,12 @@ public class EmbeddingService {
         return embeddingModel != null && config.isEnabled();
     }
 
+    public String classify(String text) {
+        return normalisationService.classify(text);
+    }
+
     String buildEmbeddingText(Event event) {
-        return normalisationService.normalise(event.getName());
+        return event.getName();
     }
 
     @Transactional
@@ -58,9 +67,28 @@ public class EmbeddingService {
         try {
             float[] raw = embeddingModel.embed(nameText);
             embeddingRepository.save(new EventEmbedding(eventId, nameText, toVectorString(raw), OffsetDateTime.now()));
+
+            String category = normalisationService.classify(nameText);
+            saveCategory(eventId, category);
         } catch (Exception e) {
             log.error("Failed to embed event: {}", e.getMessage());
         }
+    }
+
+    private void saveCategory(UUID eventId, String category) {
+        entityManager
+                .createNativeQuery(
+                        """
+            INSERT INTO event_category (event_id, category_label, category_centroid_event_id, assigned_at)
+            VALUES (CAST(:eventId AS UUID), :label, CAST(:centroidId AS UUID), NOW())
+            ON CONFLICT (event_id) DO UPDATE SET
+                category_label = EXCLUDED.category_label,
+                assigned_at = EXCLUDED.assigned_at
+            """)
+                .setParameter("eventId", eventId.toString())
+                .setParameter("label", category)
+                .setParameter("centroidId", eventId.toString())
+                .executeUpdate();
     }
 
     @Scheduled(fixedDelayString = "PT5M")

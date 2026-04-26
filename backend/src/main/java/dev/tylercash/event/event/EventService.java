@@ -83,6 +83,25 @@ public class EventService {
                 pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED), guildId);
     }
 
+    public String getEventCategory(UUID eventId) {
+        String category = eventRepository.findCategoryByEventId(eventId);
+        return category == null || category.isBlank() ? "unknown" : category;
+    }
+
+    public Map<UUID, String> getEventCategories(Collection<UUID> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, String> categories = new HashMap<>();
+        eventRepository.findCategoriesByEventIds(List.copyOf(eventIds)).forEach(row -> {
+            UUID eventId = UUID.fromString((String) row[0]);
+            String category = row[1] == null ? "unknown" : row[1].toString();
+            categories.put(eventId, category.isBlank() ? "unknown" : category);
+        });
+        return categories;
+    }
+
     public boolean isCompleted(Event event) {
         return event.getState().ordinal() >= EventState.POST_COMPLETED.ordinal()
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));

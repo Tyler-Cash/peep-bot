@@ -124,7 +124,13 @@ public class EventController {
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
         Map<String, String> nameMap = discordUserCacheService.getDisplayNames(creatorSnowflakes);
-        return events.map(event -> new EventDto(event, nameMap.getOrDefault(event.getCreator(), event.getCreator())));
+        Map<UUID, String> categoryMap = eventService.getEventCategories(
+                events.stream().map(Event::getId).collect(Collectors.toSet()));
+
+        return events.map(event -> new EventDto(
+                event,
+                nameMap.getOrDefault(event.getCreator(), event.getCreator()),
+                categoryMap.getOrDefault(event.getId(), "unknown")));
     }
 
     @Operation(summary = "Get event details", description = "Returns full event details including attendee lists")
@@ -153,7 +159,8 @@ public class EventController {
         }
 
         Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
-        return new EventDetailDto(event, completed, summary, nameMap);
+        String category = eventService.getEventCategory(id);
+        return new EventDetailDto(event, completed, summary, nameMap, category);
     }
 
     @Operation(summary = "Cancel an event", description = "Admin-only: cancels an event and archives it")

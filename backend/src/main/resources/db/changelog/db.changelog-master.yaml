@@ -698,6 +698,17 @@ databaseChangeLog:
               - column:
                   name: guild_id
 
+  - changeSet:
+      id: add index on category_centroid_event_id
+      author: junie
+      changes:
+        - createIndex:
+            indexName: idx_event_category_centroid_id
+            tableName: event_category
+            columns:
+              - column:
+                  name: category_centroid_event_id
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
