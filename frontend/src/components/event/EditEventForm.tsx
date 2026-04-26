@@ -80,7 +80,7 @@ export function EditEventForm({ id }: { id: string }) {
       <div className="flex items-center justify-between mb-5">
         <Link
           href={`/events/${id}`}
-          className="inline-flex items-center gap-1.5 text-[14px] text-mute hover:text-ink"
+          className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
         >
           ← back to event
         </Link>
@@ -102,10 +102,10 @@ export function EditEventForm({ id }: { id: string }) {
           )}
         </span>
         <div>
-          <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+          <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
             EDIT EVENT
           </span>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
+          <h1 className="text-[42px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
             update the details
           </h1>
         </div>
@@ -125,14 +125,14 @@ export function EditEventForm({ id }: { id: string }) {
             {cat.emoji}
           </span>
         )}
-        <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em]">
+        <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
+          <span className="text-[13px] font-extrabold tracking-[0.14em]">
             {stamp.month}
           </span>
-          <span className="text-[26px] font-extrabold leading-none tabular-nums">
+          <span className="text-[36px] font-extrabold leading-none tabular-nums">
             {stamp.day}
           </span>
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+          <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
             {stamp.weekday}
           </span>
         </div>
@@ -141,10 +141,10 @@ export function EditEventForm({ id }: { id: string }) {
             <CatTag category={data.category} />
             <CountdownChip iso={new Date(date || data.dateTime).toISOString()} />
           </div>
-          <h2 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+          <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
             {name || "your event title"}
           </h2>
-          <p className="mt-1 text-[13.5px] font-semibold">
+          <p className="mt-1 text-[16px] font-semibold">
             {timeLabel(new Date(date || data.dateTime).toISOString())}
             {location ? ` · 📍 ${location}` : ""}
           </p>
@@ -207,7 +207,7 @@ export function EditEventForm({ id }: { id: string }) {
         <div className="flex items-center justify-between">
           <Link
             href={`/events/${id}`}
-            className="inline-flex items-center gap-1.5 text-[14px] text-mute hover:text-ink"
+            className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
           >
             cancel
           </Link>
@@ -221,7 +221,7 @@ export function EditEventForm({ id }: { id: string }) {
 }
 
 const inputCls =
-  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
+  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[17px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
 
 function Field({
   label,
@@ -232,7 +232,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+      <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
         {label}
       </span>
       {children}

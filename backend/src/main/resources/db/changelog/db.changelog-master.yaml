@@ -720,6 +720,32 @@ databaseChangeLog:
                   name: username
                   type: text
 
+  - changeSet:
+      id: create guild_settings table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: guild_settings
+            columns:
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: primary_location_place_id
+                  type: text
+              - column:
+                  name: primary_location_name
+                  type: text
+              - column:
+                  name: primary_location_lat
+                  type: double precision
+              - column:
+                  name: primary_location_lng
+                  type: double precision
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

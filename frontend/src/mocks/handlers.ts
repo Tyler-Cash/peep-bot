@@ -9,6 +9,7 @@ import {
   currentUser,
   findEvent,
   guild,
+  guildSettings,
   rewindStats,
   setRsvp,
   store,
@@ -36,6 +37,25 @@ export const handlers = [
     const id = (params as Record<string, string>)["0"] ?? guild.id;
     if (id !== guild.id) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json(guild);
+  }),
+
+  http.get(API("/guild/[^/]+/settings"), () =>
+    HttpResponse.json(guildSettings),
+  ),
+
+  http.patch(API("/guild/[^/]+/settings"), async ({ request }) => {
+    const body = (await request.json()) as typeof guildSettings;
+    Object.assign(guildSettings, body);
+    guild.primaryLocationLat = body.primaryLocationLat ?? null;
+    guild.primaryLocationLng = body.primaryLocationLng ?? null;
+    return HttpResponse.json(guildSettings);
+  }),
+
+  http.get(API("/api/places/geocode"), ({ request }) => {
+    const url = new URL(request.url);
+    const placeId = url.searchParams.get("placeId");
+    if (!placeId) return new HttpResponse(null, { status: 400 });
+    return HttpResponse.json({ lat: -37.8136, lng: 144.9631 });
   }),
 
   http.get(API("/event"), () => {

@@ -22,6 +22,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
   const sessionToken = url.searchParams.get("sessionToken") ?? "";
+  const latParam = url.searchParams.get("lat");
+  const lngParam = url.searchParams.get("lng");
 
   if (!q.trim()) {
     return Response.json([]);
@@ -38,6 +40,20 @@ export async function GET(req: Request) {
   const key = process.env.GOOGLE_MAPS_KEY;
   if (!key) return Response.json([]);
 
+  const body: Record<string, unknown> = { input: q, sessionToken };
+  if (latParam && lngParam) {
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+    if (isFinite(lat) && isFinite(lng)) {
+      body.locationBias = {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: 50000.0,
+        },
+      };
+    }
+  }
+
   try {
     const res = await fetch(
       "https://places.googleapis.com/v1/places:autocomplete",
@@ -47,7 +63,7 @@ export async function GET(req: Request) {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": key,
         },
-        body: JSON.stringify({ input: q, sessionToken }),
+        body: JSON.stringify(body),
       },
     );
 

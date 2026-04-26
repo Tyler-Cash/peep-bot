@@ -21,13 +21,13 @@ public class GuildController {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
     private final GuildMembershipService guildMembershipService;
+    private final GuildSettingsRepository settingsRepository;
 
     @GetMapping
     public List<GuildDto> getGuilds(@AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
         List<Long> userGuildIds = guildMembershipService.getGuildIdsForUser(snowflake);
         if (userGuildIds.isEmpty()) {
-            // Fall back to configured guild so new logins always see at least one guild
             Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
             return guild != null ? List.of(toDto(guild)) : List.of();
         }
@@ -40,6 +40,8 @@ public class GuildController {
 
     private GuildDto toDto(Guild guild) {
         String name = guild.getName();
+        GuildSettings settings =
+                settingsRepository.findById(Long.parseLong(guild.getId())).orElse(null);
         return new GuildDto(
                 guild.getId(),
                 name,
@@ -47,7 +49,9 @@ public class GuildController {
                 guild.getIconUrl(),
                 deriveColor(guild.getId()),
                 discordConfiguration.getSeperatorChannel(),
-                guild.getMemberCount());
+                guild.getMemberCount(),
+                settings != null ? settings.getPrimaryLocationLat() : null,
+                settings != null ? settings.getPrimaryLocationLng() : null);
     }
 
     private static String deriveInitials(String name) {

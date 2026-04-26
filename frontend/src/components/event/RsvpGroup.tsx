@@ -15,43 +15,43 @@ export function RsvpGroup({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="inline-flex items-center gap-1 rounded-full border-[1.5px] border-ink bg-paper px-2.5 py-0.5 text-[11.5px] font-extrabold shadow-chunky-sm shrink-0">
-        <span aria-hidden>{emoji}</span>
-        <span className="uppercase tracking-[0.08em]">
+      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-3 py-1.5 text-[15px] font-extrabold shadow-chunky-sm shrink-0">
+        <span aria-hidden className="text-[18px]">{emoji}</span>
+        <span className="uppercase tracking-[0.08em] pt-0.5">
           {label} · {people.length}
         </span>
       </span>
       <div className="flex flex-wrap gap-1.5">
-        {people.length === 0 && <span className="text-[13px] text-mute">nobody yet</span>}
+        {people.length === 0 && <span className="text-[15px] text-mute">nobody yet</span>}
         {people.map((p, i) =>
           onRemove ? (
-            <button
+              <button
               key={i}
               type="button"
               onClick={() => onRemove(p)}
-              className="group inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper pl-0.5 pr-2.5 py-0.5 hover:border-rose-400 transition-colors cursor-pointer"
+              className="group inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1 hover:border-rose-400 transition-colors cursor-pointer"
             >
-              <span className="relative shrink-0 inline-flex items-center justify-center" style={{ width: 20, height: 20 }}>
+              <span className="relative shrink-0 inline-flex items-center justify-center" style={{ width: 28, height: 28 }}>
                 <Avatar
                   who={p}
-                  size={20}
+                  size={28}
                   className="group-hover:opacity-25 transition-opacity"
                 />
-                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-black text-rose-600">
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[15px] font-black text-rose-600">
                   ✕
                 </span>
               </span>
-              <span className={clsx("text-[13px] font-semibold group-hover:text-rose-600 transition-colors")}>
+              <span className={clsx("text-[15px] font-semibold group-hover:text-rose-600 transition-colors")}>
                 {p.name}
               </span>
             </button>
           ) : (
             <span
               key={i}
-              className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper pl-0.5 pr-2.5 py-0.5"
+              className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1"
             >
-              <Avatar who={p} size={20} />
-              <span className="text-[13px] font-semibold">{p.name}</span>
+              <Avatar who={p} size={28} />
+              <span className="text-[15px] font-semibold">{p.name}</span>
             </span>
           ),
         )}

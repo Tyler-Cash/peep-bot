@@ -119,6 +119,7 @@ export async function searchPlaces(
   query: string,
   sessionToken: string,
   signal?: AbortSignal,
+  locationBias?: { lat: number; lng: number },
 ): Promise<SearchResult> {
   if (MODE === "mock") return mockSearch(query);
   if (!query.trim()) return [];
@@ -132,6 +133,10 @@ export async function searchPlaces(
 
   try {
     const params = new URLSearchParams({ q: query, sessionToken });
+    if (locationBias) {
+      params.set("lat", String(locationBias.lat));
+      params.set("lng", String(locationBias.lng));
+    }
     const res = await fetch(`/api/places/autocomplete?${params}`, { signal });
 
     if (res.status === 429) {
@@ -155,4 +160,19 @@ export function fetchPlaceDetails(placeId: string, sessionToken: string): void {
 
 export function newPlacesSessionToken(): string {
   return crypto.randomUUID();
+}
+
+export async function geocodePlace(
+  placeId: string,
+  sessionToken: string,
+): Promise<{ lat: number; lng: number } | null> {
+  if (MODE === "mock") return { lat: -37.8136, lng: 144.9631 };
+  try {
+    const params = new URLSearchParams({ placeId, sessionToken });
+    const res = await fetch(`/api/places/geocode?${params}`);
+    if (!res.ok) return null;
+    return (await res.json()) as { lat: number; lng: number };
+  } catch {
+    return null;
+  }
 }

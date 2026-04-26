@@ -49,10 +49,10 @@ export function CreateEventForm() {
           <Peepo size={24} />
         </span>
         <div>
-          <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+          <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
             NEW EVENT
           </span>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
+          <h1 className="text-[42px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
             post something to do
           </h1>
         </div>
@@ -67,21 +67,21 @@ export function CreateEventForm() {
         >
           <Peepo size={180} />
         </span>
-        <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-          <span className="text-[26px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+        <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
+          <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
+          <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
+          <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
             {stamp.weekday}
           </span>
         </div>
         <div className="relative flex-1 min-w-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-2.5 py-0.5 text-[11px] font-extrabold shadow-chunky-sm text-mute uppercase tracking-[0.08em]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-3.5 py-1 text-[14px] font-extrabold shadow-chunky-sm text-mute uppercase tracking-[0.08em]">
             category · auto-sorted
           </span>
-          <h2 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+          <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
             {name || "your event title"}
           </h2>
-          <p className="mt-1 text-[13.5px] font-semibold">
+          <p className="mt-1 text-[16px] font-semibold">
             {timeLabel(new Date(date).toISOString())} · 📍 {location || "venue"}
           </p>
         </div>
@@ -151,12 +151,12 @@ export function CreateEventForm() {
 }
 
 const inputCls =
-  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
+  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[17px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+      <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
         {label}
       </span>
       {children}

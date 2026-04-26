@@ -79,7 +79,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <header className="flex items-center gap-2 text-[13px]">
+        <header className="flex items-center gap-2 text-[15px]">
           <span className="font-extrabold text-ink">{event.host}</span>
           <span className="text-mute">@{event.hostUsername ?? event.host.toLowerCase()} · posted recently</span>
           <span className="flex-1" />
@@ -104,32 +104,32 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 {cat.emoji}
               </span>
             )}
-            <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
-              <span className="text-[10.5px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-              <span className="text-[26px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-              <span className="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+            <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
+              <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
+              <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
+              <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
                 {stamp.weekday}
               </span>
             </div>
             <div className="flex-1 min-w-0 relative">
               <CatTag category={event.category} />
-              <h2 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+              <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
                 {event.name}
               </h2>
-              <p className="mt-1 text-[13.5px] font-semibold">
+              <p className="mt-1 text-[16px] font-semibold">
                 {timeLabel(event.dateTime)}{event.location ? ` · 📍 ${event.location}` : ""}
               </p>
             </div>
           </div>
           <div className="bg-white p-4">
-            <p className="text-[15px] text-ink2 line-clamp-2">{event.description}</p>
+            <p className="text-[17px] text-ink2 line-clamp-2">{event.description}</p>
             <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <Avas people={ds.accepted} max={5} size={26} />
-              <span className="text-[12.5px] text-mute font-semibold">
+              <Avas people={ds.accepted} max={5} size={28} />
+              <span className="text-[15px] text-mute font-semibold">
                 {counts.going} going · {counts.maybe} maybe
               </span>
               <span className="flex-1" />
-              <ReactionRow counts={counts} active={active} onPick={onPick} compact />
+              <ReactionRow counts={counts} active={active} onPick={onPick} />
             </div>
           </div>
         </Link>

@@ -14,13 +14,13 @@ export function EventsFeed() {
   const count = events.length;
 
   return (
-    <div className="mx-auto max-w-[820px] px-5 py-6">
+    <div className="mx-auto max-w-[980px] px-5 py-6">
       <header className="flex items-end justify-between mb-5">
         <h1 className="text-[54px] sm:text-[64px] font-extrabold tracking-[-0.04em] leading-[0.95]">
           what&apos;s happening
         </h1>
         <span
-          className="inline-flex items-center gap-1 rounded-full border-[1.5px] border-ink bg-leaf px-3 py-1 text-[12.5px] font-extrabold shadow-chunky-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-leaf px-4 py-1.5 text-[15px] font-extrabold shadow-chunky-sm"
           style={{ transform: "rotate(-2deg)" }}
         >
           {count} upcoming ✨
@@ -29,9 +29,9 @@ export function EventsFeed() {
 
       <Link
         href="/events/new"
-        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pl-4 pr-3 py-2 shadow-chunky-sm hover:bg-paper2 transition-colors"
+        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pl-5 pr-4 py-3 shadow-chunky-sm hover:bg-paper2 transition-colors"
       >
-        <span className="text-[15px] font-semibold text-mute flex-1">
+        <span className="text-[18px] font-semibold text-mute flex-1">
           ＋ post an event to #outings…
         </span>
         <Chunky variant="leaf" size="sm">

@@ -13,17 +13,21 @@ import {
 export function LocationAutocomplete({
   value,
   onChange,
+  onPick,
   placeholder,
   required,
   className,
   recent,
+  locationBias,
 }: {
   value: string;
   onChange: (value: string) => void;
+  onPick?: (placeId: string, displayValue: string) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
   recent?: string[];
+  locationBias?: { lat: number; lng: number };
 }) {
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -70,7 +74,7 @@ export function LocationAutocomplete({
         retryTimeoutRef.current = null;
       }
 
-      const results = await searchPlaces(value, sessionToken, ctrl.signal);
+      const results = await searchPlaces(value, sessionToken, ctrl.signal, locationBias);
 
       if (Array.isArray(results)) {
         setSuggestions(results);
@@ -101,7 +105,7 @@ export function LocationAutocomplete({
           return;
         }
 
-        const retryResults = await searchPlaces(value, sessionToken);
+        const retryResults = await searchPlaces(value, sessionToken, undefined, locationBias);
         if (Array.isArray(retryResults)) {
           setSuggestions(retryResults);
           setHighlight(0);
@@ -118,11 +122,15 @@ export function LocationAutocomplete({
       }
       ctrl.abort();
     };
-  }, [value, open, sessionToken, recentSuggestions, onChange]);
+  }, [value, open, sessionToken, recentSuggestions, onChange, locationBias]);
 
   const pick = (s: PlaceSuggestion) => {
-    onChange(suggestionToLocation(s));
+    const displayValue = suggestionToLocation(s);
+    onChange(displayValue);
     fetchPlaceDetails(s.id, sessionToken);
+    if (onPick && !s.id.startsWith("recent:")) {
+      onPick(s.id, displayValue);
+    }
     setOpen(false);
     inputRef.current?.blur();
   };
@@ -172,6 +180,7 @@ export function LocationAutocomplete({
           autoComplete="off"
           aria-autocomplete="list"
           aria-expanded={open}
+          aria-controls={open ? "location-suggestions" : undefined}
           role="combobox"
           className={clsx(
             "w-full rounded-[10px] border-[1.5px] border-ink bg-paper pl-9 pr-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md",
@@ -188,6 +197,7 @@ export function LocationAutocomplete({
 
       {!locationUnavailable && open && (suggestions.length > 0 || loading) && (
         <div
+          id="location-suggestions"
           role="listbox"
           className="absolute z-30 left-0 right-0 mt-1.5 rounded-[12px] border-[1.5px] border-ink bg-paper shadow-chunky-md overflow-hidden"
         >

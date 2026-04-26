@@ -64,7 +64,17 @@ export type Guild = {
   channel: string; // no '#'
   members: number;
   active?: boolean;
+  primaryLocationLat?: number | null;
+  primaryLocationLng?: number | null;
 };
+
+export type GuildSettingsDto = {
+  primaryLocationPlaceId: string | null;
+  primaryLocationName: string | null;
+  primaryLocationLat: number | null;
+  primaryLocationLng: number | null;
+};
+
 
 export type RsvpStatus = "going" | "maybe" | "declined";
 

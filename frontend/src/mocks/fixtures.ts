@@ -98,6 +98,15 @@ export const guild: Guild = {
   channel: "outings",
   members: 27,
   active: true,
+  primaryLocationLat: null as number | null,
+  primaryLocationLng: null as number | null,
+};
+
+export const guildSettings = {
+  primaryLocationPlaceId: null as string | null,
+  primaryLocationName: null as string | null,
+  primaryLocationLat: null as number | null,
+  primaryLocationLng: null as number | null,
 };
 
 // In-memory store — mutated by handlers so RSVPs + create-event persist across navigations.

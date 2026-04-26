@@ -32,8 +32,8 @@ export function ReactionRow({
             onPick?.(it.status);
           }}
           className={clsx(
-            "inline-flex items-center gap-1 rounded-full border-[1.5px] border-ink font-bold transition-colors",
-            compact ? "px-2 py-0.5 text-[12px]" : "px-2.5 py-1 text-[13px]",
+            "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink font-bold transition-colors",
+            compact ? "px-2.5 py-1 text-[14px]" : "px-3.5 py-1.5 text-[16px]",
             active === it.status
               ? "bg-leaf text-ink shadow-chunky-active translate-x-[1px] translate-y-[1px]"
               : "bg-paper text-ink shadow-chunky-sm hover:bg-paper2",

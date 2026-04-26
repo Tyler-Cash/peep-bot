@@ -6,6 +6,7 @@ import type {
   EventDetailDto,
   EventDto,
   Guild,
+  GuildSettingsDto,
   RewindStats,
   RsvpStatus,
   UserInfo,
@@ -171,4 +172,23 @@ export async function updateEvent(
     invalidateEvents(guildId),
     invalidateEvent(guildId, eventId),
   ]);
+}
+
+export function useGuildSettings(guildId: string | null) {
+  return useSWR<GuildSettingsDto>(
+    guildId ? `/guild/${guildId}/settings` : null,
+    fetcher,
+  );
+}
+
+export async function updateGuildSettings(
+  guildId: string,
+  settings: GuildSettingsDto,
+) {
+  await apiFetch<GuildSettingsDto>(`/guild/${guildId}/settings`, {
+    method: "PATCH",
+    body: JSON.stringify(settings),
+  });
+  await globalMutate(`/guild/${guildId}/settings`);
+  await globalMutate("/guild");
 }

@@ -20,8 +20,8 @@ export function Nav() {
     <nav className="sticky top-0 z-20 bg-white border-b-[1.5px] border-ink">
       <div className="mx-auto flex max-w-[1200px] items-center gap-4 px-5 py-3">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-[8px] bg-leaf border-[1.5px] border-ink shadow-chunky-sm">
-            <Peepo size={22} />
+          <span className="inline-flex items-center justify-center w-[46px] h-[46px] rounded-[12px] bg-leaf border-[1.5px] border-ink shadow-chunky-sm shrink-0">
+            <Peepo size={28} />
           </span>
           <span className="flex flex-col leading-none">
             <span className="text-[17px] font-extrabold tracking-[-0.02em]">peepbot</span>
@@ -39,7 +39,7 @@ export function Nav() {
                 key={t.href}
                 href={t.href}
                 className={clsx(
-                  "rounded-full px-3 py-1.5 text-[13.5px] font-extrabold tracking-[-0.01em] border-[1.5px]",
+                  "flex items-center justify-center h-[46px] rounded-full px-5 text-[14.5px] font-extrabold tracking-[-0.01em] border-[1.5px]",
                   active
                     ? "bg-ink text-paper border-ink shadow-chunky-leaf"
                     : "bg-transparent text-ink border-transparent hover:bg-paper2",
@@ -56,14 +56,14 @@ export function Nav() {
         <div className="flex items-center gap-2.5">
           <GuildSwitcher />
           <Link href="/events/new">
-            <Chunky variant="leaf" size="sm">
+            <Chunky variant="leaf" className="h-[46px] px-5 text-[14.5px]">
               + new event
             </Chunky>
           </Link>
           {user && (
             <Avatar
               who={{ name: user.displayName, avatarUrl: user.avatarUrl }}
-              size={34}
+              size={46}
             />
           )}
         </div>
