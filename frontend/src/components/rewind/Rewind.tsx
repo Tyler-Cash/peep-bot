@@ -85,7 +85,7 @@ export function Rewind() {
           attendance streak
         </span>
         <div className="mt-3 flex flex-wrap gap-3">
-          {data.attendanceStreak.map((m, i) => (
+          {(data.attendanceStreak ?? []).map((m, i) => (
             <div
               key={i}
               className="flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-0.5 pr-3 py-0.5"
@@ -99,7 +99,7 @@ export function Rewind() {
       </Slab>
 
       {/* upcoming */}
-      {data.upcomingPreview.length > 0 && (
+      {(data.upcomingPreview ?? []).length > 0 && (
         <Slab className="p-5">
           <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
             what&apos;s next
