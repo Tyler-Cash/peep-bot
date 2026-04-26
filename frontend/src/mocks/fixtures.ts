@@ -82,7 +82,8 @@ function randomFutureTimes(count: number): string[] {
 const times = randomFutureTimes(6);
 
 export const currentUser: UserInfo = {
-  username: "Otis",
+  username: "otis",
+  displayName: "Otis",
   discordId: "1002",
   admin: true,
   avatarUrl: null,
@@ -232,7 +233,7 @@ export function setRsvp(
   if (!ev) return null;
   const me: Attendee = {
     snowflake: user.discordId,
-    name: user.username,
+    name: user.displayName,
     instant: new Date().toISOString(),
     avatarUrl: user.avatarUrl ?? null,
     hue: "#7BC24F",

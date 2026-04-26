@@ -49,6 +49,7 @@ export type EventUpdateDto = {
 
 export type UserInfo = {
   username: string;
+  displayName: string;
   discordId: string;
   admin: boolean;
   avatarUrl?: string | null;

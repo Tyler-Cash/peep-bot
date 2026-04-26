@@ -62,7 +62,7 @@ export function Nav() {
           </Link>
           {user && (
             <Avatar
-              who={{ name: user.username, avatarUrl: user.avatarUrl, hue: "#7BC24F" }}
+              who={{ name: user.displayName, avatarUrl: user.avatarUrl }}
               size={34}
             />
           )}
