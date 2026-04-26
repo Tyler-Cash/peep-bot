@@ -83,7 +83,7 @@ export function postedRelative(iso: string) {
 }
 
 export function initials(name: string) {
-  const parts = name.split(/\s+/);
+  const parts = name.split(/\s+/).filter((p) => /^[a-zA-Z]/.test(p));
   const first = parts[0]?.[0] ?? "";
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
   return (first + last).toUpperCase() || name.slice(0, 2).toUpperCase();
