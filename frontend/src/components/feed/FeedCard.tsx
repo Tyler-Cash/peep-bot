@@ -81,7 +81,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
       <div className="flex-1 min-w-0">
         <header className="flex items-center gap-2 text-[15px]">
           <span className="font-extrabold text-ink">{event.host}</span>
-          <span className="text-mute">@{event.hostUsername ?? event.host.toLowerCase()} · posted recently</span>
+          <span className="text-mute">@{event.hostUsername ?? event.host?.toLowerCase()} · posted recently</span>
           <span className="flex-1" />
           <CountdownChip iso={event.dateTime} />
         </header>
