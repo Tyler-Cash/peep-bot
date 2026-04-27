@@ -68,7 +68,11 @@ public class EventController {
 
         attendanceService.recordAttendance(newEvent.getId(), discordId, null, AttendanceStatus.ACCEPTED, null);
 
-        return Map.of("message", "Created event for " + event.getName());
+        return Map.of(
+                "message",
+                "Created event for " + event.getName(),
+                "id",
+                newEvent.getId().toString());
     }
 
     @Operation(
