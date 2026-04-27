@@ -5,6 +5,7 @@ import { apiFetch, api } from "./api";
 import type {
   EventDetailDto,
   EventDto,
+  GalleryAlbumDto,
   Guild,
   GuildSettingsDto,
   RewindStats,
@@ -98,6 +99,14 @@ export function useRewindYears() {
   const key = guild ? (["rewind-years", guild.id] as const) : null;
   return useSWR<number[]>(key, () =>
     fetcher<number[]>(`/rewind/years?guildId=${guild!.id}`),
+  );
+}
+
+export function useGallery() {
+  const guild = useActiveGuild();
+  const key = guild ? (["gallery", guild.id] as const) : null;
+  return useSWR<GalleryAlbumDto[]>(key, () =>
+    fetcher<GalleryAlbumDto[]>(`/gallery?guildId=${guild!.id}`),
   );
 }
 

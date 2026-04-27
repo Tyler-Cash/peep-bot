@@ -128,3 +128,12 @@ export type RewindStats = {
 };
 
 export type BackendError = { status: number; message: string };
+
+export type GalleryAlbumDto = {
+  eventId: string;
+  eventName: string;
+  eventDateTime: string;
+  albumId: string;
+  thumbnailUrl: string;
+  assetCount: number;
+};

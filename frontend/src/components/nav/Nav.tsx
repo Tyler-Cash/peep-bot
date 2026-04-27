@@ -14,6 +14,7 @@ export function Nav() {
   const pathname = usePathname();
   const tabs: Array<{ label: string; href: string }> = [
     { label: "events", href: "/" },
+    { label: "gallery", href: "/gallery" },
     { label: "rewind", href: "/rewind" },
   ];
   return (
@@ -33,7 +34,10 @@ export function Nav() {
 
         <div className="ml-4 flex items-center gap-2">
           {tabs.map((t) => {
-            const active = pathname === t.href || (t.href === "/" && pathname === "/");
+            const active =
+            t.href === "/"
+              ? pathname === "/"
+              : pathname === t.href || pathname.startsWith(t.href + "/");
             return (
               <Link
                 key={t.href}
