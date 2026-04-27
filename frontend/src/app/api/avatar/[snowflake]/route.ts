@@ -24,7 +24,7 @@ export async function GET(
 
   const ct = upstream.headers.get("content-type") ?? "image/webp";
   const cacheControl =
-    upstream.headers.get("cache-control") ?? "public, max-age=86400";
+    upstream.headers.get("cache-control") ?? "private, max-age=86400";
   const body = await upstream.arrayBuffer();
 
   return new Response(body, {
