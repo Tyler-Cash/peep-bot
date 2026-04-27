@@ -226,6 +226,8 @@ export async function updateGuildSettings(
     method: "PATCH",
     body: JSON.stringify(settings),
   });
-  await globalMutate(`/guild/${guildId}/settings`);
-  await globalMutate("/guild");
+  await globalMutate(`/guild/${guildId}/settings`, undefined, {
+    revalidate: true,
+  });
+  await globalMutate("/guild", undefined, { revalidate: true });
 }
