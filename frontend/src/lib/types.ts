@@ -29,7 +29,8 @@ export type EventDto = {
   hostUsername?: string | null;
   hostAvatarUrl?: string | null;
   category?: string | null;
-  state?: "CREATED" | "INIT_CHANNEL" | "INIT_ROLES" | "CLASSIFY" | "PLANNED" | "PRE_NOTIFIED" | "POST_ALBUM_READY" | "POST_ALBUM_SHARED" | "POST_COMPLETED" | "ARCHIVED" | "DELETED" | string;
+  state?: string;
+  displayState?: "creating" | "planned" | "archived" | "cancelled" | "deleted" | string;
   notifyOnCreate?: boolean;
   channelId?: string;
   messageId?: string;

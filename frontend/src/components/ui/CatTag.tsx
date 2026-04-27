@@ -1,31 +1,22 @@
 import { categoryMeta } from "@/lib/categories";
 
-const CREATING_STATES = new Set([
-  "CREATED",
-  "INIT_CHANNEL",
-  "INIT_ROLES",
-  "CLASSIFY",
-  "POST_ALBUM_READY",
-  "POST_ALBUM_SHARED",
-]);
-
 export function CatTag({
   category,
-  state,
+  displayState,
 }: {
   category?: string | null;
-  state?: string | null;
+  displayState?: string | null;
 }) {
-  if (state && CREATING_STATES.has(state)) {
+  if (displayState === "creating") {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
         ⏳ <span className="uppercase tracking-[0.08em]">creating</span>
       </span>
     );
   }
   if (!category) {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
         ? <span className="uppercase tracking-[0.08em]">unknown</span>
       </span>
     );

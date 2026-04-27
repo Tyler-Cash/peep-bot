@@ -137,6 +137,7 @@ export const handlers = [
     const ev = findEvent(id);
     if (!ev) return new HttpResponse(null, { status: 404 });
     ev.state = "CANCELLED";
+    ev.displayState = "cancelled";
     return HttpResponse.json({ message: "Event cancelled" });
   }),
 

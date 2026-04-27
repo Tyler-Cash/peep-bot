@@ -36,7 +36,7 @@ export function EventDetail({ id }: { id: string }) {
     return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
   }
 
-  const isCancelled = data.state === "CANCELLED";
+  const isCancelled = data.displayState === "cancelled" || data.state === "CANCELLED";
   const isPast = new Date(data.dateTime) < new Date();
   const cat = categoryMeta(data.category);
   const stamp = dateStamp(data.dateTime);
@@ -168,7 +168,7 @@ export function EventDetail({ id }: { id: string }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                      <CatTag category={data.category} state={data.state} />
+                      <CatTag category={data.category} displayState={data.displayState} />
                     <CountdownChip iso={data.dateTime} />
                   </div>
                   {!isPast && !isCancelled && (

@@ -140,7 +140,7 @@ export function EditEventForm({ id }: { id: string }) {
         </div>
         <div className="relative flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <CatTag category={data.category} state={data.state} />
+            <CatTag category={data.category} displayState={data.displayState} />
             <CountdownChip
               iso={new Date(date || data.dateTime).toISOString()}
             />

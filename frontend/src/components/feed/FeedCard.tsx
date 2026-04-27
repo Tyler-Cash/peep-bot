@@ -111,7 +111,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
               </span>
             </div>
             <div className="flex-1 min-w-0 relative">
-              <CatTag category={event.category} state={event.state} />
+              <CatTag category={event.category} displayState={event.displayState} />
               <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
                 {event.name}
               </h2>

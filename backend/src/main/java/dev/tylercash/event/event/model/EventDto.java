@@ -48,6 +48,7 @@ public class EventDto {
     private String hostAvatarUrl;
     private String category = "unknown";
     private String state;
+    private String displayState;
 
     private String channelId;
     private String messageId;
@@ -66,12 +67,24 @@ public class EventDto {
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
         this.state = event.getState() != null ? event.getState().name() : null;
+        this.displayState = toDisplayState(event.getState());
         String creator = event.getCreator();
         this.host = event.getCreatorDisplayName(); // transient, may be null
         this.hostAvatarUrl = (creator != null && !creator.isBlank()) ? "/api/avatar/" + creator : null;
         this.channelId = String.valueOf(event.getChannelId());
         this.messageId = String.valueOf(event.getMessageId());
         // Do not expose notifyOnCreate from entity; it's request-only and not persisted
+    }
+
+    private static String toDisplayState(EventState state) {
+        if (state == null) return null;
+        return switch (state) {
+            case CREATED, INIT_CHANNEL, INIT_ROLES, CLASSIFY -> "creating";
+            case PLANNED, PRE_NOTIFIED -> "planned";
+            case POST_ALBUM_READY, POST_ALBUM_SHARED, POST_COMPLETED, ARCHIVED -> "archived";
+            case CANCELLED -> "cancelled";
+            case DELETED -> "deleted";
+        };
     }
 
     public EventDto(Event event, String hostDisplayName, String hostUsername) {
