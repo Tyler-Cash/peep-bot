@@ -93,6 +93,14 @@ export function useRewind(year: number, scope: "guild" | "me" = "guild") {
   );
 }
 
+export function useRewindYears() {
+  const guild = useActiveGuild();
+  const key = guild ? (["rewind-years", guild.id] as const) : null;
+  return useSWR<number[]>(key, () =>
+    fetcher<number[]>(`/rewind/years?guildId=${guild!.id}`),
+  );
+}
+
 export function invalidateEvents(guildId: string) {
   return globalMutate(
     (k) => Array.isArray(k) && k[0] === "events" && k[1] === guildId,

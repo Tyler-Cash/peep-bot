@@ -112,7 +112,7 @@ export type RewindStats = {
   totalEvents: number;
   totalUniqueAttendees: number;
   totalRsvps: number;
-  averageGroupSize: string;
+  averageGroupSize: number;
   topCategories: EventCategoryDto[];
   topAttendees: AttendeeStatDto[];
   topOrganizers: AttendeeStatDto[];

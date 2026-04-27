@@ -223,7 +223,7 @@ export const rewindStats = (year: number): RewindStats => ({
   totalEvents: 14,
   totalUniqueAttendees: 10,
   totalRsvps: 162,
-  averageGroupSize: "7.2",
+  averageGroupSize: 7.2,
   topCategories: [
     { name: "trivia", eventCount: 4, totalAttendees: 48 },
     { name: "outdoor", eventCount: 3, totalAttendees: 24 },
@@ -248,8 +248,8 @@ export const rewindStats = (year: number): RewindStats => ({
     "2026-05": 1, "2026-06": 2, "2026-07": 1, "2026-08": 2,
   },
   eventsByDayOfWeek: {
-    MONDAY: 1, TUESDAY: 0, WEDNESDAY: 2, THURSDAY: 3,
-    FRIDAY: 4, SATURDAY: 2, SUNDAY: 2,
+    Monday: 1, Tuesday: 0, Wednesday: 2, Thursday: 3,
+    Friday: 4, Saturday: 2, Sunday: 2,
   },
   firstEvent: { id: "1", name: "pub quiz at the glass barrel", dateTime: "2026-01-10T19:00:00Z" },
   lastEvent: { id: "6", name: "mario kart + takeout", dateTime: "2026-12-15T19:00:00Z" },
