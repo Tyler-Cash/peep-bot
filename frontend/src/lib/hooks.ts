@@ -170,7 +170,18 @@ export async function updateEvent(
   });
   await Promise.all([
     invalidateEvents(guildId),
-    invalidateEvent(guildId, eventId),
+    // Optimistically merge updated fields into the cached event so the detail
+    // page shows new values immediately rather than waiting for the refetch.
+    globalMutate(
+      (k) =>
+        Array.isArray(k) &&
+        k[0] === "event" &&
+        k[1] === guildId &&
+        k[2] === String(eventId),
+      (current: EventDetailDto | undefined) =>
+        current ? { ...current, ...body } : undefined,
+      { revalidate: true },
+    ),
   ]);
 }
 
