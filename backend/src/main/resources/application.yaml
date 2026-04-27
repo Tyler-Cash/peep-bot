@@ -40,6 +40,10 @@ server:
     session:
       cookie:
         secure: true
+        name: SESSION
+        http-only: true
+        same-site: Lax
+        domain: event.tylercash.dev
     context-path: /api
 
 spring:
@@ -69,12 +73,6 @@ spring:
         model:
           uri: classpath:/models/model.onnx
   session:
-    cookie:
-      name: SESSION
-      http-only: true
-      secure: true
-      same-site: Lax
-      domain: .tylercash.dev
     jdbc:
       initialize-schema: never
       cleanup-cron: 0 */10 * * * *
@@ -99,6 +97,8 @@ spring:
             usernameAttribute: username
 
 management:
+  server:
+    port: 9001
   endpoints:
     web:
       exposure:
