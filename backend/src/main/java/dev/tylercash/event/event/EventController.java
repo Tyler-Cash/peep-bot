@@ -59,6 +59,7 @@ public class EventController {
         String displayName = DiscordUtil.getUserDisplayName(member);
 
         Event newEvent = new Event(event, discordId);
+        newEvent.setId(UUID.randomUUID());
         newEvent.setServerId(guildId);
         discordUserCacheService.upsertUser(
                 discordId, displayName, member.getUser().getName(), null, guildId);
