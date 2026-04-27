@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Peepo } from "@/components/Peepo";
 import { dateStamp, timeLabel } from "@/lib/format";
@@ -73,8 +74,12 @@ export function CreateEventForm() {
           <Peepo size={180} />
         </span>
         <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
-          <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-          <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
+          <span className="text-[13px] font-extrabold tracking-[0.14em]">
+            {stamp.month}
+          </span>
+          <span className="text-[36px] font-extrabold leading-none tabular-nums">
+            {stamp.day}
+          </span>
           <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
             {stamp.weekday}
           </span>
@@ -106,13 +111,7 @@ export function CreateEventForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="date & time">
-              <input
-                type="datetime-local"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className={inputCls}
-              />
+              <DateTimePicker value={date} onChange={setDate} />
             </Field>
             <Field label="capacity (0 = unlimited)">
               <input
@@ -148,7 +147,9 @@ export function CreateEventForm() {
 
         <div className="flex justify-end">
           <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
-            {submitting ? "posting…" : "post to #" + (guild?.channel ?? "outings")}
+            {submitting
+              ? "posting…"
+              : "post to #" + (guild?.channel ?? "outings")}
           </Chunky>
         </div>
       </form>
@@ -159,7 +160,13 @@ export function CreateEventForm() {
 const inputCls =
   "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[17px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">

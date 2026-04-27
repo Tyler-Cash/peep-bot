@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
@@ -144,7 +145,9 @@ export function EditEventForm({ id }: { id: string }) {
         <div className="relative flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <CatTag category={data.category} />
-            <CountdownChip iso={new Date(date || data.dateTime).toISOString()} />
+            <CountdownChip
+              iso={new Date(date || data.dateTime).toISOString()}
+            />
           </div>
           <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
             {name || "your event title"}
@@ -170,13 +173,7 @@ export function EditEventForm({ id }: { id: string }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="date & time">
-              <input
-                type="datetime-local"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className={inputCls}
-              />
+              <DateTimePicker value={date || null} onChange={setDate} />
             </Field>
             <Field label="capacity (0 = unlimited)">
               <input
