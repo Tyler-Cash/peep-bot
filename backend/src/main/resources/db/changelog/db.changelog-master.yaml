@@ -746,6 +746,19 @@ databaseChangeLog:
                   name: primary_location_lng
                   type: double precision
 
+  - changeSet:
+      id: migrate planned events to classify state
+      author: tyler
+      comment: >
+        Move all PLANNED events into the CLASSIFY state so the clustering
+        service can assign a category to each event. The lifecycle poller
+        will transition them back to PLANNED via INIT_COMPLETE once
+        classification is complete.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'CLASSIFY' WHERE state = 'PLANNED';
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
