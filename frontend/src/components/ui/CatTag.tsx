@@ -1,5 +1,14 @@
 import { categoryMeta } from "@/lib/categories";
 
+const CREATING_STATES = new Set([
+  "CREATED",
+  "INIT_CHANNEL",
+  "INIT_ROLES",
+  "CLASSIFY",
+  "POST_ALBUM_READY",
+  "POST_ALBUM_SHARED",
+]);
+
 export function CatTag({
   category,
   state,
@@ -7,10 +16,10 @@ export function CatTag({
   category?: string | null;
   state?: string | null;
 }) {
-  if (state === "PROCESSING") {
+  if (state && CREATING_STATES.has(state)) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink/40 px-2.5 py-0.5 text-[11.5px] font-bold shadow-chunky-sm bg-paper/80 text-mute">
-        ⏳ <span className="uppercase tracking-[0.08em]">processing</span>
+        ⏳ <span className="uppercase tracking-[0.08em]">creating</span>
       </span>
     );
   }

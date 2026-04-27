@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "@/lib/clsx";
 import { CatTag } from "@/components/ui/CatTag";
@@ -86,13 +85,13 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
           <CountdownChip iso={event.dateTime} />
         </header>
 
-        <Link
-          href={`/events/${event.id}`}
-          onClick={() => router.prefetch(`/events/${event.id}`)}
-          className="block mt-2 rounded-[14px] border-[1.5px] border-ink overflow-hidden shadow-chunky bg-white"
+        <div
+          onClick={() => router.push(`/events/${event.id}`)}
+          onMouseEnter={() => router.prefetch(`/events/${event.id}`)}
+          className="block mt-2 rounded-[14px] border-[1.5px] border-ink overflow-hidden shadow-chunky bg-white cursor-pointer"
         >
           <div
-            className="relative p-4 flex items-start gap-3 border-b-[1.5px] border-ink"
+            className="relative p-4 flex items-start gap-3 border-b-[1.5px] border-ink overflow-hidden"
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.emoji && (
@@ -112,7 +111,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
               </span>
             </div>
             <div className="flex-1 min-w-0 relative">
-              <CatTag category={event.category} />
+              <CatTag category={event.category} state={event.state} />
               <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
                 {event.name}
               </h2>
@@ -132,7 +131,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
               <ReactionRow counts={counts} active={active} onPick={onPick} />
             </div>
           </div>
-        </Link>
+        </div>
       </div>
     </article>
   );
