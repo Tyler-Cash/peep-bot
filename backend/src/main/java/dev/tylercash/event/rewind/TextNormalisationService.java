@@ -45,8 +45,11 @@ public class TextNormalisationService {
             String categories = String.join(", ", config.getCategories());
             String name = event.getName().replace("\"", "'");
             String location = event.getLocation() != null ? event.getLocation().replace("\"", "'") : "";
-            String date = event.getDateTime() != null ? event.getDateTime().toLocalDate().toString() : "unknown";
-            String description = event.getDescription() != null ? event.getDescription().replace("\"", "'") : "";
+            String date = event.getDateTime() != null
+                    ? event.getDateTime().toLocalDate().toString()
+                    : "unknown";
+            String description =
+                    event.getDescription() != null ? event.getDescription().replace("\"", "'") : "";
             String prompt = String.format(CLASSIFY_PROMPT_TEMPLATE, categories, name, location, date, description);
             String response = callModel(prompt);
 
