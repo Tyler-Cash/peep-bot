@@ -7,7 +7,7 @@ import { Slab } from "@/components/ui/Slab";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Peepo } from "@/components/Peepo";
-import { dateStamp, timeLabel } from "@/lib/format";
+import { dateStamp, dateToLocalInput, timeLabel } from "@/lib/format";
 import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
 export function CreateEventForm() {
@@ -16,7 +16,7 @@ export function CreateEventForm() {
   const recentVenues = useRecentLocations();
   const [name, setName] = useState("");
   const [date, setDate] = useState(() =>
-    new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().slice(0, 16),
+    dateToLocalInput(new Date(Date.now() + 1000 * 60 * 60 * 24 * 3)),
   );
   const [location, setLocation] = useState("");
   const [info, setInfo] = useState("");

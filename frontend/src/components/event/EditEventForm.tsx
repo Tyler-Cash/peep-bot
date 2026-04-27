@@ -10,20 +10,13 @@ import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
 import { categoryMeta } from "@/lib/categories";
-import { dateStamp, timeLabel } from "@/lib/format";
+import { dateStamp, dateToLocalInput, timeLabel } from "@/lib/format";
 import {
   updateEvent,
   useActiveGuild,
   useEvent,
   useRecentLocations,
 } from "@/lib/hooks";
-
-// Convert ISO string to the value expected by datetime-local inputs
-function isoToLocal(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export function EditEventForm({ id }: { id: string }) {
   const router = useRouter();
@@ -48,7 +41,7 @@ export function EditEventForm({ id }: { id: string }) {
   useEffect(() => {
     if (data && !initialized) {
       setName(data.name);
-      setDate(isoToLocal(data.dateTime));
+      setDate(dateToLocalInput(new Date(data.dateTime)));
       setLocation(data.location ?? "");
       setInfo(data.description ?? "");
       setCapacity(data.capacity ?? 0);
