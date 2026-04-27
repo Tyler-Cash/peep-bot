@@ -173,6 +173,56 @@ public class EventController {
         return new EventDetailDto(event, completed, summary, userMap, category);
     }
 
+    @Operation(summary = "RSVP to an event", description = "Record or update your attendance status for an event")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "RSVP recorded"),
+        @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PostMapping(path = "/{id}/rsvp")
+    public EventDetailDto rsvpEvent(
+            @PathVariable UUID id, @RequestBody RsvpRequest request, @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        log.info("User {} RSVPing to event id={} with status={}", discordId, id, request.status());
+        Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
+
+        AttendanceStatus attendanceStatus =
+                switch (request.status()) {
+                    case "going" -> AttendanceStatus.ACCEPTED;
+                    case "maybe" -> AttendanceStatus.MAYBE;
+                    case "declined" -> AttendanceStatus.DECLINED;
+                    default -> AttendanceStatus.REMOVED;
+                };
+
+        AttendanceStatus resolved = attendanceService.flipAttendance(event.getId(), discordId, null, attendanceStatus);
+        try {
+            if (resolved == AttendanceStatus.REMOVED) {
+                discordService.removeAllEventRoles(event, discordId);
+            } else {
+                discordService.assignEventRole(event, discordId, resolved);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to update Discord role for user {} on event '{}'", discordId, event.getName(), e);
+        }
+        eventService.populateAttendance(event);
+        discordService.updateEventMessage(event);
+
+        boolean completed = eventService.isCompleted(event);
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
+        Set<String> allSnowflakes = Stream.of(
+                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                .flatMap(s -> s)
+                .map(AttendanceRecord::getSnowflake)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+        if (event.getCreator() != null && !event.getCreator().isBlank()) {
+            allSnowflakes.add(event.getCreator());
+        }
+        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(allSnowflakes);
+        String category = eventService.getEventCategory(id);
+        return new EventDetailDto(event, completed, summary, userMap, category);
+    }
+
     @Operation(summary = "Cancel an event", description = "Admin-only: cancels an event and archives it")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Event cancelled"),
