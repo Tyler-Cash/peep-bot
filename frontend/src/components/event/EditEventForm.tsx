@@ -75,7 +75,7 @@ export function EditEventForm({ id }: { id: string }) {
   };
 
   return (
-    <div className="mx-auto max-w-[820px] px-5 py-6">
+    <div className="mx-auto max-w-[820px] px-5 py-6 min-h-screen flex flex-col">
       <div className="flex items-center justify-between mb-5">
         <Link
           href={`/events/${id}`}
@@ -152,8 +152,8 @@ export function EditEventForm({ id }: { id: string }) {
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4">
-        <Slab className="p-5 flex flex-col gap-4">
+      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4 flex-1 min-h-0">
+        <Slab className="p-5 flex flex-col gap-4 flex-1 min-h-0">
           <Field label="name">
             <input
               value={name}
@@ -189,15 +189,17 @@ export function EditEventForm({ id }: { id: string }) {
             />
           </Field>
 
-          <Field label="info">
+          <label className="flex flex-col gap-1.5 flex-1 min-h-0">
+            <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
+              info
+            </span>
             <textarea
               value={info}
               onChange={(e) => setInfo(e.target.value)}
-              rows={4}
               placeholder="what do people need to know?"
-              className={inputCls + " resize-y"}
+              className={inputCls + " flex-1 min-h-[120px] resize-none"}
             />
-          </Field>
+          </label>
         </Slab>
 
         <div className="flex items-center justify-between">
