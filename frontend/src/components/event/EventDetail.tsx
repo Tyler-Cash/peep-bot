@@ -37,6 +37,7 @@ export function EventDetail({ id }: { id: string }) {
   }
 
   const isCancelled = data.state === "CANCELLED";
+  const isPast = new Date(data.dateTime) < new Date();
   const cat = categoryMeta(data.category);
   const stamp = dateStamp(data.dateTime);
   const meStatus: RsvpStatus | null =
@@ -170,13 +171,15 @@ export function EventDetail({ id }: { id: string }) {
                       <CatTag category={data.category} state={data.state} />
                     <CountdownChip iso={data.dateTime} />
                   </div>
-                  <Link
-                    href={`/events/${id}/edit`}
-                    className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-current bg-white/80 px-4 py-1.5 text-[16px] font-extrabold tracking-[-0.01em] shadow-chunky-sm hover:bg-white/95 transition-colors"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                    edit event
-                  </Link>
+                  {!isPast && !isCancelled && (
+                    <Link
+                      href={`/events/${id}/edit`}
+                      className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-current bg-white/80 px-4 py-1.5 text-[16px] font-extrabold tracking-[-0.01em] shadow-chunky-sm hover:bg-white/95 transition-colors"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                      edit event
+                    </Link>
+                  )}
                 </div>
                 <h1 className="mt-2 text-[48px] sm:text-[56px] font-extrabold tracking-[-0.05em] leading-[0.98]">
                   {data.name}
@@ -261,15 +264,15 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 the guest list
               </span>
-              <RsvpGroup label="going" emoji="✅" people={data.accepted}onRemove={isAdmin ? setPendingRemove : undefined} />
+              <RsvpGroup label="going" emoji="✅" people={data.accepted} onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
               <RsvpGroup label="maybe" emoji="🤔" people={data.maybe}
-              onRemove={isAdmin ? setPendingRemove : undefined}
+              onRemove={isAdmin && !data.completed ? setPendingRemove : undefined}
             />
             <RsvpGroup
               label="can't make it"
               emoji="❌"
               people={data.declined}
-              onRemove={isAdmin ? setPendingRemove : undefined} />
+              onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
             </Slab>
           </div>
 
@@ -296,11 +299,13 @@ export function EventDetail({ id }: { id: string }) {
                 <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
                   admin
                 </span>
-                <Link href={`/events/${id}/edit`}>
-                  <Chunky variant="paper" size="sm" className="w-full justify-center">
-                    ✏️ edit event
-                  </Chunky>
-                </Link>
+                {!isPast && (
+                  <Link href={`/events/${id}/edit`}>
+                    <Chunky variant="paper" size="sm" className="w-full justify-center">
+                      ✏️ edit event
+                    </Chunky>
+                  </Link>
+                )}
                 <Chunky
                   variant="paper"
                   size="sm"
