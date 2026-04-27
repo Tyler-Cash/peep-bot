@@ -18,14 +18,14 @@ export function CatTag({
 }) {
   if (state && CREATING_STATES.has(state)) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink/40 px-2.5 py-0.5 text-[11.5px] font-bold shadow-chunky-sm bg-paper/80 text-mute">
+        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
         ⏳ <span className="uppercase tracking-[0.08em]">creating</span>
       </span>
     );
   }
   if (!category) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink/40 px-2.5 py-0.5 text-[11.5px] font-bold shadow-chunky-sm bg-paper/80 text-mute">
+        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
         ? <span className="uppercase tracking-[0.08em]">unknown</span>
       </span>
     );
