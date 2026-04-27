@@ -46,6 +46,7 @@ public class EventDto {
     private String hostUsername;
     private String hostAvatarUrl;
     private String category = "unknown";
+    private String state;
 
     private String channelId;
     private String messageId;
@@ -62,6 +63,7 @@ public class EventDto {
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
+        this.state = event.getState() != null ? event.getState().name() : null;
         String creator = event.getCreator();
         this.host = event.getCreatorDisplayName(); // transient, may be null
         this.hostAvatarUrl = (creator != null && !creator.isBlank()) ? "/api/avatar/" + creator : null;
