@@ -16,7 +16,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
@@ -56,15 +55,14 @@ public class WebSecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated())
-                .logout(logout -> logout
-                        .logoutRequestMatcher(new AntPathRequestMatcher("/auth/logout", "POST"))
+                .logout(logout -> logout.logoutUrl("/auth/logout")
                         .logoutSuccessHandler(
                                 (request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
                         .deleteCookies("SESSION")
                         .invalidateHttpSession(true))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers(new AntPathRequestMatcher("/auth/logout", "POST")))
+                        .ignoringRequestMatchers("/auth/logout"))
                 .addFilterAfter(rateLimitFilter, AnonymousAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(

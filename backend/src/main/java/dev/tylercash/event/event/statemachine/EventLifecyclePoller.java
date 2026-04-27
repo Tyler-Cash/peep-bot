@@ -65,7 +65,7 @@ public class EventLifecyclePoller {
             case POST_ALBUM_READY -> List.of(EventStateMachineEvent.POST_ALBUM, EventStateMachineEvent.COMPLETE);
             case POST_ALBUM_SHARED -> List.of(EventStateMachineEvent.COMPLETE);
             case POST_COMPLETED -> List.of(EventStateMachineEvent.ARCHIVE);
-            case ARCHIVED -> List.of(EventStateMachineEvent.DELETE);
+            case CANCELLED, ARCHIVED -> List.of(EventStateMachineEvent.DELETE);
             case DELETED -> List.of();
         };
     }

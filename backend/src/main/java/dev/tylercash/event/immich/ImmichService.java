@@ -90,6 +90,42 @@ public class ImmichService {
         return immichConfiguration.getBaseUrl() + "/share/" + shareKey;
     }
 
+    @Observed(name = "immich.get-album")
+    public Optional<ImmichAlbumResponse> getAlbumDetails(String albumId) {
+        if (!immichConfiguration.isEnabled()) {
+            return Optional.empty();
+        }
+        try {
+            ImmichAlbumResponse response = immichRestClient
+                    .get()
+                    .uri("/api/albums/{albumId}?withoutAssets=true", albumId)
+                    .retrieve()
+                    .body(ImmichAlbumResponse.class);
+            return Optional.ofNullable(response);
+        } catch (Exception e) {
+            log.warn("Failed to fetch Immich album details for album {}: {}", albumId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Observed(name = "immich.get-thumbnail")
+    public Optional<byte[]> getThumbnail(String assetId) {
+        if (!immichConfiguration.isEnabled()) {
+            return Optional.empty();
+        }
+        try {
+            byte[] bytes = immichRestClient
+                    .get()
+                    .uri("/api/assets/{assetId}/thumbnail?size=preview", assetId)
+                    .retrieve()
+                    .body(byte[].class);
+            return Optional.ofNullable(bytes);
+        } catch (Exception e) {
+            log.warn("Failed to fetch thumbnail for asset {}: {}", assetId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     @Observed(name = "immich.upload-asset")
     public Optional<String> uploadAsset(String filename, byte[] data, String contentType) {
         if (!immichConfiguration.isEnabled()) {

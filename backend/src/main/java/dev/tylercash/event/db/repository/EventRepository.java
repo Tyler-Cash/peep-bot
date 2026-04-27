@@ -53,4 +53,17 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
                     + "WHERE e.id IN :eventIds",
             nativeQuery = true)
     List<Object[]> findCategoriesByEventIds(List<UUID> eventIds);
+
+    @Query(
+            value = "SELECT * FROM event e "
+                    + "WHERE e.server_id = :serverId "
+                    + "AND e.immich_album_id IS NOT NULL "
+                    + "AND e.state != 'DELETED' "
+                    + "AND EXISTS ("
+                    + "  SELECT 1 FROM attendance a "
+                    + "  WHERE a.event_id = e.id AND a.snowflake = :snowflake AND a.status = 'ACCEPTED'"
+                    + ") "
+                    + "ORDER BY e.date_time DESC",
+            nativeQuery = true)
+    List<Event> findGalleryEventsForUser(long serverId, String snowflake);
 }
