@@ -35,6 +35,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     Page<Event> findByState(Pageable pageable, EventState state);
 
+    List<Event> findAllByState(EventState state);
+
     @Query(value = "SELECT DISTINCT creator FROM event WHERE creator IS NOT NULL AND creator != ''", nativeQuery = true)
     List<String> findAllDistinctCreatorSnowflakes();
 

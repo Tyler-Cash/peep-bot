@@ -1,5 +1,7 @@
 package dev.tylercash.event.rewind;
 
+import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.event.model.EventState;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.*;
@@ -17,6 +19,7 @@ public class EventClusteringService {
 
     private final EmbeddingService embeddingService;
     private final RewindConfiguration config;
+    private final EventRepository eventRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -30,23 +33,21 @@ public class EventClusteringService {
         performFixedClassification();
     }
 
-    @SuppressWarnings("unchecked")
     private void performFixedClassification() {
-        List<Object[]> rows = entityManager
-                .createNativeQuery("SELECT e.id, e.name FROM event e")
-                .getResultList();
+        var events = eventRepository.findAllByState(EventState.CLASSIFY);
+        if (events.isEmpty()) return;
 
-        for (Object[] row : rows) {
-            UUID id = (UUID) row[0];
-            String name = (String) row[1];
+        int updated = 0;
+        for (var event : events) {
             try {
-                String category = embeddingService.classify(name);
-                saveCategory(id, category);
+                String category = embeddingService.classify(event);
+                saveCategory(event.getId(), category);
+                updated++;
             } catch (Exception e) {
-                log.warn("Failed to classify event '{}': {}", name, e.getMessage());
+                log.warn("Failed to classify event '{}': {}", event.getName(), e.getMessage());
             }
         }
-        log.info("Updated {} event categories using fixed classification", rows.size());
+        log.info("Updated {} event categories using fixed classification", updated);
     }
 
     private void saveCategory(UUID eventId, String category) {

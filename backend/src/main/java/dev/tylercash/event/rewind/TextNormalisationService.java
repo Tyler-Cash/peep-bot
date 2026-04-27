@@ -1,5 +1,6 @@
 package dev.tylercash.event.rewind;
 
+import dev.tylercash.event.event.model.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,10 @@ public class TextNormalisationService {
             Classify this event into exactly one of the following categories: %s. \
             Reply with the category name only. No explanation, no punctuation.
 
-            Event: "%s"
+            Event name: "%s"
+            Location: "%s"
+            Date: %s
+            Description: "%s"
             Category:""";
 
     public TextNormalisationService(
@@ -33,13 +37,17 @@ public class TextNormalisationService {
         return chatModel != null;
     }
 
-    public String classify(String eventName) {
+    public String classify(Event event) {
         if (!isAvailable()) {
             throw new IllegalStateException("LLM service is not available for classification");
         }
         try {
             String categories = String.join(", ", config.getCategories());
-            String prompt = String.format(CLASSIFY_PROMPT_TEMPLATE, categories, eventName.replace("\"", "'"));
+            String name = event.getName().replace("\"", "'");
+            String location = event.getLocation() != null ? event.getLocation().replace("\"", "'") : "";
+            String date = event.getDateTime() != null ? event.getDateTime().toLocalDate().toString() : "unknown";
+            String description = event.getDescription() != null ? event.getDescription().replace("\"", "'") : "";
+            String prompt = String.format(CLASSIFY_PROMPT_TEMPLATE, categories, name, location, date, description);
             String response = callModel(prompt);
 
             return config.getCategories().stream()

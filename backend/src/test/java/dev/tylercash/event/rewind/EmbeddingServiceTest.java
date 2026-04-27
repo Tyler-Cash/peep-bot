@@ -43,6 +43,13 @@ class EmbeddingServiceTest {
         return new EmbeddingService(model, normalisationService, config, eventRepository, embeddingRepository);
     }
 
+    private Event eventWithName(UUID id, String name) {
+        Event event = new Event();
+        event.setId(id);
+        event.setName(name);
+        return event;
+    }
+
     @Test
     @DisplayName("isEmbeddingsAvailable is false when no model is wired in")
     void isEmbeddingsAvailable_falseWithoutModel() {
@@ -53,11 +60,12 @@ class EmbeddingServiceTest {
     @DisplayName("embedEvent persists the embedding with a comma-separated bracketed vector string")
     void embedEvent_savesVectorInPgVectorFormat() {
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.5f, -0.25f, 1.0f});
-        when(normalisationService.classify(anyString())).thenReturn("Food");
+        when(normalisationService.classify(any(Event.class))).thenReturn("Food");
         EmbeddingService svc = service(embeddingModel);
         UUID eventId = UUID.randomUUID();
+        Event event = eventWithName(eventId, "Dinner");
 
-        svc.embedEvent(eventId, "Dinner");
+        svc.embedEvent(event);
 
         ArgumentCaptor<EventEmbedding> captor = ArgumentCaptor.forClass(EventEmbedding.class);
         verify(embeddingRepository).save(captor.capture());
@@ -67,7 +75,7 @@ class EmbeddingServiceTest {
         assertThat(saved.getEmbedding()).isEqualTo("[0.5,-0.25,1.0]");
         assertThat(saved.getComputedAt()).isNotNull();
 
-        verify(normalisationService).classify("Dinner");
+        verify(normalisationService).classify(event);
     }
 
     @Test
@@ -76,7 +84,7 @@ class EmbeddingServiceTest {
         when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("model down"));
         EmbeddingService svc = service(embeddingModel);
 
-        svc.embedEvent(UUID.randomUUID(), "Dinner");
+        svc.embedEvent(eventWithName(UUID.randomUUID(), "Dinner"));
 
         verify(embeddingRepository, never()).save(any());
     }
@@ -98,12 +106,8 @@ class EmbeddingServiceTest {
         UUID id2 = UUID.randomUUID();
         when(embeddingRepository.findEventIdsWithoutEmbedding(anyInt())).thenReturn(List.of(id1, id2));
 
-        Event e1 = new Event();
-        e1.setId(id1);
-        e1.setName("Brunch");
-        Event e2 = new Event();
-        e2.setId(id2);
-        e2.setName("Hike");
+        Event e1 = eventWithName(id1, "Brunch");
+        Event e2 = eventWithName(id2, "Hike");
         when(eventRepository.findById(id1)).thenReturn(Optional.of(e1));
         when(eventRepository.findById(id2)).thenReturn(Optional.of(e2));
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.1f});

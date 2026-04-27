@@ -53,8 +53,8 @@ public class EmbeddingService {
         return embeddingModel != null && config.isEnabled();
     }
 
-    public String classify(String text) {
-        return normalisationService.classify(text);
+    public String classify(Event event) {
+        return normalisationService.classify(event);
     }
 
     String buildEmbeddingText(Event event) {
@@ -62,16 +62,32 @@ public class EmbeddingService {
     }
 
     @Transactional
-    public void embedEvent(UUID eventId, String nameText) {
+    public void embedEvent(Event event) {
         if (!isEmbeddingsAvailable()) return;
         try {
+            String nameText = buildEmbeddingText(event);
             float[] raw = embeddingModel.embed(nameText);
-            embeddingRepository.save(new EventEmbedding(eventId, nameText, toVectorString(raw), OffsetDateTime.now()));
+            embeddingRepository.save(
+                    new EventEmbedding(event.getId(), nameText, toVectorString(raw), OffsetDateTime.now()));
 
-            String category = normalisationService.classify(nameText);
-            saveCategory(eventId, category);
+            String category = normalisationService.classify(event);
+            saveCategory(event.getId(), category);
         } catch (Exception e) {
             log.error("Failed to embed event: {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void classifyEvent(Event event) {
+        if (isEmbeddingsAvailable()) {
+            embedEvent(event);
+        } else if (normalisationService.isAvailable()) {
+            try {
+                String category = normalisationService.classify(event);
+                saveCategory(event.getId(), category);
+            } catch (Exception e) {
+                log.warn("Classification failed for event '{}': {}", event.getName(), e.getMessage());
+            }
         }
     }
 
@@ -102,7 +118,7 @@ public class EmbeddingService {
 
         log.info("Backfilling embeddings for {} events", missingIds.size());
         for (UUID id : missingIds) {
-            eventRepository.findById(id).ifPresent(event -> embedEvent(event.getId(), buildEmbeddingText(event)));
+            eventRepository.findById(id).ifPresent(this::embedEvent);
         }
     }
 

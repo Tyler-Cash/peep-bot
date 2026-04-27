@@ -15,6 +15,7 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
 
     private final InitChannelOperation initChannel;
     private final InitRolesOperation initRoles;
+    private final ClassifyOperation classify;
     private final InitCompleteOperation initComplete;
     private final PreEventNotifyOperation preEventNotify;
     private final PrepareAlbumOperation prepareAlbum;
@@ -27,6 +28,7 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
     public EventStateMachineConfig(
             InitChannelOperation initChannel,
             InitRolesOperation initRoles,
+            ClassifyOperation classify,
             InitCompleteOperation initComplete,
             PreEventNotifyOperation preEventNotify,
             PrepareAlbumOperation prepareAlbum,
@@ -37,6 +39,7 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
             DeleteOperation delete) {
         this.initChannel = initChannel;
         this.initRoles = initRoles;
+        this.classify = classify;
         this.initComplete = initComplete;
         this.preEventNotify = preEventNotify;
         this.prepareAlbum = prepareAlbum;
@@ -73,9 +76,16 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
                 .event(EventStateMachineEvent.INIT_ROLES)
                 .action(initRoles.action())
                 .and()
-                // INIT_ROLES -> PLANNED
+                // INIT_ROLES -> CLASSIFY
                 .withExternal()
                 .source(EventState.INIT_ROLES)
+                .target(EventState.CLASSIFY)
+                .event(EventStateMachineEvent.CLASSIFY)
+                .action(classify.action())
+                .and()
+                // CLASSIFY -> PLANNED
+                .withExternal()
+                .source(EventState.CLASSIFY)
                 .target(EventState.PLANNED)
                 .event(EventStateMachineEvent.INIT_COMPLETE)
                 .action(initComplete.action())
@@ -145,6 +155,13 @@ public class EventStateMachineConfig extends EnumStateMachineConfigurerAdapter<E
                 // INIT_ROLES -> ARCHIVED (cancel)
                 .withExternal()
                 .source(EventState.INIT_ROLES)
+                .target(EventState.ARCHIVED)
+                .event(EventStateMachineEvent.CANCEL)
+                .action(cancel.action())
+                .and()
+                // CLASSIFY -> ARCHIVED (cancel)
+                .withExternal()
+                .source(EventState.CLASSIFY)
                 .target(EventState.ARCHIVED)
                 .event(EventStateMachineEvent.CANCEL)
                 .action(cancel.action())

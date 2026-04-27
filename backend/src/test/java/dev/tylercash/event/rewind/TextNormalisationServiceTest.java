@@ -24,6 +24,8 @@ class TextNormalisationServiceTest {
     void classify_throwsWhenUnavailable() {
         TextNormalisationService svc = new TextNormalisationService(null, config());
 
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> svc.classify("Original"));
+        dev.tylercash.event.event.model.Event event = new dev.tylercash.event.event.model.Event();
+        event.setName("Original");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> svc.classify(event));
     }
 }
