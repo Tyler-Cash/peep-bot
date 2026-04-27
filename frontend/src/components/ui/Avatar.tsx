@@ -10,6 +10,7 @@ export type AvatarRef = {
 };
 
 const loadedUrls = new Set<string>();
+const failedUrls = new Set<string>();
 
 export function Avatar({
   who,
@@ -23,14 +24,22 @@ export function Avatar({
   const [imgLoaded, setImgLoaded] = useState(
     () => !!who.avatarUrl && loadedUrls.has(who.avatarUrl),
   );
-  const [imgFailed, setImgFailed] = useState(false);
+  const [imgFailed, setImgFailed] = useState(
+    () => !!who.avatarUrl && failedUrls.has(who.avatarUrl),
+  );
   const name = who.name ?? "";
   const bg = who.hue ?? (name ? stringToColor(name) : "hsl(0,0%,85%)");
 
   useEffect(() => {
-    if (who.avatarUrl && loadedUrls.has(who.avatarUrl)) {
+    if (!who.avatarUrl) {
+      setImgLoaded(false);
+      setImgFailed(false);
+    } else if (loadedUrls.has(who.avatarUrl)) {
       setImgLoaded(true);
       setImgFailed(false);
+    } else if (failedUrls.has(who.avatarUrl)) {
+      setImgLoaded(false);
+      setImgFailed(true);
     } else {
       setImgLoaded(false);
       setImgFailed(false);
@@ -62,7 +71,10 @@ export function Avatar({
               if (who.avatarUrl) loadedUrls.add(who.avatarUrl);
               setImgLoaded(true);
             }}
-          onError={() => setImgFailed(true)}
+          onError={() => {
+              if (who.avatarUrl) failedUrls.add(who.avatarUrl);
+              setImgFailed(true);
+            }}
         />
       )}
     </span>
