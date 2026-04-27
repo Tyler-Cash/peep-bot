@@ -105,6 +105,9 @@ public class EventController {
         if (Objects.nonNull(eventDto.getLocation())) {
             event.setLocation(eventDto.getLocation());
         }
+        if (Objects.nonNull(eventDto.getLocationPlaceId())) {
+            event.setLocationPlaceId(eventDto.getLocationPlaceId());
+        }
         eventDto.getAccepted()
                 .forEach(attendeeName -> attendanceService.recordAttendance(
                         event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));

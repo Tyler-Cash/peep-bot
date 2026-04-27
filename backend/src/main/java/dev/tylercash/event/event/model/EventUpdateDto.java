@@ -25,6 +25,7 @@ public class EventUpdateDto {
     private String name;
     private String description = "";
     private String location;
+    private String locationPlaceId;
 
     @FutureOrPresent(message = "The event can only be organized in the future.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

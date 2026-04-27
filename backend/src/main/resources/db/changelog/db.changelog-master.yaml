@@ -759,6 +759,17 @@ databaseChangeLog:
             sql: >
               UPDATE event SET state = 'CLASSIFY' WHERE state = 'PLANNED';
 
+  - changeSet:
+      id: add location_place_id to event
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: location_place_id
+                  type: text
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

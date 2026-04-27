@@ -30,6 +30,7 @@ public class EventDto {
     private String description = "";
 
     private String location = "";
+    private String locationPlaceId;
 
     @PositiveOrZero(message = "Capacity must be positive.")
     private Integer capacity = 0;
@@ -60,6 +61,7 @@ public class EventDto {
         this.name = event.getName();
         this.description = event.getDescription();
         this.location = event.getLocation();
+        this.locationPlaceId = event.getLocationPlaceId();
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();
