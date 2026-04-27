@@ -61,23 +61,22 @@ export function EventsFeed() {
 
 function renderWithMonthMarkers(events: EventDto[]) {
   const out: React.ReactNode[] = [];
-  const groups: { key: string; items: Array<{ id: string; dateTime: string }> }[] = [];
+  const groups: { key: string; items: EventDto[] }[] = [];
 
-  for (const {id, dateTime} of events) {
-    const key = monthKey(dateTime);
+  for (const event of events) {
+    const key = monthKey(event.dateTime);
     const tail = groups[groups.length - 1];
-    const idString = id.toString()
     if (!tail || tail.key !== key) {
-      groups.push({key, items: [{id: idString, dateTime}]});
+      groups.push({ key, items: [event] });
     } else {
-      tail.items.push({id: idString, dateTime});
+      tail.items.push(event);
     }
   }
 
   for (const { key, items } of groups) {
     out.push(<DayMarker key={`m-${key}`} label={monthLabel(items[0].dateTime)} />);
-    items.forEach((e, i) => {
-      out.push(<FeedCard key={e.id} event={e as never} last={i === items.length - 1} />);
+    items.forEach((event, i) => {
+      out.push(<FeedCard key={event.id} event={event} last={i === items.length - 1} />);
     });
   }
   return out;
