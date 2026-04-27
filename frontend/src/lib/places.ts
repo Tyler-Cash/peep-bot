@@ -9,7 +9,7 @@ export type SearchResult =
   | { rateLimited: true; retryAfter: number };
 
 export function suggestionToLocation(s: PlaceSuggestion): string {
-  return s.subtitle ? `${s.title}, ${s.subtitle}` : s.title;
+  return s.title;
 }
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";

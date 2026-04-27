@@ -176,7 +176,9 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(locationField).isNotNull();
-        assertThat(locationField.getValue()).isEqualTo("Sydney");
+        assertThat(locationField.getValue())
+                .isEqualTo(
+                        "[Sydney](https://www.google.com/maps/dir/?api=1&destination=Sydney)");
     }
 
     @Test

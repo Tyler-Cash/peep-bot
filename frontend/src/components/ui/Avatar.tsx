@@ -9,6 +9,8 @@ export type AvatarRef = {
   avatarUrl?: string | null;
 };
 
+const loadedUrls = new Set<string>();
+
 export function Avatar({
   who,
   size = 32,
@@ -18,14 +20,21 @@ export function Avatar({
   size?: number;
   className?: string;
 }) {
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(
+    () => !!who.avatarUrl && loadedUrls.has(who.avatarUrl),
+  );
   const [imgFailed, setImgFailed] = useState(false);
   const name = who.name ?? "";
   const bg = who.hue ?? (name ? stringToColor(name) : "hsl(0,0%,85%)");
 
   useEffect(() => {
-    setImgLoaded(false);
-    setImgFailed(false);
+    if (who.avatarUrl && loadedUrls.has(who.avatarUrl)) {
+      setImgLoaded(true);
+      setImgFailed(false);
+    } else {
+      setImgLoaded(false);
+      setImgFailed(false);
+    }
   }, [who.avatarUrl]);
 
   return (
@@ -49,7 +58,10 @@ export function Avatar({
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-150",
             imgLoaded ? "opacity-100" : "opacity-0",
           )}
-          onLoad={() => setImgLoaded(true)}
+          onLoad={() => {
+              if (who.avatarUrl) loadedUrls.add(who.avatarUrl);
+              setImgLoaded(true);
+            }}
           onError={() => setImgFailed(true)}
         />
       )}

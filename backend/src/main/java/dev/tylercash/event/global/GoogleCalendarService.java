@@ -16,16 +16,16 @@ public class GoogleCalendarService {
                 event.getDateTime().truncatedTo(ChronoUnit.MINUTES).toOffsetDateTime();
         String start = eventTime.format(FORMATTER);
         String end = eventTime.plusHours(1).format(FORMATTER);
-        return UriComponentsBuilder.newInstance()
+        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
                 .host("www.google.com")
                 .path("/calendar/event")
                 .queryParam("action", "TEMPLATE")
                 .queryParam("text", event.getName())
-                .queryParam("dates", start + "/" + end)
-                .encode()
-                .build()
-                .toUri()
-                .toString();
+                .queryParam("dates", start + "/" + end);
+        if (event.getLocation() != null && !event.getLocation().isBlank()) {
+            builder.queryParam("location", event.getLocation());
+        }
+        return builder.encode().build().toUri().toString();
     }
 }
