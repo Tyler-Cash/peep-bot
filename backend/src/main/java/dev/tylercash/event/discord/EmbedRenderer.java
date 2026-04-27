@@ -49,7 +49,7 @@ public class EmbedRenderer {
                 .append(GoogleCalendarService.getCalendarEventUrl(event))
                 .append(")");
         if (event.getId() != null) {
-            String editUrl = frontendUrl + "event/" + event.getId();
+            String editUrl = frontendUrl + "events/" + event.getId();
             links.append(" | [Edit event](").append(editUrl).append(")");
         }
         if (albumUrl != null) {
