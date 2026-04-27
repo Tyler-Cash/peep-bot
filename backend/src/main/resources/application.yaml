@@ -56,7 +56,7 @@ spring:
       spec: maximumSize=500,expireAfterWrite=120s
   ai:
     ollama:
-      base-url: http://localhost:11434
+      base-url: https://ollama.tylercash.dev
       chat:
         enabled: false
         model: qwen2.5:0.5b
