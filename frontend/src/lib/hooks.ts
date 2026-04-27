@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR, { mutate as globalMutate } from "swr";
-import { apiFetch } from "./api";
+import { apiFetch, api } from "./api";
 import type {
   EventDetailDto,
   EventDto,
@@ -111,7 +111,7 @@ export function invalidateEvent(guildId: string, eventId: number | string) {
 
 export async function submitRsvp(
   guildId: string,
-  eventId: string,
+  eventId: number | string,
   status: RsvpStatus | "none",
 ) {
   await apiFetch<EventDetailDto>(`/event/${eventId}/rsvp`, {
@@ -125,12 +125,38 @@ export async function submitRsvp(
 }
 
 export async function createEvent(guildId: string, body: Partial<EventDto>) {
-  const created = await apiFetch<EventDetailDto>("/event", {
+  const result = await apiFetch<{ id: string | number }>("/event", {
     method: "PUT",
     body: JSON.stringify({ ...body, guildId }),
   });
   await invalidateEvents(guildId);
-  return created;
+  return result;
+}
+
+export async function cancelEvent(guildId: string, eventId: number | string) {
+  await apiFetch(`/event/${eventId}/cancel`, { method: "POST" });
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
+}
+
+export async function createPrivateChannel(
+  guildId: string,
+  eventId: number | string,
+) {
+  await apiFetch(`/event/${eventId}/private-channel`, { method: "POST" });
+  await invalidateEvent(guildId, eventId);
+}
+
+export async function logout() {
+  const base = api.base;
+  await fetch(`${base}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+  await globalMutate(() => true, undefined);
+  window.location.href = "/login";
 }
 
 export async function removeAttendee(

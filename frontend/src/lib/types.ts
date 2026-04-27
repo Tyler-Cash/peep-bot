@@ -17,7 +17,7 @@ export type Attendee = {
 };
 
 export type EventDto = {
-  id: string; // UUID in backend
+  id: number | string;
   name: string;
   description: string;
   location: string;
@@ -27,8 +27,8 @@ export type EventDto = {
   host: string;
   hostUsername?: string | null;
   hostAvatarUrl?: string | null;
-  category: Category;
-  state?: "ACTIVE" | "CANCELLED" | "ARCHIVED";
+  category?: string | null;
+  state?: "PROCESSING" | "PLANNED" | "ACTIVE" | "CANCELLED" | "ARCHIVED" | string;
   notifyOnCreate?: boolean;
   channelId?: string;
   messageId?: string;
@@ -38,10 +38,12 @@ export type EventDetailDto = EventDto & {
   accepted: Attendee[];
   maybe: Attendee[];
   declined: Attendee[];
+  hasPrivateChannel?: boolean;
+  completed?: boolean;
 };
 
 export type EventUpdateDto = {
-  id: number;
+  id: number | string;
   name?: string;
   description?: string;
   capacity?: number;
@@ -80,25 +82,47 @@ export type GuildSettingsDto = {
 
 export type RsvpStatus = "going" | "maybe" | "declined";
 
+// Matches backend RewindStatsDto
+export type AttendeeStatDto = {
+  displayName: string;
+  eventCount: number;
+  avatarUrl: string | null;
+};
+
+export type EventCategoryDto = {
+  name: string;
+  eventCount: number;
+  totalAttendees: number;
+};
+
+export type EventSummaryDto = {
+  id: string;
+  name: string;
+  dateTime: string;
+};
+
+export type SocialPairDto = {
+  user1: string;
+  user2: string;
+  sharedEvents: number;
+};
+
 export type RewindStats = {
   year: number;
-  eventsHosted: number;
+  totalEvents: number;
+  totalUniqueAttendees: number;
   totalRsvps: number;
-  topMoment?: { eventId: string; name: string; category: Category } | null;
-  mostActiveMember?: {
-    name: string;
-    count: number;
-    avatarUrl?: string | null;
-    hue?: string;
-  } | null;
-  newMembers: number;
-  attendanceStreak: Array<{
-    name: string;
-    count: number;
-    avatarUrl?: string | null;
-    hue?: string;
-  }>;
-  upcomingPreview: EventDto[];
+  averageGroupSize: string;
+  topCategories: EventCategoryDto[];
+  topAttendees: AttendeeStatDto[];
+  topOrganizers: AttendeeStatDto[];
+  topSocialPairs: SocialPairDto[];
+  eventsByMonth: Record<string, number>;
+  eventsByDayOfWeek: Record<string, number>;
+  firstEvent: EventSummaryDto | null;
+  lastEvent: EventSummaryDto | null;
+  totalPlusOneGuests: number;
+  embeddingsAvailable: boolean;
 };
 
 export type BackendError = { status: number; message: string };

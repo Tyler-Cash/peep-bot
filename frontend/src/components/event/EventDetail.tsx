@@ -1,15 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { RsvpGroup } from "./RsvpGroup";
 import { categoryMeta } from "@/lib/categories";
 import { dateStamp, timeLabel } from "@/lib/format";
 import {
+  cancelEvent,
+  createPrivateChannel,
   removeAttendee,
   submitRsvp,
   useActiveGuild,
@@ -20,15 +25,19 @@ import type { Attendee, RsvpStatus } from "@/lib/types";
 import { PencilIcon } from "@/components/icons/PencilIcon";
 
 export function EventDetail({ id }: { id: string }) {
+  const router = useRouter();
   const { data, mutate, isLoading } = useEvent(id);
   const { data: me } = useCurrentUser();
   const guild = useActiveGuild();
   const [pendingRemove, setPendingRemove] = useState<Attendee | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPrivateChannelModal, setShowPrivateChannelModal] = useState(false);
 
   if (isLoading || !data) {
     return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
   }
 
+  const isCancelled = data.state === "CANCELLED";
   const cat = categoryMeta(data.category);
   const stamp = dateStamp(data.dateTime);
   const meStatus: RsvpStatus | null =
@@ -41,7 +50,7 @@ export function EventDetail({ id }: { id: string }) {
           : null;
 
   const setStatus = async (status: RsvpStatus) => {
-    if (!guild || !me) return;
+    if (!guild || !me || isCancelled || data.completed) return;
     mutate(
       (prev) => {
         if (!prev) return prev;
@@ -95,6 +104,19 @@ export function EventDetail({ id }: { id: string }) {
     await removeAttendee(guild.id, data.id, attendee.snowflake, attendee.name);
   };
 
+  const handleCancel = async () => {
+    if (!guild) return;
+    await cancelEvent(guild.id, data.id);
+    setShowCancelModal(false);
+    router.push("/");
+  };
+
+  const handleCreatePrivateChannel = async () => {
+    if (!guild) return;
+    await createPrivateChannel(guild.id, data.id);
+    setShowPrivateChannelModal(false);
+  };
+
   const rsvpHeadline =
     meStatus === "going"
       ? "✅ you're in"
@@ -105,13 +127,14 @@ export function EventDetail({ id }: { id: string }) {
           : "no rsvp yet";
 
   return (
-    <div className="mx-auto max-w-[1200px] px-5 py-5">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
-      >
-        ← back to #{guild?.channel ?? "outings"}
-      </Link>
+    <>
+      <div className="mx-auto max-w-[1200px] px-5 py-5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
+        >
+          ← back to #{guild?.channel ?? "outings"}
+        </Link>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-7">
         <div className="flex flex-col gap-5">
@@ -120,15 +143,20 @@ export function EventDetail({ id }: { id: string }) {
             className="relative rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg overflow-hidden p-6"
             style={{ background: cat.bg, color: cat.ink }}
           >
-            {cat.emoji && (
-              <span
-                className="absolute text-[220px] leading-none opacity-[0.18] select-none pointer-events-none"
-                style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
-                aria-hidden
-              >
-                {cat.emoji}
+          {isCancelled && (
+              <div className="absolute inset-0 bg-ink/60 flex items-center justify-center z-10">
+              <span className="text-[22px] font-extrabold tracking-[0.08em] text-white bg-ink/80 px-5 py-2 rounded-[10px] border-[1.5px] border-white/30 uppercase">
+                cancelled
               </span>
-            )}
+              </div>
+          )}
+          <span
+              className="absolute text-[220px] leading-none opacity-[0.18] select-none pointer-events-none"
+              style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
+              aria-hidden
+          >
+            {cat.emoji}
+          </span>
             <div className="relative flex items-start gap-4">
               <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-chunky-sm shrink-0">
                 <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
@@ -140,7 +168,7 @@ export function EventDetail({ id }: { id: string }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <CatTag category={data.category} />
+                      <CatTag category={data.category} state={data.state} />
                     <CountdownChip iso={data.dateTime} />
                   </div>
                   <Link
@@ -164,45 +192,50 @@ export function EventDetail({ id }: { id: string }) {
             </div>
           </div>
 
-          {/* your rsvp */}
-          <Slab className="p-5">
-            <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
-              your rsvp
-            </span>
-            <p className="mt-1 text-[26px] font-extrabold tracking-[-0.02em]">{rsvpHeadline}</p>
-            <div className="mt-3 flex gap-2 flex-wrap">
-              <Chunky
-                variant={meStatus === "going" ? "leaf" : "paper"}
-                onClick={() => setStatus("going")}
-              >
-                ✅ going
-              </Chunky>
-              <Chunky
-                variant={meStatus === "maybe" ? "leaf" : "paper"}
-                onClick={() => setStatus("maybe")}
-              >
-                🤔 maybe
-              </Chunky>
-              <Chunky
-                variant={meStatus === "declined" ? "leaf" : "paper"}
-                onClick={() => setStatus("declined")}
-              >
-                ❌ can&apos;t
-              </Chunky>
-            </div>
-          </Slab>
-
-          {/* the plan */}
-          {data.description && (
+            {/* your rsvp */}
             <Slab className="p-5">
+              <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
+                your rsvp
+              </span>
+              <p className="mt-1 text-[26px] font-extrabold tracking-[-0.02em]">{rsvpHeadline}</p>
+              {!isCancelled && !data.completed && (
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  <Chunky
+                    variant={meStatus === "going" ? "leaf" : "paper"}
+                    onClick={() => setStatus("going")}
+                  >
+                    ✅ going
+                  </Chunky>
+                  <Chunky
+                    variant={meStatus === "maybe" ? "leaf" : "paper"}
+                    onClick={() => setStatus("maybe")}
+                  >
+                    🤔 maybe
+                  </Chunky>
+                  <Chunky
+                    variant={meStatus === "declined" ? "leaf" : "paper"}
+                    onClick={() => setStatus("declined")}
+                  >
+                    ❌ can&apos;t
+                  </Chunky>
+                </div>
+              )}
+              {(isCancelled || data.completed) && (
+                <p className="mt-2 text-[13px] text-mute">
+                  {isCancelled ? "this event was cancelled" : "rsvps are closed"}
+                </p>
+              )}
+            </Slab>
+
+            {/* the plan */}
+            {data.description && (<Slab className="p-5">
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 the plan
               </span>
               <p className="mt-2 text-[19px] leading-[1.6] text-ink2 whitespace-pre-line">
                 {data.description}
               </p>
-            </Slab>
-          )}
+            </Slab>)}
 
           {/* where */}
           {data.location && (
@@ -224,51 +257,72 @@ export function EventDetail({ id }: { id: string }) {
             </Slab>
           )}
 
-          {/* guest list */}
-          <Slab className="p-5 flex flex-col gap-4">
-            <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
-              the guest list
-            </span>
-            <RsvpGroup
-              label="going"
-              emoji="✅"
-              people={data.accepted}
-              onRemove={isAdmin ? setPendingRemove : undefined}
-            />
-            <RsvpGroup
-              label="maybe"
-              emoji="🤔"
-              people={data.maybe}
+            {/* guest list */}
+            <Slab className="p-5 flex flex-col gap-4">
+              <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
+                the guest list
+              </span>
+              <RsvpGroup label="going" emoji="✅" people={data.accepted}onRemove={isAdmin ? setPendingRemove : undefined} />
+              <RsvpGroup label="maybe" emoji="🤔" people={data.maybe}
               onRemove={isAdmin ? setPendingRemove : undefined}
             />
             <RsvpGroup
               label="can't make it"
               emoji="❌"
               people={data.declined}
-              onRemove={isAdmin ? setPendingRemove : undefined}
-            />
-          </Slab>
-        </div>
-
-        <aside className="lg:sticky lg:top-24 h-fit">
-          <div className="rounded-[14px] border-[1.5px] border-ink bg-ink text-paper p-5 shadow-chunky-md">
-            <span className="text-[13px] font-extrabold tracking-[0.18em] text-muteDk uppercase">
-              KEEP CHATTING IN
-            </span>
-            <p className="mt-1 text-[28px] font-extrabold tracking-[-0.02em]"># {guild?.channel ?? "outings"}</p>
-            <a
-              href={`https://discord.com/channels/${guild?.id ?? ""}/${data.channelId ?? ""}/${data.messageId ?? ""}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex"
-            >
-              <Chunky variant="leaf">
-                open in Discord →
-              </Chunky>
-            </a>
+              onRemove={isAdmin ? setPendingRemove : undefined} />
+            </Slab>
           </div>
-        </aside>
-      </div>
+
+          <aside className="lg:sticky lg:top-24 h-fit flex flex-col gap-4">
+            <div className="rounded-[14px] border-[1.5px] border-ink bg-ink text-paper p-5 shadow-chunky-md">
+              <span className="text-[13px] font-extrabold tracking-[0.18em] text-muteDk uppercase">
+                KEEP CHATTING IN
+              </span>
+              <p className="mt-1 text-[28px] font-extrabold tracking-[-0.02em]"># {guild?.channel ?? "outings"}</p>
+              <a
+                href={`https://discord.com/channels/${guild?.id ?? ""}/${data.channelId ?? ""}/${data.messageId ?? ""}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex"
+              >
+                <Chunky variant="leaf">
+                  open in Discord →
+                </Chunky>
+              </a>
+            </div>
+
+            {me?.admin && !isCancelled && (
+              <div className="rounded-[14px] border-[1.5px] border-ink bg-paper2 p-5 shadow-chunky-md flex flex-col gap-2">
+                <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+                  admin
+                </span>
+                <Link href={`/events/${id}/edit`}>
+                  <Chunky variant="paper" size="sm" className="w-full justify-center">
+                    ✏️ edit event
+                  </Chunky>
+                </Link>
+                <Chunky
+                  variant="paper"
+                  size="sm"
+                  className="w-full justify-center"
+                  onClick={() => setShowPrivateChannelModal(true)}
+                  disabled={data.hasPrivateChannel}
+                >
+                  {data.hasPrivateChannel ? "🔒 private channel active" : "🔒 create private channel"}
+                </Chunky>
+                <Chunky
+                  variant="danger"
+                  size="sm"
+                  className="w-full justify-center"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  ✕ cancel event
+                </Chunky>
+              </div>
+            )}
+          </aside>
+        </div>
 
       {pendingRemove && (
         <div
@@ -294,6 +348,35 @@ export function EventDetail({ id }: { id: string }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {showPrivateChannelModal && (
+        <ConfirmModal
+          title="create private channel?"
+          message={
+            <span>
+              This creates a Discord channel only accepted attendees can see.
+              {" "}Keep most planning in the public event channel — the private channel is for
+              logistics that need to stay between confirmed attendees only.
+            </span>
+          }
+          confirmLabel="create channel"
+          confirmVariant="leaf"
+          onConfirm={handleCreatePrivateChannel}
+          onCancel={() => setShowPrivateChannelModal(false)}
+        />
+      )}
+
+      {showCancelModal && (
+        <ConfirmModal
+          title="cancel this event?"
+          message="Cancelling will lock RSVPs and notify all attendees. This cannot be undone."
+          confirmLabel="cancel event"
+          confirmVariant="danger"
+          onConfirm={handleCancel}
+          onCancel={() => setShowCancelModal(false)}
+        />
+      )}
+    </>
   );
 }

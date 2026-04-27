@@ -55,5 +55,13 @@ export const CATEGORIES: Record<
 };
 
 export function categoryMeta(c: Category | string | undefined) {
-  return CATEGORIES[(c as Category) ?? "unknown"] ?? CATEGORIES.unknown;
+  if (!c) return CATEGORIES.trivia;
+  // Direct match (mock enum values)
+  if (CATEGORIES[c as Category]) return CATEGORIES[c as Category];
+  // Fuzzy match from backend free-form labels (e.g., "trivia night" → trivia)
+  const lower = c.toLowerCase();
+  for (const [key, meta] of Object.entries(CATEGORIES)) {
+    if (lower.includes(key)) return meta;
+  }
+  return CATEGORIES.unknown;
 }

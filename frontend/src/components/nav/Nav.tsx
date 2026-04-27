@@ -6,7 +6,7 @@ import clsx from "@/lib/clsx";
 import { Peepo } from "@/components/Peepo";
 import { Chunky } from "@/components/ui/Chunky";
 import { Avatar } from "@/components/ui/Avatar";
-import { useCurrentUser } from "@/lib/hooks";
+import { useCurrentUser, logout } from "@/lib/hooks";
 import { GuildSwitcher } from "./GuildSwitcher";
 
 export function Nav() {
@@ -61,10 +61,19 @@ export function Nav() {
             </Chunky>
           </Link>
           {user && (
-            <Avatar
-              who={{ name: user.displayName, avatarUrl: user.avatarUrl }}
-              size={46}
-            />
+            <>
+              <Avatar
+                who={{ name: user.displayName, avatarUrl: user.avatarUrl }}
+                size={46}
+              />
+              <button
+                onClick={() => logout()}
+                className="text-[12px] font-bold text-mute hover:text-ink transition-colors"
+                title="log out"
+              >
+                log out
+              </button>
+            </>
           )}
         </div>
       </div>

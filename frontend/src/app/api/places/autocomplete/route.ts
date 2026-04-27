@@ -15,6 +15,8 @@ type GoogleSuggestion = {
 export async function GET(req: Request) {
   const cookieStore = await cookies();
   const sessionKey = cookieStore.get("SESSION")?.value;
+  req.headers.get("x-forwarded-for")?.split(",")[0] ??
+  "anonymous";
   if (!sessionKey) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }

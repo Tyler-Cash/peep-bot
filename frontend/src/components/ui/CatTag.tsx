@@ -1,7 +1,26 @@
 import { categoryMeta } from "@/lib/categories";
-import type { Category } from "@/lib/types";
 
-export function CatTag({ category }: { category: Category }) {
+export function CatTag({
+  category,
+  state,
+}: {
+  category?: string | null;
+  state?: string | null;
+}) {
+  if (state === "PROCESSING") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink/40 px-2.5 py-0.5 text-[11.5px] font-bold shadow-chunky-sm bg-paper/80 text-mute">
+        ⏳ <span className="uppercase tracking-[0.08em]">processing</span>
+      </span>
+    );
+  }
+  if (!category) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink/40 px-2.5 py-0.5 text-[11.5px] font-bold shadow-chunky-sm bg-paper/80 text-mute">
+        ? <span className="uppercase tracking-[0.08em]">unknown</span>
+      </span>
+    );
+  }
   const m = categoryMeta(category);
   return (
     <span

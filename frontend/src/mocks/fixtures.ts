@@ -116,6 +116,9 @@ export const store = {
       id: "1",
       name: "pub quiz at the glass barrel",
       category: "trivia",
+      state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       description:
         "booking is under Mira. arrive by 6:45 or they pull the table. last round is always music — please someone who is not me take the pen.",
       dateTime: times[0],
@@ -130,6 +133,9 @@ export const store = {
       id: "2",
       name: "late screening of moonshade",
       category: "movie",
+      state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       description:
         "the weird new sci-fi one. 7pm showing, lobby at 6:45. ramen across the road after if anyone wants to keep the night going.",
       dateTime: times[1],
@@ -144,6 +150,9 @@ export const store = {
       id: "3",
       name: "standup showcase — six sets in an hour",
       category: "comedy",
+      state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       description:
         "new talent night. doors 6:30, show starts 7, out by 8:15. $18 on the door, bring cash if you can.",
       dateTime: times[2],
@@ -158,6 +167,9 @@ export const store = {
       id: "4",
       name: "bas's backyard cookout",
       category: "food",
+      state: "ACTIVE",
+      hasPrivateChannel: true,
+      completed: false,
       description:
         "firing up the grill at 1. bringing the smoked brisket + slaw. nim is doing a lemon tart. byo drinks + anything green.",
       dateTime: times[3],
@@ -172,6 +184,9 @@ export const store = {
       id: "5",
       name: "great ocean walk — day trip",
       category: "outdoor",
+      state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       description:
         "apollo bay → shelly beach section. 22km, about 7 hours moving. leave the city at 6am sharp. pack layers and lunch, water at the halfway hut.",
       dateTime: times[4],
@@ -186,6 +201,9 @@ export const store = {
       id: "6",
       name: "mario kart + takeout",
       category: "game",
+      state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       description:
         "tournament format, 4 rounds, winner picks the next one. ordering from that dumpling place on the corner around 7.",
       dateTime: times[5],
@@ -202,31 +220,41 @@ export const store = {
 
 export const rewindStats = (year: number): RewindStats => ({
   year,
-  eventsHosted: 14,
+  totalEvents: 14,
+  totalUniqueAttendees: 10,
   totalRsvps: 162,
-  topMoment: { eventId: "4", name: "bas's backyard cookout", category: "food" },
-  mostActiveMember: {
-    name: "Otis",
-    count: 12,
-    hue: "#6AAE3E",
+  averageGroupSize: 7.2,
+  topCategories: [
+    { name: "trivia", eventCount: "4", totalAttendees: 48 },
+    { name: "outdoor", eventCount: 3, totalAttendees: 24 },
+    { name: "food", eventCount: 3, totalAttendees: 42 },
+  ],
+  topAttendees: seedPeople.slice(0, 6).map((p, i) => ({
+    displayName: p.name,
+    eventCount: 12 - i,
     avatarUrl: null,
+  })),
+  topOrganizers: [
+    { displayName: "Mira", eventCount: 5, avatarUrl: null },
+    { displayName: "Otis", eventCount: 4, avatarUrl: null },
+    { displayName: "Bas", eventCount: 3, avatarUrl: null },
+  ],
+  topSocialPairs: [
+    { user1: "Otis", user2: "Mira", sharedEvents: 11 },
+    { user1: "Bas", user2: "Nim", sharedEvents: 9 },
+  ],
+  eventsByMonth: {
+    "2026-01": 1, "2026-02": 2, "2026-03": 3, "2026-04": 2,
+    "2026-05": 1, "2026-06": 2, "2026-07": 1, "2026-08": 2,
   },
-  newMembers: 3,
-  attendanceStreak: seedPeople
-    .slice(0, 6)
-    .map((p, i) => ({
-      name: p.name,
-      count: 12 - i,
-      hue: p.hue,
-      avatarUrl: null,
-    })),
-  upcomingPreview: store.events.slice(0, 3).map((e) => {
-    const { accepted, maybe, declined, ...rest } = e;
-    void accepted;
-    void maybe;
-    void declined;
-    return rest;
-  }),
+  eventsByDayOfWeek: {
+    MONDAY: 1, TUESDAY: 0, WEDNESDAY: 2, THURSDAY: 3,
+    FRIDAY: 4, SATURDAY: 2, SUNDAY: 2,
+  },
+  firstEvent: { id: "1", name: "pub quiz at the glass barrel", dateTime: "2026-01-10T19:00:00Z" },
+  lastEvent: { id: "6", name: "mario kart + takeout", dateTime: "2026-12-15T19:00:00Z" },
+  totalPlusOneGuests: 5,
+  embeddingsAvailable: false,
 });
 
 export function findEvent(id: string) {

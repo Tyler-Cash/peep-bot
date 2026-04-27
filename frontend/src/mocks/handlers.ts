@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 import type {
-  Category,
   EventDetailDto,
   EventDto,
   RsvpStatus,
@@ -31,6 +30,8 @@ export const handlers = [
   ),
 
   http.get(API("/auth/is-logged-in"), () => HttpResponse.json(currentUser)),
+
+  http.post(API("/auth/logout"), () => new HttpResponse(null, { status: 200 })),
 
   http.get(API("/guild"), () => HttpResponse.json([guild])),
   http.get(API("/guild/[^/]+"), ({ params }) => {
@@ -89,8 +90,10 @@ export const handlers = [
       dateTime: body.dateTime ?? now,
       host: currentUser.username,
       hostAvatarUrl: currentUser.avatarUrl,
-      category: (body.category as Category) ?? "outdoor",
+      category: (body.category as string) ?? "outdoor",
       state: "ACTIVE",
+      hasPrivateChannel: false,
+      completed: false,
       accepted: [
         {
           snowflake: currentUser.discordId,
@@ -104,7 +107,7 @@ export const handlers = [
       declined: [],
     };
     store.events.push(created);
-    return HttpResponse.json(created);
+    return HttpResponse.json({ id: created.id, message: `Created event for ${created.name}` });
   }),
 
   http.patch(API("/event"), async ({ request }) => {
@@ -134,7 +137,17 @@ export const handlers = [
     const ev = findEvent(id);
     if (!ev) return new HttpResponse(null, { status: 404 });
     ev.state = "CANCELLED";
-    return HttpResponse.json(ev);
+    return HttpResponse.json({ message: "Event cancelled" });
+  }),
+
+  http.post(API("/event/[0-9]+/private-channel"), ({ request }) => {
+    const id = Number(
+      new URL(request.url).pathname.split("/").slice(-2, -1)[0],
+    );
+    const ev = findEvent(id);
+    if (!ev) return new HttpResponse(null, { status: 404 });
+    ev.hasPrivateChannel = true;
+    return HttpResponse.json({ message: "Private channel created" });
   }),
 
   http.get(API("/rewind"), ({ request }) => {

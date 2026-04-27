@@ -3,7 +3,7 @@
 import clsx from "@/lib/clsx";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Variant = "leaf" | "ink" | "paper" | "discord";
+type Variant = "leaf" | "ink" | "paper" | "discord" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
@@ -11,6 +11,7 @@ const variantClasses: Record<Variant, string> = {
   ink: "bg-ink text-paper border-ink hover:bg-ink2",
   paper: "bg-paper text-ink border-ink hover:bg-paper2",
   discord: "bg-discord text-white border-ink hover:brightness-95",
+  danger: "bg-[#dc2626] text-white border-[#991b1b] hover:bg-[#b91c1c]",
 };
 
 const sizeClasses: Record<Size, string> = {

@@ -10,7 +10,7 @@ import { activateDevMode } from "@/lib/devMode";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-const SHOW_DEV_PANEL = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
+const SHOW_DEV_PANEL = MODE !== "live";
 
 const features = [
   { emoji: "📅", title: "one thread", body: "all your plans live in #outings, off the main chat." },
