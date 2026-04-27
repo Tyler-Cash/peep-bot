@@ -3,24 +3,48 @@ const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 
 let csrfToken: string | null = null;
 
-async function getCsrf(): Promise<string> {
-  if (csrfToken) return csrfToken;
-  const res = await fetch(`${API_BASE}/csrf`, { credentials: "include" });
-  if (!res.ok) throw new Error(`csrf fetch failed: ${res.status}`);
-  const body = (await res.json()) as { token: string };
-  csrfToken = body.token;
-  return body.token;
-}
-
 export class BackendUnreachable extends Error {
   constructor() {
     super("backend unreachable");
   }
 }
 
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("unauthorized");
+  }
+}
+
+async function getCsrf(attempt = 0): Promise<string> {
+  if (csrfToken) return csrfToken;
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/csrf`, { credentials: "include" });
+  } catch {
+    throw new BackendUnreachable();
+  }
+  if (res.status === 429 && attempt < 2) {
+    const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
+    await new Promise((r) => setTimeout(r, retry));
+    return getCsrf(attempt + 1);
+  }
+  if (!res.ok) throw new Error(`csrf fetch failed: ${res.status}`);
+  const body = (await res.json()) as { token: string };
+  csrfToken = body.token;
+  return csrfToken;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
+): Promise<T> {
+  return apiFetchInner<T>(path, init, 0);
+}
+
+async function apiFetchInner<T>(
+  path: string,
+  init: RequestInit,
+  retries: number,
 ): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
@@ -31,8 +55,12 @@ export async function apiFetch<T>(
   if (method !== "GET" && method !== "HEAD") {
     try {
       headers.set("X-XSRF-TOKEN", await getCsrf());
-    } catch {
-      // swallow — mock mode may not implement csrf
+    } catch (e) {
+      if (MODE === "mock") {
+        // Swallow in mock mode — csrf endpoint may not be implemented
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -56,12 +84,15 @@ export async function apiFetch<T>(
     ) {
       window.location.href = "/login";
     }
-    throw new Error("unauthorized");
+    throw new UnauthorizedError();
   }
   if (res.status === 429) {
+    if (retries >= 2) {
+      throw new Error(`${method} ${path} rate limited`);
+    }
     const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
     await new Promise((r) => setTimeout(r, retry));
-    return apiFetch<T>(path, init);
+    return apiFetchInner<T>(path, init, retries + 1);
   }
   if (!res.ok) {
     throw new Error(`api ${method} ${path} failed: ${res.status}`);
