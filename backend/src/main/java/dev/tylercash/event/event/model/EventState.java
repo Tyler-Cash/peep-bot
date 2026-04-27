@@ -10,6 +10,7 @@ public enum EventState {
     POST_ALBUM_READY,
     POST_ALBUM_SHARED,
     POST_COMPLETED,
+    CANCELLED,
     ARCHIVED,
     DELETED
 }

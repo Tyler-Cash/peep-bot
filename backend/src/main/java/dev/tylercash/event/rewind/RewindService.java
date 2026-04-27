@@ -41,7 +41,7 @@ public class RewindService {
     @Transactional(readOnly = true)
     public List<Integer> getYears(long guildId) {
         return em.createNativeQuery(
-                        "SELECT DISTINCT EXTRACT(YEAR FROM date_time)::int FROM event WHERE server_id = :guildId ORDER BY 1 DESC")
+                        "SELECT DISTINCT EXTRACT(YEAR FROM date_time)::int FROM event WHERE server_id = :guildId AND state != 'CANCELLED' ORDER BY 1 DESC")
                 .setParameter("guildId", guildId)
                 .getResultList();
     }
@@ -50,7 +50,7 @@ public class RewindService {
     private RewindStatsDto buildStats(String snowflake, Integer year, long guildId) {
         boolean personal = snowflake != null;
         String yf = year != null ? " AND EXTRACT(YEAR FROM e.date_time) = :year" : "";
-        String gf = " AND e.server_id = :guildId";
+        String gf = " AND e.server_id = :guildId AND e.state != 'CANCELLED'";
 
         // Total events
         String totalEventsQ = personal

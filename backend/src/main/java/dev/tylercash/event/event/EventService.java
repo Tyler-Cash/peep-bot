@@ -80,7 +80,9 @@ public class EventService {
     @Cacheable(value = "activeEvents", key = "#guildId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<Event> getActiveEvents(Pageable pageable, long guildId) {
         return eventRepository.findAllByStateNotInAndServerId(
-                pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED), guildId);
+                pageable,
+                List.of(EventState.CREATED, EventState.CANCELLED, EventState.ARCHIVED, EventState.DELETED),
+                guildId);
     }
 
     public String getEventCategory(UUID eventId) {

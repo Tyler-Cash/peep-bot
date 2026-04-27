@@ -770,6 +770,20 @@ databaseChangeLog:
                   name: location_place_id
                   type: text
 
+  - changeSet:
+      id: migrate archived cancelled events to cancelled state
+      author: tyler
+      comment: >
+        Events that were cancelled (identified by "[CANCELLED]" prefix added by
+        CancelOperation) were incorrectly stored as ARCHIVED. Move them to the
+        new CANCELLED state so the frontend can distinguish them.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'CANCELLED'
+              WHERE state = 'ARCHIVED'
+              AND name ILIKE '%[CANCELLED]%';
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

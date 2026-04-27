@@ -56,7 +56,7 @@ public class CancelOperation {
                             NotificationType.ATTENDANCE_LOCKED,
                             ZonedDateTime.now(clock).toInstant(),
                             0));
-            event.setState(EventState.ARCHIVED);
+            event.setState(EventState.CANCELLED);
             eventRepository.save(event);
         };
     }
