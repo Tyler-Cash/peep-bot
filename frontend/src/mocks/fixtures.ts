@@ -223,9 +223,9 @@ export const rewindStats = (year: number): RewindStats => ({
   totalEvents: 14,
   totalUniqueAttendees: 10,
   totalRsvps: 162,
-  averageGroupSize: 7.2,
+  averageGroupSize: "7.2",
   topCategories: [
-    { name: "trivia", eventCount: "4", totalAttendees: 48 },
+    { name: "trivia", eventCount: 4, totalAttendees: 48 },
     { name: "outdoor", eventCount: 3, totalAttendees: 24 },
     { name: "food", eventCount: 3, totalAttendees: 42 },
   ],
@@ -258,7 +258,7 @@ export const rewindStats = (year: number): RewindStats => ({
 });
 
 export function findEvent(id: string) {
-  return store.events.find((e) => e.id === id);
+  return store.events.find((e) => e.id.toString() === id);
 }
 
 export function setRsvp(

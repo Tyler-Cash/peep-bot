@@ -17,7 +17,7 @@ export type Attendee = {
 };
 
 export type EventDto = {
-  id: number | string;
+  id: number;
   name: string;
   description: string;
   location: string;
@@ -43,7 +43,7 @@ export type EventDetailDto = EventDto & {
 };
 
 export type EventUpdateDto = {
-  id: number | string;
+  id: number;
   name?: string;
   description?: string;
   capacity?: number;

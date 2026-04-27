@@ -78,7 +78,7 @@ export const handlers = [
 
   http.put(API("/event"), async ({ request }) => {
     const body = (await request.json()) as Partial<EventDto>;
-    const id = String(store.nextId++);
+    const id = store.nextId++;
     const now = new Date().toISOString();
     const created: EventDetailDto = {
       id,
@@ -90,7 +90,7 @@ export const handlers = [
       dateTime: body.dateTime ?? now,
       host: currentUser.username,
       hostAvatarUrl: currentUser.avatarUrl,
-      category: (body.category as string) ?? "outdoor",
+      category: (body.category as string) ?? "unknown",
       state: "ACTIVE",
       hasPrivateChannel: false,
       completed: false,
@@ -120,7 +120,7 @@ export const handlers = [
 
   http.delete(API("/event"), ({ request }) => {
     const id = new URL(request.url).searchParams.get("id") ?? "";
-    const i = store.events.findIndex((e) => e.id === id);
+    const i = store.events.findIndex((e) => e.id.toString() === id);
     if (i >= 0) store.events.splice(i, 1);
     return new HttpResponse(null, { status: 204 });
   }),
@@ -144,7 +144,7 @@ export const handlers = [
     const id = Number(
       new URL(request.url).pathname.split("/").slice(-2, -1)[0],
     );
-    const ev = findEvent(id);
+    const ev = findEvent(id.toString());
     if (!ev) return new HttpResponse(null, { status: 404 });
     ev.hasPrivateChannel = true;
     return HttpResponse.json({ message: "Private channel created" });

@@ -62,7 +62,7 @@ export function Rewind() {
         <StatCard label="events" value={data.totalEvents} />
         <StatCard label="total rsvps" value={data.totalRsvps} />
         <StatCard label="unique attendees" value={data.totalUniqueAttendees} />
-        <StatCard label="avg group size" value={data.averageGroupSize.toFixed(1)} />
+        <StatCard label="avg group size" value={data.averageGroupSize} />
       </section>
 
       {/* top categories */}

@@ -7,6 +7,7 @@ import { PeepoSleep } from "@/components/Peepo";
 import { monthKey, monthLabel } from "@/lib/format";
 import { useEvents } from "@/lib/hooks";
 import { FeedCard } from "./FeedCard";
+import {EventDto} from "@/lib/types";
 
 export function EventsFeed() {
   const { data, error, isLoading } = useEvents();
@@ -58,17 +59,18 @@ export function EventsFeed() {
   );
 }
 
-function renderWithMonthMarkers(events: Array<{ id: string; dateTime: string }>) {
+function renderWithMonthMarkers(events: EventDto[]) {
   const out: React.ReactNode[] = [];
   const groups: { key: string; items: Array<{ id: string; dateTime: string }> }[] = [];
 
-  for (const e of events) {
-    const key = monthKey(e.dateTime);
+  for (const {id, dateTime} of events) {
+    const key = monthKey(dateTime);
     const tail = groups[groups.length - 1];
+    const idString = id.toString()
     if (!tail || tail.key !== key) {
-      groups.push({ key, items: [e] });
+      groups.push({key, items: [{id: idString, dateTime}]});
     } else {
-      tail.items.push(e);
+      tail.items.push({id: idString, dateTime});
     }
   }
 
