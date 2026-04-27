@@ -27,6 +27,7 @@ export function EditEventForm({ id }: { id: string }) {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
+  const [locationPlaceId, setLocationPlaceId] = useState("");
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +44,7 @@ export function EditEventForm({ id }: { id: string }) {
       setName(data.name);
       setDate(dateToLocalInput(new Date(data.dateTime)));
       setLocation(data.location ?? "");
+      setLocationPlaceId(data.locationPlaceId ?? "");
       setInfo(data.description ?? "");
       setCapacity(data.capacity ?? 0);
       setInitialized(true);
@@ -65,6 +67,7 @@ export function EditEventForm({ id }: { id: string }) {
         name,
         description: info,
         location: location.trim() || "",
+        ...(locationPlaceId ? { locationPlaceId } : {}),
         capacity,
         dateTime: new Date(date).toISOString(),
       });
@@ -182,7 +185,8 @@ export function EditEventForm({ id }: { id: string }) {
           <Field label="venue">
             <LocationAutocomplete
               value={location}
-              onChange={setLocation}
+              onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
+              onPick={(placeId) => setLocationPlaceId(placeId)}
               placeholder="where?"
               recent={recentVenues}
               locationBias={locationBias}

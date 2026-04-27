@@ -19,6 +19,7 @@ export function CreateEventForm() {
     dateToLocalInput(new Date(Date.now() + 1000 * 60 * 60 * 24 * 3)),
   );
   const [location, setLocation] = useState("");
+  const [locationPlaceId, setLocationPlaceId] = useState("");
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +38,7 @@ export function CreateEventForm() {
         name,
         description: info,
         ...(location.trim() ? { location } : {}),
+        ...(locationPlaceId ? { locationPlaceId } : {}),
         capacity,
         dateTime: new Date(date).toISOString(),
       });
@@ -127,7 +129,8 @@ export function CreateEventForm() {
           <Field label="venue">
             <LocationAutocomplete
               value={location}
-              onChange={setLocation}
+              onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
+              onPick={(placeId) => setLocationPlaceId(placeId)}
               placeholder="where?"
               recent={recentVenues}
               locationBias={locationBias}

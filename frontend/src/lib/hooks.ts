@@ -192,6 +192,7 @@ export async function updateEvent(
     name?: string;
     description?: string;
     location?: string;
+    locationPlaceId?: string;
     capacity?: number;
     dateTime?: string;
   },

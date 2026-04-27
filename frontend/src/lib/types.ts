@@ -21,6 +21,7 @@ export type EventDto = {
   name: string;
   description: string;
   location: string;
+  locationPlaceId?: string | null;
   capacity: number;
   cost?: number | null;
   dateTime: string; // ISO
