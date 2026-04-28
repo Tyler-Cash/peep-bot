@@ -15,6 +15,38 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly body: unknown,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+async function readErrorBody(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function messageFromBody(body: unknown, fallback: string): string {
+  if (body && typeof body === "object") {
+    const b = body as Record<string, unknown>;
+    for (const key of ["message", "error", "detail"] as const) {
+      const v = b[key];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+  }
+  if (typeof body === "string" && body.trim()) return body;
+  return fallback;
+}
+
 async function getCsrf(attempt = 0): Promise<string> {
   if (csrfToken) return csrfToken;
   let res: Response;
@@ -88,14 +120,24 @@ async function apiFetchInner<T>(
   }
   if (res.status === 429) {
     if (retries >= 2) {
-      throw new Error(`${method} ${path} rate limited`);
+      const body = await readErrorBody(res);
+      throw new ApiError(
+        429,
+        body,
+        messageFromBody(body, "too many requests, please try again shortly"),
+      );
     }
     const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
     await new Promise((r) => setTimeout(r, retry));
     return apiFetchInner<T>(path, init, retries + 1);
   }
   if (!res.ok) {
-    throw new Error(`api ${method} ${path} failed: ${res.status}`);
+    const body = await readErrorBody(res);
+    throw new ApiError(
+      res.status,
+      body,
+      messageFromBody(body, `request failed (${res.status})`),
+    );
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

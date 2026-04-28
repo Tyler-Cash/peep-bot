@@ -6,6 +6,7 @@ import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Stepper } from "@/components/ui/Stepper";
+import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
 import { dateToLocalInput } from "@/lib/format";
 import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
@@ -22,6 +23,7 @@ export function CreateEventForm() {
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const locationBias =
     guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
@@ -32,6 +34,7 @@ export function CreateEventForm() {
     e.preventDefault();
     if (!guild) return;
     setSubmitting(true);
+    setError(null);
     try {
       const created = await createEvent(guild.id, {
         name,
@@ -42,6 +45,15 @@ export function CreateEventForm() {
         dateTime: new Date(date).toISOString(),
       });
       router.push(`/events/${created.id}`);
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return;
+      if (e instanceof BackendUnreachable) {
+        setError("can't reach the server — check your connection and try again");
+      } else if (e instanceof ApiError) {
+        setError(e.message);
+      } else {
+        setError("something went wrong posting this event");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -104,6 +116,15 @@ export function CreateEventForm() {
             className={areaCls}
           />
         </Field>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
           <Chunky type="submit" variant="leaf" disabled={submitting}>

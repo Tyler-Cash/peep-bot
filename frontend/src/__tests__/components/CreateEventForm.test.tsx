@@ -127,10 +127,59 @@ describe("CreateEventForm", () => {
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/events/42"));
   });
 
-  // NOTE: CreateEventForm does NOT currently render any error UI when
-  // createEvent() rejects — it just lets the promise reject upward and
-  // re-enables the submit button via try/finally. There is nothing
-  // user-visible to assert on, so we don't ship a "shows error" test
-  // that would have to lie about behavior the component lacks. This
-  // gap is intentional and worth fixing in a follow-up feature.
+  it("renders an inline error when the API rejects with ApiError", async () => {
+    const { ApiError } = await import("@/lib/api");
+    mockCreateEvent.mockRejectedValueOnce(
+      new ApiError(409, { message: "name already taken" }, "name already taken"),
+    );
+    const user = userEvent.setup();
+    render(<CreateEventForm />);
+
+    await user.type(
+      screen.getByPlaceholderText(/trivia at the dog/i),
+      "Pub Quiz",
+    );
+    await user.click(screen.getByRole("button", { name: /post event/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/name already taken/i);
+    expect(mockPush).not.toHaveBeenCalled();
+    // Submit button is re-enabled after failure.
+    const btn = screen.getByRole("button", {
+      name: /post event/i,
+    }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+  });
+
+  it("renders a friendly error when the backend is unreachable", async () => {
+    const { BackendUnreachable } = await import("@/lib/api");
+    mockCreateEvent.mockRejectedValueOnce(new BackendUnreachable());
+    const user = userEvent.setup();
+    render(<CreateEventForm />);
+
+    await user.type(
+      screen.getByPlaceholderText(/trivia at the dog/i),
+      "Pub Quiz",
+    );
+    await user.click(screen.getByRole("button", { name: /post event/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/can't reach the server/i);
+  });
+
+  it("does not render an error banner on UnauthorizedError (handled by redirect)", async () => {
+    const { UnauthorizedError } = await import("@/lib/api");
+    mockCreateEvent.mockRejectedValueOnce(new UnauthorizedError());
+    const user = userEvent.setup();
+    render(<CreateEventForm />);
+
+    await user.type(
+      screen.getByPlaceholderText(/trivia at the dog/i),
+      "Pub Quiz",
+    );
+    await user.click(screen.getByRole("button", { name: /post event/i }));
+
+    await waitFor(() => expect(mockCreateEvent).toHaveBeenCalled());
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

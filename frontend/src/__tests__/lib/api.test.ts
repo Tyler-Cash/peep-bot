@@ -142,20 +142,57 @@ describe("apiFetch", () => {
     await vi.advanceTimersByTimeAsync(1000);
     await vi.advanceTimersByTimeAsync(1000);
     const err = await promise;
+    const { ApiError } = await import("@/lib/api");
 
-    expect(err).toBeInstanceOf(Error);
-    expect((err as Error).message).toMatch(/rate limited/);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as InstanceType<typeof ApiError>).status).toBe(429);
+    expect((err as Error).message).toMatch(/too many requests/i);
     // Initial call + 2 retries = 3 total.
     expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
-  it("surfaces status code in error for non-ok responses", async () => {
+  it("throws ApiError with parsed JSON body for non-ok responses", async () => {
     mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ message: "boom" }), { status: 500 }),
+      new Response(JSON.stringify({ message: "name already taken" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      }),
     );
-    const { apiFetch } = await import("@/lib/api");
+    const { apiFetch, ApiError } = await import("@/lib/api");
 
-    await expect(apiFetch("/foo")).rejects.toThrow(/500/);
+    const err = (await apiFetch("/foo").catch((e) => e)) as InstanceType<
+      typeof ApiError
+    >;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(409);
+    expect(err.message).toBe("name already taken");
+    expect(err.body).toEqual({ message: "name already taken" });
+  });
+
+  it("falls back to text body when error response is not JSON", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response("upstream is down", { status: 502 }),
+    );
+    const { apiFetch, ApiError } = await import("@/lib/api");
+
+    const err = (await apiFetch("/foo").catch((e) => e)) as InstanceType<
+      typeof ApiError
+    >;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(502);
+    expect(err.message).toBe("upstream is down");
+    expect(err.body).toBe("upstream is down");
+  });
+
+  it("uses status-based fallback message when error body is empty", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    const { apiFetch, ApiError } = await import("@/lib/api");
+
+    const err = (await apiFetch("/foo").catch((e) => e)) as InstanceType<
+      typeof ApiError
+    >;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toMatch(/500/);
   });
 
   it("throws BackendUnreachable when fetch itself rejects", async () => {
