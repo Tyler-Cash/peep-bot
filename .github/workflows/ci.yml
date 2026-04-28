@@ -357,6 +357,8 @@ jobs:
     permissions:
       contents: read
       packages: read
+    outputs:
+      image_ref: ${{ steps.pull.outputs.image_ref }}
     steps:
       - name: Set up lowercase owner
         run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -369,6 +371,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull new backend image and get digest
+        id: pull
         run: |
           VERSION="${{ needs.release.outputs.new_release_version }}"
           IMAGE="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:${VERSION}"
@@ -376,6 +379,7 @@ jobs:
           DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE}" | cut -d@ -f2)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "DIGEST=${DIGEST}" >> $GITHUB_ENV
+          echo "image_ref=${VERSION}@${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Checkout portainer repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
