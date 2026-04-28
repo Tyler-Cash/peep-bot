@@ -21,7 +21,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -81,8 +83,12 @@ public class EventService {
 
     @Cacheable(value = "activeEvents", key = "#guildId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<Event> getActiveEvents(Pageable pageable, long guildId) {
+        Pageable sorted = pageable.getSort().isSorted()
+                ? pageable
+                : PageRequest.of(
+                        pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.ASC, "dateTime"));
         return eventRepository.findAllByStateNotInAndServerId(
-                pageable,
+                sorted,
                 List.of(EventState.CREATED, EventState.CANCELLED, EventState.ARCHIVED, EventState.DELETED),
                 guildId);
     }
