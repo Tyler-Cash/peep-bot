@@ -1,7 +1,7 @@
 package dev.tylercash.event.discord;
 
-import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.db.repository.DiscordGuildMemberRepository;
+import dev.tylercash.event.discord.model.DiscordGuildMember;
 import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AvatarController {
 
-    private final DiscordUserCacheRepository cacheRepository;
+    private final DiscordGuildMemberRepository memberRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
     private final DiscordConfiguration discordConfiguration;
     private final DiscordUserCacheService cacheService;
@@ -37,13 +37,14 @@ public class AvatarController {
         }
 
         String viewerSnowflake = principal.getAttribute("id");
-        if (viewerSnowflake == null || !cacheRepository.haveSharedGuild(viewerSnowflake, snowflake)) {
+        if (viewerSnowflake == null || !memberRepository.haveSharedGuild(viewerSnowflake, snowflake)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Optional<DiscordUserCache> cached = cacheRepository.findById(snowflake);
+        long guildId = discordConfiguration.getGuildId();
+        Optional<DiscordGuildMember> cached = memberRepository.findByGuildIdAndSnowflake(guildId, snowflake);
         if (cached.isPresent() && cached.get().getAvatarBytes() != null) {
-            DiscordUserCache entry = cached.get();
+            DiscordGuildMember entry = cached.get();
             String ct = entry.getAvatarContentType();
             MediaType mediaType;
             try {
@@ -63,17 +64,15 @@ public class AvatarController {
         try {
             DiscordService discordService = discordServiceProvider.getIfAvailable();
             if (discordService != null) {
-                Member member = discordService.getMemberFromServer(
-                        discordConfiguration.getGuildId(), Long.parseLong(snowflake));
+                Member member = discordService.getMemberFromServer(guildId, Long.parseLong(snowflake));
                 if (member != null) {
                     String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                    // Trigger async cache update for next time
                     cacheService.upsertUser(
                             snowflake,
                             DiscordUtil.getUserDisplayName(member),
                             member.getUser().getName(),
                             avatarUrl,
-                            discordConfiguration.getGuildId());
+                            guildId);
 
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create(avatarUrl))

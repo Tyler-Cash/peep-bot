@@ -2,6 +2,7 @@ package dev.tylercash.event.global;
 
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.security.UserInfoDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class SecurityController {
     private final DiscordService discordService;
     private final DiscordConfiguration discordConfiguration;
+    private final DiscordUserCacheService discordUserCacheService;
 
     @Operation(summary = "Check authentication status", description = "Returns current user info if authenticated")
     @ApiResponses({
@@ -36,10 +38,9 @@ public class SecurityController {
         }
         String userSnowflake = principal.getAttribute("id");
         String username = principal.getAttribute("username");
-        String globalName = principal.getAttribute("global_name");
-        String displayName = globalName != null ? globalName : username;
-        boolean isAdmin =
-                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(userSnowflake));
+        long guildId = discordConfiguration.getGuildId();
+        String displayName = discordUserCacheService.getDisplayName(guildId, userSnowflake);
+        boolean isAdmin = discordService.isUserAdminOfServer(guildId, Long.parseLong(userSnowflake));
         return new UserInfoDto(username, displayName, userSnowflake, isAdmin, "/api/avatar/" + userSnowflake);
     }
 }

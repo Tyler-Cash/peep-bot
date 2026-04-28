@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.tylercash.event.discord.GuildDto;
 import dev.tylercash.event.discord.GuildSettingsDto;
-import dev.tylercash.event.discord.model.DiscordUserCache;
 import dev.tylercash.event.event.model.AttendanceRecord;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
@@ -100,15 +99,7 @@ class ResponseSerializationTest {
         rec.setStatus(AttendanceStatus.ACCEPTED);
         rec.setRecordedAt(Instant.parse("2099-01-01T00:00:00Z"));
         AttendanceSummary summary = new AttendanceSummary(List.of(rec), List.of(), List.of());
-        DiscordUserCache user = new DiscordUserCache(
-                "111",
-                "Alice",
-                "alice",
-                Instant.parse("2099-01-01T00:00:00Z"),
-                new byte[] {1, 2, 3},
-                "image/webp",
-                new HashSet<>(Set.of(311L)));
-        out.add(new EventDetailDto(event, true, summary, Map.of("111", user), "social"));
+        out.add(new EventDetailDto(event, true, summary, Map.of("111", "Alice"), Map.of("111", "alice"), "social"));
 
         out.add(new AttendeeDto(a));
 

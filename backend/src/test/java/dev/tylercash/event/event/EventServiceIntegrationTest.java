@@ -194,11 +194,11 @@ class EventServiceIntegrationTest {
     void discordUserCache_upsertAndLookup() {
         discordUserCacheService.upsertUser("cache1", "OriginalName", "user1", null, 0L);
 
-        assertThat(discordUserCacheService.getDisplayName("cache1")).isEqualTo("OriginalName");
+        assertThat(discordUserCacheService.getDisplayName(0L, "cache1")).isEqualTo("OriginalName");
 
         // Upsert with new name
         discordUserCacheService.upsertUser("cache1", "UpdatedName", "user1", null, 0L);
-        assertThat(discordUserCacheService.getDisplayName("cache1")).isEqualTo("UpdatedName");
+        assertThat(discordUserCacheService.getDisplayName(0L, "cache1")).isEqualTo("UpdatedName");
     }
 
     @Test
@@ -207,7 +207,7 @@ class EventServiceIntegrationTest {
         discordUserCacheService.upsertUser("batch1", "Alice", "alice_user", null, 0L);
         discordUserCacheService.upsertUser("batch2", "Bob", "bob_user", null, 0L);
 
-        Map<String, String> names = discordUserCacheService.getDisplayNames(List.of("batch1", "batch2", "missing"));
+        Map<String, String> names = discordUserCacheService.getDisplayNames(0L, List.of("batch1", "batch2", "missing"));
 
         assertThat(names).hasSize(2).containsEntry("batch1", "Alice").containsEntry("batch2", "Bob");
     }

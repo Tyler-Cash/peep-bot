@@ -4,7 +4,6 @@ import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.discord.GuildMembershipService;
-import dev.tylercash.event.discord.model.DiscordUserCache;
 import dev.tylercash.event.event.model.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -133,16 +132,17 @@ public class EventController {
                 .map(Event::getCreator)
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
-        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(creatorSnowflakes);
+        Map<String, String> displayNames = discordUserCacheService.getDisplayNames(guildId, creatorSnowflakes);
+        Map<String, String> usernames = discordUserCacheService.getUsernames(creatorSnowflakes);
         Map<UUID, String> categoryMap = eventService.getEventCategories(
                 events.stream().map(Event::getId).collect(Collectors.toSet()));
 
         return events.map(event -> {
-            DiscordUserCache user = userMap.get(event.getCreator());
+            String name = displayNames.get(event.getCreator());
             return new EventDto(
                     event,
-                    user != null ? user.getDisplayName() : event.getCreator(),
-                    user != null ? user.getUsername() : null,
+                    name != null ? name : event.getCreator(),
+                    usernames.get(event.getCreator()),
                     categoryMap.getOrDefault(event.getId(), "unknown"));
         });
     }
@@ -172,9 +172,10 @@ public class EventController {
             allSnowflakes.add(event.getCreator());
         }
 
-        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(allSnowflakes);
+        Map<String, String> displayNames = discordUserCacheService.getDisplayNames(event.getServerId(), allSnowflakes);
+        Map<String, String> usernames = discordUserCacheService.getUsernames(allSnowflakes);
         String category = eventService.getEventCategory(id);
-        return new EventDetailDto(event, completed, summary, userMap, category);
+        return new EventDetailDto(event, completed, summary, displayNames, usernames, category);
     }
 
     @Operation(summary = "RSVP to an event", description = "Record or update your attendance status for an event")
@@ -222,9 +223,10 @@ public class EventController {
         if (event.getCreator() != null && !event.getCreator().isBlank()) {
             allSnowflakes.add(event.getCreator());
         }
-        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(allSnowflakes);
+        Map<String, String> displayNames = discordUserCacheService.getDisplayNames(event.getServerId(), allSnowflakes);
+        Map<String, String> usernames = discordUserCacheService.getUsernames(allSnowflakes);
         String category = eventService.getEventCategory(id);
-        return new EventDetailDto(event, completed, summary, userMap, category);
+        return new EventDetailDto(event, completed, summary, displayNames, usernames, category);
     }
 
     @Operation(summary = "Cancel an event", description = "Admin-only: cancels an event and archives it")
