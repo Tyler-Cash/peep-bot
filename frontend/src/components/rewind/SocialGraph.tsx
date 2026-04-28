@@ -22,6 +22,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     const container = containerRef.current;
     if (!container || graph.nodes.length === 0) return;
 
+    const uid = Math.random().toString(36).slice(2, 8);
+
     const width = container.clientWidth || 600;
     const height = SVG_HEIGHT;
 
@@ -62,7 +64,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       const r = radii.get(node.snowflake)!;
       defs
         .append("clipPath")
-        .attr("id", `clip-${node.snowflake}`)
+        .attr("id", `clip-${uid}-${node.snowflake}`)
         .append("circle")
         .attr("cx", 0)
         .attr("cy", 0)
@@ -109,12 +111,12 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
 
     nodeEls
       .append("image")
-      .attr("href", (d) => d.avatarUrl ?? "")
+      .attr("href", (d) => d.avatarUrl)
       .attr("x", (d) => -radii.get(d.snowflake)!)
       .attr("y", (d) => -radii.get(d.snowflake)!)
       .attr("width", (d) => radii.get(d.snowflake)! * 2)
       .attr("height", (d) => radii.get(d.snowflake)! * 2)
-      .attr("clip-path", (d) => `url(#clip-${d.snowflake})`)
+      .attr("clip-path", (d) => `url(#clip-${uid}-${d.snowflake})`)
       .style("display", (d) => (d.avatarUrl ? null : "none"));
 
     nodeEls
