@@ -300,4 +300,24 @@ public class EventController {
         eventService.removeAttendee(id, snowflake, name);
         return Map.of("message", "Removed attendee");
     }
+
+    @Operation(
+            summary = "Re-categorize an event",
+            description = "Admin-only: triggers a fresh categorization attempt for this event")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Recategorization triggered"),
+        @ApiResponse(responseCode = "403", description = "Admin role required"),
+        @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PostMapping(path = "/{id}/recategorize")
+    public Map<String, String> recategorizeEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        log.info("User {} triggering recategorization for event id={}", discordId, id);
+        Event event = eventService.getEvent(id);
+        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        eventService.recategorizeEvent(id);
+        return Map.of("message", "Recategorization triggered");
+    }
 }

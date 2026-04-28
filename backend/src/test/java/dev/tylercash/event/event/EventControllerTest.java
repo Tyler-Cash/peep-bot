@@ -469,6 +469,41 @@ class EventControllerTest {
         assertThat(result.getContent().get(0).getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
     }
 
+    @Test
+    void recategorizeEvent_adminUser_callsServiceAndReturnsMessage() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        UUID id = UUID.randomUUID();
+        Event event = new Event(0L, GUILD_ID, 0L, "Test Event", DISCORD_ID, ZonedDateTime.now(), "desc");
+        event.setId(id);
+
+        when(ctx.eventService.getEvent(id)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+
+        Map<String, String> result = ctx.controller.recategorizeEvent(id, ctx.principal);
+
+        assertThat(result.get("message")).isEqualTo("Recategorization triggered");
+        verify(ctx.eventService).recategorizeEvent(id);
+    }
+
+    @Test
+    void recategorizeEvent_nonAdmin_throwsForbidden() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        UUID id = UUID.randomUUID();
+        Event event = new Event(0L, GUILD_ID, 0L, "Test Event", DISCORD_ID, ZonedDateTime.now(), "desc");
+        event.setId(id);
+
+        when(ctx.eventService.getEvent(id)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> ctx.controller.recategorizeEvent(id, ctx.principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(
+                                ((ResponseStatusException) e).getStatusCode().value())
+                        .isEqualTo(403));
+    }
+
     private record EventControllerTestContext(
             EventController controller,
             EventService eventService,
