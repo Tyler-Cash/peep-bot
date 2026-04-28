@@ -20,7 +20,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const cat = categoryMeta(event.category);
   const stamp = dateStamp(event.dateTime);
   const tileTilt = seededTilt(`tile-${event.id}`, 1.6);
-  const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2);
+  const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2.5);
 
   const ds = detail ?? {
     accepted: [],
@@ -73,16 +73,23 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   };
 
   return (
-    <article className={clsx("flex gap-3 px-3 py-3 rounded-chip transition-colors hover:bg-leaf/5", !last && "border-b border-line")}>
+    <article className={clsx("flex gap-2.5 sm:gap-3 px-2 sm:px-3 py-3 rounded-chip transition-colors hover:bg-leaf/5", !last && "border-b border-line")}>
       <Avatar
         who={{ name: event.host, username: event.hostUsername, avatarUrl: event.hostAvatarUrl }}
         size={40}
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <header className="flex items-center gap-2 text-[15px]">
-          <span className="font-extrabold text-ink">{event.host}</span>
-          <span className="text-mute">@{event.hostUsername ?? event.host?.toLowerCase()} · posted recently</span>
+        <header className="flex items-center gap-2 text-[14px] sm:text-[15px] min-w-0">
+          <span className="font-extrabold text-ink truncate shrink-0 max-w-[40%] sm:max-w-none">
+            {event.host}
+          </span>
+          <span className="text-mute truncate hidden sm:inline">
+            @{event.hostUsername ?? event.host?.toLowerCase()} · posted recently
+          </span>
+          <span className="text-mute truncate sm:hidden">
+            @{event.hostUsername ?? event.host?.toLowerCase()}
+          </span>
           <span className="flex-1" />
           <CountdownChip iso={event.dateTime} />
         </header>
@@ -93,7 +100,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
           className="block mt-2 rounded-card border-[1.5px] border-ink overflow-hidden shadow-rest bg-white cursor-pointer"
         >
           <div
-            className="relative p-4 pr-[112px] border-b-[1.5px] border-ink overflow-hidden"
+            className="relative p-3.5 sm:p-4 pr-3.5 sm:pr-[112px] border-b-[1.5px] border-ink overflow-hidden"
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.image ? (
@@ -116,41 +123,41 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 {cat.emoji}
               </span>
             ) : null}
-            {/* horizontal date tile, pinned top-right with deterministic tilt */}
+            {/* horizontal date tile — inline above on mobile, pinned top-right on sm+ */}
             <div
-              className="absolute top-3 right-3 z-[2] inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95"
+              className="z-[2] inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95 mb-2 sm:mb-0 sm:absolute sm:top-3 sm:right-3"
               style={{ transform: `rotate(${tileTilt}deg)` }}
             >
               <span className="flex items-center gap-1.5 px-3 py-2">
-                <span className="text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+                <span className="text-[22px] sm:text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
                   {stamp.day}
                 </span>
-                <span className="text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
+                <span className="text-[17px] sm:text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
                   {stamp.month.toLowerCase()}
                 </span>
               </span>
               <span className="flex items-center justify-center px-3 border-l-[1.5px] border-ink bg-white/55">
-                <span className="text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
+                <span className="text-[12px] sm:text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
                   {stamp.weekday}
                 </span>
               </span>
             </div>
             {/* content — pl clears watermark so the title never collides */}
-            <div className="relative pl-[80px] min-w-0">
+            <div className="relative pl-[64px] sm:pl-[80px] min-w-0">
               <CatTag category={event.category} displayState={event.displayState} />
-              <h2 className="mt-1.5 text-[30px] sm:text-[34px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+              <h2 className="mt-1.5 text-[24px] sm:text-[34px] font-extrabold tracking-[-0.03em] leading-[1.05] break-words">
                 {event.name}
               </h2>
-              <p className="mt-1 text-[16px] font-semibold opacity-95">
+              <p className="mt-1 text-[14px] sm:text-[16px] font-semibold opacity-95 break-words">
                 {timeLabel(event.dateTime)}{event.location ? ` · 📍 ${event.location}` : ""}
               </p>
             </div>
           </div>
-          <div className="bg-white p-4">
-            <p className="text-[17px] text-ink2 line-clamp-2">{event.description}</p>
-            <div className="mt-3 flex items-center gap-3 flex-wrap">
+          <div className="bg-white p-3.5 sm:p-4">
+            <p className="text-[15px] sm:text-[17px] text-ink2 line-clamp-2">{event.description}</p>
+            <div className="mt-3 flex items-center gap-2 sm:gap-3 flex-wrap">
               <Avas people={ds.accepted} max={5} size={28} />
-              <span className="text-[15px] text-mute font-semibold">
+              <span className="text-[13px] sm:text-[15px] text-mute font-semibold">
                 {counts.going} going · {counts.maybe} maybe
               </span>
               <span className="flex-1" />

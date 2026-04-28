@@ -101,7 +101,10 @@ export function seededTilt(seed: string, range = 1.6): number {
   let h = 0;
   const s = String(seed);
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  const n = ((h % 1000) / 1000) * 2 - 1;
+  // Coerce to unsigned so `% 1000` stays in [0, 999] — JS's `%` keeps the sign
+  // of the dividend, which previously let n drift outside [-1, 1] and pushed
+  // the final tilt past the requested range.
+  const n = (((h >>> 0) % 1000) / 1000) * 2 - 1;
   const sign = n < 0 ? -1 : 1;
   return (0.3 + Math.abs(n) * (range - 0.3)) * sign;
 }
