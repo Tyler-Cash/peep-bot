@@ -119,11 +119,11 @@ export function EventDetail({ id }: { id: string }) {
 
   const rsvpHeadline =
     meStatus === "going"
-      ? "✅ you're in"
+      ? "you're in"
       : meStatus === "maybe"
-        ? "🤔 you said maybe"
+        ? "you said maybe"
         : meStatus === "declined"
-          ? "❌ you can't make it"
+          ? "you can't make it"
           : "no rsvp yet";
 
   return (
@@ -150,13 +150,26 @@ export function EventDetail({ id }: { id: string }) {
               </span>
               </div>
           )}
-          <span
+          {cat.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cat.image}
+              alt=""
+              aria-hidden
+              width={220}
+              height={220}
+              className="absolute select-none pointer-events-none opacity-[0.22]"
+              style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
+            />
+          ) : (
+            <span
               className="absolute text-[220px] leading-none opacity-[0.18] select-none pointer-events-none"
               style={{ right: -24, bottom: -70, transform: "rotate(-12deg)" }}
               aria-hidden
-          >
-            {cat.emoji}
-          </span>
+            >
+              {cat.emoji}
+            </span>
+          )}
             <div className="relative flex items-start gap-4">
               <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-chunky-sm shrink-0">
                 <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
@@ -206,19 +219,25 @@ export function EventDetail({ id }: { id: string }) {
                     variant={meStatus === "going" ? "leaf" : "paper"}
                     onClick={() => setStatus("going")}
                   >
-                    ✅ going
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/peepos/peepo-going.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    going
                   </Chunky>
                   <Chunky
                     variant={meStatus === "maybe" ? "leaf" : "paper"}
                     onClick={() => setStatus("maybe")}
                   >
-                    🤔 maybe
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/peepos/peepo-maybe.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    maybe
                   </Chunky>
                   <Chunky
                     variant={meStatus === "declined" ? "leaf" : "paper"}
                     onClick={() => setStatus("declined")}
                   >
-                    ❌ can&apos;t
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/peepos/peepo-no.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    can&apos;t
                   </Chunky>
                 </div>
               )}
@@ -264,13 +283,14 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 the guest list
               </span>
-              <RsvpGroup label="going" emoji="✅" people={data.accepted} onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
-              <RsvpGroup label="maybe" emoji="🤔" people={data.maybe}
+              <RsvpGroup label="going" emoji="✅" image="/peepos/peepo-going.png" people={data.accepted} onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
+              <RsvpGroup label="maybe" emoji="🤔" image="/peepos/peepo-maybe.png" people={data.maybe}
               onRemove={isAdmin && !data.completed ? setPendingRemove : undefined}
             />
             <RsvpGroup
               label="can't make it"
               emoji="❌"
+              image="/peepos/peepo-no.png"
               people={data.declined}
               onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
             </Slab>

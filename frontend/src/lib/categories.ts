@@ -2,10 +2,11 @@ import type { Category } from "./types";
 
 export const CATEGORIES: Record<
   Category | "unknown",
-  { emoji?: string; label: string; bg: string; ink: string; dot: string }
+  { emoji?: string; image?: string; label: string; bg: string; ink: string; dot: string }
 > = {
   movie: {
     emoji: "🎬",
+    image: "/peepos/peepo-movie.png",
     label: "movie",
     bg: "#FFD89B",
     ink: "#5A2E08",
@@ -13,6 +14,7 @@ export const CATEGORIES: Record<
   },
   trivia: {
     emoji: "🧠",
+    image: "/peepos/peepo-trivia.png",
     label: "trivia",
     bg: "#FFF0A6",
     ink: "#3D3A14",
@@ -20,6 +22,7 @@ export const CATEGORIES: Record<
   },
   comedy: {
     emoji: "🎤",
+    image: "/peepos/peepo-comedy.png",
     label: "comedy",
     bg: "#FFB8D9",
     ink: "#5A1F3D",
@@ -27,6 +30,7 @@ export const CATEGORIES: Record<
   },
   food: {
     emoji: "🍜",
+    image: "/peepos/peepo-food.png",
     label: "food",
     bg: "#B8E89A",
     ink: "#1F4410",
@@ -34,6 +38,7 @@ export const CATEGORIES: Record<
   },
   outdoor: {
     emoji: "🥾",
+    image: "/peepos/peepo-outdoor.png",
     label: "outdoor",
     bg: "#A5D8E0",
     ink: "#0E3B44",
@@ -41,6 +46,7 @@ export const CATEGORIES: Record<
   },
   game: {
     emoji: "🎲",
+    image: "/peepos/peepo-game.png",
     label: "game",
     bg: "#D4B8FF",
     ink: "#2E1A5A",

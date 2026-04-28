@@ -27,7 +27,12 @@ export function CatTag({
       className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm"
       style={{ background: m.bg, color: m.ink }}
     >
-      {m.emoji && <span aria-hidden className="text-[16px]">{m.emoji}</span>}
+      {m.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={m.image} alt="" aria-hidden width={20} height={20} className="shrink-0" />
+      ) : m.emoji ? (
+        <span aria-hidden className="text-[16px]">{m.emoji}</span>
+      ) : null}
       <span
         aria-hidden
         className="h-2.5 w-2.5 rounded-full"

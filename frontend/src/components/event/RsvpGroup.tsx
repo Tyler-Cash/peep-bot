@@ -5,18 +5,25 @@ import type { Attendee } from "@/lib/types";
 export function RsvpGroup({
   label,
   emoji,
+  image,
   people,
   onRemove,
 }: {
   label: string;
   emoji: string;
+  image?: string;
   people: Attendee[];
   onRemove?: (attendee: Attendee) => void;
 }) {
   return (
     <div className="flex items-start gap-3">
       <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-3 py-1.5 text-[15px] font-extrabold shadow-chunky-sm shrink-0">
-        <span aria-hidden className="text-[18px]">{emoji}</span>
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt="" aria-hidden width={22} height={22} className="shrink-0" />
+        ) : (
+          <span aria-hidden className="text-[18px]">{emoji}</span>
+        )}
         <span className="uppercase tracking-[0.08em] pt-0.5">
           {label} · {people.length}
         </span>

@@ -94,7 +94,18 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
             className="relative p-4 flex items-start gap-3 border-b-[1.5px] border-ink overflow-hidden"
             style={{ background: cat.bg, color: cat.ink }}
           >
-            {cat.emoji && (
+            {cat.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cat.image}
+                alt=""
+                aria-hidden
+                width={120}
+                height={120}
+                className="absolute select-none pointer-events-none opacity-[0.25]"
+                style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
+              />
+            ) : cat.emoji ? (
               <span
                 className="absolute text-[120px] leading-none opacity-[0.22] select-none pointer-events-none"
                 style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
@@ -102,7 +113,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
               >
                 {cat.emoji}
               </span>
-            )}
+            ) : null}
             <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
               <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
               <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
