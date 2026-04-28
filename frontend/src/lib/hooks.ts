@@ -2,6 +2,7 @@
 
 import useSWR, { mutate as globalMutate } from "swr";
 import { apiFetch, api } from "./api";
+import { clearSwrCache } from "./swrCache";
 import type {
   EventDetailDto,
   EventDto,
@@ -172,7 +173,8 @@ export async function logout() {
     method: "POST",
     credentials: "include",
   });
-  await globalMutate(() => true, undefined);
+  clearSwrCache();
+  api.invalidateCsrf();
   window.location.href = "/login";
 }
 

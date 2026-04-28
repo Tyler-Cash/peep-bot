@@ -31,6 +31,8 @@ export function LoginHero() {
     if (loading) return;
     setLoading(true);
     if (MODE === "mock") {
+      // Clear the mock logout flag so the user is logged in
+      window.localStorage.removeItem("mock-auth-logged-out");
       setTimeout(() => router.push("/"), 700);
       return;
     }
