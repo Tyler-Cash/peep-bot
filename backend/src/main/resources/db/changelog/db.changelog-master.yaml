@@ -827,6 +827,23 @@ databaseChangeLog:
               WHERE state = 'ARCHIVED'
               AND name ILIKE '%[CANCELLED]%';
 
+  - changeSet:
+      id: backfill event creator snowflakes from cache
+      author: tyler
+      comment: >
+        The original creator-to-snowflake migration was best-effort and left some
+        events with a display name in creator where no attendee match was found.
+        Now that discord_user_cache is populated, match remaining name-based
+        creators by display_name or username and update them to snowflakes.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event e
+              SET creator = duc.snowflake
+              FROM discord_user_cache duc
+              WHERE NOT (e.creator ~ '^[0-9]+$')
+              AND (duc.display_name = e.creator OR duc.username = e.creator);
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
