@@ -172,54 +172,62 @@ public class RewindService {
                 })
                 .collect(Collectors.toList());
 
-        // Social graph (guild-wide only)
+        // Social graph (guild-wide only). One round-trip: a CTE deduplicates
+        // (event_id, snowflake) so duplicate attendance rows can't double-count, and
+        // the result set merges edges and node degrees via UNION ALL.
         SocialGraphDto socialGraph = null;
         if (!personal) {
-            String pairsQ = "SELECT a1.snowflake AS u1, a2.snowflake AS u2, COUNT(DISTINCT a1.event_id) AS shared "
-                    + "FROM attendance a1 "
-                    + "JOIN attendance a2 ON a1.event_id = a2.event_id AND a1.snowflake < a2.snowflake "
-                    + "JOIN event e ON a1.event_id = e.id "
-                    + "WHERE a1.status = 'ACCEPTED' AND a2.status = 'ACCEPTED'" + yf + gf
-                    + " GROUP BY a1.snowflake, a2.snowflake ORDER BY shared DESC";
-            var pq = em.createNativeQuery(pairsQ);
-            if (year != null) pq.setParameter("year", year);
-            pq.setParameter("guildId", guildId);
-            List<Object[]> pairRows = pq.getResultList();
+            String graphQ = "WITH accepted AS ("
+                    + "  SELECT DISTINCT a.event_id, a.snowflake "
+                    + "  FROM attendance a JOIN event e ON a.event_id = e.id "
+                    + "  WHERE a.status = 'ACCEPTED' AND a.snowflake IS NOT NULL" + yf + gf
+                    + "), pairs AS ("
+                    + "  SELECT a1.snowflake AS u1, a2.snowflake AS u2, COUNT(*) AS shared "
+                    + "  FROM accepted a1 JOIN accepted a2 "
+                    + "    ON a1.event_id = a2.event_id AND a1.snowflake < a2.snowflake "
+                    + "  GROUP BY a1.snowflake, a2.snowflake"
+                    + "), node_set AS ("
+                    + "  SELECT u1 AS snowflake FROM pairs UNION SELECT u2 FROM pairs"
+                    + "), node_counts AS ("
+                    + "  SELECT a.snowflake, COUNT(*) AS cnt FROM accepted a "
+                    + "  WHERE a.snowflake IN (SELECT snowflake FROM node_set) "
+                    + "  GROUP BY a.snowflake"
+                    + ") "
+                    + "SELECT 'edge' AS kind, u1 AS s1, u2 AS s2, shared AS cnt FROM pairs "
+                    + "UNION ALL "
+                    + "SELECT 'node' AS kind, snowflake AS s1, NULL AS s2, cnt FROM node_counts";
+            var gq = em.createNativeQuery(graphQ);
+            if (year != null) gq.setParameter("year", year);
+            gq.setParameter("guildId", guildId);
+            List<Object[]> graphRows = gq.getResultList();
 
+            List<GraphEdgeDto> edges = new ArrayList<>();
+            List<Object[]> nodeRows = new ArrayList<>();
             Set<String> graphSnowflakes = new HashSet<>();
-            pairRows.forEach(r -> {
-                graphSnowflakes.add((String) r[0]);
-                graphSnowflakes.add((String) r[1]);
-            });
-
-            List<GraphEdgeDto> edges = pairRows.stream()
-                    .map(r -> new GraphEdgeDto((String) r[0], (String) r[1], ((Number) r[2]).intValue()))
-                    .collect(Collectors.toList());
-
-            List<GraphNodeDto> nodes = new ArrayList<>();
-            if (!graphSnowflakes.isEmpty()) {
-                String nodeCountQ = "SELECT a.snowflake, COUNT(DISTINCT a.event_id) as cnt "
-                        + "FROM attendance a JOIN event e ON a.event_id = e.id "
-                        + "WHERE a.status = 'ACCEPTED' AND a.snowflake IN (:snowflakes)" + yf + gf
-                        + " GROUP BY a.snowflake";
-                var nq = em.createNativeQuery(nodeCountQ);
-                nq.setParameter("snowflakes", graphSnowflakes);
-                if (year != null) nq.setParameter("year", year);
-                nq.setParameter("guildId", guildId);
-                List<Object[]> nodeRows = nq.getResultList();
-
-                Map<String, String> nodeNames = userCacheService.getDisplayNames(graphSnowflakes);
-                nodes = nodeRows.stream()
-                        .map(r -> {
-                            String nodeSnowflake = (String) r[0];
-                            return new GraphNodeDto(
-                                    nodeSnowflake,
-                                    nodeNames.getOrDefault(nodeSnowflake, "Unknown"),
-                                    "/api/avatar/" + nodeSnowflake,
-                                    ((Number) r[1]).intValue());
-                        })
-                        .collect(Collectors.toList());
+            for (Object[] r : graphRows) {
+                if ("edge".equals(r[0])) {
+                    String u1 = (String) r[1];
+                    String u2 = (String) r[2];
+                    edges.add(new GraphEdgeDto(u1, u2, ((Number) r[3]).intValue()));
+                } else {
+                    String s = (String) r[1];
+                    graphSnowflakes.add(s);
+                    nodeRows.add(r);
+                }
             }
+            edges.sort((a, b) -> Integer.compare(b.sharedEvents(), a.sharedEvents()));
+
+            Map<String, String> nodeNames = userCacheService.getDisplayNames(graphSnowflakes);
+            List<GraphNodeDto> nodes = nodeRows.stream()
+                    .map(r -> {
+                        String nodeSnowflake = (String) r[1];
+                        return new GraphNodeDto(
+                                nodeSnowflake,
+                                nodeNames.getOrDefault(nodeSnowflake, "Unknown"),
+                                "/api/avatar/" + nodeSnowflake,
+                                ((Number) r[3]).intValue());
+                    })
+                    .collect(Collectors.toList());
 
             socialGraph = new SocialGraphDto(nodes, edges);
         }
