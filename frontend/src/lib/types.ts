@@ -147,5 +147,9 @@ export type GalleryAlbumDto = {
   eventDateTime: string;
   albumId: string;
   thumbnailUrl: string;
+  // Public Immich share URL — null when the album has no share key persisted
+  // (legacy events). Frontend falls back to the event detail page in that case.
+  albumUrl: string | null;
   assetCount: number;
+  attendees: Attendee[];
 };

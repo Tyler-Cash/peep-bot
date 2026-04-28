@@ -75,4 +75,16 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
                     + "ORDER BY e.date_time DESC",
             nativeQuery = true)
     List<Event> findGalleryEventsForUser(long serverId, String snowflake);
+
+    @Query(
+            value = "SELECT * FROM event e "
+                    + "WHERE e.immich_album_id = :albumId "
+                    + "AND e.state != 'DELETED' "
+                    + "AND EXISTS ("
+                    + "  SELECT 1 FROM attendance a "
+                    + "  WHERE a.event_id = e.id AND a.snowflake = :snowflake AND a.status = 'ACCEPTED'"
+                    + ") "
+                    + "LIMIT 1",
+            nativeQuery = true)
+    Optional<Event> findGalleryEventByAlbumIdForUser(String albumId, String snowflake);
 }

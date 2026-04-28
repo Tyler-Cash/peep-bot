@@ -302,80 +302,36 @@ function pastDate(daysAgo: number, hour = 19, minute = 0): string {
 const galleryThumb = (seed: string) =>
   `https://picsum.photos/seed/${seed}/640/480`;
 
-export const galleryAlbums: GalleryAlbumDto[] = [
-  {
-    eventId: "g1",
-    eventName: "rooftop dumpling night",
-    eventDateTime: pastDate(6, 19, 30),
-    albumId: "alb-rooftop-dumplings",
-    thumbnailUrl: galleryThumb("peepo-dumplings"),
-    assetCount: 42,
-  },
-  {
-    eventId: "g2",
-    eventName: "you yangs sunrise hike",
-    eventDateTime: pastDate(13, 6, 15),
-    albumId: "alb-you-yangs",
-    thumbnailUrl: galleryThumb("peepo-sunrise"),
-    assetCount: 87,
-  },
-  {
-    eventId: "g3",
-    eventName: "trivia night — third place again",
-    eventDateTime: pastDate(20, 19, 0),
-    albumId: "alb-trivia-third",
-    thumbnailUrl: galleryThumb("peepo-trivia"),
-    assetCount: 18,
-  },
-  {
-    eventId: "g4",
-    eventName: "lena's birthday at the wine bar",
-    eventDateTime: pastDate(28, 20, 0),
-    albumId: "alb-lena-bday",
-    thumbnailUrl: galleryThumb("peepo-wine"),
-    assetCount: 134,
-  },
-  {
-    eventId: "g5",
-    eventName: "winter beach bonfire",
-    eventDateTime: pastDate(41, 17, 30),
-    albumId: "alb-winter-bonfire",
-    thumbnailUrl: galleryThumb("peepo-bonfire"),
-    assetCount: 63,
-  },
-  {
-    eventId: "g6",
-    eventName: "ramen crawl — fitzroy edition",
-    eventDateTime: pastDate(55, 18, 45),
-    albumId: "alb-ramen-crawl",
-    thumbnailUrl: galleryThumb("peepo-ramen"),
-    assetCount: 29,
-  },
-  {
-    eventId: "g7",
-    eventName: "board game marathon at bas's",
-    eventDateTime: pastDate(72, 14, 0),
-    albumId: "alb-boardgames",
-    thumbnailUrl: galleryThumb("peepo-boardgames"),
-    assetCount: 51,
-  },
-  {
-    eventId: "g8",
-    eventName: "queenscliff day trip",
-    eventDateTime: pastDate(96, 10, 30),
-    albumId: "alb-queenscliff",
-    thumbnailUrl: galleryThumb("peepo-queenscliff"),
-    assetCount: 108,
-  },
-  {
-    eventId: "g9",
-    eventName: "moonshade screening — sequel night",
-    eventDateTime: pastDate(118, 19, 30),
-    albumId: "alb-moonshade-2",
-    thumbnailUrl: galleryThumb("peepo-cinema"),
-    assetCount: 7,
-  },
-];
+// Galleries are derived from the canonical events store so that eventId,
+// eventName, and attendees on each album match what /events/{id} actually
+// renders. dateTime is shifted into the past since albums represent past
+// hangouts; everything else is borrowed straight from the source event.
+const albumOffsets = [6, 13, 20, 28, 41, 55, 72, 96, 118];
+const albumPhotoCounts = [42, 87, 18, 134, 63, 29, 51, 108, 7];
+// Mock the album-share permutations the BFF open endpoint produces in prod:
+//   - even index → albumUrl points to a stand-in external URL the new tab can
+//                  actually load (in prod this would be the BFF /open route
+//                  which 302s to Immich; in mock mode there's no session so
+//                  hitting that route would 401, hence the direct placeholder)
+//   - odd index  → legacy event with no share key → albumUrl null, thumbnail
+//                  click falls back to the event-detail page
+export const galleryAlbums: GalleryAlbumDto[] = store.events.map((event, i) => ({
+  eventId: String(event.id),
+  eventName: event.name,
+  eventDateTime: pastDate(
+    albumOffsets[i] ?? 30 + i * 14,
+    19 + ((i * 3) % 5) - 2,
+    (i * 15) % 60,
+  ),
+  albumId: `alb-${event.id}`,
+  thumbnailUrl: galleryThumb(`peepo-${event.id}-${event.category ?? "event"}`),
+  albumUrl:
+    i % 2 === 0
+      ? `https://picsum.photos/seed/peepo-share-${event.id}/1600/1000`
+      : null,
+  assetCount: albumPhotoCounts[i] ?? 12 + i * 7,
+  attendees: event.accepted ?? [],
+}));
 
 export function findEvent(id: string) {
   return store.events.find((e) => e.id.toString() === id);
