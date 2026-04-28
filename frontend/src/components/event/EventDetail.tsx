@@ -14,6 +14,7 @@ import { dateStamp, timeLabel } from "@/lib/format";
 import {
   cancelEvent,
   createPrivateChannel,
+  recategorizeEvent,
   removeAttendee,
   submitRsvp,
   useActiveGuild,
@@ -31,6 +32,17 @@ export function EventDetail({ id }: { id: string }) {
   const [pendingRemove, setPendingRemove] = useState<Attendee | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPrivateChannelModal, setShowPrivateChannelModal] = useState(false);
+  const [isRecategorizing, setIsRecategorizing] = useState(false);
+
+  const handleRecategorize = async () => {
+    if (!guild) return;
+    setIsRecategorizing(true);
+    try {
+      await recategorizeEvent(guild.id, id);
+    } finally {
+      setIsRecategorizing(false);
+    }
+  };
 
   if (isLoading || !data) {
     return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
@@ -320,28 +332,34 @@ export function EventDetail({ id }: { id: string }) {
                   admin
                 </span>
                 {!isPast && (
-                  <Link href={`/events/${id}/edit`}>
-                    <Chunky variant="paper" size="sm" className="w-full justify-center">
-                      ✏️ edit event
+                  <>
+                    <Chunky
+                      variant="paper"
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={() => setShowPrivateChannelModal(true)}
+                      disabled={data.hasPrivateChannel}
+                    >
+                      {data.hasPrivateChannel ? "🔒 private channel active" : "🔒 create private channel"}
                     </Chunky>
-                  </Link>
+                    <Chunky
+                      variant="danger"
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={() => setShowCancelModal(true)}
+                    >
+                      ✕ cancel event
+                    </Chunky>
+                  </>
                 )}
                 <Chunky
                   variant="paper"
                   size="sm"
                   className="w-full justify-center"
-                  onClick={() => setShowPrivateChannelModal(true)}
-                  disabled={data.hasPrivateChannel}
+                  onClick={handleRecategorize}
+                  disabled={isRecategorizing}
                 >
-                  {data.hasPrivateChannel ? "🔒 private channel active" : "🔒 create private channel"}
-                </Chunky>
-                <Chunky
-                  variant="danger"
-                  size="sm"
-                  className="w-full justify-center"
-                  onClick={() => setShowCancelModal(true)}
-                >
-                  ✕ cancel event
+                  {isRecategorizing ? "🔄 categorizing…" : "🔄 re-categorize"}
                 </Chunky>
               </div>
             )}

@@ -167,6 +167,11 @@ export async function createPrivateChannel(
   await invalidateEvent(guildId, eventId);
 }
 
+export async function recategorizeEvent(guildId: string, eventId: number | string) {
+  await apiFetch(`/event/${eventId}/recategorize`, { method: "POST" });
+  await invalidateEvent(guildId, eventId);
+}
+
 export async function logout() {
   const base = api.base;
   await fetch(`${base}/auth/logout`, {
