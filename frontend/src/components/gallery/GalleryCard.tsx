@@ -26,27 +26,24 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
     </div>
   );
 
+  // Always route the thumbnail click through the BFF /open endpoint — the BFF
+  // resolves a fresh per-user 1-week Immich share, then 302-redirects with
+  // private cache headers. Constructing the URL from albumId here means the
+  // frontend never opens a direct Immich URL even when the backend / mocks
+  // happen to surface one.
+  const openUrl = `/api/gallery/${encodeURIComponent(album.albumId)}/open`;
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-hero border-[1.5px] border-ink shadow-rest bg-white">
-      {album.albumUrl ? (
-        <a
-          href={album.albumUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`open ${album.eventName} album in Immich`}
-          className="block"
-        >
-          {thumbnail}
-        </a>
-      ) : (
-        <Link
-          href={`/events/${album.eventId}`}
-          aria-label={`open ${album.eventName} event`}
-          className="block"
-        >
-          {thumbnail}
-        </Link>
-      )}
+      <a
+        href={openUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`open ${album.eventName} album`}
+        className="block"
+      >
+        {thumbnail}
+      </a>
 
       <Link
         href={`/events/${album.eventId}`}
