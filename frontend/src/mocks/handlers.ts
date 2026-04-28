@@ -8,6 +8,7 @@ import type {
 import {
   currentUser,
   findEvent,
+  galleryAlbums,
   guild,
   guildSettings,
   rewindStats,
@@ -239,4 +240,14 @@ export const handlers = [
   ),
 
   http.get(API("/rewind/years"), requireAuth(() => HttpResponse.json([2024, 2025, 2026]))),
+
+  http.get(
+    API("/gallery"),
+    requireAuth(() => {
+      const sorted = [...galleryAlbums].sort(
+        (a, b) => +new Date(b.eventDateTime) - +new Date(a.eventDateTime),
+      );
+      return HttpResponse.json(sorted);
+    }),
+  ),
 ];

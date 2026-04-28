@@ -1,6 +1,7 @@
 import type {
   Attendee,
   EventDetailDto,
+  GalleryAlbumDto,
   Guild,
   RewindStats,
   UserInfo,
@@ -288,6 +289,93 @@ export const rewindStats = (year: number): RewindStats => ({
   totalPlusOneGuests: 5,
   embeddingsAvailable: false,
 });
+
+// Past events with photo albums, deterministic per-day so the layout is stable.
+// thumbnailUrl uses picsum.photos with a per-album seed so each card gets a
+// distinct, realistic-looking image.
+function pastDate(daysAgo: number, hour = 19, minute = 0): string {
+  const d = new Date(Date.now() - daysAgo * 86_400_000);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+const galleryThumb = (seed: string) =>
+  `https://picsum.photos/seed/${seed}/640/480`;
+
+export const galleryAlbums: GalleryAlbumDto[] = [
+  {
+    eventId: "g1",
+    eventName: "rooftop dumpling night",
+    eventDateTime: pastDate(6, 19, 30),
+    albumId: "alb-rooftop-dumplings",
+    thumbnailUrl: galleryThumb("peepo-dumplings"),
+    assetCount: 42,
+  },
+  {
+    eventId: "g2",
+    eventName: "you yangs sunrise hike",
+    eventDateTime: pastDate(13, 6, 15),
+    albumId: "alb-you-yangs",
+    thumbnailUrl: galleryThumb("peepo-sunrise"),
+    assetCount: 87,
+  },
+  {
+    eventId: "g3",
+    eventName: "trivia night — third place again",
+    eventDateTime: pastDate(20, 19, 0),
+    albumId: "alb-trivia-third",
+    thumbnailUrl: galleryThumb("peepo-trivia"),
+    assetCount: 18,
+  },
+  {
+    eventId: "g4",
+    eventName: "lena's birthday at the wine bar",
+    eventDateTime: pastDate(28, 20, 0),
+    albumId: "alb-lena-bday",
+    thumbnailUrl: galleryThumb("peepo-wine"),
+    assetCount: 134,
+  },
+  {
+    eventId: "g5",
+    eventName: "winter beach bonfire",
+    eventDateTime: pastDate(41, 17, 30),
+    albumId: "alb-winter-bonfire",
+    thumbnailUrl: galleryThumb("peepo-bonfire"),
+    assetCount: 63,
+  },
+  {
+    eventId: "g6",
+    eventName: "ramen crawl — fitzroy edition",
+    eventDateTime: pastDate(55, 18, 45),
+    albumId: "alb-ramen-crawl",
+    thumbnailUrl: galleryThumb("peepo-ramen"),
+    assetCount: 29,
+  },
+  {
+    eventId: "g7",
+    eventName: "board game marathon at bas's",
+    eventDateTime: pastDate(72, 14, 0),
+    albumId: "alb-boardgames",
+    thumbnailUrl: galleryThumb("peepo-boardgames"),
+    assetCount: 51,
+  },
+  {
+    eventId: "g8",
+    eventName: "queenscliff day trip",
+    eventDateTime: pastDate(96, 10, 30),
+    albumId: "alb-queenscliff",
+    thumbnailUrl: galleryThumb("peepo-queenscliff"),
+    assetCount: 108,
+  },
+  {
+    eventId: "g9",
+    eventName: "moonshade screening — sequel night",
+    eventDateTime: pastDate(118, 19, 30),
+    albumId: "alb-moonshade-2",
+    thumbnailUrl: galleryThumb("peepo-cinema"),
+    assetCount: 7,
+  },
+];
 
 export function findEvent(id: string) {
   return store.events.find((e) => e.id.toString() === id);
