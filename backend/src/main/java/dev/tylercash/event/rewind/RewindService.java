@@ -172,31 +172,56 @@ public class RewindService {
                 })
                 .collect(Collectors.toList());
 
-        // Social pairs (guild-wide only)
-        List<SocialPairDto> topSocialPairs = new ArrayList<>();
+        // Social graph (guild-wide only)
+        SocialGraphDto socialGraph = null;
         if (!personal) {
             String pairsQ = "SELECT a1.snowflake AS u1, a2.snowflake AS u2, COUNT(DISTINCT a1.event_id) AS shared "
                     + "FROM attendance a1 "
                     + "JOIN attendance a2 ON a1.event_id = a2.event_id AND a1.snowflake < a2.snowflake "
                     + "JOIN event e ON a1.event_id = e.id "
                     + "WHERE a1.status = 'ACCEPTED' AND a2.status = 'ACCEPTED'" + yf + gf
-                    + " GROUP BY a1.snowflake, a2.snowflake ORDER BY shared DESC LIMIT 20";
+                    + " GROUP BY a1.snowflake, a2.snowflake ORDER BY shared DESC";
             var pq = em.createNativeQuery(pairsQ);
             if (year != null) pq.setParameter("year", year);
             pq.setParameter("guildId", guildId);
             List<Object[]> pairRows = pq.getResultList();
-            Set<String> pairSnowflakes = new HashSet<>();
+
+            Set<String> graphSnowflakes = new HashSet<>();
             pairRows.forEach(r -> {
-                pairSnowflakes.add((String) r[0]);
-                pairSnowflakes.add((String) r[1]);
+                graphSnowflakes.add((String) r[0]);
+                graphSnowflakes.add((String) r[1]);
             });
-            Map<String, String> pairNames = userCacheService.getDisplayNames(pairSnowflakes);
-            topSocialPairs = pairRows.stream()
-                    .map(r -> new SocialPairDto(
-                            pairNames.getOrDefault((String) r[0], "Unknown"),
-                            pairNames.getOrDefault((String) r[1], "Unknown"),
-                            ((Number) r[2]).intValue()))
+
+            List<GraphEdgeDto> edges = pairRows.stream()
+                    .map(r -> new GraphEdgeDto((String) r[0], (String) r[1], ((Number) r[2]).intValue()))
                     .collect(Collectors.toList());
+
+            List<GraphNodeDto> nodes = new ArrayList<>();
+            if (!graphSnowflakes.isEmpty()) {
+                String nodeCountQ = "SELECT a.snowflake, COUNT(DISTINCT a.event_id) as cnt "
+                        + "FROM attendance a JOIN event e ON a.event_id = e.id "
+                        + "WHERE a.status = 'ACCEPTED' AND a.snowflake IN (:snowflakes)" + yf + gf
+                        + " GROUP BY a.snowflake";
+                var nq = em.createNativeQuery(nodeCountQ);
+                nq.setParameter("snowflakes", graphSnowflakes);
+                if (year != null) nq.setParameter("year", year);
+                nq.setParameter("guildId", guildId);
+                List<Object[]> nodeRows = nq.getResultList();
+
+                Map<String, String> nodeNames = userCacheService.getDisplayNames(graphSnowflakes);
+                nodes = nodeRows.stream()
+                        .map(r -> {
+                            String nodeSnowflake = (String) r[0];
+                            return new GraphNodeDto(
+                                    nodeSnowflake,
+                                    nodeNames.getOrDefault(nodeSnowflake, "Unknown"),
+                                    "/api/avatar/" + nodeSnowflake,
+                                    ((Number) r[1]).intValue());
+                        })
+                        .collect(Collectors.toList());
+            }
+
+            socialGraph = new SocialGraphDto(nodes, edges);
         }
 
         // Events by month
@@ -289,7 +314,7 @@ public class RewindService {
                 topCategories,
                 topAttendees,
                 topOrganizers,
-                topSocialPairs,
+                socialGraph,
                 eventsByMonth,
                 eventsByDayOfWeek,
                 firstEvent,
