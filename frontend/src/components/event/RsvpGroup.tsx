@@ -17,7 +17,7 @@ export function RsvpGroup({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-3 py-1.5 text-[15px] font-extrabold shadow-chunky-sm shrink-0">
+      <span className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink bg-paper px-3 py-1.5 text-[15px] font-extrabold shadow-rest shrink-0">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={image} alt="" aria-hidden width={22} height={22} className="shrink-0" />
@@ -36,7 +36,7 @@ export function RsvpGroup({
               key={i}
               type="button"
               onClick={() => onRemove(p)}
-              className="group inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1 hover:border-rose-400 transition-colors cursor-pointer"
+              className="group inline-flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1 hover:border-rose-400 transition-colors cursor-pointer"
             >
               <span className="relative shrink-0 inline-flex items-center justify-center" style={{ width: 28, height: 28 }}>
                 <Avatar
@@ -55,7 +55,7 @@ export function RsvpGroup({
           ) : (
             <span
               key={i}
-              className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1"
+              className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-paper pl-1 pr-3 py-1"
             >
               <Avatar who={p} size={28} />
               <span className="text-[15px] font-semibold">{p.name}</span>

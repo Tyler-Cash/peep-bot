@@ -9,14 +9,14 @@ export function CatTag({
 }) {
   if (displayState === "creating") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-rest">
         ⏳ <span className="uppercase tracking-[0.08em]">creating</span>
       </span>
     );
   }
   if (!category) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-rest">
         ? <span className="uppercase tracking-[0.08em]">unknown</span>
       </span>
     );
@@ -24,7 +24,7 @@ export function CatTag({
   const m = categoryMeta(category);
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-chunky-sm"
+      className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink px-3.5 py-1 text-[14px] font-bold shadow-rest"
       style={{ background: m.bg, color: m.ink }}
     >
       {m.image ? (

@@ -105,7 +105,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       </div>
 
       <header className="flex items-center gap-3 mb-5">
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] border-[1.5px] border-ink shadow-chunky-sm bg-paper2 text-[18px]">
+        <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip border-[1.5px] border-ink shadow-rest bg-paper2 text-[18px]">
           ⚙️
         </span>
         <div>

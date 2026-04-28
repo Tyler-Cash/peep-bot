@@ -63,7 +63,7 @@ export function LoginHero() {
 
       <header className="relative z-10 flex items-center justify-between px-9 py-[22px]">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] bg-leaf border-[1.5px] border-ink shadow-chunky-sm">
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip bg-leaf border-[1.5px] border-ink shadow-rest">
             <Peepo size={28} />
           </span>
           <div className="flex flex-col leading-none">
@@ -88,7 +88,7 @@ export function LoginHero() {
       <main className="relative z-10 mx-auto max-w-[1200px] grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] items-center gap-16 px-20 pb-[60px] pt-5">
         <div>
           <span
-            className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-white px-3.5 py-1.5 text-[12.5px] font-extrabold shadow-chunky-sm"
+            className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-white px-3.5 py-1.5 text-[12.5px] font-extrabold shadow-rest"
             style={{ transform: "rotate(-1.5deg)" }}
           >
             <span className="w-[7px] h-[7px] rounded-full bg-leafDk" aria-hidden />
@@ -98,7 +98,7 @@ export function LoginHero() {
           <h1 className="mt-7 mb-5 font-extrabold text-ink leading-[0.95] tracking-[-0.04em]">
             <span className="block text-[64px] sm:text-[88px] lowercase">plans,</span>
             <span
-              className="mt-2 inline-block rounded-[14px] border-[1.5px] border-ink bg-leaf px-[14px] pb-1 text-[56px] sm:text-[78px] shadow-chunky-lg lowercase"
+              className="mt-2 inline-block rounded-card border-[1.5px] border-ink bg-leaf px-[14px] pb-1 text-[56px] sm:text-[78px] shadow-hero lowercase"
               style={{ transform: "rotate(-1.2deg)" }}
             >
               sorted.
@@ -113,7 +113,7 @@ export function LoginHero() {
           <button
             onClick={onContinue}
             disabled={loading}
-            className="inline-flex items-center gap-3 rounded-[14px] border-[1.5px] border-ink bg-discord text-white px-[26px] py-4 text-[17px] font-extrabold tracking-[-0.01em] shadow-chunky-md active:shadow-chunky-active active:translate-x-[2px] active:translate-y-[2px] transition-[box-shadow,transform] disabled:opacity-60 disabled:pointer-events-none"
+            className="inline-flex items-center gap-3 rounded-card border-[1.5px] border-ink bg-discord text-white px-[26px] py-4 text-[17px] font-extrabold tracking-[-0.01em] shadow-rest active:shadow-press active:translate-x-[2px] active:translate-y-[2px] transition-[box-shadow,transform] disabled:opacity-60 disabled:pointer-events-none"
           >
             <DiscordGlyph size={22} />
             continue with Discord
@@ -121,7 +121,7 @@ export function LoginHero() {
           </button>
 
           {SHOW_DEV_PANEL && (
-            <div className="mt-5 inline-flex items-center gap-3 rounded-[10px] border border-dashed border-ink/30 bg-white/60 px-4 py-2.5">
+            <div className="mt-5 inline-flex items-center gap-3 rounded-chip border border-dashed border-ink/30 bg-white/60 px-4 py-2.5">
               <span className="text-[11.5px] font-extrabold uppercase tracking-widest text-mute">
                 dev
               </span>
@@ -138,7 +138,7 @@ export function LoginHero() {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="rounded-[12px] border-[1.5px] border-ink bg-white p-4 shadow-chunky"
+                className="rounded-card border-[1.5px] border-ink bg-white p-4 shadow-rest"
               >
                 <div className="text-[26px] leading-none mb-2" aria-hidden>
                   {f.emoji}

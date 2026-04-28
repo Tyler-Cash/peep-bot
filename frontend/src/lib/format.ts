@@ -94,6 +94,18 @@ export function initials(name: string) {
   return (first + last).toUpperCase() || name.slice(0, 2).toUpperCase();
 }
 
+// Deterministic small tilt from a seed string. Same seed always produces the same angle.
+// `range` is the max absolute degree value; output sits in [-range, range] but
+// never lands exactly on 0 so cards never look dead-flat.
+export function seededTilt(seed: string, range = 1.6): number {
+  let h = 0;
+  const s = String(seed);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  const n = ((h % 1000) / 1000) * 2 - 1;
+  const sign = n < 0 ? -1 : 1;
+  return (0.3 + Math.abs(n) * (range - 0.3)) * sign;
+}
+
 export function stringToColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {

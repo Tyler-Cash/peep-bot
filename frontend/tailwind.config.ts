@@ -42,17 +42,32 @@ const config: Config = {
         "cat-game-dot": "#7849D4",
       },
       boxShadow: {
-        "chunky-sm": "2px 2px 0 #0E100D",
+        // Three-role chunky shadow vocabulary — pure ink, no exceptions.
+        rest: "3px 3px 0 #0E100D",
+        hero: "5px 5px 0 #0E100D",
+        press: "1px 1px 0 #0E100D",
+        "press-inset": "inset 2px 2px 0 rgba(0,0,0,0.06)",
+        // Legacy aliases — kept while migrating; map every old name to one of the three roles.
+        "chunky-sm": "3px 3px 0 #0E100D",
         chunky: "3px 3px 0 #0E100D",
-        "chunky-md": "4px 4px 0 #0E100D",
+        "chunky-md": "3px 3px 0 #0E100D",
         "chunky-lg": "5px 5px 0 #0E100D",
-        "chunky-leaf": "2px 2px 0 #4E8A2C",
+        "chunky-leaf": "3px 3px 0 #0E100D",
         "chunky-active": "1px 1px 0 #0E100D",
         "chunky-press": "inset 2px 2px 0 rgba(0,0,0,0.06)",
       },
       borderWidth: { "1.5": "1.5px" },
+      borderRadius: {
+        // Opinionated 3-tier radius. Avatars use rounded-full directly.
+        chip: "10px",
+        card: "14px",
+        hero: "18px",
+      },
       fontFamily: {
         sans: ['"Space Grotesk"', "ui-sans-serif", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        eyebrow: ["14px", { letterSpacing: "0.16em", fontWeight: "800" }],
       },
       keyframes: {
         "pb-bounce": {

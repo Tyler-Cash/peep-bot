@@ -25,7 +25,7 @@ export function Rewind() {
   return (
     <div className="mx-auto max-w-[1100px] px-5 py-6 flex flex-col gap-6">
       {/* hero */}
-      <div className="relative overflow-hidden rounded-[18px] border-[1.5px] border-ink bg-ink text-paper p-7 shadow-chunky-lg">
+      <div className="relative overflow-hidden rounded-hero border-[1.5px] border-ink bg-ink text-paper p-7 shadow-hero">
         <div className="absolute right-[-30px] bottom-[-40px] opacity-90">
           <Peepo size={260} hue="#7BC24F" />
         </div>
@@ -49,8 +49,8 @@ export function Rewind() {
                 onClick={() => setYear(y)}
                 className={
                   y === year
-                    ? "px-3 py-1 rounded-full bg-paper text-ink text-[13px] font-extrabold border-[1.5px] border-paper"
-                    : "px-3 py-1 rounded-full text-paper3 text-[13px] font-extrabold border-[1.5px] border-paper/30 hover:border-paper/70 transition-colors"
+                    ? "px-3 py-1 rounded-chip bg-paper text-ink text-[13px] font-extrabold border-[1.5px] border-paper"
+                    : "px-3 py-1 rounded-chip text-paper3 text-[13px] font-extrabold border-[1.5px] border-paper/30 hover:border-paper/70 transition-colors"
                 }
               >
                 {y}
@@ -210,7 +210,7 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 
 function AttendeeChip({ stat }: { stat: AttendeeStatDto }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-paper pl-0.5 pr-3 py-0.5">
+    <div className="flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-paper pl-0.5 pr-3 py-0.5">
       <Avatar
         who={{ name: stat.displayName, hue: "#7BC24F", avatarUrl: stat.avatarUrl }}
         size={24}
@@ -225,7 +225,7 @@ function CategoryChip({ cat }: { cat: EventCategoryDto }) {
   const m = categoryMeta(cat.name);
   return (
     <div
-      className="flex items-center gap-2 rounded-full border-[1.5px] border-ink px-3 py-1"
+      className="flex items-center gap-2 rounded-chip border-[1.5px] border-ink px-3 py-1"
       style={{ background: m.bg, color: m.ink }}
     >
       <span aria-hidden>{m.emoji}</span>

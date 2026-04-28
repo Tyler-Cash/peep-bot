@@ -6,9 +6,9 @@ export function LoadingOverlay() {
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(247,243,234,0.82)", backdropFilter: "blur(6px)" }}
     >
-      <div className="flex flex-col items-center rounded-[18px] border-[1.5px] border-ink bg-white px-9 py-8 shadow-chunky-lg max-w-[380px] text-center">
+      <div className="flex flex-col items-center rounded-hero border-[1.5px] border-ink bg-white px-9 py-8 shadow-hero max-w-[380px] text-center">
         <div className="relative mb-[28px]">
-          <span className="inline-flex items-center justify-center w-[78px] h-[78px] rounded-full bg-leaf border-[1.5px] border-ink shadow-chunky-md">
+          <span className="inline-flex items-center justify-center w-[78px] h-[78px] rounded-full bg-leaf border-[1.5px] border-ink shadow-rest">
             <Peepo size={56} />
           </span>
           <div className="absolute -bottom-[18px] left-0 right-0 flex justify-center gap-[5px]">

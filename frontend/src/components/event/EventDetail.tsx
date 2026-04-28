@@ -152,12 +152,12 @@ export function EventDetail({ id }: { id: string }) {
         <div className="flex flex-col gap-5">
           {/* hero */}
           <div
-            className="relative rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg overflow-hidden p-6"
+            className="relative rounded-hero border-[1.5px] border-ink shadow-hero overflow-hidden p-6"
             style={{ background: cat.bg, color: cat.ink }}
           >
           {isCancelled && (
               <div className="absolute inset-0 bg-ink/60 flex items-center justify-center z-10">
-              <span className="text-[22px] font-extrabold tracking-[0.08em] text-white bg-ink/80 px-5 py-2 rounded-[10px] border-[1.5px] border-white/30 uppercase">
+              <span className="text-[22px] font-extrabold tracking-[0.08em] text-white bg-ink/80 px-5 py-2 rounded-chip border-[1.5px] border-white/30 uppercase">
                 cancelled
               </span>
               </div>
@@ -183,7 +183,7 @@ export function EventDetail({ id }: { id: string }) {
             </span>
           )}
             <div className="relative flex items-start gap-4">
-              <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-chunky-sm shrink-0">
+              <div className="flex flex-col items-center justify-center rounded-card bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-rest shrink-0">
                 <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
                 <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
                 <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
@@ -199,7 +199,7 @@ export function EventDetail({ id }: { id: string }) {
                   {!isPast && !isCancelled && (
                     <Link
                       href={`/events/${id}/edit`}
-                      className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-current bg-white/80 px-4 py-1.5 text-[16px] font-extrabold tracking-[-0.01em] shadow-chunky-sm hover:bg-white/95 transition-colors"
+                      className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-current bg-white/80 px-4 py-1.5 text-[16px] font-extrabold tracking-[-0.01em] shadow-rest hover:bg-white/95 transition-colors"
                     >
                       <PencilIcon className="w-4 h-4" />
                       edit event
@@ -309,7 +309,7 @@ export function EventDetail({ id }: { id: string }) {
           </div>
 
           <aside className="lg:sticky lg:top-24 h-fit flex flex-col gap-4">
-            <div className="rounded-[14px] border-[1.5px] border-ink bg-ink text-paper p-5 shadow-chunky-md">
+            <div className="rounded-card border-[1.5px] border-ink bg-ink text-paper p-5 shadow-rest">
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-muteDk uppercase">
                 KEEP CHATTING IN
               </span>
@@ -327,7 +327,7 @@ export function EventDetail({ id }: { id: string }) {
             </div>
 
             {me?.admin && !isCancelled && (
-              <div className="rounded-[14px] border-[1.5px] border-ink bg-paper2 p-5 shadow-chunky-md flex flex-col gap-2">
+              <div className="rounded-card border-[1.5px] border-ink bg-paper2 p-5 shadow-rest flex flex-col gap-2">
                 <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
                   admin
                 </span>
@@ -372,7 +372,7 @@ export function EventDetail({ id }: { id: string }) {
           onClick={() => setPendingRemove(null)}
         >
           <div
-            className="bg-white rounded-[16px] border-[1.5px] border-ink shadow-chunky-lg p-6 max-w-sm w-full mx-4"
+            className="bg-white rounded-hero border-[1.5px] border-ink shadow-hero p-6 max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-[26px] font-extrabold tracking-[-0.02em]">Remove attendee?</h2>

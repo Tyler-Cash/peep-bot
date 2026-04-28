@@ -33,7 +33,7 @@ export function GalleryFeed() {
           gallery
         </h1>
         <span
-          className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-leaf px-4 py-1.5 text-[15px] font-extrabold shadow-chunky-sm"
+          className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink bg-leaf px-4 py-1.5 text-[15px] font-extrabold shadow-rest"
           style={{ transform: "rotate(-2deg)" }}
         >
           {count} {count === 1 ? "album" : "albums"} 📷

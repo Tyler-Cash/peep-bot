@@ -35,8 +35,8 @@ export function Chunky({
     <button
       {...rest}
       className={clsx(
-        "inline-flex items-center gap-2 rounded-[10px] border-[1.5px] font-bold tracking-[-0.01em]",
-        "shadow-chunky-md active:shadow-chunky-active active:translate-x-[2px] active:translate-y-[2px] transition-[box-shadow,transform]",
+        "inline-flex items-center gap-2 rounded-chip border-[1.5px] font-bold tracking-[-0.01em]",
+        "shadow-rest active:shadow-press active:translate-x-[2px] active:translate-y-[2px] transition-[box-shadow,transform]",
         "disabled:opacity-60 disabled:pointer-events-none",
         variantClasses[variant],
         sizeClasses[size],

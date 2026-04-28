@@ -12,7 +12,7 @@ export function Slab({
     <Tag
       {...rest}
       className={clsx(
-        "bg-white border-[1.5px] border-ink rounded-[14px] shadow-chunky-md",
+        "bg-white border-[1.5px] border-ink rounded-card shadow-rest",
         className,
       )}
     >
