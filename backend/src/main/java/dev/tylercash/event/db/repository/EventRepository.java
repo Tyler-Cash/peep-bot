@@ -67,7 +67,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
             value = "SELECT * FROM event e "
                     + "WHERE e.server_id = :serverId "
                     + "AND e.immich_album_id IS NOT NULL "
-                    + "AND e.state != 'DELETED' "
                     + "AND EXISTS ("
                     + "  SELECT 1 FROM attendance a "
                     + "  WHERE a.event_id = e.id AND a.snowflake = :snowflake AND a.status = 'ACCEPTED'"
@@ -79,7 +78,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     @Query(
             value = "SELECT * FROM event e "
                     + "WHERE e.immich_album_id = :albumId "
-                    + "AND e.state != 'DELETED' "
                     + "AND EXISTS ("
                     + "  SELECT 1 FROM attendance a "
                     + "  WHERE a.event_id = e.id AND a.snowflake = :snowflake AND a.status = 'ACCEPTED'"

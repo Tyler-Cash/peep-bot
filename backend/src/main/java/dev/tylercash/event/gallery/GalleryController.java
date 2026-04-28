@@ -51,37 +51,46 @@ public class GalleryController {
         guildMembershipService.assertMember(snowflake, guildId);
 
         List<Event> events = eventRepository.findGalleryEventsForUser(guildId, snowflake);
-        return events.stream()
-                .map(event -> {
-                    String albumId = event.getImmichAlbumId();
-                    Optional<ImmichAlbumResponse> albumOpt = immichService.getAlbumDetails(albumId);
-                    // Skip albums that no longer exist in Immich (deleted, server gone, etc.)
-                    // and albums that have zero photos uploaded — nothing to show.
-                    int assetCount =
-                            albumOpt.map(ImmichAlbumResponse::assetCount).orElse(0);
-                    if (albumOpt.isEmpty() || assetCount == 0) {
-                        return null;
-                    }
-                    String thumbnailUrl = "/api/gallery/thumbnail/" + albumId;
-                    // The frontend always opens albums via the BFF "/open" redirect so we
-                    // generate a fresh per-user, time-limited share each cache miss.
-                    String albumUrl = "/api/gallery/" + albumId + "/open";
-                    List<AttendeeDto> attendees = event.getAccepted().stream()
-                            .sorted(Comparator.comparing(a -> a.getInstant() != null ? a.getInstant() : Instant.EPOCH))
-                            .map(AttendeeDto::new)
-                            .toList();
-                    return new GalleryAlbumDto(
-                            event.getId(),
-                            event.getName(),
-                            event.getDateTime(),
-                            albumId,
-                            thumbnailUrl,
-                            albumUrl,
-                            assetCount,
-                            attendees);
-                })
-                .filter(dto -> dto != null)
-                .toList();
+        int immichFailures = 0;
+        List<GalleryAlbumDto> result = new java.util.ArrayList<>();
+        for (Event event : events) {
+            String albumId = event.getImmichAlbumId();
+            Optional<ImmichAlbumResponse> albumOpt = immichService.getAlbumDetails(albumId);
+            if (albumOpt.isEmpty()) {
+                // Distinguishes Immich being unreachable from a legitimately
+                // empty album — the former should surface as 502 below.
+                immichFailures++;
+                continue;
+            }
+            int assetCount = albumOpt.get().assetCount();
+            if (assetCount == 0) {
+                continue;
+            }
+            String thumbnailUrl = "/api/gallery/thumbnail/" + albumId;
+            // The frontend always opens albums via the BFF "/open" redirect so we
+            // generate a fresh per-user, time-limited share each cache miss.
+            String albumUrl = "/api/gallery/" + albumId + "/open";
+            List<AttendeeDto> attendees = event.getAccepted().stream()
+                    .sorted(Comparator.comparing(a -> a.getInstant() != null ? a.getInstant() : Instant.EPOCH))
+                    .map(AttendeeDto::new)
+                    .toList();
+            result.add(new GalleryAlbumDto(
+                    event.getId(),
+                    event.getName(),
+                    event.getDateTime(),
+                    albumId,
+                    thumbnailUrl,
+                    albumUrl,
+                    assetCount,
+                    attendees));
+        }
+        // If the user has qualifying events but every Immich lookup failed,
+        // Immich itself is the problem — surface that as 502 instead of an
+        // empty 200 that looks indistinguishable from "no albums yet".
+        if (!events.isEmpty() && immichFailures == events.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Immich unavailable");
+        }
+        return result;
     }
 
     @Operation(
@@ -95,13 +104,19 @@ public class GalleryController {
         }
 
         Optional<ImmichAlbumResponse> albumOpt = immichService.getAlbumDetails(albumId);
-        if (albumOpt.isEmpty() || albumOpt.get().albumThumbnailAssetId() == null) {
+        if (albumOpt.isEmpty()) {
+            log.warn("Thumbnail 404: getAlbumDetails returned empty for album {}", albumId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No thumbnail available");
+        }
+        if (albumOpt.get().albumThumbnailAssetId() == null) {
+            log.warn("Thumbnail 404: album {} has no albumThumbnailAssetId set in Immich", albumId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No thumbnail available");
         }
         String assetId = albumOpt.get().albumThumbnailAssetId();
 
         StreamingResponseBody body = out -> {
             if (!immichService.streamThumbnail(assetId, out)) {
+                log.warn("Thumbnail 404: streamThumbnail failed for album={} asset={}", albumId, assetId);
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Thumbnail not found");
             }
         };

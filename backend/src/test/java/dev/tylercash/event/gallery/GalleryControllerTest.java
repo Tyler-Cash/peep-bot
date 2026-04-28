@@ -97,13 +97,15 @@ class GalleryControllerTest {
     }
 
     @Test
-    @DisplayName("list: album that no longer exists in Immich is filtered out")
-    void list_albumMissingInImmich_filteredOut() {
+    @DisplayName("list: sole album fails Immich lookup → 502 (entire result was Immich-empty)")
+    void list_albumMissingInImmich_throws502() {
         when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE))
                 .thenReturn(List.of(event(ALBUM_ID, "share", 5)));
         when(immichService.getAlbumDetails(ALBUM_ID)).thenReturn(Optional.empty());
 
-        assertThat(controller.getGallery(GUILD_ID, principal())).isEmpty();
+        assertThatThrownBy(() -> controller.getGallery(GUILD_ID, principal()))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("502");
     }
 
     @Test
@@ -118,6 +120,72 @@ class GalleryControllerTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).albumUrl()).isEqualTo("/api/gallery/" + ALBUM_ID + "/open");
+    }
+
+    @Test
+    @DisplayName("list: every album fails the Immich lookup → 502 Bad Gateway")
+    void list_allImmichLookupsFail_throws502() {
+        // Mirrors the prod symptom: the DB returns N qualifying events, but
+        // immichService.getAlbumDetails returns empty for every one (auth /
+        // network failure inside ImmichService is swallowed into
+        // Optional.empty()). Surfacing this as 502 distinguishes "Immich is
+        // sick" from a legitimate "no albums yet" empty list.
+        List<Event> events =
+                List.of(event("alb-1", "share-1", 2), event("alb-2", "share-2", 4), event("alb-3", null, 1));
+        when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE)).thenReturn(events);
+        when(immichService.getAlbumDetails(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> controller.getGallery(GUILD_ID, principal()))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("502");
+    }
+
+    @Test
+    @DisplayName("list: no qualifying events at all → empty list, not 502")
+    void list_noEventsFromDb_returnsEmpty() {
+        // The 502 path must not fire when the DB itself returns zero events —
+        // that's the legitimate "no albums yet" state.
+        when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE)).thenReturn(List.of());
+        assertThat(controller.getGallery(GUILD_ID, principal())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("list: at least one Immich call succeeds → 200 with surviving albums (no 502)")
+    void list_partialImmichFailure_returnsSurvivingAlbums() {
+        // Partial Immich degradation must not trip the 502: the user still
+        // gets whichever albums loaded.
+        when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE))
+                .thenReturn(List.of(event("alb-1", "s1", 1), event("alb-2", "s2", 1)));
+        when(immichService.getAlbumDetails("alb-1"))
+                .thenReturn(Optional.of(new ImmichAlbumResponse("alb-1", "n", "t", 7)));
+        when(immichService.getAlbumDetails("alb-2")).thenReturn(Optional.empty());
+
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).albumId()).isEqualTo("alb-1");
+    }
+
+    @Test
+    @DisplayName("list: only albums that exist in Immich with photos survive the filter")
+    void list_mixedImmichResults_onlyValidAlbumsRendered() {
+        Event withPhotos = event("alb-1", "share-1", 2);
+        Event missing = event("alb-2", "share-2", 4);
+        Event empty = event("alb-3", null, 1);
+        when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE))
+                .thenReturn(List.of(withPhotos, missing, empty));
+        when(immichService.getAlbumDetails("alb-1"))
+                .thenReturn(Optional.of(new ImmichAlbumResponse("alb-1", "n", "t", 12)));
+        when(immichService.getAlbumDetails("alb-2")).thenReturn(Optional.empty());
+        when(immichService.getAlbumDetails("alb-3"))
+                .thenReturn(Optional.of(new ImmichAlbumResponse("alb-3", "n", "t", 0)));
+
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).albumId()).isEqualTo("alb-1");
+        assertThat(result.get(0).assetCount()).isEqualTo(12);
     }
 
     @Test

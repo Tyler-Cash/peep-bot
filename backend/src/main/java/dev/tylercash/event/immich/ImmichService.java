@@ -145,6 +145,10 @@ public class ImmichService {
                     .uri("/api/assets/{assetId}/thumbnail?size=preview", assetId)
                     .exchange((request, response) -> {
                         if (!response.getStatusCode().is2xxSuccessful()) {
+                            log.warn(
+                                    "Immich thumbnail request returned non-2xx for asset {}: status={}",
+                                    assetId,
+                                    response.getStatusCode().value());
                             return false;
                         }
                         try (InputStream in = response.getBody()) {
