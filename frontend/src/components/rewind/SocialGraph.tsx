@@ -29,6 +29,16 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     const uid = Math.random().toString(36).slice(2, 8);
     const width = container.clientWidth || 600;
     const height = SVG_HEIGHT;
+    let bgColor = "#ffffff";
+    let bgEl: Element | null = container;
+    while (bgEl) {
+      const c = getComputedStyle(bgEl).backgroundColor;
+      if (c !== "rgba(0, 0, 0, 0)" && c !== "transparent") {
+        bgColor = c;
+        break;
+      }
+      bgEl = bgEl.parentElement;
+    }
 
     d3.select(container).selectAll("*").remove();
 
@@ -60,7 +70,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     const linkDistanceScale = d3
       .scaleLinear()
       .domain([minShared, maxShared])
-      .range([200, 80]);
+      .range([200, 90]);
 
     const nameBySnowflake = new Map(
       graph.nodes.map((n) => [n.snowflake, n.displayName]),
@@ -92,6 +102,16 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       displayName2: nameBySnowflake.get(e.user2Snowflake) ?? e.user2Snowflake,
     }));
 
+    const degree = new Map<string, number>(
+      graph.nodes.map((n) => [n.snowflake, 0]),
+    );
+    links.forEach((l) => {
+      const s = l.source as string;
+      const t = l.target as string;
+      degree.set(s, (degree.get(s) ?? 0) + 1);
+      degree.set(t, (degree.get(t) ?? 0) + 1);
+    });
+
     const linkEls = svg
       .append("g")
       .selectAll("line")
@@ -101,6 +121,23 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("stroke", MUTE)
       .attr("stroke-opacity", 0.45)
       .attr("stroke-width", (d) => strokeScale(d.sharedEvents));
+
+    const tooltip = d3
+      .select(container)
+      .append("div")
+      .style("position", "absolute")
+      .style("pointer-events", "none")
+      .style("opacity", "0")
+      .style("background", "#F5F0E8")
+      .style("border", `1.5px solid ${INK}`)
+      .style("border-radius", "6px")
+      .style("box-shadow", `2px 2px 0 ${INK}`)
+      .style("padding", "6px 10px")
+      .style("font-size", "12px")
+      .style("font-weight", "600")
+      .style("color", INK)
+      .style("white-space", "nowrap")
+      .style("z-index", "10");
 
     // Wide transparent lines layered on top for easy hover / tooltip targeting
     const linkHitEls = svg
@@ -115,11 +152,22 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("cursor", "default");
 
     linkHitEls
-      .append("title")
-      .text(
-        (d) =>
-          `${d.displayName1} and ${d.displayName2} attended ${d.sharedEvents} events together`,
-      );
+      .on("mouseover", (_event, d) => {
+        tooltip
+          .text(
+            `${d.displayName1} and ${d.displayName2} · ${d.sharedEvents} events together`,
+          )
+          .style("opacity", "1");
+      })
+      .on("mousemove", (event) => {
+        const [x, y] = d3.pointer(event, container);
+        tooltip
+          .style("left", `${x + 12}px`)
+          .style("top", `${y - 28}px`);
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", "0");
+      });
 
     const nodeEls = svg
       .append("g")
@@ -167,6 +215,10 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("font-size", 11)
       .attr("font-weight", 700)
       .attr("fill", INK)
+      .attr("stroke", bgColor)
+      .attr("stroke-width", 4)
+      .attr("stroke-linejoin", "round")
+      .style("paint-order", "stroke fill")
       .style("user-select", "none")
       .style("pointer-events", "none")
       .text((d) =>
@@ -175,11 +227,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
           : d.displayName,
       );
 
-    nodeEls
-      .append("title")
-      .text((d) => `${d.displayName} · ${d.eventCount} events`);
-
-    const simulation = d3
+const simulation = d3
       .forceSimulation<SimNode>(nodes)
       .force(
         "link",
@@ -188,18 +236,36 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
           .id((d) => d.snowflake)
           .distance((d) => linkDistanceScale(d.sharedEvents)),
       )
-      .force("charge", d3.forceManyBody().strength(-200))
-      // Low strength keeps nodes loosely drifting toward center without forcing a tight cluster
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05))
+      .force("charge", d3.forceManyBody().strength(-550))
+      .force("x", d3.forceX<SimNode>(width / 2).strength(0.04))
+      .force("y", d3.forceY<SimNode>(height / 2).strength(0.04))
       .force(
         "collide",
         d3.forceCollide<SimNode>(
           (d) => (radii.get(d.snowflake) ?? MIN_RADIUS) + 4,
         ),
       )
+      // Push isolated nodes (degree 0) to the outer ring so they don't clump at center
+      .force(
+        "radial",
+        d3
+          .forceRadial<SimNode>(
+            Math.min(width, height) / 2 - 40,
+            width / 2,
+            height / 2,
+          )
+          .strength((d) => (degree.get(d.snowflake) === 0 ? 0.6 : 0)),
+      )
       .stop();
 
     simulation.on("tick", () => {
+      nodes.forEach((d) => {
+        const r = radii.get(d.snowflake) ?? MIN_RADIUS;
+        d.x = Math.max(r + 4, Math.min(width - r - 4, d.x ?? 0));
+        // extra bottom margin for label text
+        d.y = Math.max(r + 4, Math.min(height - r - 22, d.y ?? 0));
+      });
+
       const x1 = (d: SimLink) => (d.source as SimNode).x ?? 0;
       const y1 = (d: SimLink) => (d.source as SimNode).y ?? 0;
       const x2 = (d: SimLink) => (d.target as SimNode).x ?? 0;
@@ -229,6 +295,38 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
 
     nodeEls.call(drag);
 
+    nodeEls
+      .on("mouseover", (_event, d) => {
+        const isAdjacent = (l: SimLink) => {
+          const src = (l.source as SimNode).snowflake;
+          const tgt = (l.target as SimNode).snowflake;
+          return src === d.snowflake || tgt === d.snowflake;
+        };
+        linkEls
+          .attr("stroke", (l) => (isAdjacent(l) ? INK : MUTE))
+          .attr("stroke-opacity", (l) => (isAdjacent(l) ? 0.85 : 0.06))
+          .attr("stroke-width", (l) =>
+            isAdjacent(l)
+              ? strokeScale(l.sharedEvents) * 1.5
+              : strokeScale(l.sharedEvents),
+          );
+        const neighbors = new Set<string>([d.snowflake]);
+        links.forEach((l) => {
+          const src = (l.source as SimNode).snowflake;
+          const tgt = (l.target as SimNode).snowflake;
+          if (src === d.snowflake) neighbors.add(tgt);
+          if (tgt === d.snowflake) neighbors.add(src);
+        });
+        nodeEls.style("opacity", (n) => (neighbors.has(n.snowflake) ? 1 : 0.2));
+      })
+      .on("mouseout", () => {
+        linkEls
+          .attr("stroke", MUTE)
+          .attr("stroke-opacity", 0.45)
+          .attr("stroke-width", (l) => strokeScale(l.sharedEvents));
+        nodeEls.style("opacity", 1);
+      });
+
     // Delay animation + simulation start until the graph scrolls into view
     const observer = new IntersectionObserver(
       (entries) => {
@@ -256,7 +354,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     <div
       ref={containerRef}
       className="w-full mt-3"
-      style={{ height: SVG_HEIGHT }}
+      style={{ height: SVG_HEIGHT, position: "relative" }}
     />
   );
 }
