@@ -239,10 +239,19 @@ export const rewindStats = (year: number): RewindStats => ({
     { displayName: "Otis", eventCount: 4, avatarUrl: null },
     { displayName: "Bas", eventCount: 3, avatarUrl: null },
   ],
-  topSocialPairs: [
-    { user1: "Otis", user2: "Mira", sharedEvents: 11 },
-    { user1: "Bas", user2: "Nim", sharedEvents: 9 },
-  ],
+  socialGraph: {
+    nodes: [
+      { snowflake: "s1", displayName: "Otis", avatarUrl: null, eventCount: 12 },
+      { snowflake: "s2", displayName: "Mira", avatarUrl: null, eventCount: 11 },
+      { snowflake: "s3", displayName: "Bas", avatarUrl: null, eventCount: 8 },
+      { snowflake: "s4", displayName: "Nim", avatarUrl: null, eventCount: 7 },
+    ],
+    edges: [
+      { user1Snowflake: "s1", user2Snowflake: "s2", sharedEvents: 11 },
+      { user1Snowflake: "s3", user2Snowflake: "s4", sharedEvents: 9 },
+      { user1Snowflake: "s1", user2Snowflake: "s3", sharedEvents: 6 },
+    ],
+  },
   eventsByMonth: {
     "2026-01": 1, "2026-02": 2, "2026-03": 3, "2026-04": 2,
     "2026-05": 1, "2026-06": 2, "2026-07": 1, "2026-08": 2,

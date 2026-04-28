@@ -103,9 +103,21 @@ export type EventSummaryDto = {
   dateTime: string;
 };
 
-export type SocialPairDto = {
-  user1: string;
-  user2: string;
+export type SocialGraphDto = {
+  nodes: GraphNodeDto[];
+  edges: GraphEdgeDto[];
+};
+
+export type GraphNodeDto = {
+  snowflake: string;
+  displayName: string;
+  avatarUrl: string | null;
+  eventCount: number;
+};
+
+export type GraphEdgeDto = {
+  user1Snowflake: string;
+  user2Snowflake: string;
   sharedEvents: number;
 };
 
@@ -118,7 +130,7 @@ export type RewindStats = {
   topCategories: EventCategoryDto[];
   topAttendees: AttendeeStatDto[];
   topOrganizers: AttendeeStatDto[];
-  topSocialPairs: SocialPairDto[];
+  socialGraph: SocialGraphDto | null;
   eventsByMonth: Record<string, number>;
   eventsByDayOfWeek: Record<string, number>;
   firstEvent: EventSummaryDto | null;
