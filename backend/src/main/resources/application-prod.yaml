@@ -1,6 +1,7 @@
 dev.tylercash:
   cors:
-    allowed-origins: https://event.tylercash.dev
+    allowed-origins:
+      - https://event.tylercash.dev
   frontend:
     hostname: event.tylercash.dev
   immich:
@@ -8,10 +9,3 @@ dev.tylercash:
     album-name-prefix: ""
   rewind:
     normalisation-enabled: true
-
-spring:
-  ai:
-    ollama:
-      base-url: http://ollama:11434
-      chat:
-        enabled: true

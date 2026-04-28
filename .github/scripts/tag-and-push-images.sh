@@ -6,7 +6,6 @@ OWNER_LOWERCASE="${GITHUB_REPOSITORY_OWNER,,}"
 
 IMAGES=(
   "ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend"
-  "ghcr.io/${OWNER_LOWERCASE}/peep-bot-frontend"
 )
 
 for IMAGE in "${IMAGES[@]}"; do

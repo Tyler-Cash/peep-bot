@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 @Profile("local")
 @ConfigurationProperties(prefix = "dev.tylercash.dev-user")
 public class DevUserProperties {
-    private boolean enabled = true;
+    private boolean enabled = false;
     private String username = "dev-user";
     private String discordId = "123456789";
     private boolean forceAdmin = false;

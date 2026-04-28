@@ -5,6 +5,8 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,10 +17,21 @@ public class DiscordAuthService {
     private final Optional<DevUserProperties> devUserProperties;
 
     public Member getMember(long guildId, long userId) {
-        return jda.getGuildById(guildId).retrieveMemberById(userId).complete();
+        try {
+            return jda.getGuildById(guildId).retrieveMemberById(userId).complete();
+        } catch (ErrorResponseException e) {
+            if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER
+                    || e.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     public boolean isMember(long guildId, long userId) {
+        if (devUserProperties.isPresent() && devUserProperties.get().isForceAdmin()) {
+            return true;
+        }
         return getMember(guildId, userId) != null;
     }
 

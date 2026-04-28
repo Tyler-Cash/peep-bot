@@ -1,9 +1,10 @@
 package dev.tylercash.event.event;
 
-import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.DiscordUtil;
+import dev.tylercash.event.discord.GuildMembershipService;
+import dev.tylercash.event.discord.model.DiscordUserCache;
 import dev.tylercash.event.event.model.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,9 +38,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class EventController {
     private EventService eventService;
     private DiscordService discordService;
-    private DiscordConfiguration discordConfiguration;
     private AttendanceService attendanceService;
     private DiscordUserCacheService discordUserCacheService;
+    private GuildMembershipService guildMembershipService;
 
     @Operation(summary = "Create a new event", description = "Creates an event and its associated Discord channel")
     @ApiResponses({
@@ -51,20 +52,28 @@ public class EventController {
     public Map<String, String> createEvent(
             @RequestBody @Valid EventDto event, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
-        log.info("User {} creating event '{}'", discordId, event.getName());
-        Member member =
-                discordService.getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+        long guildId = event.getGuildId();
+        log.info("User {} creating event '{}' in guild {}", discordId, event.getName(), guildId);
+        guildMembershipService.assertMember(discordId, guildId);
+        Member member = discordService.getMemberFromServer(guildId, Long.parseLong(discordId));
         String displayName = DiscordUtil.getUserDisplayName(member);
 
         Event newEvent = new Event(event, discordId);
-        discordUserCacheService.upsertUser(discordId, displayName, null);
+        newEvent.setId(UUID.randomUUID());
+        newEvent.setServerId(guildId);
+        discordUserCacheService.upsertUser(
+                discordId, displayName, member.getUser().getName(), null, guildId);
         newEvent.getAccepted().add(Attendee.createDiscordAttendee(discordId, displayName));
 
         eventService.createEvent(newEvent);
 
         attendanceService.recordAttendance(newEvent.getId(), discordId, null, AttendanceStatus.ACCEPTED, null);
 
-        return Map.of("message", "Created event for " + event.getName());
+        return Map.of(
+                "message",
+                "Created event for " + event.getName(),
+                "id",
+                newEvent.getId().toString());
     }
 
     @Operation(
@@ -79,9 +88,10 @@ public class EventController {
     @PatchMapping
     public Map<String, String> updateEvent(
             @RequestBody @Valid EventUpdateDto eventDto, @AuthenticationPrincipal OAuth2User principal) {
-        String adminDiscordIdForLog = principal.getAttribute("id");
-        log.info("User {} updating event id={}", adminDiscordIdForLog, eventDto.getId());
+        String discordId = principal.getAttribute("id");
+        log.info("User {} updating event id={}", discordId, eventDto.getId());
         Event event = eventService.getEvent(eventDto.getId());
+        guildMembershipService.assertMember(discordId, event.getServerId());
         event.setCapacity(eventDto.getCapacity());
         if (Objects.nonNull(eventDto.getDateTime())) {
             event.setDateTime(eventDto.getDateTime());
@@ -93,10 +103,15 @@ public class EventController {
         if (Objects.nonNull(eventDto.getName()) && !eventDto.getName().isBlank()) {
             event.setName(eventDto.getName());
         }
-        String adminDiscordId = principal.getAttribute("id");
+        if (Objects.nonNull(eventDto.getLocation())) {
+            event.setLocation(eventDto.getLocation());
+        }
+        if (Objects.nonNull(eventDto.getLocationPlaceId())) {
+            event.setLocationPlaceId(eventDto.getLocationPlaceId());
+        }
         eventDto.getAccepted()
                 .forEach(attendeeName -> attendanceService.recordAttendance(
-                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, adminDiscordId));
+                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
         eventService.populateAttendance(event);
         eventService.updateEvent(event);
         return Map.of("message", "Updated event for " + event.getName());
@@ -107,14 +122,29 @@ public class EventController {
             description = "Returns paginated list of non-archived, non-deleted events")
     @ApiResponse(responseCode = "200", description = "Events retrieved successfully")
     @GetMapping
-    public Page<EventDto> getEvents(@PageableDefault Pageable pageable) {
-        Page<Event> events = eventService.getActiveEvents(pageable);
+    public Page<EventDto> getEvents(
+            @RequestParam long guildId,
+            @PageableDefault Pageable pageable,
+            @AuthenticationPrincipal OAuth2User principal) {
+        String snowflake = principal.getAttribute("id");
+        guildMembershipService.assertMember(snowflake, guildId);
+        Page<Event> events = eventService.getActiveEvents(pageable, guildId);
         Set<String> creatorSnowflakes = events.stream()
                 .map(Event::getCreator)
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
-        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(creatorSnowflakes);
-        return events.map(event -> new EventDto(event, nameMap.getOrDefault(event.getCreator(), event.getCreator())));
+        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(creatorSnowflakes);
+        Map<UUID, String> categoryMap = eventService.getEventCategories(
+                events.stream().map(Event::getId).collect(Collectors.toSet()));
+
+        return events.map(event -> {
+            DiscordUserCache user = userMap.get(event.getCreator());
+            return new EventDto(
+                    event,
+                    user != null ? user.getDisplayName() : event.getCreator(),
+                    user != null ? user.getUsername() : null,
+                    categoryMap.getOrDefault(event.getId(), "unknown"));
+        });
     }
 
     @Operation(summary = "Get event details", description = "Returns full event details including attendee lists")
@@ -123,8 +153,10 @@ public class EventController {
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @GetMapping(path = "/{id}")
-    public EventDetailDto getEvent(@PathVariable UUID id) {
+    public EventDetailDto getEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
+        String snowflake = principal.getAttribute("id");
         Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(snowflake, event.getServerId());
         boolean completed = eventService.isCompleted(event);
         AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
 
@@ -140,8 +172,59 @@ public class EventController {
             allSnowflakes.add(event.getCreator());
         }
 
-        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
-        return new EventDetailDto(event, completed, summary, nameMap);
+        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(allSnowflakes);
+        String category = eventService.getEventCategory(id);
+        return new EventDetailDto(event, completed, summary, userMap, category);
+    }
+
+    @Operation(summary = "RSVP to an event", description = "Record or update your attendance status for an event")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "RSVP recorded"),
+        @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PostMapping(path = "/{id}/rsvp")
+    public EventDetailDto rsvpEvent(
+            @PathVariable UUID id, @RequestBody RsvpRequest request, @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        log.info("User {} RSVPing to event id={} with status={}", discordId, id, request.status());
+        Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
+
+        AttendanceStatus attendanceStatus =
+                switch (request.status()) {
+                    case "going" -> AttendanceStatus.ACCEPTED;
+                    case "maybe" -> AttendanceStatus.MAYBE;
+                    case "declined" -> AttendanceStatus.DECLINED;
+                    default -> AttendanceStatus.REMOVED;
+                };
+
+        AttendanceStatus resolved = attendanceService.flipAttendance(event.getId(), discordId, null, attendanceStatus);
+        try {
+            if (resolved == AttendanceStatus.REMOVED) {
+                discordService.removeAllEventRoles(event, discordId);
+            } else {
+                discordService.assignEventRole(event, discordId, resolved);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to update Discord role for user {} on event '{}'", discordId, event.getName(), e);
+        }
+        eventService.populateAttendance(event);
+        discordService.updateEventMessage(event);
+
+        boolean completed = eventService.isCompleted(event);
+        AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
+        Set<String> allSnowflakes = Stream.of(
+                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                .flatMap(s -> s)
+                .map(AttendanceRecord::getSnowflake)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+        if (event.getCreator() != null && !event.getCreator().isBlank()) {
+            allSnowflakes.add(event.getCreator());
+        }
+        Map<String, DiscordUserCache> userMap = discordUserCacheService.getUsers(allSnowflakes);
+        String category = eventService.getEventCategory(id);
+        return new EventDetailDto(event, completed, summary, userMap, category);
     }
 
     @Operation(summary = "Cancel an event", description = "Admin-only: cancels an event and archives it")
@@ -155,7 +238,8 @@ public class EventController {
     public Map<String, String> cancelEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
         log.info("User {} cancelling event id={}", discordId, id);
-        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
+        Event event = eventService.getEvent(id);
+        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.cancelEvent(id);
@@ -175,7 +259,8 @@ public class EventController {
             @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
         log.info("User {} creating private channel for event id={}", discordId, id);
-        if (!discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId))) {
+        Event event = eventService.getEvent(id);
+        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.createPrivateChannel(id);
@@ -199,8 +284,8 @@ public class EventController {
             @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
         log.info("User {} removing attendee from event id={} snowflake={} name={}", discordId, id, snowflake, name);
-        boolean isAdmin =
-                discordService.isUserAdminOfServer(discordConfiguration.getGuildId(), Long.parseLong(discordId));
+        Event event = eventService.getEvent(id);
+        boolean isAdmin = discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId));
 
         if (!isAdmin) {
             if (snowflake != null && !snowflake.isBlank()) {
@@ -214,5 +299,25 @@ public class EventController {
 
         eventService.removeAttendee(id, snowflake, name);
         return Map.of("message", "Removed attendee");
+    }
+
+    @Operation(
+            summary = "Re-categorize an event",
+            description = "Admin-only: triggers a fresh categorization attempt for this event")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Recategorization triggered"),
+        @ApiResponse(responseCode = "403", description = "Admin role required"),
+        @ApiResponse(responseCode = "404", description = "Event not found")
+    })
+    @PostMapping(path = "/{id}/recategorize")
+    public Map<String, String> recategorizeEvent(@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) {
+        String discordId = principal.getAttribute("id");
+        log.info("User {} triggering recategorization for event id={}", discordId, id);
+        Event event = eventService.getEvent(id);
+        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        eventService.recategorizeEvent(id);
+        return Map.of("message", "Recategorization triggered");
     }
 }

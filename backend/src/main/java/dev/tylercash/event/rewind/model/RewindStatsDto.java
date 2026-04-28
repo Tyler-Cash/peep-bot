@@ -11,7 +11,7 @@ public record RewindStatsDto(
         List<EventCategoryDto> topCategories,
         List<AttendeeStatDto> topAttendees,
         List<AttendeeStatDto> topOrganizers,
-        List<SocialPairDto> topSocialPairs,
+        SocialGraphDto socialGraph,
         Map<String, Integer> eventsByMonth,
         Map<String, Integer> eventsByDayOfWeek,
         EventSummaryDto firstEvent,

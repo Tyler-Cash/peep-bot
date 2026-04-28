@@ -26,9 +26,15 @@ class EventLifecyclePollerTest {
     }
 
     @Test
-    @DisplayName("INIT_ROLES state maps to INIT_COMPLETE signal")
+    @DisplayName("INIT_ROLES state maps to CLASSIFY signal")
     void initRoles() {
-        assertEquals(List.of(EventStateMachineEvent.INIT_COMPLETE), poller.signalsForState(EventState.INIT_ROLES));
+        assertEquals(List.of(EventStateMachineEvent.CLASSIFY), poller.signalsForState(EventState.INIT_ROLES));
+    }
+
+    @Test
+    @DisplayName("CLASSIFY state maps to INIT_COMPLETE signal")
+    void classify() {
+        assertEquals(List.of(EventStateMachineEvent.INIT_COMPLETE), poller.signalsForState(EventState.CLASSIFY));
     }
 
     @Test

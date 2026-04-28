@@ -3,6 +3,7 @@ package dev.tylercash.event.discord.listener;
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,6 +42,7 @@ class ModalInteractionListenerTest {
     private static final long CHANNEL_ID = 777L;
     private static final String USER_ID = "42";
     private static final String USER_NICKNAME = "tester";
+    private static final String USER_USERNAME = "tester_user";
 
     private Clock clock;
     private EventRepository eventRepository;
@@ -87,6 +89,7 @@ class ModalInteractionListenerTest {
         User user = mock(User.class);
         when(user.getId()).thenReturn(USER_ID);
         when(user.getEffectiveName()).thenReturn(USER_NICKNAME);
+        when(user.getName()).thenReturn(USER_USERNAME);
         when(evt.getUser()).thenReturn(user);
 
         Member member = mock(Member.class);
@@ -121,7 +124,8 @@ class ModalInteractionListenerTest {
 
         listener.onModalInteraction(evt);
 
-        verify(discordUserCacheService).upsertUser(USER_ID, USER_NICKNAME, null);
+        verify(discordUserCacheService)
+                .upsertUser(eq(USER_ID), eq(USER_NICKNAME), eq(USER_USERNAME), eq(null), anyLong());
         verify(attendanceService)
                 .recordAttendance(event.getId(), null, "[+1] Guest Name", AttendanceStatus.ACCEPTED, USER_ID);
         verify(eventService).populateAttendance(event);

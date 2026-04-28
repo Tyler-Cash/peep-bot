@@ -28,6 +28,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         String snowflake = Objects.requireNonNull(oAuth2User.getAttribute("id"));
         String username = oAuth2User.getAttribute("username");
+        String globalName = oAuth2User.getAttribute("global_name");
         log.info("Authenticated user {}", username);
 
         if (!discordService.isUserMemberOfServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake))) {
@@ -38,7 +39,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String avatarHash = oAuth2User.getAttribute("avatar");
         String avatarUrl = AvatarDownloadService.discordAvatarUrl(snowflake, avatarHash);
-        discordUserCacheService.upsertUser(snowflake, username != null ? username : snowflake, avatarUrl);
+        discordUserCacheService.upsertUser(
+                snowflake,
+                globalName != null ? globalName : (username != null ? username : snowflake),
+                username != null ? username : snowflake,
+                avatarUrl,
+                discordConfiguration.getGuildId());
 
         return oAuth2User;
     }

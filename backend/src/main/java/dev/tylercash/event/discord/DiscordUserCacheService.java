@@ -18,9 +18,11 @@ import net.dv8tion.jda.api.entities.Member;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@Transactional
 public class DiscordUserCacheService {
     private static final int REFRESH_BATCH_SIZE = 10;
     private static final long STALE_MINUTES = 30;
@@ -47,7 +49,7 @@ public class DiscordUserCacheService {
         this.avatarDownloadService = avatarDownloadService;
     }
 
-    public void upsertUser(String snowflake, String displayName, String avatarUrl) {
+    public void upsertUser(String snowflake, String displayName, String username, String avatarUrl, long guildId) {
         byte[] avatarBytes = null;
         String avatarContentType = null;
         if (avatarUrl != null && !avatarUrl.isBlank()) {
@@ -57,8 +59,40 @@ public class DiscordUserCacheService {
                 avatarContentType = downloaded.get().contentType();
             }
         }
-        cacheRepository.save(
-                new DiscordUserCache(snowflake, displayName, Instant.now(), avatarBytes, avatarContentType));
+
+        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
+        DiscordUserCache user = existing.orElse(new DiscordUserCache(
+                snowflake, displayName, username, Instant.now(), avatarBytes, avatarContentType, new HashSet<>()));
+
+        user.setDisplayName(displayName);
+        user.setUsername(username);
+        user.setUpdatedAt(Instant.now());
+        user.setAvatarBytes(avatarBytes);
+        user.setAvatarContentType(avatarContentType);
+        user.getGuildIds().add(guildId);
+
+        cacheRepository.save(user);
+    }
+
+    public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
+        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
+        if (existing.isEmpty()) {
+            DiscordUserCache newUser =
+                    new DiscordUserCache(snowflake, displayName, username, Instant.now(), null, null, new HashSet<>());
+            newUser.getGuildIds().add(guildId);
+            cacheRepository.save(newUser);
+        } else {
+            DiscordUserCache user = existing.get();
+            boolean changed = user.getGuildIds().add(guildId);
+            if (username != null && !username.equals(user.getUsername())) {
+                user.setUsername(username);
+                changed = true;
+            }
+            if (changed) {
+                user.setUpdatedAt(Instant.now());
+                cacheRepository.save(user);
+            }
+        }
     }
 
     public String getDisplayName(String snowflake) {
@@ -82,6 +116,19 @@ public class DiscordUserCacheService {
         }
         return cacheRepository.findAllBySnowflakeIn(unique).stream()
                 .collect(Collectors.toMap(DiscordUserCache::getSnowflake, DiscordUserCache::getDisplayName));
+    }
+
+    public Map<String, DiscordUserCache> getUsers(Collection<String> snowflakes) {
+        if (snowflakes == null || snowflakes.isEmpty()) {
+            return Map.of();
+        }
+        Set<String> unique =
+                snowflakes.stream().filter(s -> s != null && !s.isBlank()).collect(Collectors.toSet());
+        if (unique.isEmpty()) {
+            return Map.of();
+        }
+        return cacheRepository.findAllBySnowflakeIn(unique).stream()
+                .collect(Collectors.toMap(DiscordUserCache::getSnowflake, Function.identity()));
     }
 
     @Observed(name = "discord.refresh-user-cache")
@@ -112,8 +159,9 @@ public class DiscordUserCacheService {
                         .getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake));
                 if (member != null) {
                     String displayName = DiscordUtil.getUserDisplayName(member);
+                    String username = member.getUser().getName();
                     String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                    upsertUser(snowflake, displayName, avatarUrl);
+                    upsertUser(snowflake, displayName, username, avatarUrl, discordConfiguration.getGuildId());
                 }
             } catch (Exception e) {
                 log.debug("Failed to refresh cache for snowflake {}: {}", snowflake, e.getMessage());

@@ -4,6 +4,8 @@ import dev.tylercash.event.db.repository.EventEmbeddingRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.rewind.model.EventEmbedding;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +26,9 @@ public class EmbeddingService {
     private final RewindConfiguration config;
     private final EventRepository eventRepository;
     private final EventEmbeddingRepository embeddingRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public EmbeddingService(
             @Autowired(required = false) EmbeddingModel embeddingModel,
@@ -48,19 +53,58 @@ public class EmbeddingService {
         return embeddingModel != null && config.isEnabled();
     }
 
+    public String classify(Event event) {
+        return normalisationService.classify(event);
+    }
+
     String buildEmbeddingText(Event event) {
-        return normalisationService.normalise(event.getName());
+        return event.getName();
     }
 
     @Transactional
-    public void embedEvent(UUID eventId, String nameText) {
+    public void embedEvent(Event event) {
         if (!isEmbeddingsAvailable()) return;
         try {
+            String nameText = buildEmbeddingText(event);
             float[] raw = embeddingModel.embed(nameText);
-            embeddingRepository.save(new EventEmbedding(eventId, nameText, toVectorString(raw), OffsetDateTime.now()));
+            embeddingRepository.save(
+                    new EventEmbedding(event.getId(), nameText, toVectorString(raw), OffsetDateTime.now()));
+
+            String category = normalisationService.classify(event);
+            saveCategory(event.getId(), category);
         } catch (Exception e) {
             log.error("Failed to embed event: {}", e.getMessage());
         }
+    }
+
+    @Transactional
+    public void classifyEvent(Event event) {
+        if (isEmbeddingsAvailable()) {
+            embedEvent(event);
+        } else if (normalisationService.isAvailable()) {
+            try {
+                String category = normalisationService.classify(event);
+                saveCategory(event.getId(), category);
+            } catch (Exception e) {
+                log.warn("Classification failed for event '{}': {}", event.getName(), e.getMessage());
+            }
+        }
+    }
+
+    private void saveCategory(UUID eventId, String category) {
+        entityManager
+                .createNativeQuery(
+                        """
+            INSERT INTO event_category (event_id, category_label, category_centroid_event_id, assigned_at)
+            VALUES (CAST(:eventId AS UUID), :label, CAST(:centroidId AS UUID), NOW())
+            ON CONFLICT (event_id) DO UPDATE SET
+                category_label = EXCLUDED.category_label,
+                assigned_at = EXCLUDED.assigned_at
+            """)
+                .setParameter("eventId", eventId.toString())
+                .setParameter("label", category)
+                .setParameter("centroidId", eventId.toString())
+                .executeUpdate();
     }
 
     @Scheduled(fixedDelayString = "PT5M")
@@ -74,7 +118,7 @@ public class EmbeddingService {
 
         log.info("Backfilling embeddings for {} events", missingIds.size());
         for (UUID id : missingIds) {
-            eventRepository.findById(id).ifPresent(event -> embedEvent(event.getId(), buildEmbeddingText(event)));
+            eventRepository.findById(id).ifPresent(this::embedEvent);
         }
     }
 

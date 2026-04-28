@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
-import { Slab } from "@/components/ui/Slab";
+import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
-import { Peepo } from "@/components/Peepo";
-import { dateStamp, timeLabel } from "@/lib/format";
+import { Stepper } from "@/components/ui/Stepper";
+import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
+import { dateToLocalInput } from "@/lib/format";
 import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
 export function CreateEventForm() {
@@ -15,134 +16,119 @@ export function CreateEventForm() {
   const recentVenues = useRecentLocations();
   const [name, setName] = useState("");
   const [date, setDate] = useState(() =>
-    new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().slice(0, 16),
+    dateToLocalInput(new Date(Date.now() + 1000 * 60 * 60 * 24 * 3)),
   );
   const [location, setLocation] = useState("");
+  const [locationPlaceId, setLocationPlaceId] = useState("");
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const locationBias =
+    guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
+      ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
+      : undefined;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guild) return;
     setSubmitting(true);
+    setError(null);
     try {
       const created = await createEvent(guild.id, {
         name,
         description: info,
         ...(location.trim() ? { location } : {}),
+        ...(locationPlaceId ? { locationPlaceId } : {}),
         capacity,
         dateTime: new Date(date).toISOString(),
       });
       router.push(`/events/${created.id}`);
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return;
+      if (e instanceof BackendUnreachable) {
+        setError("can't reach the server — check your connection and try again");
+      } else if (e instanceof ApiError) {
+        setError(e.message);
+      } else {
+        setError("something went wrong posting this event");
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const stamp = dateStamp(new Date(date).toISOString());
-
   return (
-    <div className="mx-auto max-w-[820px] px-5 py-6">
-      <header className="flex items-center gap-3 mb-5">
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] bg-leaf border-[1.5px] border-ink shadow-chunky-sm">
-          <Peepo size={24} />
-        </span>
-        <div>
-          <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
-            NEW EVENT
-          </span>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
-            post something to do
-          </h1>
-        </div>
-      </header>
+    <div className="mx-auto max-w-[960px] px-4 sm:px-5 py-6 sm:py-8">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-4 sm:p-6"
+      >
+        <h2 className="text-[28px] font-extrabold tracking-[-0.02em] leading-none lowercase mb-1">
+          new event
+        </h2>
+        <p className="text-[14.5px] text-mute leading-[1.45] -mt-2 mb-1">
+          plan something cool with friends in <b className="font-extrabold">#{guild?.channel ?? "outings"}</b>.
+        </p>
 
-      {/* live preview — neutral while the backend figures out the category */}
-      <div className="relative rounded-[14px] border-[1.5px] border-ink shadow-chunky-md overflow-hidden p-4 flex items-start gap-3 bg-paper3 text-ink">
-        <span
-          className="absolute opacity-[0.16] select-none pointer-events-none"
-          style={{ right: -12, bottom: -36, transform: "rotate(-12deg)" }}
-          aria-hidden
-        >
-          <Peepo size={180} />
-        </span>
-        <div className="flex flex-col items-center justify-center rounded-[10px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[72px] shrink-0 shadow-chunky-sm">
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-          <span className="text-[26px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-          <span className="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
-            {stamp.weekday}
-          </span>
-        </div>
-        <div className="relative flex-1 min-w-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-paper px-2.5 py-0.5 text-[11px] font-extrabold shadow-chunky-sm text-mute uppercase tracking-[0.08em]">
-            category · auto-sorted
-          </span>
-          <h2 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.03em] leading-[1.05]">
-            {name || "your event title"}
-          </h2>
-          <p className="mt-1 text-[13.5px] font-semibold">
-            {timeLabel(new Date(date).toISOString())} · 📍 {location || "venue"}
-          </p>
-        </div>
-      </div>
+        <Field label="event name">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="trivia at the dog & duck"
+            required
+            className={inputCls}
+          />
+        </Field>
 
-      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4">
-        <Slab className="p-5 flex flex-col gap-4">
-          <Field label="name">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="what's the plan?"
-              required
-              className={inputCls}
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="date">
+            <DatePicker value={date} onChange={setDate} />
           </Field>
+          <Field label="time">
+            <TimePicker value={date} onChange={setDate} />
+          </Field>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="date & time">
-              <input
-                type="datetime-local"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className={inputCls}
-              />
-            </Field>
-            <Field label="capacity (0 = unlimited)">
-              <input
-                type="number"
-                min={0}
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-                className={inputCls}
-              />
-            </Field>
-          </div>
-
-          <Field label="venue">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-3">
+          <Field label="where">
             <LocationAutocomplete
               value={location}
-              onChange={setLocation}
-              placeholder="where?"
+              onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
+              onPick={(placeId) => setLocationPlaceId(placeId)}
+              placeholder="search venues…"
               recent={recentVenues}
+              locationBias={locationBias}
             />
           </Field>
-
-          <Field label="info">
-            <textarea
-              value={info}
-              onChange={(e) => setInfo(e.target.value)}
-              rows={4}
-              placeholder="what do people need to know?"
-              className={inputCls + " resize-y"}
-            />
+          <Field label="cap">
+            <Stepper value={capacity} onChange={setCapacity} />
           </Field>
-        </Slab>
+        </div>
 
-        <div className="flex justify-end">
-          <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
-            {submitting ? "posting…" : "post to #" + (guild?.channel ?? "outings")}
+        <Field label="description">
+          <textarea
+            value={info}
+            onChange={(e) => setInfo(e.target.value)}
+            rows={6}
+            placeholder="a few short lines — what to expect, what to bring, who's coming, when to show up"
+            className={areaCls}
+          />
+        </Field>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
+          <Chunky type="submit" variant="leaf" disabled={submitting}>
+            {submitting ? "posting…" : "post event"}
           </Chunky>
         </div>
       </form>
@@ -151,12 +137,21 @@ export function CreateEventForm() {
 }
 
 const inputCls =
-  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper px-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
+  "w-full h-12 rounded-chip border-[1.5px] border-ink bg-white px-[14px] text-[16px] font-semibold text-ink placeholder:font-medium placeholder:text-mute shadow-rest focus:outline-none";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+const areaCls =
+  "w-full rounded-chip border-[1.5px] border-ink bg-white px-[14px] py-3 text-[16px] font-medium text-ink placeholder:text-mute leading-[1.45] min-h-[140px] shadow-rest focus:outline-none resize-y";
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
+      <span className="text-[12px] font-extrabold tracking-[0.16em] text-mute uppercase">
         {label}
       </span>
       {children}

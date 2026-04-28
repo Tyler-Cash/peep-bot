@@ -10,19 +10,22 @@ export function ReactionRow({
   active,
   onPick,
   compact,
+  tilt = 0,
 }: {
   counts: Counts;
   active?: RsvpStatus | null;
   onPick?: (status: RsvpStatus) => void;
   compact?: boolean;
+  tilt?: number;
 }) {
-  const items: Array<{ status: RsvpStatus; emoji: string; n: number }> = [
-    { status: "going", emoji: "✅", n: counts.going },
-    { status: "maybe", emoji: "🤔", n: counts.maybe },
-    { status: "declined", emoji: "❌", n: counts.declined },
+  const items: Array<{ status: RsvpStatus; image: string; alt: string; n: number }> = [
+    { status: "going", image: "/peepos/peepo-going.png", alt: "going", n: counts.going },
+    { status: "maybe", image: "/peepos/peepo-maybe.png", alt: "maybe", n: counts.maybe },
+    { status: "declined", image: "/peepos/peepo-no.png", alt: "can't make it", n: counts.declined },
   ];
+  const imgSize = compact ? 18 : 22;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5" style={tilt ? { transform: `rotate(${tilt}deg)`, transformOrigin: "center" } : undefined}>
       {items.map((it) => (
         <button
           key={it.status}
@@ -32,14 +35,15 @@ export function ReactionRow({
             onPick?.(it.status);
           }}
           className={clsx(
-            "inline-flex items-center gap-1 rounded-full border-[1.5px] border-ink font-bold transition-colors",
-            compact ? "px-2 py-0.5 text-[12px]" : "px-2.5 py-1 text-[13px]",
+            "inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink font-bold transition-colors",
+            compact ? "px-2.5 py-1 text-[14px]" : "px-3.5 py-1.5 text-[16px]",
             active === it.status
-              ? "bg-leaf text-ink shadow-chunky-active translate-x-[1px] translate-y-[1px]"
-              : "bg-paper text-ink shadow-chunky-sm hover:bg-paper2",
+              ? "bg-leaf text-ink shadow-press translate-x-[1px] translate-y-[1px]"
+              : "bg-paper text-ink shadow-rest hover:bg-paper2",
           )}
         >
-          <span aria-hidden>{it.emoji}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={it.image} alt={it.alt} width={imgSize} height={imgSize} className="shrink-0" />
           <span className="tabular-nums">{it.n}</span>
         </button>
       ))}

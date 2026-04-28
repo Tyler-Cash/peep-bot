@@ -3,7 +3,7 @@
 ## Project Overview
 
 Peep Bot is a Discord event management application. It consists of a Spring Boot backend (REST API + Discord bot) and a
-React/Vite frontend. Users authenticate via Discord OAuth2 and can create/manage events that are surfaced to a Discord
+Next.js frontend. Users authenticate via Discord OAuth2 and can create/manage events that are surfaced to a Discord
 server.
 
 ## Repository Structure
@@ -11,7 +11,7 @@ server.
 ```
 discord-events/
 ├── backend/          # Spring Boot 3.5.8, Java 21, Gradle
-├── frontend/         # React 19, Vite 7
+├── frontend/         # Next.js 15 (App Router), React 19, TypeScript, Tailwind
 ├── docker-compose.yml  # PostgreSQL database only
 ├── docs/             # Documentation
 └── nginx/            # Empty (nginx not used locally)
@@ -22,7 +22,7 @@ discord-events/
 ### Prerequisites
 
 - **Java 21** (Gradle toolchain will use it automatically)
-- **Node.js 20.19+ or 22.12+** — Vite 7 requires this minimum. Use nvm to switch if needed.
+- **Node.js 20+** — use nvm to switch if needed.
 - **Docker Desktop** — for the PostgreSQL database
 
 ### 1. Start the Database
@@ -86,7 +86,7 @@ From `backend/`:
   --spring.devtools.restart.enabled=false \
   --server.servlet.session.cookie.secure=false \
   --spring.session.cookie.secure=false \
-  --dev.tylercash.cors.allowed-origins=http://localhost:5173"
+  --dev.tylercash.cors.allowed-origins=http://localhost:3000"
 ```
 
 The backend starts on port 8080 with context path `/api/`.
@@ -114,7 +114,7 @@ server:
 
 dev.tylercash:
   cors:
-    allowed-origins: http://localhost:5173
+    allowed-origins: http://localhost:3000
 ```
 
 ### 4. Start the Frontend
@@ -126,12 +126,14 @@ npm install
 npm run dev
 ```
 
-The frontend starts on port 5173 at `http://localhost:5173`. Vite proxies `/api` requests to the backend at
-`http://localhost:8080`.
+The frontend starts on port 3000 at `http://localhost:3000`. By default it runs in **mock mode**
+(`NEXT_PUBLIC_API_MODE=mock`), serving an in-browser MSW backend so you can develop without the Java backend running.
+To talk to the real backend instead, start it with `NEXT_PUBLIC_API_MODE=live` and ensure it points at
+`http://localhost:8080/api`.
 
 ### 5. Log In
 
-Navigate to `http://localhost:5173/login` and click "Log in with Discord". The OAuth2 redirect URI is configured in
+Navigate to `http://localhost:3000/login` and click "Log in with Discord". The OAuth2 redirect URI is configured in
 `application-local.yaml` (must be registered in the Discord developer portal for your local bot app).
 
 ## Common Commands
@@ -159,13 +161,13 @@ curl http://localhost:8080/api/actuator/health
 ### Frontend
 
 ```bash
-npm run dev      # Start dev server (port 5173)
-npm run build    # Production build
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
-npm run lint:fix # Run ESLint with auto-fix
-npm run format   # Format with Prettier
-npm run format:check # Check formatting without writing
+npm run dev       # Start Next.js dev server (port 3000)
+npm run build     # Production build
+npm run start     # Run the production build
+npm run lint      # Run ESLint (next lint)
+npm run typecheck # TypeScript --noEmit
+npm run test      # Vitest (unit + API route tests)
+npm run test:e2e  # Playwright smoke suite (against MSW mock backend)
 ```
 
 ## Code Quality Requirements
@@ -179,9 +181,8 @@ All code changes **must** pass linting and formatting checks before committing. 
 
 ### Frontend
 
-- **ESLint** — Configured in `frontend/eslint.config.js`. Run `npm run lint` to check, `npm run lint:fix` to auto-fix.
-- **Prettier** — Configured for JS/JSX/CSS. Run `npm run format:check` to verify, `npm run format` to auto-fix.
-- Always run both ESLint and Prettier before committing frontend changes.
+- **ESLint** — Configured in `frontend/eslint.config.mjs` (next lint). Run `npm run lint` to check.
+- **TypeScript** — `npm run typecheck` runs `tsc --noEmit`. CI enforces it.
 
 ## Architecture Notes
 
@@ -202,14 +203,14 @@ All code changes **must** pass linting and formatting checks before committing. 
 
 ### Frontend
 
-- **React 19** + **Vite 7**
-- **Redux Toolkit** — state management
-- **React Router DOM v7** — routing
-- **Bootstrap 5** — styling
-- **react-hook-form** — form management
-- **Moment.js** — date/time formatting
-- API calls go through `frontend/src/api/eventBotApi.js`, which fetches a CSRF token from `/api/csrf` before mutations
-  and handles 401 → redirect to Discord OAuth2
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS** — styling
+- **SWR** — data fetching / cache
+- **MSW** — in-browser mock backend (`NEXT_PUBLIC_API_MODE=mock` is the default; switch to `live` to hit the real
+  Spring Boot backend)
+- **Vitest** — unit tests; **Playwright** — e2e smoke suite (runs against MSW)
+- API calls go through `frontend/src/lib/api.ts`, which fetches a CSRF token from `/api/csrf` before mutations,
+  retries on 429 using `Retry-After`, and throws `UnauthorizedError` on 401/403
 
 ## Key Configuration Properties
 
@@ -244,7 +245,7 @@ Scope is optional: `feat(discord):`, `fix(deps):`, etc.
   to port 8443. Override with `server.servlet.session.cookie.secure=false` and `spring.session.cookie.secure=false`
   locally.
 - **CORS defaults to production origin.** `dev.tylercash.cors.allowed-origins` defaults to
-  `https://event.tylercash.dev`. Must be overridden to `http://localhost:5173` for local frontend dev.
+  `https://event.tylercash.dev`. Must be overridden to `http://localhost:3000` for local frontend dev.
 - **`application-local.yaml` is gitignored.** It contains the Discord bot token and OAuth2 secrets — never commit it.
 - **Spring Session JDBC schema.** The `spring.session.jdbc.initialize-schema: never` default means the SPRING_SESSION
   tables must already exist. Liquibase handles this — ensure migrations have run before the app starts.

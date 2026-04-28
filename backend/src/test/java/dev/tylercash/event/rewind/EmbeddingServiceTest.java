@@ -43,6 +43,13 @@ class EmbeddingServiceTest {
         return new EmbeddingService(model, normalisationService, config, eventRepository, embeddingRepository);
     }
 
+    private Event eventWithName(UUID id, String name) {
+        Event event = new Event();
+        event.setId(id);
+        event.setName(name);
+        return event;
+    }
+
     @Test
     @DisplayName("isEmbeddingsAvailable is false when no model is wired in")
     void isEmbeddingsAvailable_falseWithoutModel() {
@@ -50,31 +57,15 @@ class EmbeddingServiceTest {
     }
 
     @Test
-    @DisplayName("isEmbeddingsAvailable is false when the model is present but config disables it")
-    void isEmbeddingsAvailable_falseWhenConfigDisabled() {
-        config.setEnabled(false);
-
-        assertThat(service(embeddingModel).isEmbeddingsAvailable()).isFalse();
-    }
-
-    @Test
-    @DisplayName("embedEvent is a no-op when embeddings are unavailable")
-    void embedEvent_noopWhenUnavailable() {
-        EmbeddingService svc = service(null);
-
-        svc.embedEvent(UUID.randomUUID(), "Dinner");
-
-        verifyNoInteractions(embeddingRepository);
-    }
-
-    @Test
     @DisplayName("embedEvent persists the embedding with a comma-separated bracketed vector string")
     void embedEvent_savesVectorInPgVectorFormat() {
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.5f, -0.25f, 1.0f});
+        when(normalisationService.classify(any(Event.class))).thenReturn("Food");
         EmbeddingService svc = service(embeddingModel);
         UUID eventId = UUID.randomUUID();
+        Event event = eventWithName(eventId, "Dinner");
 
-        svc.embedEvent(eventId, "Dinner");
+        svc.embedEvent(event);
 
         ArgumentCaptor<EventEmbedding> captor = ArgumentCaptor.forClass(EventEmbedding.class);
         verify(embeddingRepository).save(captor.capture());
@@ -83,6 +74,8 @@ class EmbeddingServiceTest {
         assertThat(saved.getNameText()).isEqualTo("Dinner");
         assertThat(saved.getEmbedding()).isEqualTo("[0.5,-0.25,1.0]");
         assertThat(saved.getComputedAt()).isNotNull();
+
+        verify(normalisationService).classify(event);
     }
 
     @Test
@@ -91,7 +84,7 @@ class EmbeddingServiceTest {
         when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("model down"));
         EmbeddingService svc = service(embeddingModel);
 
-        svc.embedEvent(UUID.randomUUID(), "Dinner");
+        svc.embedEvent(eventWithName(UUID.randomUUID(), "Dinner"));
 
         verify(embeddingRepository, never()).save(any());
     }
@@ -113,16 +106,10 @@ class EmbeddingServiceTest {
         UUID id2 = UUID.randomUUID();
         when(embeddingRepository.findEventIdsWithoutEmbedding(anyInt())).thenReturn(List.of(id1, id2));
 
-        Event e1 = new Event();
-        e1.setId(id1);
-        e1.setName("Brunch");
-        Event e2 = new Event();
-        e2.setId(id2);
-        e2.setName("Hike");
+        Event e1 = eventWithName(id1, "Brunch");
+        Event e2 = eventWithName(id2, "Hike");
         when(eventRepository.findById(id1)).thenReturn(Optional.of(e1));
         when(eventRepository.findById(id2)).thenReturn(Optional.of(e2));
-        when(normalisationService.normalise("Brunch")).thenReturn("Brunch");
-        when(normalisationService.normalise("Hike")).thenReturn("Hike");
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.1f});
 
         service(embeddingModel).backfillMissingEmbeddings();

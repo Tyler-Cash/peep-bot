@@ -2,8 +2,10 @@ package dev.tylercash.event.event.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.tylercash.event.discord.model.DiscordUserCache;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,10 @@ class EventDetailDtoTest {
 
     private static Event buildEvent() {
         return new Event(0L, 0L, 0L, "Test Event", "creator", ZonedDateTime.now(), "description");
+    }
+
+    private static DiscordUserCache buildCache(String snowflake, String displayName, String username) {
+        return new DiscordUserCache(snowflake, displayName, username, Instant.now(), null, null, new HashSet<>());
     }
 
     @Test
@@ -119,11 +125,13 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, String> nameMap = Map.of("creator-snowflake", "Host Display Name");
+        Map<String, DiscordUserCache> nameMap =
+                Map.of("creator-snowflake", buildCache("creator-snowflake", "Host Display Name", "host_username"));
 
         EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
 
         assertThat(dto.getHost()).isEqualTo("Host Display Name");
+        assertThat(dto.getHostUsername()).isEqualTo("host_username");
     }
 
     @Test
@@ -131,7 +139,8 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, String> nameMap = Map.of("creator-snowflake", "Host Display Name");
+        Map<String, DiscordUserCache> nameMap =
+                Map.of("creator-snowflake", buildCache("creator-snowflake", "Host Display Name", "host_username"));
 
         EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
 
@@ -143,7 +152,7 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, String> nameMap = Map.of();
+        Map<String, DiscordUserCache> nameMap = Map.of();
 
         EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
 
@@ -159,19 +168,22 @@ class EventDetailDtoTest {
         AttendanceRecord declined = buildRecord("user-2", "Bob");
         AttendanceRecord maybe = buildRecord("user-3", "Charlie");
         AttendanceSummary summary = new AttendanceSummary(List.of(accepted), List.of(declined), List.of(maybe));
-        Map<String, String> nameMap = Map.of(
-                "creator-snowflake", "Host",
-                "user-1", "Alice Resolved",
-                "user-2", "Bob Resolved",
-                "user-3", "Charlie Resolved");
+        Map<String, DiscordUserCache> nameMap = Map.of(
+                "creator-snowflake", buildCache("creator-snowflake", "Host", "host_user"),
+                "user-1", buildCache("user-1", "Alice Resolved", "alice_user"),
+                "user-2", buildCache("user-2", "Bob Resolved", "bob_user"),
+                "user-3", buildCache("user-3", "Charlie Resolved", "charlie_user"));
 
         EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
 
         assertThat(dto.getAccepted()).hasSize(1);
         assertThat(dto.getAccepted().get(0).getName()).isEqualTo("Alice Resolved");
+        assertThat(dto.getAccepted().get(0).getUsername()).isEqualTo("alice_user");
         assertThat(dto.getDeclined()).hasSize(1);
         assertThat(dto.getDeclined().get(0).getName()).isEqualTo("Bob Resolved");
+        assertThat(dto.getDeclined().get(0).getUsername()).isEqualTo("bob_user");
         assertThat(dto.getMaybe()).hasSize(1);
         assertThat(dto.getMaybe().get(0).getName()).isEqualTo("Charlie Resolved");
+        assertThat(dto.getMaybe().get(0).getUsername()).isEqualTo("charlie_user");
     }
 }

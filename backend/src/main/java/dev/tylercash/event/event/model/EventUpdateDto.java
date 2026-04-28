@@ -4,6 +4,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -23,10 +24,12 @@ public class EventUpdateDto {
 
     private String name;
     private String description = "";
+    private String location;
+    private String locationPlaceId;
 
     @FutureOrPresent(message = "The event can only be organized in the future.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private ZonedDateTime dateTime;
 
-    private Set<String> accepted;
+    private Set<String> accepted = new HashSet<>();
 }

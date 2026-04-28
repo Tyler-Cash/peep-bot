@@ -2,7 +2,10 @@ package dev.tylercash.event.immich;
 
 import io.github.resilience4j.retry.Retry;
 import io.micrometer.observation.annotation.Observed;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,26 +62,44 @@ public class ImmichService {
 
     @Observed(name = "immich.create-shared-link")
     public Optional<String> createSharedLink(String albumId) {
+        return createSharedLink(albumId, null, null);
+    }
+
+    /**
+     * Creates an Immich shared link for an album with an optional description
+     * (used to disambiguate per-user share links by username + timestamp) and
+     * optional expiry. Uploads/downloads/metadata visibility match the legacy
+     * call signature so PrepareAlbumOperation behavior is unchanged.
+     */
+    @Observed(name = "immich.create-shared-link-with-expiry")
+    public Optional<String> createSharedLink(String albumId, String description, Instant expiresAt) {
         if (!immichConfiguration.isEnabled()) {
             return Optional.empty();
         }
         try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("type", "ALBUM");
+            body.put("albumId", albumId);
+            body.put("allowUpload", true);
+            body.put("allowDownload", true);
+            body.put("showMetadata", true);
+            if (description != null && !description.isBlank()) {
+                body.put("description", description);
+            }
+            if (expiresAt != null) {
+                body.put("expiresAt", expiresAt.toString());
+            }
             ImmichSharedLinkResponse response = immichRestClient
                     .post()
                     .uri("/api/shared-links")
-                    .body(Map.of(
-                            "type", "ALBUM",
-                            "albumId", albumId,
-                            "allowUpload", true,
-                            "allowDownload", true,
-                            "showMetadata", true))
+                    .body(body)
                     .retrieve()
                     .body(ImmichSharedLinkResponse.class);
             if (response == null || response.key() == null) {
                 log.warn("Immich shared link creation returned null response for album: {}", albumId);
                 return Optional.empty();
             }
-            log.info("Created Immich shared link for album: {}", albumId);
+            log.info("Created Immich shared link for album {} (description={})", albumId, description);
             return Optional.of(response.key());
         } catch (Exception e) {
             log.error("Failed to create Immich shared link for album: {}", albumId, e);
@@ -88,6 +109,53 @@ public class ImmichService {
 
     public String getShareUrl(String shareKey) {
         return immichConfiguration.getBaseUrl() + "/share/" + shareKey;
+    }
+
+    @Observed(name = "immich.get-album")
+    public Optional<ImmichAlbumResponse> getAlbumDetails(String albumId) {
+        if (!immichConfiguration.isEnabled()) {
+            return Optional.empty();
+        }
+        try {
+            ImmichAlbumResponse response = immichRestClient
+                    .get()
+                    .uri("/api/albums/{albumId}?withoutAssets=true", albumId)
+                    .retrieve()
+                    .body(ImmichAlbumResponse.class);
+            return Optional.ofNullable(response);
+        } catch (Exception e) {
+            log.warn("Failed to fetch Immich album details for album {}: {}", albumId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Streams the asset thumbnail directly from Immich into the supplied output
+     * stream without buffering the full image in JVM memory. Returns true if
+     * the upstream response was successful and the body was copied through.
+     */
+    @Observed(name = "immich.stream-thumbnail")
+    public boolean streamThumbnail(String assetId, OutputStream out) {
+        if (!immichConfiguration.isEnabled()) {
+            return false;
+        }
+        try {
+            return Boolean.TRUE.equals(immichRestClient
+                    .get()
+                    .uri("/api/assets/{assetId}/thumbnail?size=preview", assetId)
+                    .exchange((request, response) -> {
+                        if (!response.getStatusCode().is2xxSuccessful()) {
+                            return false;
+                        }
+                        try (InputStream in = response.getBody()) {
+                            in.transferTo(out);
+                        }
+                        return true;
+                    }));
+        } catch (Exception e) {
+            log.warn("Failed to stream thumbnail for asset {}: {}", assetId, e.getMessage());
+            return false;
+        }
     }
 
     @Observed(name = "immich.upload-asset")

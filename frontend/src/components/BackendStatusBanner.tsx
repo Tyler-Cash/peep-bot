@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch, BackendUnreachable } from "@/lib/api";
+import { apiFetch, UnauthorizedError } from "@/lib/api";
 
 export function BackendStatusBanner() {
   const [down, setDown] = useState(false);
@@ -13,7 +13,7 @@ export function BackendStatusBanner() {
         await apiFetch("/auth/is-logged-in");
         if (!cancelled) setDown(false);
       } catch (e) {
-        if (!cancelled) setDown(e instanceof BackendUnreachable);
+        if (!cancelled) setDown(!(e instanceof UnauthorizedError));
       }
     };
     ping();

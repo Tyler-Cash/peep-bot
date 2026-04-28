@@ -45,6 +45,7 @@ public class Event {
 
     private String description = "";
     private String location = "";
+    private String locationPlaceId;
     private Integer capacity = 0;
     private Integer cost = 0;
 
@@ -120,6 +121,7 @@ public class Event {
         this.creator = creator;
         this.description = event.getDescription();
         this.location = event.getLocation();
+        this.locationPlaceId = event.getLocationPlaceId();
         this.capacity = event.getCapacity();
         this.cost = event.getCost();
         this.dateTime = event.getDateTime();

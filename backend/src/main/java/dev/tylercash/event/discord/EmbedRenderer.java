@@ -6,6 +6,8 @@ import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.GoogleCalendarService;
 import java.awt.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,7 +39,9 @@ public class EmbedRenderer {
                 .setColor(Color.YELLOW);
 
         if (!event.getLocation().isBlank()) {
-            embed.addField("Location", event.getLocation(), false);
+            String encodedLocation = URLEncoder.encode(event.getLocation(), StandardCharsets.UTF_8);
+            String mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodedLocation;
+            embed.addField("Location", "[" + event.getLocation() + "](" + mapsUrl + ")", false);
         }
 
         StringBuilder links = new StringBuilder();
@@ -45,7 +49,7 @@ public class EmbedRenderer {
                 .append(GoogleCalendarService.getCalendarEventUrl(event))
                 .append(")");
         if (event.getId() != null) {
-            String editUrl = frontendUrl + "event/" + event.getId();
+            String editUrl = frontendUrl + "events/" + event.getId();
             links.append(" | [Edit event](").append(editUrl).append(")");
         }
         if (albumUrl != null) {

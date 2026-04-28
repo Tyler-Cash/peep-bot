@@ -1,11 +1,14 @@
 "use client";
 
 import useSWR, { mutate as globalMutate } from "swr";
-import { apiFetch } from "./api";
+import { apiFetch, api } from "./api";
+import { clearSwrCache } from "./swrCache";
 import type {
   EventDetailDto,
   EventDto,
+  GalleryAlbumDto,
   Guild,
+  GuildSettingsDto,
   RewindStats,
   RsvpStatus,
   UserInfo,
@@ -47,7 +50,9 @@ type EventsPage = { content: EventDto[]; totalElements: number };
 export function useEvents() {
   const guild = useActiveGuild();
   const key = guild ? (["events", guild.id] as const) : null;
-  return useSWR<EventsPage>(key, () => fetcher<EventsPage>("/event"));
+  return useSWR<EventsPage>(key, () =>
+    fetcher<EventsPage>(`/event?guildId=${guild!.id}`),
+  );
 }
 
 export function useEvent(id: number | string) {
@@ -84,7 +89,25 @@ export function useRewind(year: number, scope: "guild" | "me" = "guild") {
   const guild = useActiveGuild();
   const key = guild ? (["rewind", guild.id, scope, year] as const) : null;
   return useSWR<RewindStats>(key, () =>
-    fetcher<RewindStats>(`/rewind${scope === "me" ? "/me" : ""}?year=${year}`),
+    fetcher<RewindStats>(
+      `/rewind${scope === "me" ? "/me" : ""}?guildId=${guild!.id}&year=${year}`,
+    ),
+  );
+}
+
+export function useRewindYears() {
+  const guild = useActiveGuild();
+  const key = guild ? (["rewind-years", guild.id] as const) : null;
+  return useSWR<number[]>(key, () =>
+    fetcher<number[]>(`/rewind/years?guildId=${guild!.id}`),
+  );
+}
+
+export function useGallery() {
+  const guild = useActiveGuild();
+  const key = guild ? (["gallery", guild.id] as const) : null;
+  return useSWR<GalleryAlbumDto[]>(key, () =>
+    fetcher<GalleryAlbumDto[]>(`/gallery?guildId=${guild!.id}`),
   );
 }
 
@@ -106,7 +129,7 @@ export function invalidateEvent(guildId: string, eventId: number | string) {
 
 export async function submitRsvp(
   guildId: string,
-  eventId: number,
+  eventId: number | string,
   status: RsvpStatus | "none",
 ) {
   await apiFetch<EventDetailDto>(`/event/${eventId}/rsvp`, {
@@ -120,10 +143,116 @@ export async function submitRsvp(
 }
 
 export async function createEvent(guildId: string, body: Partial<EventDto>) {
-  const created = await apiFetch<EventDetailDto>("/event", {
+  const result = await apiFetch<{ id: string | number }>("/event", {
     method: "PUT",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, guildId }),
   });
   await invalidateEvents(guildId);
-  return created;
+  return result;
+}
+
+export async function cancelEvent(guildId: string, eventId: number | string) {
+  await apiFetch(`/event/${eventId}/cancel`, { method: "POST" });
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
+}
+
+export async function createPrivateChannel(
+  guildId: string,
+  eventId: number | string,
+) {
+  await apiFetch(`/event/${eventId}/private-channel`, { method: "POST" });
+  await invalidateEvent(guildId, eventId);
+}
+
+export async function recategorizeEvent(guildId: string, eventId: number | string) {
+  await apiFetch(`/event/${eventId}/recategorize`, { method: "POST" });
+  await invalidateEvent(guildId, eventId);
+}
+
+export async function logout() {
+  const base = api.base;
+  await fetch(`${base}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+  clearSwrCache();
+  api.invalidateCsrf();
+  window.location.href = "/login";
+}
+
+export async function removeAttendee(
+  guildId: string,
+  eventId: number | string,
+  snowflake: string | null,
+  name: string,
+) {
+  const params = new URLSearchParams();
+  if (snowflake) params.set("snowflake", snowflake);
+  else params.set("name", name);
+  await apiFetch<{ message: string }>(`/event/${eventId}/attendee?${params}`, {
+    method: "DELETE",
+  });
+  await Promise.all([
+    invalidateEvents(guildId),
+    invalidateEvent(guildId, eventId),
+  ]);
+}
+
+export async function updateEvent(
+  guildId: string,
+  eventId: number | string,
+  body: {
+    name?: string;
+    description?: string;
+    location?: string;
+    locationPlaceId?: string;
+    capacity?: number;
+    dateTime?: string;
+  },
+) {
+  // Backend EventUpdateDto: id (UUID), name, description, location, capacity, dateTime, accepted (Set<String>)
+  // `accepted` must be present (even if empty) to avoid a NullPointerException in the controller.
+  await apiFetch<{ message: string }>("/event", {
+    method: "PATCH",
+    body: JSON.stringify({ id: eventId, accepted: [], ...body }),
+  });
+  await Promise.all([
+    invalidateEvents(guildId),
+    // Optimistically merge updated fields into the cached event so the detail
+    // page shows new values immediately rather than waiting for the refetch.
+    globalMutate(
+      (k) =>
+        Array.isArray(k) &&
+        k[0] === "event" &&
+        k[1] === guildId &&
+        k[2] === String(eventId),
+      (current: EventDetailDto | undefined) =>
+        current ? { ...current, ...body } : undefined,
+      { revalidate: true },
+    ),
+  ]);
+}
+
+export function useGuildSettings(guildId: string | null) {
+  return useSWR<GuildSettingsDto>(
+    guildId ? `/guild/${guildId}/settings` : null,
+    fetcher,
+  );
+}
+
+export async function updateGuildSettings(
+  guildId: string,
+  settings: GuildSettingsDto,
+) {
+  await apiFetch<GuildSettingsDto>(`/guild/${guildId}/settings`, {
+    method: "PATCH",
+    body: JSON.stringify(settings),
+  });
+  await globalMutate(`/guild/${guildId}/settings`, undefined, {
+    revalidate: true,
+  });
+  await globalMutate("/guild", undefined, { revalidate: true });
 }

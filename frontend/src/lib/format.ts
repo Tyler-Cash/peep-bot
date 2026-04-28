@@ -82,9 +82,38 @@ export function postedRelative(iso: string) {
   return `${days}d ago`;
 }
 
+export function dateToLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function initials(name: string) {
-  const parts = name.split(/\s+/);
+  const parts = name.split(/\s+/).filter((p) => /^[a-zA-Z]/.test(p));
   const first = parts[0]?.[0] ?? "";
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
   return (first + last).toUpperCase() || name.slice(0, 2).toUpperCase();
+}
+
+// Deterministic small tilt from a seed string. Same seed always produces the same angle.
+// `range` is the max absolute degree value; output sits in [-range, range] but
+// never lands exactly on 0 so cards never look dead-flat.
+export function seededTilt(seed: string, range = 1.6): number {
+  let h = 0;
+  const s = String(seed);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  // Coerce to unsigned so `% 1000` stays in [0, 999] — JS's `%` keeps the sign
+  // of the dividend, which previously let n drift outside [-1, 1] and pushed
+  // the final tilt past the requested range.
+  const n = (((h >>> 0) % 1000) / 1000) * 2 - 1;
+  const sign = n < 0 ? -1 : 1;
+  return (0.3 + Math.abs(n) * (range - 0.3)) * sign;
+}
+
+export function stringToColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 65%, 80%)`;
 }

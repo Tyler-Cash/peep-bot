@@ -4,8 +4,16 @@ const KEY = "peepbot.swr.v1";
 
 type Persisted = Record<string, unknown>;
 
+let cacheMap: Map<string, unknown> | null = null;
+
+export function clearSwrCache(): void {
+  cacheMap?.clear();
+  if (typeof window !== "undefined") localStorage.removeItem(KEY);
+}
+
 export function localStorageProvider(): Cache {
   const map = new Map<string, unknown>();
+  cacheMap = map;
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(KEY);

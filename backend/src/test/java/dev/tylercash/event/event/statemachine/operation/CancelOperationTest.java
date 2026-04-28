@@ -50,7 +50,7 @@ class CancelOperationTest {
     }
 
     @Test
-    @DisplayName("action populates attendance, updates message, and sets state to ARCHIVED")
+    @DisplayName("action populates attendance, updates message, and sets state to CANCELLED")
     void action() {
         Event event = new Event();
         event.setName("Test");
@@ -66,7 +66,7 @@ class CancelOperationTest {
         verify(discordService).updateEventMessage(event);
         verify(discordService).updateChannelName(event);
         verify(discordService).archiveEventChannel(event);
-        assertEquals(EventState.ARCHIVED, event.getState());
+        assertEquals(EventState.CANCELLED, event.getState());
         verify(eventRepository).save(event);
     }
 
@@ -81,7 +81,7 @@ class CancelOperationTest {
 
         assertEquals("[CANCELLED] Test", event.getName());
         verifyNoInteractions(discordService);
-        assertEquals(EventState.ARCHIVED, event.getState());
+        assertEquals(EventState.CANCELLED, event.getState());
         verify(eventRepository).save(event);
     }
 }

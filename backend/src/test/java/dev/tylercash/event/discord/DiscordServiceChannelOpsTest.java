@@ -79,6 +79,7 @@ class DiscordServiceChannelOpsTest {
         e.setName(name);
         e.setCreator("tester");
         e.setDateTime(dt);
+        e.setServerId(GUILD_ID);
         return e;
     }
 

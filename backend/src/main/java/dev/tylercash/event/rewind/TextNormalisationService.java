@@ -1,5 +1,6 @@
 package dev.tylercash.event.rewind;
 
+import dev.tylercash.event.event.model.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,25 +10,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class TextNormalisationService {
 
-    private static final String PROMPT_TEMPLATE =
-            """
-            Extract only the activity type from this event name. Reply with 1 to 3 words only. \
-            No venue, no location, no day, no explanation, no punctuation.
-
-            Event: "Group dinner at a restaurant"
-            Activity: Dinner
-
-            Event: "Weekly games night at the community centre"
-            Activity: Games Night
-
-            Event: "Outdoor cinema screening"
-            Activity: Movie Night
-
-            Event: "%s"
-            Activity:""";
-
     private final OllamaChatModel chatModel;
     private final RewindConfiguration config;
+
+    private static final String CLASSIFY_PROMPT_TEMPLATE =
+            """
+            Classify this event into exactly one of the following categories: %s. \
+            Reply with the category name only. No explanation, no punctuation.
+
+            Event name: "%s"
+            Location: "%s"
+            Date: %s
+            Description: "%s"
+            Category:""";
 
     public TextNormalisationService(
             @Autowired(required = false) OllamaChatModel chatModel, RewindConfiguration config) {
@@ -39,24 +34,37 @@ public class TextNormalisationService {
     }
 
     public boolean isAvailable() {
-        return chatModel != null && config.isNormalisationEnabled();
+        return chatModel != null;
     }
 
-    public String normalise(String eventName) {
+    public String classify(Event event) {
         if (!isAvailable()) {
-            return eventName;
+            throw new IllegalStateException("LLM service is not available for classification");
         }
         try {
-            String prompt = String.format(PROMPT_TEMPLATE, eventName.replace("\"", "'"));
-            String response = chatModel.call(prompt).trim();
-            response = response.replaceAll("^[\"'`]|[\"'`]$", "").trim();
-            if (response.isBlank() || response.length() > 50) {
-                return eventName;
-            }
-            return response;
+            String categories = String.join(", ", config.getCategories());
+            String name = event.getName().replace("\"", "'");
+            String location = event.getLocation() != null ? event.getLocation().replace("\"", "'") : "";
+            String date = event.getDateTime() != null
+                    ? event.getDateTime().toLocalDate().toString()
+                    : "unknown";
+            String description =
+                    event.getDescription() != null ? event.getDescription().replace("\"", "'") : "";
+            String prompt = String.format(CLASSIFY_PROMPT_TEMPLATE, categories, name, location, date, description);
+            String response = callModel(prompt);
+
+            return config.getCategories().stream()
+                    .filter(c -> c.equalsIgnoreCase(response))
+                    .findFirst()
+                    .orElse("unknown");
         } catch (Exception e) {
-            log.debug("Normalisation failed for event: {}", e.getMessage());
-            return eventName;
+            log.error("Classification failed for event: {}", e.getMessage());
+            throw e;
         }
+    }
+
+    private String callModel(String prompt) {
+        String response = chatModel.call(prompt).trim();
+        return response.replaceAll("^[\"'`]|[\"'`]$", "").trim();
     }
 }
