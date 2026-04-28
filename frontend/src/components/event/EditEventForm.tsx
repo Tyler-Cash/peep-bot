@@ -71,7 +71,7 @@ export function EditEventForm({ id }: { id: string }) {
   };
 
   return (
-    <div className="mx-auto max-w-[960px] px-5 py-8">
+    <div className="mx-auto max-w-[960px] px-4 sm:px-5 py-6 sm:py-8">
       <Link
         href={`/events/${id}`}
         className="inline-flex items-center gap-1.5 mb-4 text-[16px] font-semibold text-mute hover:text-ink"
@@ -81,7 +81,7 @@ export function EditEventForm({ id }: { id: string }) {
 
       <form
         onSubmit={onSubmit}
-        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-6"
+        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-4 sm:p-6"
       >
         <h2 className="text-[28px] font-extrabold tracking-[-0.02em] leading-none lowercase mb-1">
           edit event
@@ -99,7 +99,7 @@ export function EditEventForm({ id }: { id: string }) {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="date">
             <DatePicker value={date || null} onChange={setDate} />
           </Field>
@@ -108,7 +108,7 @@ export function EditEventForm({ id }: { id: string }) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-[1fr_150px] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-3">
           <Field label="where">
             <LocationAutocomplete
               value={location}

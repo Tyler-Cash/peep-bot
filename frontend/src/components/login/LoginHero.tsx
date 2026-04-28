@@ -61,7 +61,7 @@ export function LoginHero() {
         <Peepo size={760} />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-9 py-[22px]">
+      <header className="relative z-10 flex items-center justify-between gap-3 px-4 sm:px-9 py-[18px] sm:py-[22px]">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip bg-leaf border-[1.5px] border-ink shadow-rest">
             <Peepo size={28} />
@@ -76,7 +76,7 @@ export function LoginHero() {
         <a
           href="#"
           onClick={(e) => e.preventDefault()}
-          className="text-[13.5px] font-bold text-ink2"
+          className="hidden sm:block text-[13.5px] font-bold text-ink2"
         >
           already run a server?{" "}
           <span className="text-leafDk underline decoration-2 underline-offset-[3px]">
@@ -85,7 +85,7 @@ export function LoginHero() {
         </a>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-[1200px] grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] items-center gap-16 px-20 pb-[60px] pt-5">
+      <main className="relative z-10 mx-auto max-w-[1200px] grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] items-center gap-16 px-5 sm:px-12 lg:px-20 pb-[60px] pt-5">
         <div>
           <span
             className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-white px-3.5 py-1.5 text-[12.5px] font-extrabold shadow-rest"

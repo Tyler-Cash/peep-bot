@@ -94,7 +94,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       : undefined;
 
   return (
-    <div className="mx-auto max-w-[820px] px-5 py-6">
+    <div className="mx-auto max-w-[820px] px-4 sm:px-5 py-6">
       <div className="flex items-center justify-between mb-5">
         <Link
           href="/"
@@ -112,7 +112,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
           <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
             SERVER SETTINGS
           </span>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
+          <h1 className="text-[26px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-tight mt-0.5 break-words">
             {activeGuild?.name ?? "server config"}
           </h1>
         </div>

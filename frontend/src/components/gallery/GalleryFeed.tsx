@@ -27,13 +27,13 @@ export function GalleryFeed() {
   const count = albums?.length ?? 0;
 
   return (
-    <div className="mx-auto max-w-[980px] px-5 py-6">
-      <header className="flex items-end justify-between mb-5">
-        <h1 className="text-[54px] sm:text-[64px] font-extrabold tracking-[-0.04em] leading-[0.95]">
+    <div className="mx-auto max-w-[980px] px-4 sm:px-5 py-6">
+      <header className="flex items-end justify-between mb-5 gap-3">
+        <h1 className="text-[40px] sm:text-[64px] font-extrabold tracking-[-0.04em] leading-[0.95]">
           gallery
         </h1>
         <span
-          className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink bg-leaf px-4 py-1.5 text-[15px] font-extrabold shadow-rest"
+          className="inline-flex items-center gap-1.5 shrink-0 rounded-chip border-[1.5px] border-ink bg-leaf px-3 sm:px-4 py-1.5 text-[13px] sm:text-[15px] font-extrabold shadow-rest"
           style={{ transform: "rotate(-2deg)" }}
         >
           {count} {count === 1 ? "album" : "albums"} 📷
