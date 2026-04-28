@@ -6,3 +6,8 @@ next-env.d.ts
 .vercel
 .DS_Store
 *.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
