@@ -156,11 +156,14 @@ export function LocationAutocomplete({
     }
   };
 
+  const popoverOpen =
+    !locationUnavailable && open && (suggestions.length > 0 || loading);
+
   return (
     <div ref={containerRef} className={clsx("relative", className)}>
       <div className="relative">
         <span
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 pointer-events-none z-[2]"
           aria-hidden
         >
           📍
@@ -183,9 +186,22 @@ export function LocationAutocomplete({
           aria-controls={open ? "location-suggestions" : undefined}
           role="combobox"
           className={clsx(
-            "w-full rounded-[10px] border-[1.5px] border-ink bg-paper pl-9 pr-3 py-2 text-[15px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md",
+            "relative w-full h-12 border-[1.5px] border-ink bg-white pl-10 pr-[14px] text-[16px] font-semibold text-ink placeholder:font-medium placeholder:text-mute focus:outline-none",
+            popoverOpen
+              ? "rounded-t-chip rounded-b-none"
+              : "rounded-chip shadow-rest",
             locationUnavailable && "opacity-50 cursor-not-allowed",
           )}
+          style={
+            popoverOpen
+              ? {
+                  boxShadow: "3px 0 0 #0E100D",
+                  borderBottomStyle: "dashed",
+                  borderBottomWidth: "1px",
+                  borderBottomColor: "rgba(14,16,13,0.2)",
+                }
+              : undefined
+          }
         />
       </div>
 
@@ -195,48 +211,70 @@ export function LocationAutocomplete({
         </p>
       )}
 
-      {!locationUnavailable && open && (suggestions.length > 0 || loading) && (
+      {popoverOpen && (
         <div
           id="location-suggestions"
           role="listbox"
-          className="absolute z-30 left-0 right-0 mt-1.5 rounded-[12px] border-[1.5px] border-ink bg-paper shadow-chunky-md overflow-hidden"
+          className="absolute top-full left-0 right-0 z-30 rounded-b-chip border-[1.5px] border-t-0 border-ink bg-white shadow-[3px_0_0_#0E100D,0_3px_0_#0E100D] overflow-hidden"
         >
           {mode === "recent" && suggestions.length > 0 && (
-            <div className="px-3 pt-2 pb-1 text-[10.5px] font-extrabold tracking-[0.18em] text-mute uppercase border-b-[1px] border-ink/10">
+            <div
+              className="px-3 pt-2 pb-1 text-[10.5px] font-extrabold tracking-[0.18em] text-mute uppercase"
+              style={{ borderBottom: "1px dashed rgba(14,16,13,0.18)" }}
+            >
               usual spots
             </div>
           )}
           {rateLimitWarning && (
-            <div className="px-3 py-2 text-[13px] text-mute border-b-[1px] border-ink/10">
+            <div
+              className="px-3 py-2 text-[13px] text-mute"
+              style={{ borderBottom: "1px dashed rgba(14,16,13,0.18)" }}
+            >
               ⏱ too many searches — try again shortly
             </div>
           )}
           {loading && suggestions.length === 0 && (
             <div className="px-3 py-2 text-[13px] text-mute">looking…</div>
           )}
-          {suggestions.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="option"
-              aria-selected={i === highlight}
-              onMouseEnter={() => setHighlight(i)}
-              onClick={() => pick(s)}
-              className={clsx(
-                "w-full text-left px-3 py-2 flex flex-col gap-0.5 border-b-[1px] border-ink/10 last:border-b-0",
-                i === highlight ? "bg-leaf/15" : "bg-paper hover:bg-paper2",
-              )}
-            >
-              <span className="text-[14px] font-extrabold text-ink tracking-[-0.01em]">
-                📍 {s.title}
-              </span>
-              {s.subtitle && (
-                <span className="text-[12.5px] text-mute font-semibold pl-[22px]">
-                  {s.subtitle}
+          {suggestions.map((s, i) => {
+            const selected = i === highlight;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onMouseEnter={() => setHighlight(i)}
+                onClick={() => pick(s)}
+                className={clsx(
+                  "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors",
+                  selected ? "bg-[#FFF0A6]" : "bg-white hover:bg-paper",
+                )}
+                style={
+                  i < suggestions.length - 1
+                    ? { borderBottom: "1px dashed rgba(14,16,13,0.12)" }
+                    : undefined
+                }
+              >
+                <span aria-hidden className="shrink-0 text-[16px]">📍</span>
+                <span className="flex flex-col min-w-0 gap-[2px]">
+                  <span className="text-[15px] font-extrabold text-ink tracking-[-0.01em] leading-[1.15] truncate">
+                    {s.title}
+                  </span>
+                  {s.subtitle && (
+                    <span className="text-[12.5px] text-mute font-semibold leading-[1.3] truncate">
+                      {s.subtitle}
+                    </span>
+                  )}
                 </span>
-              )}
-            </button>
-          ))}
+              </button>
+            );
+          })}
+          {suggestions.length > 0 && mode === "search" && (
+            <div className="flex items-center justify-end gap-1.5 px-3 py-2 bg-paper border-t-[1.5px] border-ink text-[11px] font-bold tracking-[0.12em] text-mute uppercase">
+              powered by google maps
+            </div>
+          )}
         </div>
       )}
     </div>

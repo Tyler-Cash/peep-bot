@@ -4,13 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
-import { Slab } from "@/components/ui/Slab";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
+import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
-import { CatTag } from "@/components/ui/CatTag";
-import { CountdownChip } from "@/components/ui/CountdownChip";
-import { categoryMeta } from "@/lib/categories";
-import { dateStamp, dateToLocalInput, timeLabel } from "@/lib/format";
+import { Stepper } from "@/components/ui/Stepper";
+import { dateToLocalInput } from "@/lib/format";
 import {
   updateEvent,
   useActiveGuild,
@@ -38,7 +35,6 @@ export function EditEventForm({ id }: { id: string }) {
       ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
       : undefined;
 
-  // Populate fields once the event data arrives
   useEffect(() => {
     if (data && !initialized) {
       setName(data.name);
@@ -52,11 +48,8 @@ export function EditEventForm({ id }: { id: string }) {
   }, [data, initialized]);
 
   if (isLoading || !data) {
-    return <div className="mx-auto max-w-[820px] p-8 text-mute">loading…</div>;
+    return <div className="mx-auto max-w-[960px] p-8 text-mute">loading…</div>;
   }
-
-  const cat = categoryMeta(data.category);
-  const stamp = dateStamp(new Date(date || data.dateTime).toISOString());
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,142 +71,77 @@ export function EditEventForm({ id }: { id: string }) {
   };
 
   return (
-    <div className="mx-auto max-w-[820px] px-5 py-6 min-h-screen flex flex-col">
-      <div className="flex items-center justify-between mb-5">
-        <Link
-          href={`/events/${id}`}
-          className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
-        >
-          ← back to event
-        </Link>
-      </div>
-
-      <header className="flex items-center gap-3 mb-5">
-        <span
-          className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] border-[1.5px] border-ink shadow-chunky-sm"
-          style={{ background: cat.bg }}
-        >
-          {cat.emoji ? (
-            <span className="text-[18px]">{cat.emoji}</span>
-          ) : (
-            <span
-              aria-hidden
-              className="h-3 w-3 rounded-full"
-              style={{ background: cat.dot }}
-            />
-          )}
-        </span>
-        <div>
-          <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
-            EDIT EVENT
-          </span>
-          <h1 className="text-[42px] font-extrabold tracking-[-0.03em] leading-none mt-0.5">
-            update the details
-          </h1>
-        </div>
-      </header>
-
-      {/* live preview */}
-      <div
-        className="relative rounded-[14px] border-[1.5px] border-ink shadow-chunky-md overflow-hidden p-4 flex items-start gap-3"
-        style={{ background: cat.bg, color: cat.ink }}
+    <div className="mx-auto max-w-[960px] px-5 py-8">
+      <Link
+        href={`/events/${id}`}
+        className="inline-flex items-center gap-1.5 mb-4 text-[16px] font-semibold text-mute hover:text-ink"
       >
-        {cat.emoji && (
-          <span
-            className="absolute text-[160px] leading-none opacity-[0.16] select-none pointer-events-none"
-            style={{ right: -12, bottom: -40, transform: "rotate(-12deg)" }}
-            aria-hidden
-          >
-            {cat.emoji}
-          </span>
-        )}
-        <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
-          <span className="text-[13px] font-extrabold tracking-[0.14em]">
-            {stamp.month}
-          </span>
-          <span className="text-[36px] font-extrabold leading-none tabular-nums">
-            {stamp.day}
-          </span>
-          <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
-            {stamp.weekday}
-          </span>
-        </div>
-        <div className="relative flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <CatTag category={data.category} displayState={data.displayState} />
-            <CountdownChip
-              iso={new Date(date || data.dateTime).toISOString()}
-            />
-          </div>
-          <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
-            {name || "your event title"}
-          </h2>
-          <p className="mt-1 text-[16px] font-semibold">
-            {timeLabel(new Date(date || data.dateTime).toISOString())}
-            {location ? ` · 📍 ${location}` : ""}
-          </p>
-        </div>
-      </div>
+        ← back to event
+      </Link>
 
-      <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4 flex-1 min-h-0">
-        <Slab className="p-5 flex flex-col gap-4 flex-1 min-h-0">
-          <Field label="name">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="what's the plan?"
-              required
-              className={inputCls}
-            />
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-6"
+      >
+        <h2 className="text-[28px] font-extrabold tracking-[-0.02em] leading-none lowercase mb-1">
+          edit event
+        </h2>
+        <p className="text-[14.5px] text-mute leading-[1.45] -mt-2 mb-1">
+          update the details for <b className="font-extrabold">{data.name}</b>.
+        </p>
+
+        <Field label="event name">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="date">
+            <DatePicker value={date || null} onChange={setDate} />
           </Field>
+          <Field label="time">
+            <TimePicker value={date || null} onChange={setDate} />
+          </Field>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="date & time">
-              <DateTimePicker value={date || null} onChange={setDate} />
-            </Field>
-            <Field label="capacity (0 = unlimited)">
-              <input
-                type="number"
-                min={0}
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-                className={inputCls}
-              />
-            </Field>
-          </div>
-
-          <Field label="venue">
+        <div className="grid grid-cols-[1fr_150px] gap-3">
+          <Field label="where">
             <LocationAutocomplete
               value={location}
               onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
               onPick={(placeId) => setLocationPlaceId(placeId)}
-              placeholder="where?"
+              placeholder="search venues…"
               recent={recentVenues}
               locationBias={locationBias}
             />
           </Field>
+          <Field label="cap">
+            <Stepper value={capacity} onChange={setCapacity} />
+          </Field>
+        </div>
 
-          <label className="flex flex-col gap-1.5 flex-1 min-h-0">
-            <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
-              info
-            </span>
-            <textarea
-              value={info}
-              onChange={(e) => setInfo(e.target.value)}
-              placeholder="what do people need to know?"
-              className={inputCls + " flex-1 min-h-[120px] resize-none"}
-            />
-          </label>
-        </Slab>
+        <Field label="description">
+          <textarea
+            value={info}
+            onChange={(e) => setInfo(e.target.value)}
+            rows={6}
+            placeholder="a few short lines — what to expect, what to bring, who's coming, when to show up"
+            className={areaCls}
+          />
+        </Field>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
           <Link
             href={`/events/${id}`}
-            className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
+            className="text-[16px] font-semibold text-mute hover:text-ink"
           >
             cancel
           </Link>
-          <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
+          <Chunky type="submit" variant="leaf" disabled={submitting}>
             {submitting ? "saving…" : "save changes"}
           </Chunky>
         </div>
@@ -223,7 +151,10 @@ export function EditEventForm({ id }: { id: string }) {
 }
 
 const inputCls =
-  "w-full rounded-[10px] border-[1.5px] border-ink bg-paper2 px-3 py-2 text-[17px] font-medium shadow-chunky-sm focus:outline-none focus:shadow-chunky-md";
+  "w-full h-12 rounded-chip border-[1.5px] border-ink bg-white px-[14px] text-[16px] font-semibold text-ink placeholder:font-medium placeholder:text-mute shadow-rest focus:outline-none";
+
+const areaCls =
+  "w-full rounded-chip border-[1.5px] border-ink bg-white px-[14px] py-3 text-[16px] font-medium text-ink placeholder:text-mute leading-[1.45] min-h-[140px] shadow-rest focus:outline-none resize-y";
 
 function Field({
   label,
@@ -234,7 +165,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
+      <span className="text-[12px] font-extrabold tracking-[0.16em] text-mute uppercase">
         {label}
       </span>
       {children}
