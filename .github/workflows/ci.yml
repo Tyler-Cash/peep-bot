@@ -467,6 +467,68 @@ jobs:
           vercel alias set "${{ steps.deploy.outputs.deployment_url }}" event-staging.tylercash.dev --token=$VERCEL_TOKEN
           echo "Staging now serving from: https://event-staging.tylercash.dev"
 
+  deploy-prod-backend:
+    needs: [release, deploy-staging-backend, deploy-staging-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Set up lowercase owner
+        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Resolve image ref from staging
+        run: |
+          VERSION="${{ needs.release.outputs.new_release_version }}"
+          IMAGE_REF="${{ needs.deploy-staging-backend.outputs.image_ref }}"
+          DIGEST="${IMAGE_REF#*@}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "DIGEST=${DIGEST}" >> $GITHUB_ENV
+          echo "Promoting backend ${VERSION}@${DIGEST} (same digest as staging)"
+
+      - name: Checkout portainer repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: Tyler-Cash/portainer
+          token: ${{ secrets.PORTAINER_DEPLOY_TOKEN }}
+
+      - name: Update peepbot prod backend image
+        id: update-image
+        run: |
+          sed -i "s|image: ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:.*|image: ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:${VERSION}@${DIGEST}|" stacks/peepbot/docker-compose.yml
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add stacks/peepbot/docker-compose.yml
+          if git diff --staged --quiet; then
+            echo "committed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore(peepbot): promote backend to ${VERSION}"
+            git push
+            echo "committed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for portainer deploy to complete
+        if: steps.update-image.outputs.committed == 'true'
+        timeout-minutes: 30
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "Waiting for portainer deploy workflow for commit ${COMMIT_SHA}..."
+          for i in $(seq 1 18); do
+            RUN_ID=$(gh run list --repo Tyler-Cash/portainer --workflow=deploy.yml --limit=10 --json databaseId,headSha --jq ".[] | select(.headSha == \"${COMMIT_SHA}\") | .databaseId" | head -1)
+            if [ -n "${RUN_ID}" ]; then
+              echo "Found run ${RUN_ID}, waiting for it to complete..."
+              gh run watch "${RUN_ID}" --repo Tyler-Cash/portainer --exit-status
+              exit $?
+            fi
+            echo "Run not found yet (attempt ${i}/18), retrying in 10s..."
+            sleep 10
+          done
+          echo "Timed out waiting for portainer deploy workflow to appear"
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.PORTAINER_DEPLOY_TOKEN }}
+
   frontend-sbom:
     needs: [changes]
     if: github.event_name == 'push' || needs.changes.outputs.frontend == 'true'
