@@ -148,8 +148,7 @@ class GalleryControllerTest {
 
         Map<String, String> resp = controller.openAlbum(ALBUM_ID, principal());
 
-        assertThat(resp.get("url"))
-                .isEqualTo("https://immich.example.com/share/fresh-share-key");
+        assertThat(resp.get("url")).isEqualTo("https://immich.example.com/share/fresh-share-key");
         assertThat(resp.get("expiresAt"))
                 .isEqualTo(NOW.plus(GalleryController.USER_SHARE_TTL).toString());
     }
@@ -163,10 +162,11 @@ class GalleryControllerTest {
         assertThatThrownBy(() -> controller.openAlbum(ALBUM_ID, principal()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
-        verify(immichService, never()).createSharedLink(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any());
+        verify(immichService, never())
+                .createSharedLink(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any());
     }
 
     @Test

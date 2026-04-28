@@ -67,8 +67,7 @@ public class GalleryController {
                     // generate a fresh per-user, time-limited share each cache miss.
                     String albumUrl = "/api/gallery/" + albumId + "/open";
                     List<AttendeeDto> attendees = event.getAccepted().stream()
-                            .sorted(Comparator.comparing(
-                                    a -> a.getInstant() != null ? a.getInstant() : Instant.EPOCH))
+                            .sorted(Comparator.comparing(a -> a.getInstant() != null ? a.getInstant() : Instant.EPOCH))
                             .map(AttendeeDto::new)
                             .toList();
                     return new GalleryAlbumDto(
@@ -124,8 +123,7 @@ public class GalleryController {
             summary = "Resolve an album's share URL for the current user",
             description = "Generates a per-user 1-week Immich share link and returns its public URL as JSON")
     @GetMapping("/{albumId}/open")
-    public Map<String, String> openAlbum(
-            @PathVariable String albumId, @AuthenticationPrincipal OAuth2User principal) {
+    public Map<String, String> openAlbum(@PathVariable String albumId, @AuthenticationPrincipal OAuth2User principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -153,7 +151,8 @@ public class GalleryController {
             username = snowflake;
         }
         Instant now = clock.instant();
-        String description = username + "-" + now.truncatedTo(ChronoUnit.SECONDS).toString();
+        String description =
+                username + "-" + now.truncatedTo(ChronoUnit.SECONDS).toString();
         Instant expiresAt = now.plus(USER_SHARE_TTL);
 
         Optional<String> shareKey = immichService.createSharedLink(albumId, description, expiresAt);

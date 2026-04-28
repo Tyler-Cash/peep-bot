@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -13,7 +14,6 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
-import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.rewind.model.RewindStatsDto;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -143,24 +143,24 @@ class RewindRbacIntegrationTest {
     @DisplayName("userD (member of guild2 only) cannot read guild1's rewind stats")
     void userD_forbiddenFromGuild1Stats() {
         assertThatThrownBy(() -> rewindController.getGuildStats(principal(USER_D), GUILD_1, null))
-                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
-                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test
     @DisplayName("userD cannot read guild1's personal rewind even with their own snowflake")
     void userD_forbiddenFromGuild1Personal() {
         assertThatThrownBy(() -> rewindController.getMyStats(principal(USER_D), GUILD_1, null))
-                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
-                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test
     @DisplayName("userD cannot read guild1's available rewind years")
     void userD_forbiddenFromGuild1Years() {
         assertThatThrownBy(() -> rewindController.getYears(principal(USER_D), GUILD_1))
-                .isInstanceOfSatisfying(ResponseStatusException.class, ex ->
-                        assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test
@@ -173,19 +173,13 @@ class RewindRbacIntegrationTest {
         assertThat(stats.totalUniqueAttendees()).isEqualTo(1);
 
         // Top attendees / organisers must not contain anyone from guild1.
-        assertThat(stats.topAttendees())
-                .extracting("displayName")
-                .doesNotContain("Alice", "Bob", "Carol");
-        assertThat(stats.topOrganizers())
-                .extracting("displayName")
-                .doesNotContain("Alice", "Bob", "Carol");
+        assertThat(stats.topAttendees()).extracting("displayName").doesNotContain("Alice", "Bob", "Carol");
+        assertThat(stats.topOrganizers()).extracting("displayName").doesNotContain("Alice", "Bob", "Carol");
 
         // Social graph must not contain any guild1 user — userD has no
         // co-attendees in guild2, so the graph is empty.
         assertThat(stats.socialGraph()).isNotNull();
-        assertThat(stats.socialGraph().nodes())
-                .extracting("snowflake")
-                .doesNotContain(USER_A, USER_B, USER_C);
+        assertThat(stats.socialGraph().nodes()).extracting("snowflake").doesNotContain(USER_A, USER_B, USER_C);
         assertThat(stats.socialGraph().edges()).isEmpty();
     }
 
@@ -199,14 +193,13 @@ class RewindRbacIntegrationTest {
                 .extracting("snowflake")
                 .containsExactlyInAnyOrder(USER_A, USER_B, USER_C);
         // userD must not appear in guild1's graph.
-        assertThat(stats.socialGraph().nodes())
-                .extracting("snowflake")
-                .doesNotContain(USER_D);
+        assertThat(stats.socialGraph().nodes()).extracting("snowflake").doesNotContain(USER_D);
     }
 
     private UUID createEvent(long guildId, String name, String creator) {
         long id = messageIdCounter.incrementAndGet();
-        Event event = new Event(id, guildId, id, name, creator, ZonedDateTime.now().plusDays(1), "desc");
+        Event event =
+                new Event(id, guildId, id, name, creator, ZonedDateTime.now().plusDays(1), "desc");
         event.setState(EventState.PLANNED);
         return eventRepository.save(event).getId();
     }
