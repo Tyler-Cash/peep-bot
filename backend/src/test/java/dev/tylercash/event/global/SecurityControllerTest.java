@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.security.UserInfoDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ class SecurityControllerTest {
     void isLoggedIn_returnsUserInfoDtoWithAdminTrue_whenUserHasAdminRole() {
         DiscordService discordService = mock(DiscordService.class);
         DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
         OAuth2User principal = mock(OAuth2User.class);
 
         when(config.getGuildId()).thenReturn(GUILD_ID);
@@ -32,11 +34,13 @@ class SecurityControllerTest {
         when(principal.getAttribute("username")).thenReturn(USERNAME);
         when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
+        when(cacheService.getDisplayName(GUILD_ID, DISCORD_ID)).thenReturn("Server Nickname");
 
-        SecurityController controller = new SecurityController(discordService, config);
+        SecurityController controller = new SecurityController(discordService, config, cacheService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.getUsername()).isEqualTo(USERNAME);
+        assertThat(result.getDisplayName()).isEqualTo("Server Nickname");
         assertThat(result.getDiscordId()).isEqualTo(DISCORD_ID);
         assertThat(result.isAdmin()).isTrue();
         assertThat(result.getAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
@@ -46,6 +50,7 @@ class SecurityControllerTest {
     void isLoggedIn_returnsUserInfoDtoWithAdminFalse_whenUserLacksAdminRole() {
         DiscordService discordService = mock(DiscordService.class);
         DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
         OAuth2User principal = mock(OAuth2User.class);
 
         when(config.getGuildId()).thenReturn(GUILD_ID);
@@ -53,8 +58,9 @@ class SecurityControllerTest {
         when(principal.getAttribute("username")).thenReturn(USERNAME);
         when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
+        when(cacheService.getDisplayName(GUILD_ID, DISCORD_ID)).thenReturn("Nickname");
 
-        SecurityController controller = new SecurityController(discordService, config);
+        SecurityController controller = new SecurityController(discordService, config, cacheService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.isAdmin()).isFalse();
@@ -67,8 +73,9 @@ class SecurityControllerTest {
     void isLoggedIn_throwsUnauthorized_whenPrincipalIsNull() {
         DiscordService discordService = mock(DiscordService.class);
         DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
 
-        SecurityController controller = new SecurityController(discordService, config);
+        SecurityController controller = new SecurityController(discordService, config, cacheService);
 
         assertThatThrownBy(() -> controller.isLoggedIn(null))
                 .isInstanceOf(ResponseStatusException.class)
@@ -84,6 +91,7 @@ class SecurityControllerTest {
     void isLoggedIn_usesGuildIdFromConfiguration() {
         DiscordService discordService = mock(DiscordService.class);
         DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordUserCacheService cacheService = mock(DiscordUserCacheService.class);
         OAuth2User principal = mock(OAuth2User.class);
 
         long specificGuildId = 999888777L;
@@ -92,9 +100,10 @@ class SecurityControllerTest {
         when(principal.getAttribute("username")).thenReturn(USERNAME);
         when(discordService.isUserAdminOfServer(eq(specificGuildId), anyLong())).thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, config);
+        SecurityController controller = new SecurityController(discordService, config, cacheService);
         controller.isLoggedIn(principal);
 
         verify(discordService).isUserAdminOfServer(specificGuildId, Long.parseLong(DISCORD_ID));
+        verify(cacheService).getDisplayName(specificGuildId, DISCORD_ID);
     }
 }

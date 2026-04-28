@@ -3,11 +3,14 @@ package dev.tylercash.event.discord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.AttendanceRepository;
+import dev.tylercash.event.db.repository.DiscordGuildMemberRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.model.DiscordGuildMember;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,8 +28,13 @@ import org.springframework.beans.factory.ObjectProvider;
 @ExtendWith(MockitoExtension.class)
 class DiscordUserCacheServiceTest {
 
+    private static final long GUILD = 999L;
+
     @Mock
     DiscordUserCacheRepository cacheRepository;
+
+    @Mock
+    DiscordGuildMemberRepository memberRepository;
 
     @Mock
     AttendanceRepository attendanceRepository;
@@ -46,6 +54,7 @@ class DiscordUserCacheServiceTest {
     DiscordUserCacheService buildService() {
         return new DiscordUserCacheService(
                 cacheRepository,
+                memberRepository,
                 attendanceRepository,
                 eventRepository,
                 discordServiceProvider,
@@ -62,45 +71,55 @@ class DiscordUserCacheServiceTest {
                 .thenReturn(Optional.of(new AvatarDownloadService.AvatarBytes(fakeBytes, "image/webp")));
 
         buildService()
-                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
+                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", GUILD);
 
-        ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
-        verify(cacheRepository).save(captor.capture());
+        ArgumentCaptor<DiscordGuildMember> captor = ArgumentCaptor.forClass(DiscordGuildMember.class);
+        verify(memberRepository).save(captor.capture());
         assertThat(captor.getValue().getAvatarBytes()).isEqualTo(fakeBytes);
         assertThat(captor.getValue().getAvatarContentType()).isEqualTo("image/webp");
+        assertThat(captor.getValue().getDisplayName()).isEqualTo("TestUser");
     }
 
     @Test
-    void upsertUser_savesWithNullAvatar_whenDownloadFails() {
+    void upsertUser_keepsExistingAvatar_whenDownloadFails() {
         when(avatarDownloadService.download(any())).thenReturn(Optional.empty());
 
         buildService()
-                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", 0L);
+                .upsertUser("123", "TestUser", "test_user", "https://cdn.discordapp.com/avatars/123/hash.webp", GUILD);
 
-        ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
-        verify(cacheRepository).save(captor.capture());
+        ArgumentCaptor<DiscordGuildMember> captor = ArgumentCaptor.forClass(DiscordGuildMember.class);
+        verify(memberRepository).save(captor.capture());
         assertThat(captor.getValue().getAvatarBytes()).isNull();
-        assertThat(captor.getValue().getAvatarContentType()).isNull();
     }
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsNull() {
-        buildService().upsertUser("123", "TestUser", "test_user", null, 0L);
+        buildService().upsertUser("123", "TestUser", "test_user", null, GUILD);
 
-        ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
-        verify(cacheRepository).save(captor.capture());
+        ArgumentCaptor<DiscordGuildMember> captor = ArgumentCaptor.forClass(DiscordGuildMember.class);
+        verify(memberRepository).save(captor.capture());
         assertThat(captor.getValue().getAvatarBytes()).isNull();
         verify(avatarDownloadService, never()).download(any());
     }
 
     @Test
     void upsertUser_savesWithNullAvatar_whenUrlIsBlank() {
-        buildService().upsertUser("123", "TestUser", "test_user", "   ", 0L);
+        buildService().upsertUser("123", "TestUser", "test_user", "   ", GUILD);
+
+        ArgumentCaptor<DiscordGuildMember> captor = ArgumentCaptor.forClass(DiscordGuildMember.class);
+        verify(memberRepository).save(captor.capture());
+        assertThat(captor.getValue().getAvatarBytes()).isNull();
+        verify(avatarDownloadService, never()).download(any());
+    }
+
+    @Test
+    void upsertUser_writesGlobalUsernameRow() {
+        buildService().upsertUser("123", "TestUser", "test_user", null, GUILD);
 
         ArgumentCaptor<DiscordUserCache> captor = ArgumentCaptor.forClass(DiscordUserCache.class);
         verify(cacheRepository).save(captor.capture());
-        assertThat(captor.getValue().getAvatarBytes()).isNull();
-        verify(avatarDownloadService, never()).download(any());
+        assertThat(captor.getValue().getUsername()).isEqualTo("test_user");
+        assertThat(captor.getValue().getSnowflake()).isEqualTo("123");
     }
 
     // ── getDisplayName ───────────────────────────────────────────────────────
@@ -109,38 +128,48 @@ class DiscordUserCacheServiceTest {
     class GetDisplayNameFallback {
 
         @Test
-        void returnsCachedName() {
-            DiscordUserCache cached = new DiscordUserCache(
-                    "111", "Alice", "alice_user", Instant.now(), null, null, java.util.Collections.emptySet());
-            when(cacheRepository.findById("111")).thenReturn(Optional.of(cached));
+        void returnsGuildNickname() {
+            DiscordGuildMember member = new DiscordGuildMember(GUILD, "111", "Alice", null, null, Instant.now());
+            when(memberRepository.findByGuildIdAndSnowflake(GUILD, "111")).thenReturn(Optional.of(member));
 
-            assertThat(buildService().getDisplayName("111")).isEqualTo("Alice");
+            assertThat(buildService().getDisplayName(GUILD, "111")).isEqualTo("Alice");
+        }
+
+        @Test
+        void fallsBackToGlobalUsername() {
+            when(memberRepository.findByGuildIdAndSnowflake(GUILD, "111")).thenReturn(Optional.empty());
+            when(cacheRepository.findById("111"))
+                    .thenReturn(Optional.of(new DiscordUserCache("111", "alice_user", Instant.now())));
+
+            assertThat(buildService().getDisplayName(GUILD, "111")).isEqualTo("alice_user");
         }
 
         @Test
         void returnsUnknownUserWithSuffix() {
+            when(memberRepository.findByGuildIdAndSnowflake(GUILD, "111223333")).thenReturn(Optional.empty());
             when(cacheRepository.findById("111223333")).thenReturn(Optional.empty());
 
-            assertThat(buildService().getDisplayName("111223333")).isEqualTo("Unknown User (#3333)");
+            assertThat(buildService().getDisplayName(GUILD, "111223333")).isEqualTo("Unknown User (#3333)");
         }
 
         @Test
         void returnsUnknownForNull() {
-            assertThat(buildService().getDisplayName(null)).isEqualTo("Unknown User");
-            verifyNoInteractions(cacheRepository);
+            assertThat(buildService().getDisplayName(GUILD, null)).isEqualTo("Unknown User");
+            verifyNoInteractions(memberRepository);
         }
 
         @Test
         void returnsUnknownForBlank() {
-            assertThat(buildService().getDisplayName("  ")).isEqualTo("Unknown User");
-            verifyNoInteractions(cacheRepository);
+            assertThat(buildService().getDisplayName(GUILD, "  ")).isEqualTo("Unknown User");
+            verifyNoInteractions(memberRepository);
         }
 
         @Test
         void handlesShortSnowflake() {
+            when(memberRepository.findByGuildIdAndSnowflake(GUILD, "12")).thenReturn(Optional.empty());
             when(cacheRepository.findById("12")).thenReturn(Optional.empty());
 
-            assertThat(buildService().getDisplayName("12")).isEqualTo("Unknown User (#12)");
+            assertThat(buildService().getDisplayName(GUILD, "12")).isEqualTo("Unknown User (#12)");
         }
     }
 
@@ -151,31 +180,31 @@ class DiscordUserCacheServiceTest {
 
         @Test
         void returnsBatchNames() {
-            List<DiscordUserCache> entries = List.of(
-                    new DiscordUserCache(
-                            "a1", "Alice", "alice_u", Instant.now(), null, null, java.util.Collections.emptySet()),
-                    new DiscordUserCache(
-                            "b2", "Bob", "bob_u", Instant.now(), null, null, java.util.Collections.emptySet()));
-            when(cacheRepository.findAllBySnowflakeIn(Set.of("a1", "b2"))).thenReturn(entries);
+            List<DiscordGuildMember> members = List.of(
+                    new DiscordGuildMember(GUILD, "a1", "Alice", null, null, Instant.now()),
+                    new DiscordGuildMember(GUILD, "b2", "Bob", null, null, Instant.now()));
+            when(memberRepository.findAllByGuildIdAndSnowflakeIn(eq(GUILD), any()))
+                    .thenReturn(members);
 
-            Map<String, String> result = buildService().getDisplayNames(Set.of("a1", "b2"));
+            Map<String, String> result = buildService().getDisplayNames(GUILD, Set.of("a1", "b2"));
 
             assertThat(result).containsEntry("a1", "Alice").containsEntry("b2", "Bob");
         }
 
         @Test
         void emptyForNull() {
-            assertThat(buildService().getDisplayNames(null)).isEmpty();
-            verifyNoInteractions(cacheRepository);
+            assertThat(buildService().getDisplayNames(GUILD, null)).isEmpty();
+            verifyNoInteractions(memberRepository);
         }
 
         @Test
         void filtersNullAndBlank() {
-            List<DiscordUserCache> entries = List.of(new DiscordUserCache(
-                    "valid", "Valid", "valid_u", Instant.now(), null, null, java.util.Collections.emptySet()));
-            when(cacheRepository.findAllBySnowflakeIn(Set.of("valid"))).thenReturn(entries);
+            List<DiscordGuildMember> members =
+                    List.of(new DiscordGuildMember(GUILD, "valid", "Valid", null, null, Instant.now()));
+            when(memberRepository.findAllByGuildIdAndSnowflakeIn(eq(GUILD), eq(Set.of("valid"))))
+                    .thenReturn(members);
 
-            Map<String, String> result = buildService().getDisplayNames(Arrays.asList("valid", null, "  "));
+            Map<String, String> result = buildService().getDisplayNames(GUILD, Arrays.asList("valid", null, "  "));
 
             assertThat(result).containsOnlyKeys("valid");
         }
@@ -188,22 +217,16 @@ class DiscordUserCacheServiceTest {
 
         @Test
         void refreshesStaleEntries() {
-            long guildId = 999L;
             String snowflake = "123456789012345678";
             long snowflakeLong = Long.parseLong(snowflake);
-            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(discordConfiguration.getGuildId()).thenReturn(GUILD);
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
-            DiscordUserCache stale = new DiscordUserCache(
-                    snowflake,
-                    "OldName",
-                    "old_u",
-                    Instant.now().minus(60, ChronoUnit.MINUTES),
-                    null,
-                    null,
-                    new java.util.HashSet<>(List.of(guildId)));
-            when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
+            DiscordGuildMember stale = new DiscordGuildMember(
+                    GUILD, snowflake, "OldName", null, null, Instant.now().minus(60, ChronoUnit.MINUTES));
+            when(memberRepository.findAllByGuildIdAndSnowflakeIn(eq(GUILD), any()))
+                    .thenReturn(List.of(stale));
 
             DiscordService discordService = mock(DiscordService.class);
             Member member = mock(Member.class);
@@ -211,7 +234,7 @@ class DiscordUserCacheServiceTest {
             when(member.getUser()).thenReturn(jdaUser);
             when(jdaUser.getName()).thenReturn("new_u");
             when(discordServiceProvider.getObject()).thenReturn(discordService);
-            when(discordService.getMemberFromServer(guildId, snowflakeLong)).thenReturn(member);
+            when(discordService.getMemberFromServer(GUILD, snowflakeLong)).thenReturn(member);
             when(member.getNickname()).thenReturn("NewName");
             when(member.getEffectiveName()).thenReturn("NewName");
             ImageProxy avatarProxy = mock(ImageProxy.class);
@@ -221,7 +244,7 @@ class DiscordUserCacheServiceTest {
 
             buildService().refreshStaleEntries();
 
-            verify(cacheRepository).save(any(DiscordUserCache.class));
+            verify(memberRepository).save(any(DiscordGuildMember.class));
         }
 
         @Test
@@ -231,26 +254,21 @@ class DiscordUserCacheServiceTest {
 
             buildService().refreshStaleEntries();
 
+            verifyNoInteractions(memberRepository);
             verifyNoInteractions(cacheRepository);
         }
 
         @Test
         void handlesApiFailure() {
-            long guildId = 999L;
             String snowflake = "987654321098765432";
-            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(discordConfiguration.getGuildId()).thenReturn(GUILD);
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
-            DiscordUserCache stale = new DiscordUserCache(
-                    snowflake,
-                    "OldName",
-                    "old_u",
-                    Instant.now().minus(60, ChronoUnit.MINUTES),
-                    null,
-                    null,
-                    java.util.Collections.emptySet());
-            when(cacheRepository.findAllBySnowflakeIn(List.of(snowflake))).thenReturn(List.of(stale));
+            DiscordGuildMember stale = new DiscordGuildMember(
+                    GUILD, snowflake, "OldName", null, null, Instant.now().minus(60, ChronoUnit.MINUTES));
+            when(memberRepository.findAllByGuildIdAndSnowflakeIn(eq(GUILD), any()))
+                    .thenReturn(List.of(stale));
 
             DiscordService discordService = mock(DiscordService.class);
             when(discordServiceProvider.getObject()).thenReturn(discordService);
@@ -259,7 +277,7 @@ class DiscordUserCacheServiceTest {
 
             buildService().refreshStaleEntries();
 
-            verify(cacheRepository, never()).save(any());
+            verify(memberRepository, never()).save(any());
         }
     }
 }

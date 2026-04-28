@@ -1,6 +1,6 @@
 package dev.tylercash.event.discord;
 
-import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
+import dev.tylercash.event.db.repository.DiscordGuildMemberRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -10,10 +10,10 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class GuildMembershipService {
-    private final DiscordUserCacheRepository cacheRepository;
+    private final DiscordGuildMemberRepository memberRepository;
 
     public boolean isMember(String snowflake, long guildId) {
-        return cacheRepository.isUserInGuild(snowflake, guildId);
+        return memberRepository.existsByGuildIdAndSnowflake(guildId, snowflake);
     }
 
     public void assertMember(String snowflake, long guildId) {
@@ -23,6 +23,6 @@ public class GuildMembershipService {
     }
 
     public List<Long> getGuildIdsForUser(String snowflake) {
-        return cacheRepository.findGuildIdsBySnowflake(snowflake);
+        return memberRepository.findGuildIdsBySnowflake(snowflake);
     }
 }

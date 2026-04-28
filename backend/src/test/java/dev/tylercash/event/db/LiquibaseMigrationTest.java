@@ -95,20 +95,18 @@ class LiquibaseMigrationTest {
                         .isEqualTo("111");
             }
 
-            // Verify: discord_user_cache seeded with snowflake users (not empty-snowflake guests)
+            // Verify: discord_user_cache seeded with snowflake users (not empty-snowflake guests).
+            // The seeded display_name column is dropped by a later changeset; per-guild names
+            // now live on discord_guild_member and are populated by the JDA refresher.
             try (Statement stmt = conn.createStatement()) {
-                ResultSet rs =
-                        stmt.executeQuery("SELECT snowflake, display_name FROM discord_user_cache ORDER BY snowflake");
+                ResultSet rs = stmt.executeQuery("SELECT snowflake FROM discord_user_cache ORDER BY snowflake");
                 List<String> cachedSnowflakes = new ArrayList<>();
-                List<String> cachedNames = new ArrayList<>();
                 while (rs.next()) {
                     cachedSnowflakes.add(rs.getString("snowflake"));
-                    cachedNames.add(rs.getString("display_name"));
                 }
                 assertThat(cachedSnowflakes)
                         .as("Cache should contain all non-empty snowflakes from JSON data")
                         .containsExactlyInAnyOrder("111", "222", "333", "444");
-                assertThat(cachedNames).containsExactlyInAnyOrder("Alice", "Bob", "Charlie", "Diana");
             }
 
             // Verify: attendance table populated correctly

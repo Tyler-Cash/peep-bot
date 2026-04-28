@@ -876,6 +876,83 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: create discord_guild_member table
+      author: tyler
+      comment: >
+        Replaces discord_user_guild membership table and the per-user
+        display_name / avatar columns on discord_user_cache. Names and
+        avatars are inherently per-guild (Discord nicknames + guild
+        avatars), so they belong on a (guild_id, snowflake) row.
+      changes:
+        - createTable:
+            tableName: discord_guild_member
+            columns:
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: text
+              - column:
+                  name: avatar_bytes
+                  type: bytea
+              - column:
+                  name: avatar_content_type
+                  type: text
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: discord_guild_member
+            columnNames: guild_id, snowflake
+        - createIndex:
+            indexName: idx_discord_guild_member_snowflake
+            tableName: discord_guild_member
+            columns:
+              - column:
+                  name: snowflake
+
+  - changeSet:
+      id: backfill discord_guild_member from discord_user_guild
+      author: tyler
+      comment: >
+        Backfill the new per-guild member rows from existing memberships,
+        joining the per-user display_name and avatar from discord_user_cache.
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO discord_guild_member (guild_id, snowflake, display_name, avatar_bytes, avatar_content_type, updated_at)
+              SELECT g.guild_id, g.snowflake, c.display_name, c.avatar_bytes, c.avatar_content_type, COALESCE(c.updated_at, NOW())
+              FROM discord_user_guild g
+              JOIN discord_user_cache c ON c.snowflake = g.snowflake
+              ON CONFLICT (guild_id, snowflake) DO NOTHING
+
+  - changeSet:
+      id: drop discord_user_guild and obsolete cache columns
+      author: tyler
+      changes:
+        - dropTable:
+            tableName: discord_user_guild
+        - dropColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: display_name
+              - column:
+                  name: avatar_bytes
+              - column:
+                  name: avatar_content_type
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

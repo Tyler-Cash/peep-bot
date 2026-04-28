@@ -141,7 +141,7 @@ public class RewindService {
         List<Object[]> attendeeRows = aq.getResultList();
         Set<String> attendeeSnowflakes =
                 attendeeRows.stream().map(r -> (String) r[0]).collect(Collectors.toSet());
-        Map<String, String> attendeeNames = userCacheService.getDisplayNames(attendeeSnowflakes);
+        Map<String, String> attendeeNames = userCacheService.getDisplayNames(guildId, attendeeSnowflakes);
         List<AttendeeStatDto> topAttendees = attendeeRows.stream()
                 .map(r -> {
                     String attendeeSnowflake = (String) r[0];
@@ -162,7 +162,7 @@ public class RewindService {
                 .map(r -> (String) r[0])
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
-        Map<String, String> orgNames = userCacheService.getDisplayNames(orgSnowflakes);
+        Map<String, String> orgNames = userCacheService.getDisplayNames(guildId, orgSnowflakes);
         List<AttendeeStatDto> topOrganizers = orgRows.stream()
                 .map(r -> {
                     String raw = (String) r[0];
@@ -217,7 +217,7 @@ public class RewindService {
             }
             edges.sort((a, b) -> Integer.compare(b.sharedEvents(), a.sharedEvents()));
 
-            Map<String, String> nodeNames = userCacheService.getDisplayNames(graphSnowflakes);
+            Map<String, String> nodeNames = userCacheService.getDisplayNames(guildId, graphSnowflakes);
             List<GraphNodeDto> nodes = nodeRows.stream()
                     .map(r -> {
                         String nodeSnowflake = (String) r[1];

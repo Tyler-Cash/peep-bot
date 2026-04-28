@@ -154,7 +154,7 @@ class AuthorizationFuzzIntegrationTest {
         jdbc.execute("DELETE FROM attendance");
         jdbc.execute("DELETE FROM event_category");
         jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM discord_user_guild");
+        jdbc.execute("DELETE FROM discord_guild_member");
         jdbc.execute("DELETE FROM discord_user_cache");
 
         discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Fuzzy A", "fuzzya", GUILD_1);
