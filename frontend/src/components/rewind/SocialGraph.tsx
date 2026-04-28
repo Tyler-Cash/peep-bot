@@ -102,7 +102,19 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("stroke-opacity", 0.45)
       .attr("stroke-width", (d) => strokeScale(d.sharedEvents));
 
-    linkEls
+    // Wide transparent lines layered on top for easy hover / tooltip targeting
+    const linkHitEls = svg
+      .append("g")
+      .selectAll<SVGLineElement, SimLink>("line")
+      .data(links)
+      .enter()
+      .append("line")
+      .attr("stroke", "rgba(0,0,0,0)")
+      .attr("stroke-width", 12)
+      .style("pointer-events", "stroke")
+      .attr("cursor", "default");
+
+    linkHitEls
       .append("title")
       .text(
         (d) =>
@@ -134,6 +146,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("font-weight", 700)
       .attr("fill", INK)
       .style("display", (d) => (d.avatarUrl ? "none" : null))
+      .style("user-select", "none")
+      .style("pointer-events", "none")
       .text((d) => d.displayName[0].toUpperCase());
 
     nodeEls
@@ -153,6 +167,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("font-size", 11)
       .attr("font-weight", 700)
       .attr("fill", INK)
+      .style("user-select", "none")
+      .style("pointer-events", "none")
       .text((d) =>
         d.displayName.length > 12
           ? d.displayName.slice(0, 11) + "…"
@@ -184,12 +200,13 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .stop();
 
     simulation.on("tick", () => {
-      linkEls
-        .attr("x1", (d) => (d.source as SimNode).x ?? 0)
-        .attr("y1", (d) => (d.source as SimNode).y ?? 0)
-        .attr("x2", (d) => (d.target as SimNode).x ?? 0)
-        .attr("y2", (d) => (d.target as SimNode).y ?? 0);
+      const x1 = (d: SimLink) => (d.source as SimNode).x ?? 0;
+      const y1 = (d: SimLink) => (d.source as SimNode).y ?? 0;
+      const x2 = (d: SimLink) => (d.target as SimNode).x ?? 0;
+      const y2 = (d: SimLink) => (d.target as SimNode).y ?? 0;
 
+      linkEls.attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
+      linkHitEls.attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
       nodeEls.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
 
