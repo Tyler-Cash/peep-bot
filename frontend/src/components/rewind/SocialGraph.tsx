@@ -13,7 +13,11 @@ const MUTE = "#6B6E66";
 
 type SimNode = GraphNodeDto & d3.SimulationNodeDatum;
 type SimLink = Omit<GraphEdgeDto, "user1Snowflake" | "user2Snowflake"> &
-  d3.SimulationLinkDatum<SimNode> & { sharedEvents: number };
+  d3.SimulationLinkDatum<SimNode> & {
+    sharedEvents: number;
+    displayName1: string;
+    displayName2: string;
+  };
 
 export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -23,7 +27,6 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     if (!container || graph.nodes.length === 0) return;
 
     const uid = Math.random().toString(36).slice(2, 8);
-
     const width = container.clientWidth || 600;
     const height = SVG_HEIGHT;
 
@@ -53,11 +56,15 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .domain([minShared, maxShared])
       .range([1, 6]);
 
-    // Higher shared events → shorter edge distance (pulls frequent pairs closer)
+    // Higher shared events → shorter edge distance; minimum of 80px to keep nodes readable
     const linkDistanceScale = d3
       .scaleLinear()
       .domain([minShared, maxShared])
-      .range([200, 50]);
+      .range([200, 80]);
+
+    const nameBySnowflake = new Map(
+      graph.nodes.map((n) => [n.snowflake, n.displayName]),
+    );
 
     const defs = svg.append("defs");
     graph.nodes.forEach((node) => {
@@ -81,6 +88,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       source: e.user1Snowflake,
       target: e.user2Snowflake,
       sharedEvents: e.sharedEvents,
+      displayName1: nameBySnowflake.get(e.user1Snowflake) ?? e.user1Snowflake,
+      displayName2: nameBySnowflake.get(e.user2Snowflake) ?? e.user2Snowflake,
     }));
 
     const linkEls = svg
@@ -92,6 +101,13 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("stroke", MUTE)
       .attr("stroke-opacity", 0.45)
       .attr("stroke-width", (d) => strokeScale(d.sharedEvents));
+
+    linkEls
+      .append("title")
+      .text(
+        (d) =>
+          `${d.displayName1} and ${d.displayName2} attended ${d.sharedEvents} events together`,
+      );
 
     const nodeEls = svg
       .append("g")
@@ -108,6 +124,17 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("fill", (d) => stringToColor(d.displayName))
       .attr("stroke", INK)
       .attr("stroke-width", 1.5);
+
+    // First-letter fallback — shown only when no avatar image is available
+    nodeEls
+      .append("text")
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central")
+      .attr("font-size", (d) => Math.round(radii.get(d.snowflake)! * 0.85))
+      .attr("font-weight", 700)
+      .attr("fill", INK)
+      .style("display", (d) => (d.avatarUrl ? "none" : null))
+      .text((d) => d.displayName[0].toUpperCase());
 
     nodeEls
       .append("image")
@@ -136,12 +163,6 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .append("title")
       .text((d) => `${d.displayName} · ${d.eventCount} events`);
 
-    nodeEls
-      .transition()
-      .delay((_, i) => i * 30)
-      .duration(300)
-      .style("opacity", 1);
-
     const simulation = d3
       .forceSimulation<SimNode>(nodes)
       .force(
@@ -152,12 +173,15 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
           .distance((d) => linkDistanceScale(d.sharedEvents)),
       )
       .force("charge", d3.forceManyBody().strength(-200))
-      // Low strength (0.05) keeps nodes loosely drifting toward center without forcing a tight cluster
+      // Low strength keeps nodes loosely drifting toward center without forcing a tight cluster
       .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05))
       .force(
         "collide",
-        d3.forceCollide<SimNode>((d) => (radii.get(d.snowflake) ?? MIN_RADIUS) + 4),
-      );
+        d3.forceCollide<SimNode>(
+          (d) => (radii.get(d.snowflake) ?? MIN_RADIUS) + 4,
+        ),
+      )
+      .stop();
 
     simulation.on("tick", () => {
       linkEls
@@ -188,8 +212,26 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
 
     nodeEls.call(drag);
 
+    // Delay animation + simulation start until the graph scrolls into view
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          nodeEls
+            .transition()
+            .delay((_, i) => i * 30)
+            .duration(300)
+            .style("opacity", 1);
+          simulation.alpha(1).restart();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(container);
+
     return () => {
       simulation.stop();
+      observer.disconnect();
     };
   }, [graph]);
 
