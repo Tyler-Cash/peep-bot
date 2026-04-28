@@ -203,17 +203,12 @@ jobs:
         run: ./gradlew bootBuildImage -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" -x test
         working-directory: ./backend
 
-      - name: Save Docker image
+      - name: Push SHA-tagged image to GHCR
         if: github.ref == 'refs/heads/main'
-        run: docker save "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" | gzip > /tmp/backend-image.tar.gz
-
-      - name: Upload Docker image artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: backend-image
-          path: /tmp/backend-image.tar.gz
-          retention-days: 1
+        run: |
+          SHA_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:sha-${{ github.sha }}"
+          docker tag "ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:latest" "$SHA_REF"
+          docker push "$SHA_REF"
 
   backend-sbom:
     needs: [changes]
@@ -302,16 +297,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: backend-image
-          path: /tmp
-
-      - name: Load and push Docker image
+      - name: Tag SHA image as :latest in registry
         run: |
-          gunzip -c /tmp/backend-image.tar.gz | docker load
-          docker push "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
+          SHA_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:sha-${{ github.sha }}"
+          LATEST_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:latest"
+          docker buildx imagetools create --tag "$LATEST_REF" "$SHA_REF"
 
   frontend-ci:
     runs-on: ubuntu-24.04
