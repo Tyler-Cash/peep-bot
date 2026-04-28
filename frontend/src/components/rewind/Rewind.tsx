@@ -9,6 +9,7 @@ import { categoryMeta } from "@/lib/categories";
 import { dateStamp } from "@/lib/format";
 import { useRewind, useRewindYears } from "@/lib/hooks";
 import type { AttendeeStatDto, EventCategoryDto } from "@/lib/types";
+import { SocialGraph } from "@/components/rewind/SocialGraph";
 
 const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -159,22 +160,13 @@ export function Rewind() {
             </Slab>
           )}
 
-          {/* top social pairs */}
-          {data.topSocialPairs.length > 0 && (
+          {/* social graph */}
+          {data.socialGraph && (
             <Slab className="p-5">
               <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
-                always together
+                social graph
               </span>
-              <ul className="mt-3 flex flex-col gap-2">
-                {data.topSocialPairs.map((pair, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[14px]">
-                    <span className="font-extrabold">{pair.user1}</span>
-                    <span className="text-mute">+</span>
-                    <span className="font-extrabold">{pair.user2}</span>
-                    <span className="ml-auto text-mute font-semibold">{pair.sharedEvents} events</span>
-                  </li>
-                ))}
-              </ul>
+              <SocialGraph graph={data.socialGraph} />
             </Slab>
           )}
 
