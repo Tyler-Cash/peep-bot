@@ -68,7 +68,7 @@ dependencies {
         exclude module: 'opus-java'
     }
     implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.springframework.statemachine:spring-statemachine-core:4.0.1'
     implementation 'org.jfree:jfreechart:1.5.6'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
