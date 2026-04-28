@@ -7,6 +7,7 @@ import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Stepper } from "@/components/ui/Stepper";
+import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
 import { dateToLocalInput } from "@/lib/format";
 import {
   updateEvent,
@@ -29,6 +30,7 @@ export function EditEventForm({ id }: { id: string }) {
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const locationBias =
     guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
@@ -55,6 +57,7 @@ export function EditEventForm({ id }: { id: string }) {
     e.preventDefault();
     if (!guild) return;
     setSubmitting(true);
+    setError(null);
     try {
       await updateEvent(guild.id, data.id, {
         name,
@@ -65,13 +68,22 @@ export function EditEventForm({ id }: { id: string }) {
         dateTime: new Date(date).toISOString(),
       });
       router.push(`/events/${id}`);
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return;
+      if (e instanceof BackendUnreachable) {
+        setError("can't reach the server — check your connection and try again");
+      } else if (e instanceof ApiError) {
+        setError(e.message);
+      } else {
+        setError("something went wrong saving these changes");
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-[960px] px-5 py-8">
+    <div className="mx-auto max-w-[960px] px-4 sm:px-5 py-6 sm:py-8">
       <Link
         href={`/events/${id}`}
         className="inline-flex items-center gap-1.5 mb-4 text-[16px] font-semibold text-mute hover:text-ink"
@@ -81,7 +93,7 @@ export function EditEventForm({ id }: { id: string }) {
 
       <form
         onSubmit={onSubmit}
-        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-6"
+        className="flex flex-col gap-3.5 bg-white border-[1.5px] border-ink rounded-card shadow-hero p-4 sm:p-6"
       >
         <h2 className="text-[28px] font-extrabold tracking-[-0.02em] leading-none lowercase mb-1">
           edit event
@@ -99,7 +111,7 @@ export function EditEventForm({ id }: { id: string }) {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="date">
             <DatePicker value={date || null} onChange={setDate} />
           </Field>
@@ -108,7 +120,7 @@ export function EditEventForm({ id }: { id: string }) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-[1fr_150px] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-3">
           <Field label="where">
             <LocationAutocomplete
               value={location}
@@ -133,6 +145,15 @@ export function EditEventForm({ id }: { id: string }) {
             className={areaCls}
           />
         </Field>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
           <Link

@@ -44,8 +44,13 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
         title={`${guild.name} · #${guild.channel}`}
       >
         <GuildIcon guild={guild} />
-        <span className="flex flex-col leading-none">
-          <span className="text-[15px] font-extrabold tracking-[-0.01em] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="flex flex-col leading-none min-w-0 flex-1 text-left">
+          <span
+            className={clsx(
+              "text-[15px] font-extrabold tracking-[-0.01em] overflow-hidden text-ellipsis whitespace-nowrap",
+              fullWidth ? "max-w-full" : "max-w-[160px]",
+            )}
+          >
             {guild.name}
           </span>
           <span className="text-[13px] text-mute font-semibold mt-0.5 whitespace-nowrap">
@@ -55,18 +60,29 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
         <span className="ml-1 text-[18px] text-mute">▾</span>
       </button>
 
-      {open && <GuildDropdown onClose={() => setOpen(false)} />}
+      {open && <GuildDropdown onClose={() => setOpen(false)} fullWidth={fullWidth} />}
     </div>
   );
 }
 
-function GuildDropdown({ onClose }: { onClose: () => void }) {
+function GuildDropdown({
+  onClose,
+  fullWidth,
+}: {
+  onClose: () => void;
+  fullWidth?: boolean;
+}) {
   const { data: guilds } = useGuilds();
   const { data: user } = useCurrentUser();
   const router = useRouter();
 
   return (
-    <div className="absolute left-0 top-[calc(100%+6px)] z-30 w-[260px] rounded-card border-[1.5px] border-ink bg-paper shadow-rest overflow-hidden">
+    <div
+      className={clsx(
+        "absolute left-0 top-[calc(100%+6px)] z-30 rounded-card border-[1.5px] border-ink bg-paper shadow-rest overflow-hidden",
+        fullWidth ? "w-full" : "w-[260px]",
+      )}
+    >
       <div className="px-3 pt-2.5 pb-1.5 text-[10.5px] font-extrabold tracking-[0.18em] text-mute uppercase border-b-[1px] border-ink/10">
         your servers
       </div>

@@ -23,26 +23,26 @@ export function Rewind() {
   const availableYears = years ?? [currentYear];
 
   return (
-    <div className="mx-auto max-w-[1100px] px-5 py-6 flex flex-col gap-6">
+    <div className="mx-auto max-w-[1100px] px-4 sm:px-5 py-6 flex flex-col gap-6">
       {/* hero */}
-      <div className="relative overflow-hidden rounded-hero border-[1.5px] border-ink bg-ink text-paper p-7 shadow-hero">
-        <div className="absolute right-[-30px] bottom-[-40px] opacity-90">
+      <div className="relative overflow-hidden rounded-hero border-[1.5px] border-ink bg-ink text-paper p-5 sm:p-7 shadow-hero">
+        <div className="absolute right-[-30px] bottom-[-40px] opacity-90 hidden sm:block">
           <Peepo size={260} hue="#7BC24F" />
         </div>
         <span className="text-[11px] font-extrabold tracking-[0.2em] text-muteDk uppercase">
           PEEPBOT REWIND
         </span>
-        <h1 className="mt-2 text-[72px] font-extrabold tracking-[-0.04em] leading-none">
+        <h1 className="mt-2 text-[56px] sm:text-[72px] font-extrabold tracking-[-0.04em] leading-none">
           {year}
         </h1>
-        <p className="mt-2 text-[15px] text-paper3 max-w-[480px]">
+        <p className="mt-2 text-[14px] sm:text-[15px] text-paper3 max-w-[480px]">
           {scope === "guild"
             ? "what happened this year in our corner of discord."
             : "your year in events."}
         </p>
         <div className="mt-5 flex items-center gap-3 flex-wrap">
           {/* year selector */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {availableYears.map((y) => (
               <button
                 key={y}

@@ -140,7 +140,7 @@ export function EventDetail({ id }: { id: string }) {
 
   return (
     <>
-      <div className="mx-auto max-w-[1200px] px-5 py-5">
+      <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-5">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
@@ -152,7 +152,7 @@ export function EventDetail({ id }: { id: string }) {
         <div className="flex flex-col gap-5">
           {/* hero */}
           <div
-            className="relative rounded-hero border-[1.5px] border-ink shadow-hero overflow-hidden p-6"
+            className="relative rounded-hero border-[1.5px] border-ink shadow-hero overflow-hidden p-4 sm:p-6"
             style={{ background: cat.bg, color: cat.ink }}
           >
           {isCancelled && (
@@ -182,37 +182,39 @@ export function EventDetail({ id }: { id: string }) {
               {cat.emoji}
             </span>
           )}
-            <div className="relative flex items-start gap-4">
-              <div className="flex flex-col items-center justify-center rounded-card bg-white/95 border-[1.5px] border-ink w-[86px] py-2 shadow-rest shrink-0">
-                <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-                <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-                <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
+            <div className="relative flex items-start gap-3 sm:gap-4">
+              <div className="flex flex-col items-center justify-center rounded-card bg-white/95 border-[1.5px] border-ink w-[68px] sm:w-[86px] py-2 shadow-rest shrink-0">
+                <span className="text-[11px] sm:text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
+                <span className="text-[28px] sm:text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
+                <span className="text-[11px] sm:text-[13px] font-extrabold tracking-[0.14em] uppercase">
                   {stamp.weekday}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                       <CatTag category={data.category} displayState={data.displayState} />
                     <CountdownChip iso={data.dateTime} />
                   </div>
                   {!isPast && !isCancelled && (
                     <Link
                       href={`/events/${id}/edit`}
-                      className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-current bg-white/80 px-4 py-1.5 text-[16px] font-extrabold tracking-[-0.01em] shadow-rest hover:bg-white/95 transition-colors"
+                      aria-label="edit event"
+                      className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-current bg-white/80 px-3 sm:px-4 py-1.5 text-[14px] sm:text-[16px] font-extrabold tracking-[-0.01em] shadow-rest hover:bg-white/95 transition-colors"
                     >
                       <PencilIcon className="w-4 h-4" />
-                      edit event
+                      <span className="hidden sm:inline">edit event</span>
+                      <span className="sm:hidden">edit</span>
                     </Link>
                   )}
                 </div>
-                <h1 className="mt-2 text-[48px] sm:text-[56px] font-extrabold tracking-[-0.05em] leading-[0.98]">
+                <h1 className="mt-2 text-[32px] sm:text-[56px] font-extrabold tracking-[-0.05em] leading-[0.98] break-words">
                   {data.name}
                 </h1>
-                <p className="mt-2 text-[18px] font-semibold">
+                <p className="mt-2 text-[15px] sm:text-[18px] font-semibold">
                   {stamp.weekday} · {timeLabel(data.dateTime)} · 🎤 organized by {data.host}
                   {data.hostUsername && data.hostUsername !== data.host && (
-                    <span className="text-[16px] text-ink/70 font-medium ml-1">@{data.hostUsername}</span>
+                    <span className="text-[13px] sm:text-[16px] text-ink/70 font-medium ml-1">@{data.hostUsername}</span>
                   )}
                 </p>
               </div>
@@ -224,7 +226,7 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 your rsvp
               </span>
-              <p className="mt-1 text-[26px] font-extrabold tracking-[-0.02em]">{rsvpHeadline}</p>
+              <p className="mt-1 text-[22px] sm:text-[26px] font-extrabold tracking-[-0.02em]">{rsvpHeadline}</p>
               {!isCancelled && !data.completed && (
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <Chunky
@@ -313,7 +315,7 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-muteDk uppercase">
                 KEEP CHATTING IN
               </span>
-              <p className="mt-1 text-[28px] font-extrabold tracking-[-0.02em]"># {guild?.channel ?? "outings"}</p>
+              <p className="mt-1 text-[24px] sm:text-[28px] font-extrabold tracking-[-0.02em] break-words"># {guild?.channel ?? "outings"}</p>
               <a
                 href={`https://discord.com/channels/${guild?.id ?? ""}/${data.channelId ?? ""}/${data.messageId ?? ""}`}
                 target="_blank"

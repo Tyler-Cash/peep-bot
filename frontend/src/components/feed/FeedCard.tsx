@@ -100,7 +100,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
           className="block mt-2 rounded-card border-[1.5px] border-ink overflow-hidden shadow-rest bg-white cursor-pointer"
         >
           <div
-            className="relative p-3.5 sm:p-4 pr-3.5 sm:pr-[112px] border-b-[1.5px] border-ink overflow-hidden"
+            className="relative p-3.5 sm:p-4 sm:pr-[112px] border-b-[1.5px] border-ink overflow-hidden"
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.image ? (
@@ -123,28 +123,51 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 {cat.emoji}
               </span>
             ) : null}
-            {/* horizontal date tile — inline above on mobile, pinned top-right on sm+ */}
+            {/* mobile: a top row with the cat tag flush-left and a compact date
+                chip flush-right. Both sit in normal flow (not absolute) so the
+                title and meta below get the full content width. */}
+            <div className="sm:hidden relative z-[2] flex items-center justify-between gap-2 mb-2">
+              <CatTag category={event.category} displayState={event.displayState} />
+              <span
+                className="inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95 shrink-0"
+                style={{ transform: `rotate(${tileTilt}deg)` }}
+              >
+                <span className="flex items-center gap-1 px-2 py-1.5">
+                  <span className="text-[18px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+                    {stamp.day}
+                  </span>
+                  <span className="text-[14px] font-extrabold leading-none tracking-[-0.03em] lowercase">
+                    {stamp.month.toLowerCase()}
+                  </span>
+                </span>
+              </span>
+            </div>
+            {/* desktop: horizontal date tile pinned top-right with the full
+                day / month / weekday breakdown. */}
             <div
-              className="z-[2] inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95 mb-2 sm:mb-0 sm:absolute sm:top-3 sm:right-3"
+              className="hidden sm:inline-flex absolute top-3 right-3 z-[2] items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95"
               style={{ transform: `rotate(${tileTilt}deg)` }}
             >
               <span className="flex items-center gap-1.5 px-3 py-2">
-                <span className="text-[22px] sm:text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+                <span className="text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
                   {stamp.day}
                 </span>
-                <span className="text-[17px] sm:text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
+                <span className="text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
                   {stamp.month.toLowerCase()}
                 </span>
               </span>
               <span className="flex items-center justify-center px-3 border-l-[1.5px] border-ink bg-white/55">
-                <span className="text-[12px] sm:text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
+                <span className="text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
                   {stamp.weekday}
                 </span>
               </span>
             </div>
             {/* content — pl clears watermark so the title never collides */}
-            <div className="relative pl-[64px] sm:pl-[80px] min-w-0">
-              <CatTag category={event.category} displayState={event.displayState} />
+            <div className="relative sm:pl-[80px] min-w-0">
+              {/* desktop-only inline category — on mobile the cat tag sits in the row above */}
+              <div className="hidden sm:block">
+                <CatTag category={event.category} displayState={event.displayState} />
+              </div>
               <h2 className="mt-1.5 text-[24px] sm:text-[34px] font-extrabold tracking-[-0.03em] leading-[1.05] break-words">
                 {event.name}
               </h2>
