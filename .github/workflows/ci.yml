@@ -529,6 +529,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PORTAINER_DEPLOY_TOKEN }}
 
+  deploy-prod-frontend:
+    needs: [deploy-staging-frontend, deploy-prod-backend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Promote staging deployment to production
+        run: |
+          STAGING_URL="${{ needs.deploy-staging-frontend.outputs.deployment_url }}"
+          echo "Promoting ${STAGING_URL} to production..."
+          vercel promote "${STAGING_URL}" --token=$VERCEL_TOKEN --yes
+          echo "Production now serving from: https://event.tylercash.dev"
+
   frontend-sbom:
     needs: [changes]
     if: github.event_name == 'push' || needs.changes.outputs.frontend == 'true'
