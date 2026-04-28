@@ -16,24 +16,30 @@ export function EventsFeed() {
 
   return (
     <div className="mx-auto max-w-[980px] px-5 py-6">
-      <header className="flex items-end justify-between mb-5">
+      <header className="flex items-end justify-between gap-3.5 mb-[18px]">
         <h1 className="text-[54px] sm:text-[64px] font-extrabold tracking-[-0.04em] leading-[0.95]">
           what&apos;s happening
         </h1>
         <span
-          className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-leaf px-4 py-1.5 text-[15px] font-extrabold shadow-chunky-sm"
+          className="inline-flex items-baseline gap-2 shrink-0 rounded-card border-[1.5px] border-ink bg-leaf px-3.5 pt-1.5 pb-2 shadow-hero"
           style={{ transform: "rotate(-2deg)" }}
         >
-          {count} upcoming ✨
+          <span className="text-[38px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+            {count}
+          </span>
+          <span className="text-eyebrow font-extrabold uppercase leading-none">
+            upcoming
+          </span>
         </span>
       </header>
 
       <Link
         href="/events/new"
-        className="flex items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pl-5 pr-4 py-3 shadow-chunky-sm hover:bg-paper2 transition-colors"
+        className="flex items-center gap-2 rounded-chip border-[1.5px] border-ink bg-white pl-[18px] pr-1.5 py-1.5 shadow-rest hover:bg-paper2 transition-colors"
       >
-        <span className="text-[18px] font-semibold text-mute flex-1">
-          ＋ post an event to #outings…
+        <span className="text-leaf text-[11px] mr-1" aria-hidden>●</span>
+        <span className="flex-1 text-[16px] font-medium text-mute">
+          plan something cool with friends…
         </span>
         <Chunky variant="leaf" size="sm">
           new event

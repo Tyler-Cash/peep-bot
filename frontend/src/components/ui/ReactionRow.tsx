@@ -10,11 +10,13 @@ export function ReactionRow({
   active,
   onPick,
   compact,
+  tilt = 0,
 }: {
   counts: Counts;
   active?: RsvpStatus | null;
   onPick?: (status: RsvpStatus) => void;
   compact?: boolean;
+  tilt?: number;
 }) {
   const items: Array<{ status: RsvpStatus; image: string; alt: string; n: number }> = [
     { status: "going", image: "/peepos/peepo-going.png", alt: "going", n: counts.going },
@@ -23,7 +25,7 @@ export function ReactionRow({
   ];
   const imgSize = compact ? 18 : 22;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5" style={tilt ? { transform: `rotate(${tilt}deg)`, transformOrigin: "center" } : undefined}>
       {items.map((it) => (
         <button
           key={it.status}
@@ -33,11 +35,11 @@ export function ReactionRow({
             onPick?.(it.status);
           }}
           className={clsx(
-            "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink font-bold transition-colors",
+            "inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink font-bold transition-colors",
             compact ? "px-2.5 py-1 text-[14px]" : "px-3.5 py-1.5 text-[16px]",
             active === it.status
-              ? "bg-leaf text-ink shadow-chunky-active translate-x-[1px] translate-y-[1px]"
-              : "bg-paper text-ink shadow-chunky-sm hover:bg-paper2",
+              ? "bg-leaf text-ink shadow-press translate-x-[1px] translate-y-[1px]"
+              : "bg-paper text-ink shadow-rest hover:bg-paper2",
           )}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

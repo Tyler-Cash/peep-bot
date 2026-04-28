@@ -8,7 +8,7 @@ import { ReactionRow } from "@/components/ui/ReactionRow";
 import { Avas } from "@/components/ui/Avas";
 import { Avatar } from "@/components/ui/Avatar";
 import { categoryMeta } from "@/lib/categories";
-import { dateStamp, timeLabel } from "@/lib/format";
+import { dateStamp, seededTilt, timeLabel } from "@/lib/format";
 import { submitRsvp, useActiveGuild, useCurrentUser, useEvent } from "@/lib/hooks";
 import type { EventDto, RsvpStatus } from "@/lib/types";
 
@@ -19,6 +19,8 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const guild = useActiveGuild();
   const cat = categoryMeta(event.category);
   const stamp = dateStamp(event.dateTime);
+  const tileTilt = seededTilt(`tile-${event.id}`, 1.6);
+  const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2);
 
   const ds = detail ?? {
     accepted: [],
@@ -71,7 +73,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   };
 
   return (
-    <article className={clsx("flex gap-3 px-3 py-3 rounded-[10px] transition-colors hover:bg-leaf/5", !last && "border-b border-line")}>
+    <article className={clsx("flex gap-3 px-3 py-3 rounded-chip transition-colors hover:bg-leaf/5", !last && "border-b border-line")}>
       <Avatar
         who={{ name: event.host, username: event.hostUsername, avatarUrl: event.hostAvatarUrl }}
         size={40}
@@ -88,10 +90,10 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
         <div
           onClick={() => router.push(`/events/${event.id}`)}
           onMouseEnter={() => router.prefetch(`/events/${event.id}`)}
-          className="block mt-2 rounded-[14px] border-[1.5px] border-ink overflow-hidden shadow-chunky bg-white cursor-pointer"
+          className="block mt-2 rounded-card border-[1.5px] border-ink overflow-hidden shadow-rest bg-white cursor-pointer"
         >
           <div
-            className="relative p-4 flex items-start gap-3 border-b-[1.5px] border-ink overflow-hidden"
+            className="relative p-4 pr-[112px] border-b-[1.5px] border-ink overflow-hidden"
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.image ? (
@@ -100,33 +102,46 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 src={cat.image}
                 alt=""
                 aria-hidden
-                width={120}
-                height={120}
-                className="absolute select-none pointer-events-none opacity-[0.25]"
-                style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
+                width={140}
+                height={140}
+                className="absolute select-none pointer-events-none opacity-[0.22]"
+                style={{ left: -22, bottom: -46, transform: "rotate(8deg)" }}
               />
             ) : cat.emoji ? (
               <span
-                className="absolute text-[120px] leading-none opacity-[0.22] select-none pointer-events-none"
-                style={{ right: -6, bottom: -30, transform: "rotate(-12deg)" }}
+                className="absolute text-[140px] leading-none opacity-[0.22] select-none pointer-events-none"
+                style={{ left: -22, bottom: -46, transform: "rotate(8deg)" }}
                 aria-hidden
               >
                 {cat.emoji}
               </span>
             ) : null}
-            <div className="flex flex-col items-center justify-center rounded-[12px] bg-white/90 border-[1.5px] border-ink px-3 py-2 w-[86px] shrink-0 shadow-chunky-sm">
-              <span className="text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-              <span className="text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-              <span className="text-[13px] font-extrabold tracking-[0.14em] uppercase">
-                {stamp.weekday}
+            {/* horizontal date tile, pinned top-right with deterministic tilt */}
+            <div
+              className="absolute top-3 right-3 z-[2] inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95"
+              style={{ transform: `rotate(${tileTilt}deg)` }}
+            >
+              <span className="flex items-center gap-1.5 px-3 py-2">
+                <span className="text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+                  {stamp.day}
+                </span>
+                <span className="text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
+                  {stamp.month.toLowerCase()}
+                </span>
+              </span>
+              <span className="flex items-center justify-center px-3 border-l-[1.5px] border-ink bg-white/55">
+                <span className="text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
+                  {stamp.weekday}
+                </span>
               </span>
             </div>
-            <div className="flex-1 min-w-0 relative">
+            {/* content — pl clears watermark so the title never collides */}
+            <div className="relative pl-[80px] min-w-0">
               <CatTag category={event.category} displayState={event.displayState} />
-              <h2 className="mt-1.5 text-[32px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+              <h2 className="mt-1.5 text-[30px] sm:text-[34px] font-extrabold tracking-[-0.03em] leading-[1.05]">
                 {event.name}
               </h2>
-              <p className="mt-1 text-[16px] font-semibold">
+              <p className="mt-1 text-[16px] font-semibold opacity-95">
                 {timeLabel(event.dateTime)}{event.location ? ` · 📍 ${event.location}` : ""}
               </p>
             </div>
@@ -139,7 +154,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 {counts.going} going · {counts.maybe} maybe
               </span>
               <span className="flex-1" />
-              <ReactionRow counts={counts} active={active} onPick={onPick} />
+              <ReactionRow counts={counts} active={active} onPick={onPick} tilt={rsvpTilt} />
             </div>
           </div>
         </div>
