@@ -41,6 +41,15 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<String> findAllDistinctCreatorSnowflakes();
 
     @Query(
+            value = "SELECT e.* FROM event e "
+                    + "WHERE e.state = 'PLANNED' "
+                    + "AND NOT EXISTS ("
+                    + "    SELECT 1 FROM event_category ec WHERE ec.event_id = e.id"
+                    + ")",
+            nativeQuery = true)
+    Page<Event> findPlannedEventsWithoutCategory(Pageable pageable);
+
+    @Query(
             value = "SELECT COALESCE(ec.category_label, 'unknown') FROM event e "
                     + "LEFT JOIN event_category ec ON ec.event_id = e.id "
                     + "WHERE e.id = :eventId",
