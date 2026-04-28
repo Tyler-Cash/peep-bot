@@ -844,6 +844,38 @@ databaseChangeLog:
               WHERE NOT (e.creator ~ '^[0-9]+$')
               AND (duc.display_name = e.creator OR duc.username = e.creator);
 
+  - changeSet:
+      id: create event_classification_attempt table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: event_classification_attempt
+            columns:
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_classification_attempt_event
+                    references: event(id)
+              - column:
+                  name: attempt_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_attempt_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: next_retry_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
