@@ -39,6 +39,7 @@ class SecurityControllerTest {
         assertThat(result.getUsername()).isEqualTo(USERNAME);
         assertThat(result.getDiscordId()).isEqualTo(DISCORD_ID);
         assertThat(result.isAdmin()).isTrue();
+        assertThat(result.getAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
     }
 
     @Test
@@ -59,6 +60,7 @@ class SecurityControllerTest {
         assertThat(result.isAdmin()).isFalse();
         assertThat(result.getUsername()).isEqualTo(USERNAME);
         assertThat(result.getDiscordId()).isEqualTo(DISCORD_ID);
+        assertThat(result.getAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
     }
 
     @Test

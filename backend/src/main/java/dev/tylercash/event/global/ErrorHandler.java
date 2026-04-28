@@ -25,7 +25,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import org.springframework.web.servlet.view.RedirectView;
 
 @Slf4j
 @ControllerAdvice
@@ -36,9 +35,13 @@ public class ErrorHandler {
         HttpClientErrorException.NotFound.class,
         NoResourceFoundException.class
     })
-    public RedirectView handleError404(HttpServletRequest request, Exception e) {
-        // Redirect to URL for FE to identify it's logged in. This should be okay as it's a BFF
-        return new RedirectView("/login/success");
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, Object> handleError404(HttpServletRequest request, Exception e) {
+        return Map.of(
+                "error", "Not found",
+                "traceId", Optional.ofNullable(MDC.get("traceId")).orElse("unknown"),
+                "timestamp", Instant.now().toString());
     }
 
     @ExceptionHandler(ResponseStatusException.class)

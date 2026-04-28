@@ -61,7 +61,7 @@ class ImmichServiceTest {
         server.expect(requestTo("https://immich.example.com/api/albums"))
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withSuccess(
-                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")),
+                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123", "Test Event", null, 0)),
                         MediaType.APPLICATION_JSON));
 
         ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
@@ -129,7 +129,7 @@ class ImmichServiceTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().json("{\"albumName\":\"[DEV] Test Event\"}"))
                 .andRespond(withSuccess(
-                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123")),
+                        objectMapper.writeValueAsString(new ImmichAlbumResponse("album-123", "Test Event", null, 0)),
                         MediaType.APPLICATION_JSON));
 
         ImmichService service = new ImmichService(config, builder.build(), noWaitRetry());

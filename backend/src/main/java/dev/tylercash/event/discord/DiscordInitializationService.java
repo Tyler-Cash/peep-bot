@@ -24,6 +24,7 @@ public class DiscordInitializationService {
     private final DiscordConfiguration discordConfiguration;
     private final DiscordChannelService discordChannelService;
     private final ContractConfiguration contractConfig;
+    private final DiscordUserCacheService discordUserCacheService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeGuild() {
@@ -33,12 +34,34 @@ public class DiscordInitializationService {
                     "Guild " + discordConfiguration.getGuildId() + " not found. Check dev.tylercash.discord.guild-id");
         }
 
+        syncGuildMembers(guild);
+
         Category outings = ensureCategory(guild, EVENT_CATEGORY);
         ensureCategory(guild, EVENT_ARCHIVE_CATEGORY);
         ensureCategory(guild, contractConfig.getCategoryName());
         ensureSeparatorChannel(outings);
         resolveEmojiFields(guild, discordConfiguration.getEmoji());
         resolveEmojiFields(guild, contractConfig.getEmoji());
+    }
+
+    private void syncGuildMembers(Guild guild) {
+        log.info("Syncing members for guild '{}'...", guild.getName());
+        try {
+            guild.loadMembers()
+                    .onSuccess(members -> {
+                        members.forEach(member -> {
+                            discordUserCacheService.registerIfMissing(
+                                    member.getId(),
+                                    DiscordUtil.getUserDisplayName(member),
+                                    member.getUser().getName(),
+                                    guild.getIdLong());
+                        });
+                        log.info("Synced {} members for guild '{}'", members.size(), guild.getName());
+                    })
+                    .get(); // Wait for completion
+        } catch (Exception e) {
+            log.error("Failed to sync guild members", e);
+        }
     }
 
     void resolveEmojiFields(Guild guild, Object emojiConfig) {

@@ -3,6 +3,7 @@ package dev.tylercash.event.security;
 import dev.tylercash.event.security.dev.DevAutoLoginFilter;
 import dev.tylercash.event.security.oauth2.CustomOAuth2UserService;
 import dev.tylercash.event.security.oauth2.RedirectToFrontendAfterAuth;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
@@ -29,6 +29,7 @@ public class WebSecurityConfig {
     private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RateLimitFilter rateLimitFilter;
+    private final org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource;
 
     @Autowired(required = false)
     private DevAutoLoginFilter devAutoLoginFilter;
@@ -40,24 +41,30 @@ public class WebSecurityConfig {
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling.authenticationEntryPoint(restAuthenticationEntryPoint))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(new AntPathRequestMatcher("/auth/is-logged-in"))
+                        .requestMatchers("/auth/is-logged-in")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html"))
+                        .requestMatchers("/swagger-ui.html")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**"))
+                        .requestMatchers("/swagger-ui/**")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**"))
+                        .requestMatchers("/v3/api-docs/**")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/health"))
+                        .requestMatchers("/actuator/health")
                         .permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/prometheus"))
+                        .requestMatchers("/actuator/prometheus")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
+                .logout(logout -> logout.logoutUrl("/auth/logout")
+                        .logoutSuccessHandler(
+                                (request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
+                        .deleteCookies("SESSION")
+                        .invalidateHttpSession(true))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
+                        .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers("/auth/logout"))
                 .addFilterAfter(rateLimitFilter, AnonymousAuthenticationFilter.class)
-                .cors(org.springframework.security.config.Customizer.withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(
                         oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                                 .successHandler(redirectToFrontendAfterAuth));

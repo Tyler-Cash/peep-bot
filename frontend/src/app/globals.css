@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background-color: #F5F1E8;
+  color: #0E100D;
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark html, .dark body {
+  background-color: #1A1D18;
+  color: #E4DDC9;
+}

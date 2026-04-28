@@ -56,7 +56,7 @@ public class DiscordService {
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
-        Category category = discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_CATEGORY);
+        Category category = discordChannelService.getCategoryByName(event.getServerId(), EVENT_CATEGORY);
         return discordChannelService.createTextChannel(category, DiscordUtil.getChannelNameFromEvent(event));
     }
 
@@ -244,8 +244,8 @@ public class DiscordService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Event roles have not been created yet — please wait and try again");
         }
-        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
-        Category category = discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_CATEGORY);
+        Guild guild = jda.getGuildById(event.getServerId());
+        Category category = discordChannelService.getCategoryByName(event.getServerId(), EVENT_CATEGORY);
         String channelName = DiscordUtil.getChannelNameFromEvent(event) + "-private";
         TextChannel channel = discordChannelService.createPrivateTextChannel(
                 category, channelName, guild.getPublicRole().getIdLong(), event.getAcceptedRoleId());
@@ -271,8 +271,7 @@ public class DiscordService {
     @Observed(name = "discord.archive-channel")
     public void archiveEventChannel(Event event) {
         TextChannel eventChannel = discordChannelService.getTextChannel(event.getChannelId());
-        Category archiveCategory =
-                discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
+        Category archiveCategory = discordChannelService.getCategoryByName(event.getServerId(), EVENT_ARCHIVE_CATEGORY);
         discordChannelService.moveChannelToCategory(eventChannel, archiveCategory);
         discordChannelService.sortChannelsByChannelName(archiveCategory);
     }
@@ -297,7 +296,7 @@ public class DiscordService {
 
     @Observed(name = "discord.create-event-roles")
     public void createEventRoles(Event event) {
-        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Guild guild = jda.getGuildById(event.getServerId());
         String baseName = event.getName();
         if (baseName.length() > 89) {
             baseName = baseName.substring(0, 89);
@@ -318,7 +317,7 @@ public class DiscordService {
 
     @Observed(name = "discord.delete-event-roles")
     public void deleteEventRoles(Event event) {
-        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Guild guild = jda.getGuildById(event.getServerId());
         discordRoleService.deleteRole(guild, event.getAcceptedRoleId());
         discordRoleService.deleteRole(guild, event.getDeclinedRoleId());
         discordRoleService.deleteRole(guild, event.getMaybeRoleId());
@@ -327,7 +326,7 @@ public class DiscordService {
     @Observed(name = "discord.assign-event-role")
     public void assignEventRole(
             Event event, String snowflake, dev.tylercash.event.event.model.AttendanceStatus status) {
-        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Guild guild = jda.getGuildById(event.getServerId());
         Member member = guild.retrieveMemberById(snowflake).complete();
         if (member == null) {
             return;
@@ -346,7 +345,7 @@ public class DiscordService {
     }
 
     public void removeAllEventRoles(Event event, String snowflake) {
-        Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
+        Guild guild = jda.getGuildById(event.getServerId());
         Member member = guild.retrieveMemberById(snowflake).complete();
         if (member != null) {
             discordRoleService.removeRoleFromMember(guild, member, event.getAcceptedRoleId());
@@ -361,15 +360,14 @@ public class DiscordService {
             return;
         }
         notifyEventRoles.executeRunnable(() -> {
-            Guild server = jda.getGuildById(discordConfiguration.getGuildId());
+            Guild server = jda.getGuildById(event.getServerId());
             MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
                     .addContent("**" + event.getName() + "**  starting at " + "<t:"
                             + event.getDateTime().toEpochSecond() + ":t>\n");
             event.getAccepted().stream()
                     .filter(user ->
                             user.getSnowflake() != null && !user.getSnowflake().isBlank())
-                    .map(user ->
-                            getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(user.getSnowflake())))
+                    .map(user -> getMemberFromServer(event.getServerId(), Long.parseLong(user.getSnowflake())))
                     .filter(user -> user.getRoles().stream()
                             .anyMatch(role -> role.getName().equals("pre-event-notification")))
                     .forEach(user -> messageBuilder.addContent(user.getAsMention() + " "));

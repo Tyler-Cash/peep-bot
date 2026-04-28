@@ -58,13 +58,14 @@ public class EventLifecyclePoller {
         return switch (state) {
             case CREATED -> List.of(EventStateMachineEvent.INIT_CHANNEL);
             case INIT_CHANNEL -> List.of(EventStateMachineEvent.INIT_ROLES);
-            case INIT_ROLES -> List.of(EventStateMachineEvent.INIT_COMPLETE);
+            case INIT_ROLES -> List.of(EventStateMachineEvent.CLASSIFY);
+            case CLASSIFY -> List.of(EventStateMachineEvent.INIT_COMPLETE);
             case PLANNED -> List.of(EventStateMachineEvent.PRE_EVENT_NOTIFY);
             case PRE_NOTIFIED -> List.of(EventStateMachineEvent.PREPARE_ALBUM, EventStateMachineEvent.COMPLETE);
             case POST_ALBUM_READY -> List.of(EventStateMachineEvent.POST_ALBUM, EventStateMachineEvent.COMPLETE);
             case POST_ALBUM_SHARED -> List.of(EventStateMachineEvent.COMPLETE);
             case POST_COMPLETED -> List.of(EventStateMachineEvent.ARCHIVE);
-            case ARCHIVED -> List.of(EventStateMachineEvent.DELETE);
+            case CANCELLED, ARCHIVED -> List.of(EventStateMachineEvent.DELETE);
             case DELETED -> List.of();
         };
     }

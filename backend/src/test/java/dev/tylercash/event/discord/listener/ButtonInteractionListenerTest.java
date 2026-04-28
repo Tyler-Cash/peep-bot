@@ -6,6 +6,8 @@ import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
@@ -77,6 +79,9 @@ class ButtonInteractionListenerTest {
         when(buttonInteractionEvent.getMember().getNickname()).thenReturn(nickname);
         when(buttonInteractionEvent.getMember().getId()).thenReturn(snowflake);
         when(buttonInteractionEvent.getMember().getEffectiveName()).thenReturn(nickname);
+        net.dv8tion.jda.api.entities.User jdaUser = mock(net.dv8tion.jda.api.entities.User.class);
+        when(jdaUser.getName()).thenReturn("testuser");
+        when(buttonInteractionEvent.getUser()).thenReturn(jdaUser);
 
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
         when(buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
@@ -89,7 +94,7 @@ class ButtonInteractionListenerTest {
 
         listener.onButtonInteraction(buttonInteractionEvent);
 
-        verify(discordUserCacheService).upsertUser(snowflake, nickname);
+        verify(discordUserCacheService).upsertUser(eq(snowflake), eq(nickname), eq("testuser"), eq(null), anyLong());
         verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
         verify(eventService).populateAttendance(event);
         verify(buttonInteractionEvent).editMessageEmbeds(embedService.getMessage(event, fixedClock));

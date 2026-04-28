@@ -11,6 +11,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
+import dev.tylercash.event.rewind.EmbeddingService;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -40,7 +41,8 @@ class EventServiceTest {
                 mock(EventStateMachineService.class),
                 Clock.systemDefaultZone(),
                 attendanceService,
-                discordUserCacheService);
+                discordUserCacheService,
+                mock(EmbeddingService.class));
     }
 
     @Test
@@ -116,7 +118,8 @@ class EventServiceTest {
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class));
+                mock(DiscordUserCacheService.class),
+                mock(EmbeddingService.class));
 
         Event event = buildEvent();
         event.setState(EventState.POST_COMPLETED);
@@ -141,7 +144,8 @@ class EventServiceTest {
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class));
+                mock(DiscordUserCacheService.class),
+                mock(EmbeddingService.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -165,7 +169,8 @@ class EventServiceTest {
                 stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class));
+                mock(DiscordUserCacheService.class),
+                mock(EmbeddingService.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -176,5 +181,28 @@ class EventServiceTest {
         assertThatThrownBy(() -> service.cancelEvent(id))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Failed to cancel event");
+    }
+
+    @Test
+    void recategorizeEvent_callsEmbeddingServiceClassify() {
+        EventRepository eventRepository = mock(EventRepository.class);
+        EmbeddingService embeddingService = mock(EmbeddingService.class);
+        EventService service = new EventService(
+                mock(DiscordService.class),
+                eventRepository,
+                mock(EventStateMachineService.class),
+                Clock.systemDefaultZone(),
+                mock(AttendanceService.class),
+                mock(DiscordUserCacheService.class),
+                embeddingService);
+
+        Event event = buildEvent();
+        UUID id = UUID.randomUUID();
+        event.setId(id);
+        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
+
+        service.recategorizeEvent(id);
+
+        verify(embeddingService).classifyEvent(event);
     }
 }

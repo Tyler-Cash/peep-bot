@@ -1,70 +1,71 @@
-# Getting Started with Create React App
+# peepbot — frontend (Next.js, Vercel-hosted)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The redesigned web app. Replaces the legacy Vite SPA (preserved at `../frontend-legacy/` for reference until we delete it).
 
-## Available Scripts
+## Setup
 
-In the project directory, you can run:
+```bash
+npm install
+npx msw init public/            # generates public/mockServiceWorker.js
+cp .env.local.example .env.local
+npm run dev
+```
 
-### `npm start`
+Open http://localhost:3000 — the app runs against the **in-browser MSW mock** by default, so no backend is required.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Modes
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+`NEXT_PUBLIC_API_MODE` in `.env.local`:
 
-### `npm test`
+- `mock` (default) — MSW intercepts all `/api/*` calls. Seeded fixtures live in `src/mocks/fixtures.ts`; RSVP / create-event mutate that in-memory store for the lifetime of the tab.
+- `live` — `fetch` hits `NEXT_PUBLIC_API_BASE` (e.g. `https://api.tylercash.dev` or `http://localhost:8080/api` for local backend). Spring session cookie + Discord OAuth required. Middleware redirects to `/login` when the `SESSION` cookie is missing.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Structure
 
-### `npm run build`
+```
+src/
+├── app/                         # App Router
+│   ├── layout.tsx               # Space Grotesk, providers
+│   ├── page.tsx                 # /  — events feed
+│   ├── login/page.tsx
+│   ├── events/new/page.tsx
+│   ├── events/[id]/page.tsx
+│   ├── rewind/page.tsx
+│   └── globals.css
+├── components/                  # Reusable UI
+│   ├── ui/                      # Chunky, Slab, Avatar, Avas, CatTag, ReactionRow, CountdownChip, DayMarker
+│   ├── nav/                     # Nav + GuildSwitcher
+│   ├── feed/                    # EventsFeed + FeedCard
+│   ├── event/                   # EventDetail + CreateEventForm + RsvpGroup
+│   ├── rewind/
+│   ├── login/
+│   ├── Peepo.tsx                # mascot
+│   └── AppShell.tsx             # shared layout (nav + offline banner)
+├── lib/
+│   ├── api.ts                   # fetch wrapper w/ CSRF, 401 handling, 429 retry
+│   ├── hooks.ts                 # SWR hooks (all cache keys namespaced by guild id)
+│   ├── types.ts                 # DTOs — match the backend API shape
+│   ├── categories.ts            # 6-category palette + emoji map
+│   ├── format.ts                # date, countdown, initials helpers
+│   └── swrCache.ts              # localStorage-backed SWR cache (offline-tolerant)
+└── mocks/                       # MSW worker, handlers, fixtures
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Design tokens
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+See `tailwind.config.ts` — colors (`paper`, `ink`, `leaf`, `cat-*`), `chunky-*` box shadows, `border-[1.5px]` width, Space Grotesk font family. Source: `design_handoff_peepbot/README.md`.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Deployment
 
-### `npm run eject`
+- Vercel project roots at `frontend/`.
+- Env: `NEXT_PUBLIC_API_MODE=mock` for initial previews (works with no homelab); flip to `live` + set `NEXT_PUBLIC_API_BASE=https://api.tylercash.dev` for the production deploy.
+- DNS: `app.tylercash.dev` → Vercel. Because frontend and backend share the `tylercash.dev` parent domain, Spring session cookies (`SameSite=Lax`) work cross-subdomain without any backend changes.
+- Backend config: add `https://app.tylercash.dev` to `dev.tylercash.cors.allowed-origins`, set `dev.tylercash.frontend.url=https://app.tylercash.dev`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Offline behaviour
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+When the homelab is unreachable (live mode):
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- SWR serves the last successful response from `localStorage` (via `swrCache.ts`).
+- `<BackendStatusBanner>` polls `/api/auth/is-logged-in` every 30s and shows a banner when it fails.
+- Mutations that fail with `BackendUnreachable` fall through — today they surface an error; follow-up work: persistent retry queue.

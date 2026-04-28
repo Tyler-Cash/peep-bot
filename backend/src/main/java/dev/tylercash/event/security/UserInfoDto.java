@@ -7,6 +7,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class UserInfoDto {
     private String username;
+    private String displayName;
     private String discordId;
     private boolean admin;
+    private String avatarUrl;
 }

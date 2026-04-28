@@ -650,5 +650,232 @@ databaseChangeLog:
             columns:
               - column:
                   name: date_time
+  - changeSet:
+      id: add avatar columns to discord_user_cache
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: avatar_bytes
+                  type: bytea
+              - column:
+                  name: avatar_content_type
+                  type: text
+  - changeSet:
+      id: add discord_user_guild table
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: snowflake
+                  type: text
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_guild_snowflake
+                    references: discord_user_cache(snowflake)
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            columnNames: snowflake, guild_id
+            tableName: discord_user_guild
+        - createIndex:
+            indexName: idx_user_guild_snowflake
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: snowflake
+        - createIndex:
+            indexName: idx_user_guild_guild_id
+            tableName: discord_user_guild
+            columns:
+              - column:
+                  name: guild_id
+
+  - changeSet:
+      id: add index on category_centroid_event_id
+      author: junie
+      changes:
+        - createIndex:
+            indexName: idx_event_category_centroid_id
+            tableName: event_category
+            columns:
+              - column:
+                  name: category_centroid_event_id
+
+  - changeSet:
+      id: add username column to discord_user_cache
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: username
+                  type: text
+
+  - changeSet:
+      id: create guild_settings table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: guild_settings
+            columns:
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: primary_location_place_id
+                  type: text
+              - column:
+                  name: primary_location_name
+                  type: text
+              - column:
+                  name: primary_location_lat
+                  type: double precision
+              - column:
+                  name: primary_location_lng
+                  type: double precision
+
+  - changeSet:
+      id: migrate planned events to classify state
+      author: tyler
+      comment: >
+        Move all PLANNED events into the CLASSIFY state so the clustering
+        service can assign a category to each event. The lifecycle poller
+        will transition them back to PLANNED via INIT_COMPLETE once
+        classification is complete.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'CLASSIFY' WHERE state = 'PLANNED';
+
+  - changeSet:
+      id: add location_place_id to event
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: location_place_id
+                  type: text
+
+  - changeSet:
+      id: merge duplicate attendance records from username migration
+      author: tyler
+      comment: >
+        Attendance records that were imported from the old JSON format had their
+        name set to the user's display name (no snowflake). After the
+        discord_user_cache was populated, some events ended up with both a
+        name-only record (old) and a snowflake record (new) for the same user
+        and status. This migration:
+        1. Deletes the stale name-only record wherever a snowflake record
+           already exists for the same (event, status).
+        2. Backfills the snowflake onto any remaining name-only records that
+           can be matched via display_name or username in discord_user_cache.
+        Records starting with '[+1]' are left untouched (genuine guest names).
+      changes:
+        - sql:
+            sql: >
+              DELETE FROM attendance a
+              USING discord_user_cache duc
+              WHERE a.snowflake IS NULL
+              AND a.name NOT LIKE '[+1]%'
+              AND (duc.display_name = a.name OR duc.username = a.name)
+              AND EXISTS (
+                SELECT 1 FROM attendance a2
+                WHERE a2.event_id = a.event_id
+                AND a2.snowflake = duc.snowflake
+                AND a2.status = a.status
+              );
+        - sql:
+            sql: >
+              UPDATE attendance a
+              SET snowflake = matched.snowflake, name = NULL
+              FROM (
+                SELECT DISTINCT ON (a2.id) a2.id AS record_id, duc2.snowflake
+                FROM attendance a2
+                JOIN discord_user_cache duc2
+                  ON (duc2.display_name = a2.name OR duc2.username = a2.name)
+                WHERE a2.snowflake IS NULL
+                AND a2.name NOT LIKE '[+1]%'
+                ORDER BY a2.id, duc2.snowflake
+              ) matched
+              WHERE a.id = matched.record_id;
+
+  - changeSet:
+      id: migrate archived cancelled events to cancelled state
+      author: tyler
+      comment: >
+        Events that were cancelled (identified by "[CANCELLED]" prefix added by
+        CancelOperation) were incorrectly stored as ARCHIVED. Move them to the
+        new CANCELLED state so the frontend can distinguish them.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event SET state = 'CANCELLED'
+              WHERE state = 'ARCHIVED'
+              AND name ILIKE '%[CANCELLED]%';
+
+  - changeSet:
+      id: backfill event creator snowflakes from cache
+      author: tyler
+      comment: >
+        The original creator-to-snowflake migration was best-effort and left some
+        events with a display name in creator where no attendee match was found.
+        Now that discord_user_cache is populated, match remaining name-based
+        creators by display_name or username and update them to snowflakes.
+      changes:
+        - sql:
+            sql: >
+              UPDATE event e
+              SET creator = duc.snowflake
+              FROM discord_user_cache duc
+              WHERE NOT (e.creator ~ '^[0-9]+$')
+              AND (duc.display_name = e.creator OR duc.username = e.creator);
+
+  - changeSet:
+      id: create event_classification_attempt table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: event_classification_attempt
+            columns:
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_classification_attempt_event
+                    references: event(id)
+              - column:
+                  name: attempt_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_attempt_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: next_retry_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
+

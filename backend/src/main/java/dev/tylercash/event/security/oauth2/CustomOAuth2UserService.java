@@ -1,7 +1,9 @@
 package dev.tylercash.event.security.oauth2;
 
+import dev.tylercash.event.discord.AvatarDownloadService;
 import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.DiscordUserCacheService;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
@@ -19,21 +21,31 @@ import org.springframework.stereotype.Component;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private DiscordService discordService;
     private DiscordConfiguration discordConfiguration;
+    private DiscordUserCacheService discordUserCacheService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        log.info("Authenticated user {}", (String) oAuth2User.getAttribute("username"));
-        if (!discordService.isUserMemberOfServer(
-                discordConfiguration.getGuildId(),
-                Long.parseLong(Objects.requireNonNull(oAuth2User.getAttribute("id"))))) {
-            log.warn(
-                    "User {} not a member of the server. id: {}",
-                    oAuth2User.getAttribute("username"),
-                    oAuth2User.getAttribute("id"));
+        String snowflake = Objects.requireNonNull(oAuth2User.getAttribute("id"));
+        String username = oAuth2User.getAttribute("username");
+        String globalName = oAuth2User.getAttribute("global_name");
+        log.info("Authenticated user {}", username);
+
+        if (!discordService.isUserMemberOfServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake))) {
+            log.warn("User {} not a member of the server. id: {}", username, snowflake);
             throw new OAuth2AuthenticationException(
                     "User not a member of discord server " + discordConfiguration.getGuildId());
         }
+
+        String avatarHash = oAuth2User.getAttribute("avatar");
+        String avatarUrl = AvatarDownloadService.discordAvatarUrl(snowflake, avatarHash);
+        discordUserCacheService.upsertUser(
+                snowflake,
+                globalName != null ? globalName : (username != null ? username : snowflake),
+                username != null ? username : snowflake,
+                avatarUrl,
+                discordConfiguration.getGuildId());
+
         return oAuth2User;
     }
 }

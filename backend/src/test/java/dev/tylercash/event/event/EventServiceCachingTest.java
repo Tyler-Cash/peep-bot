@@ -127,8 +127,8 @@ class EventServiceCachingTest {
     void getActiveEvents_returnsCachedResult() {
         Pageable pageable = PageRequest.of(0, 10);
 
-        eventService.getActiveEvents(pageable);
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
+        eventService.getActiveEvents(pageable, 0L);
 
         assertThat(cacheManager.getCache("activeEvents")).isNotNull();
     }
@@ -137,7 +137,7 @@ class EventServiceCachingTest {
     @DisplayName("createEvent evicts activeEvents cache")
     void createEvent_evictsActiveEventsCache() {
         Pageable pageable = PageRequest.of(0, 10);
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
 
         long uniqueId = idCounter.incrementAndGet();
         Event event = new Event(
@@ -151,7 +151,7 @@ class EventServiceCachingTest {
         eventService.createEvent(event);
 
         // After eviction, calling again should repopulate from DB
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
     }
 
     @Test
@@ -171,7 +171,7 @@ class EventServiceCachingTest {
     @DisplayName("updateEvent evicts activeEvents cache")
     void updateEvent_evictsActiveEventsCache() {
         Pageable pageable = PageRequest.of(0, 10);
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
 
         UUID id = createPersistedEvent();
         Event event = eventService.getEvent(id);
@@ -188,7 +188,7 @@ class EventServiceCachingTest {
 
         // Populate both caches
         eventService.getEvent(id);
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
 
         when(stateMachineService.attemptTransition(any(), eq(EventStateMachineEvent.CANCEL)))
                 .thenReturn(true);
@@ -206,7 +206,7 @@ class EventServiceCachingTest {
 
         // Populate both caches
         eventService.getEvent(id);
-        eventService.getActiveEvents(pageable);
+        eventService.getActiveEvents(pageable, 0L);
 
         try {
             eventService.removeAttendee(id, "someSnowflake", null);

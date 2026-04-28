@@ -23,6 +23,8 @@ dev.tylercash:
     cluster-similarity-threshold: 0.72
     backfill-batch-size: 20
     normalisation-enabled: false
+  cors:
+    allowed-origins: https://event.tylercash.dev,https://event-staging.tylercash.dev
 
 springdoc:
   show-oauth2-endpoints: true
@@ -38,7 +40,11 @@ server:
     session:
       cookie:
         secure: true
-    context-path: /api/
+        name: SESSION
+        http-only: true
+        same-site: Lax
+        domain: event.tylercash.dev
+    context-path: /api
 
 spring:
   main:
@@ -50,7 +56,7 @@ spring:
       spec: maximumSize=500,expireAfterWrite=120s
   ai:
     ollama:
-      base-url: http://localhost:11434
+      base-url: https://ollama.tylercash.dev
       chat:
         enabled: false
         model: qwen2.5:0.5b
@@ -67,11 +73,6 @@ spring:
         model:
           uri: classpath:/models/model.onnx
   session:
-    cookie:
-      name: SESSION
-      http-only: true
-      secure: true
-      same-site: Lax
     jdbc:
       initialize-schema: never
       cleanup-cron: 0 */10 * * * *
@@ -96,6 +97,8 @@ spring:
             usernameAttribute: username
 
 management:
+  server:
+    port: 9001
   endpoints:
     web:
       exposure:

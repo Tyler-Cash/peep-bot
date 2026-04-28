@@ -6,20 +6,29 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.discord.GuildMembershipService;
+import dev.tylercash.event.discord.model.DiscordUserCache;
 import dev.tylercash.event.event.model.AttendanceStatus;
+import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.event.model.EventDetailDto;
 import dev.tylercash.event.event.model.EventDto;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.dv8tion.jda.api.entities.Member;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,22 +44,32 @@ class EventControllerTest {
     private EventControllerTestContext setupContext() {
         EventService eventService = mock(EventService.class);
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
         AttendanceService attendanceService = mock(AttendanceService.class);
         DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
         OAuth2User principal = mock(OAuth2User.class);
         Member member = mock(Member.class);
 
-        when(discordConfiguration.getGuildId()).thenReturn(GUILD_ID);
+        net.dv8tion.jda.api.entities.User jdaUser = mock(net.dv8tion.jda.api.entities.User.class);
+        when(jdaUser.getName()).thenReturn(USERNAME);
+
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(discordService.getMemberFromServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(member);
         when(member.getNickname()).thenReturn(DISPLAY_NAME);
+        when(member.getUser()).thenReturn(jdaUser);
 
         EventController controller = new EventController(
-                eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
         return new EventControllerTestContext(
-                controller, eventService, discordService, principal, attendanceService, discordUserCacheService);
+                controller,
+                eventService,
+                discordService,
+                principal,
+                member,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService);
     }
 
     private EventDto buildEventDto() {
@@ -61,6 +80,7 @@ class EventControllerTest {
         dto.setCapacity(0);
         dto.setCost(0);
         dto.setLocation("");
+        dto.setGuildId(GUILD_ID);
         return dto;
     }
 
@@ -133,7 +153,7 @@ class EventControllerTest {
 
         ctx.controller.createEvent(eventDto, ctx.principal);
 
-        verify(ctx.discordUserCacheService).upsertUser(DISCORD_ID, DISPLAY_NAME);
+        verify(ctx.discordUserCacheService).upsertUser(DISCORD_ID, DISPLAY_NAME, USERNAME, null, GUILD_ID);
     }
 
     @Test
@@ -160,21 +180,24 @@ class EventControllerTest {
     void createEvent_usesEffectiveNameWhenNoNickname() {
         EventService eventService = mock(EventService.class);
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
         AttendanceService attendanceService = mock(AttendanceService.class);
         DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
         OAuth2User principal = mock(OAuth2User.class);
         Member member = mock(Member.class);
 
-        when(discordConfiguration.getGuildId()).thenReturn(GUILD_ID);
+        net.dv8tion.jda.api.entities.User jdaUser = mock(net.dv8tion.jda.api.entities.User.class);
+        when(jdaUser.getName()).thenReturn(USERNAME);
+
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(discordService.getMemberFromServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(member);
         when(member.getNickname()).thenReturn(null);
         when(member.getEffectiveName()).thenReturn("EffectiveName");
+        when(member.getUser()).thenReturn(jdaUser);
 
         EventController controller = new EventController(
-                eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
         EventDto eventDto = buildEventDto();
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
@@ -188,24 +211,38 @@ class EventControllerTest {
     private EventControllerTestContext setupRemoveAttendeeContext() {
         EventService eventService = mock(EventService.class);
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration discordConfiguration = mock(DiscordConfiguration.class);
         AttendanceService attendanceService = mock(AttendanceService.class);
         DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
         OAuth2User principal = mock(OAuth2User.class);
 
-        when(discordConfiguration.getGuildId()).thenReturn(GUILD_ID);
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
 
         EventController controller = new EventController(
-                eventService, discordService, discordConfiguration, attendanceService, discordUserCacheService);
+                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
         return new EventControllerTestContext(
-                controller, eventService, discordService, principal, attendanceService, discordUserCacheService);
+                controller,
+                eventService,
+                discordService,
+                principal,
+                null,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService);
+    }
+
+    private Event buildEventInGuild(UUID id) {
+        Event event = new Event();
+        event.setId(id);
+        event.setServerId(GUILD_ID);
+        return event;
     }
 
     @Test
     void removeAttendee_adminCanRemoveAnyDiscordUser() {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
+        when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
         when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
@@ -219,6 +256,7 @@ class EventControllerTest {
     void removeAttendee_adminCanRemovePlusOne() {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
+        when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
         when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
@@ -232,6 +270,7 @@ class EventControllerTest {
     void removeAttendee_nonAdminCannotRemoveDiscordUser_returns403() {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
+        when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
         when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
@@ -246,6 +285,7 @@ class EventControllerTest {
     void removeAttendee_nonAdminCanRemoveOwnPlusOne() {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
+        when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
         when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
         when(ctx.attendanceService.isOwnerOfPlusOne(eventId, "[+1] MyGuest", DISCORD_ID))
@@ -261,6 +301,7 @@ class EventControllerTest {
     void removeAttendee_nonAdminCannotRemoveOthersPlusOne_returns403() {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
+        when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
         when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
         when(ctx.attendanceService.isOwnerOfPlusOne(eventId, "[+1] NotMine", DISCORD_ID))
@@ -273,8 +314,194 @@ class EventControllerTest {
                 .hasMessageContaining("You can only remove +1 guests that you added");
     }
 
+    private EventControllerTestContext setupGetEventContext() {
+        EventService eventService = mock(EventService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
+        OAuth2User principal = mock(OAuth2User.class);
+        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+
+        EventController controller = new EventController(
+                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+        return new EventControllerTestContext(
+                controller,
+                eventService,
+                discordService,
+                principal,
+                null,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService);
+    }
+
+    private Event buildFullEvent(UUID id, String creator) {
+        Event event = new Event();
+        event.setId(id);
+        event.setName("Detail Event");
+        event.setDescription("Detail description");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Location");
+        event.setCreator(creator);
+        event.setServerId(GUILD_ID);
+        return event;
+    }
+
+    @Test
+    void getEvent_creatorSnowflakeIncludedInLookupSet() {
+        EventControllerTestContext ctx = setupGetEventContext();
+        UUID eventId = UUID.randomUUID();
+        Event event = buildFullEvent(eventId, DISCORD_ID);
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        DiscordUserCache hostUser =
+                new DiscordUserCache(DISCORD_ID, "Host Name", "host_user", Instant.now(), null, null, Set.of(GUILD_ID));
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.eventService.isCompleted(event)).thenReturn(false);
+        when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
+        when(ctx.discordUserCacheService.getUsers(any())).thenReturn(Map.of(DISCORD_ID, hostUser));
+
+        ctx.controller.getEvent(eventId, ctx.principal);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<String>> snowflakesCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(ctx.discordUserCacheService).getUsers(snowflakesCaptor.capture());
+        assertThat(snowflakesCaptor.getValue()).contains(DISCORD_ID);
+    }
+
+    @Test
+    void getEvent_hostAndAvatarUrlPopulatedInReturnedDto() {
+        EventControllerTestContext ctx = setupGetEventContext();
+        UUID eventId = UUID.randomUUID();
+        Event event = buildFullEvent(eventId, DISCORD_ID);
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        DiscordUserCache hostUser =
+                new DiscordUserCache(DISCORD_ID, "Host Name", "host_user", Instant.now(), null, null, Set.of(GUILD_ID));
+
+        when(ctx.eventService.getEvent(eventId)).thenReturn(event);
+        when(ctx.eventService.isCompleted(event)).thenReturn(false);
+        when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
+        when(ctx.discordUserCacheService.getUsers(any())).thenReturn(Map.of(DISCORD_ID, hostUser));
+
+        EventDetailDto result = ctx.controller.getEvent(eventId, ctx.principal);
+
+        assertThat(result.getHost()).isEqualTo("Host Name");
+        assertThat(result.getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+    }
+
     private static dev.tylercash.event.event.model.Attendee capturedAttendee(ArgumentCaptor<Event> eventCaptor) {
         return eventCaptor.getValue().getAccepted().iterator().next();
+    }
+
+    private EventControllerTestContext setupGetEventsContext() {
+        EventService eventService = mock(EventService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
+        OAuth2User principal = mock(OAuth2User.class);
+        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+
+        EventController controller = new EventController(
+                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+        return new EventControllerTestContext(
+                controller,
+                eventService,
+                discordService,
+                principal,
+                null,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService);
+    }
+
+    @Test
+    void getEvents_populatesHostFromCacheDisplayName() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        Event event = new Event();
+        event.setId(UUID.randomUUID());
+        event.setName("Test Event");
+        event.setDescription("A test event");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Test Location");
+        event.setCreator(DISCORD_ID);
+
+        Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
+        when(ctx.eventService.getActiveEvents(any(), eq(GUILD_ID))).thenReturn(eventPage);
+        DiscordUserCache user = new DiscordUserCache(
+                DISCORD_ID, "Resolved Name", "username", Instant.now(), null, null, Set.of(GUILD_ID));
+        when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of(DISCORD_ID, user));
+
+        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID, PageRequest.of(0, 10), ctx.principal);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHost()).isEqualTo("Resolved Name");
+        assertThat(result.getContent().get(0).getHostUsername()).isEqualTo("username");
+        assertThat(result.getContent().get(0).getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+    }
+
+    @Test
+    void getEvents_fallsBackToSnowflakeWhenNotInCache() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        Event event = new Event();
+        event.setId(UUID.randomUUID());
+        event.setName("Test Event");
+        event.setDescription("A test event");
+        event.setDateTime(ZonedDateTime.now().plusDays(1));
+        event.setCapacity(10);
+        event.setCost(0);
+        event.setLocation("Test Location");
+        event.setCreator(DISCORD_ID);
+
+        Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
+        when(ctx.eventService.getActiveEvents(any(), eq(GUILD_ID))).thenReturn(eventPage);
+        when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of());
+
+        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID, PageRequest.of(0, 10), ctx.principal);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHost()).isEqualTo(DISCORD_ID);
+        assertThat(result.getContent().get(0).getHostAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+    }
+
+    @Test
+    void recategorizeEvent_adminUser_callsServiceAndReturnsMessage() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        UUID id = UUID.randomUUID();
+        Event event = new Event(0L, GUILD_ID, 0L, "Test Event", DISCORD_ID, ZonedDateTime.now(), "desc");
+        event.setId(id);
+
+        when(ctx.eventService.getEvent(id)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+
+        Map<String, String> result = ctx.controller.recategorizeEvent(id, ctx.principal);
+
+        assertThat(result.get("message")).isEqualTo("Recategorization triggered");
+        verify(ctx.eventService).recategorizeEvent(id);
+    }
+
+    @Test
+    void recategorizeEvent_nonAdmin_throwsForbidden() {
+        EventControllerTestContext ctx = setupGetEventsContext();
+        UUID id = UUID.randomUUID();
+        Event event = new Event(0L, GUILD_ID, 0L, "Test Event", DISCORD_ID, ZonedDateTime.now(), "desc");
+        event.setId(id);
+
+        when(ctx.eventService.getEvent(id)).thenReturn(event);
+        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> ctx.controller.recategorizeEvent(id, ctx.principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(
+                                ((ResponseStatusException) e).getStatusCode().value())
+                        .isEqualTo(403));
     }
 
     private record EventControllerTestContext(
@@ -282,6 +509,8 @@ class EventControllerTest {
             EventService eventService,
             DiscordService discordService,
             OAuth2User principal,
+            Member member,
             AttendanceService attendanceService,
-            DiscordUserCacheService discordUserCacheService) {}
+            DiscordUserCacheService discordUserCacheService,
+            GuildMembershipService guildMembershipService) {}
 }

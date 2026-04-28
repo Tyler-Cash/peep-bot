@@ -6,6 +6,7 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
+import dev.tylercash.event.rewind.EmbeddingService;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
@@ -35,6 +36,7 @@ public class EventService {
     private final Clock clock;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
+    private final EmbeddingService embeddingService;
 
     @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
@@ -77,10 +79,31 @@ public class EventService {
         return event;
     }
 
-    @Cacheable("activeEvents")
-    public Page<Event> getActiveEvents(Pageable pageable) {
-        return eventRepository.findAllByStateNotIn(
-                pageable, List.of(EventState.CREATED, EventState.ARCHIVED, EventState.DELETED));
+    @Cacheable(value = "activeEvents", key = "#guildId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+    public Page<Event> getActiveEvents(Pageable pageable, long guildId) {
+        return eventRepository.findAllByStateNotInAndServerId(
+                pageable,
+                List.of(EventState.CREATED, EventState.CANCELLED, EventState.ARCHIVED, EventState.DELETED),
+                guildId);
+    }
+
+    public String getEventCategory(UUID eventId) {
+        String category = eventRepository.findCategoryByEventId(eventId);
+        return category == null || category.isBlank() ? "unknown" : category;
+    }
+
+    public Map<UUID, String> getEventCategories(Collection<UUID> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, String> categories = new HashMap<>();
+        eventRepository.findCategoriesByEventIds(List.copyOf(eventIds)).forEach(row -> {
+            UUID eventId = UUID.fromString((String) row[0]);
+            String category = row[1] == null ? "unknown" : row[1].toString();
+            categories.put(eventId, category.isBlank() ? "unknown" : category);
+        });
+        return categories;
     }
 
     public boolean isCompleted(Event event) {
@@ -163,6 +186,15 @@ public class EventService {
 
         String creatorName = nameMap.get(event.getCreator());
         event.setCreatorDisplayName(creatorName != null ? creatorName : event.getCreator());
+    }
+
+    @CacheEvict(value = "eventDetail", key = "#id")
+    @Observed(name = "event.recategorize")
+    public void recategorizeEvent(UUID id) {
+        MDC.put("eventId", id.toString());
+        log.info("Recategorizing event id={}", id);
+        Event event = getEvent(id);
+        embeddingService.classifyEvent(event);
     }
 
     private Set<Attendee> toAttendeeSet(List<AttendanceRecord> records, Map<String, String> nameMap) {

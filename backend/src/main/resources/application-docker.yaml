@@ -3,3 +3,21 @@ spring:
     url: jdbc:postgresql://localhost:5432/peepbot
     username: peepbot
     password: peepbot
+
+
+  session:
+    cookie:
+      secure: false
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+dev.tylercash:
+  frontend:
+    protocol: http
+    hostname: localhost:3000
+  cors:
+    allowed-origins: http://localhost:3000
