@@ -429,10 +429,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     outputs:
       deployment_url: ${{ steps.deploy.outputs.deployment_url }}
     steps:
@@ -450,19 +446,29 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment (production settings)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
 
       - name: Build with Vercel (preview build)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel build --token=$VERCEL_TOKEN
 
       - name: Deploy preview to Vercel
         id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
           echo "deployment_url=$url" >> $GITHUB_OUTPUT
           echo "Staging deployment: $url"
 
       - name: Alias staging deployment to event-staging.tylercash.dev
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           vercel alias set "${{ steps.deploy.outputs.deployment_url }}" event-staging.tylercash.dev --token=$VERCEL_TOKEN
           echo "Staging now serving from: https://event-staging.tylercash.dev"
@@ -536,15 +542,15 @@ jobs:
     environment: production
     permissions:
       contents: read
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Promote staging deployment to production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           STAGING_URL="${{ needs.deploy-staging-frontend.outputs.deployment_url }}"
           echo "Promoting ${STAGING_URL} to production..."
