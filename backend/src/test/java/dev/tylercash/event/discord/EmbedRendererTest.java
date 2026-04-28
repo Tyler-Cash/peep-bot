@@ -50,7 +50,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Edit event](" + FRONTEND_URL + "event/" + eventId + ")");
+        assertThat(linksField.getValue()).contains("[Edit event](" + FRONTEND_URL + "events/" + eventId + ")");
     }
 
     @Test
@@ -90,7 +90,7 @@ class EmbedRendererTest {
                 .orElse(null);
 
         assertThat(linksField).isNotNull();
-        assertThat(linksField.getValue()).contains("[Edit event](http://localhost:5173/event/" + eventId + ")");
+        assertThat(linksField.getValue()).contains("[Edit event](http://localhost:5173/events/" + eventId + ")");
     }
 
     @Test
