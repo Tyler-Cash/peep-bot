@@ -219,10 +219,113 @@ export const store = {
   nextId: 7, // integer counter; stringify when assigning to EventDetailDto.id
 };
 
+// Realistic shape: 4 hubs (>20 attendances) anchor the graph, 12 peripheral
+// regulars trail off, and average degree lands near n/2 — the same density
+// the production graph hits and what stresses the layout algorithm.
+function buildSocialGraph(): RewindStats["socialGraph"] {
+  const people: { snowflake: string; name: string; eventCount: number }[] = [
+    { snowflake: "1001", name: "Mira", eventCount: 78 },
+    { snowflake: "1002", name: "Otis", eventCount: 64 },
+    { snowflake: "1003", name: "Lena", eventCount: 51 },
+    { snowflake: "1004", name: "Bas", eventCount: 42 },
+    { snowflake: "1005", name: "Nim", eventCount: 18 },
+    { snowflake: "1006", name: "Koa", eventCount: 15 },
+    { snowflake: "1007", name: "Wren", eventCount: 14 },
+    { snowflake: "1008", name: "Suki", eventCount: 12 },
+    { snowflake: "1009", name: "Tobs", eventCount: 11 },
+    { snowflake: "1010", name: "Cal", eventCount: 10 },
+    { snowflake: "1011", name: "Pim", eventCount: 9 },
+    { snowflake: "1012", name: "Ash", eventCount: 8 },
+    { snowflake: "1013", name: "Vim", eventCount: 7 },
+    { snowflake: "1014", name: "Roe", eventCount: 6 },
+    { snowflake: "1015", name: "Joss", eventCount: 5 },
+    { snowflake: "1016", name: "Eli", eventCount: 4 },
+    // Loose-tail satellites — people who showed up to a handful of events.
+    // 2-4 connections each, mostly to peripherals and to one another.
+    { snowflake: "1017", name: "Pax", eventCount: 3 },
+    { snowflake: "1018", name: "Tav", eventCount: 3 },
+    { snowflake: "1019", name: "Kit", eventCount: 3 },
+    { snowflake: "1020", name: "Quill", eventCount: 2 },
+    { snowflake: "1021", name: "Mox", eventCount: 2 },
+    { snowflake: "1022", name: "Bee", eventCount: 2 },
+    { snowflake: "1023", name: "Sol", eventCount: 2 },
+    { snowflake: "1024", name: "Fen", eventCount: 2 },
+    { snowflake: "1025", name: "Jin", eventCount: 1 },
+    { snowflake: "1026", name: "Rye", eventCount: 1 },
+    { snowflake: "1027", name: "Lux", eventCount: 1 },
+    { snowflake: "1028", name: "Ode", eventCount: 1 },
+    { snowflake: "1029", name: "Zev", eventCount: 1 },
+  ];
+
+  const rawEdges: [string, string, number][] = [
+    // Hub ↔ hub — the densely interlinked core
+    ["1001", "1002", 56], ["1001", "1003", 48], ["1001", "1004", 41],
+    ["1002", "1003", 37], ["1002", "1004", 33], ["1003", "1004", 28],
+    // Hubs ↔ peripherals — most regulars share events with the core
+    ["1001", "1005", 16], ["1001", "1006", 15], ["1001", "1007", 14],
+    ["1001", "1008", 12], ["1001", "1009", 11], ["1001", "1010", 10],
+    ["1001", "1011", 9],  ["1001", "1012", 8],
+    ["1002", "1005", 14], ["1002", "1006", 13], ["1002", "1008", 11],
+    ["1002", "1009", 10], ["1002", "1011", 9],  ["1002", "1013", 7],
+    ["1002", "1014", 6],
+    ["1003", "1005", 13], ["1003", "1007", 12], ["1003", "1008", 10],
+    ["1003", "1010", 9],  ["1003", "1012", 8],  ["1003", "1015", 5],
+    ["1004", "1006", 12], ["1004", "1007", 11], ["1004", "1009", 10],
+    ["1004", "1010", 9],  ["1004", "1013", 7],  ["1004", "1016", 4],
+    // Peripheral ↔ peripheral — friendships outside the hub core
+    ["1005", "1006", 8],  ["1005", "1011", 7],  ["1005", "1007", 6],
+    ["1006", "1008", 7],  ["1006", "1012", 6],
+    ["1007", "1008", 6],  ["1007", "1013", 5],
+    ["1008", "1014", 5],
+    ["1009", "1010", 7],  ["1009", "1011", 6],  ["1009", "1015", 4],
+    ["1010", "1012", 6],  ["1010", "1016", 4],
+    ["1011", "1012", 6],  ["1011", "1013", 5],
+    ["1012", "1014", 5],
+    ["1013", "1015", 4],
+    ["1014", "1015", 4],  ["1014", "1016", 3],
+    ["1015", "1016", 3],
+    // Satellites linking to one another — sparse loose-tail community
+    ["1017", "1018", 2], ["1019", "1020", 2], ["1023", "1024", 2],
+    ["1027", "1028", 1], ["1028", "1029", 1],
+    // Satellites ↔ hubs (each hub gains ~2 new edges)
+    ["1001", "1017", 5], ["1001", "1019", 4],
+    ["1002", "1018", 5], ["1002", "1021", 3],
+    ["1003", "1023", 4], ["1003", "1025", 3],
+    ["1004", "1022", 4], ["1004", "1026", 3],
+    // Satellites ↔ peripherals (each peripheral gains ~2 new edges)
+    ["1005", "1017", 3], ["1005", "1018", 2],
+    ["1006", "1017", 3], ["1006", "1019", 2],
+    ["1007", "1018", 2], ["1007", "1020", 2],
+    ["1008", "1019", 2], ["1008", "1021", 2],
+    ["1009", "1020", 2], ["1009", "1022", 2],
+    ["1010", "1021", 2], ["1010", "1023", 2],
+    ["1011", "1022", 2], ["1011", "1024", 1],
+    ["1012", "1023", 2], ["1012", "1025", 1],
+    ["1013", "1024", 1], ["1013", "1026", 1],
+    ["1014", "1025", 1], ["1014", "1027", 1],
+    ["1015", "1026", 1], ["1015", "1028", 1],
+    ["1016", "1027", 1], ["1016", "1029", 1],
+  ];
+
+  return {
+    nodes: people.map((p) => ({
+      snowflake: p.snowflake,
+      displayName: p.name,
+      avatarUrl: null,
+      eventCount: p.eventCount,
+    })),
+    edges: rawEdges.map(([user1Snowflake, user2Snowflake, sharedEvents]) => ({
+      user1Snowflake,
+      user2Snowflake,
+      sharedEvents,
+    })),
+  };
+}
+
 export const rewindStats = (year: number): RewindStats => ({
   year,
   totalEvents: 104,
-  totalUniqueAttendees: 10,
+  totalUniqueAttendees: 29,
   totalRsvps: 748,
   averageGroupSize: 7.2,
   topCategories: [
@@ -245,36 +348,7 @@ export const rewindStats = (year: number): RewindStats => ({
     { displayName: "Suki", eventCount: 14, avatarUrl: null },
     { displayName: "Lena", eventCount: 11, avatarUrl: null },
   ],
-  socialGraph: {
-    nodes: seedPeople.map((p, i) => ({
-      snowflake: p.snowflake,
-      displayName: p.name,
-      avatarUrl: null,
-      eventCount: 82 - i * 6,
-    })),
-    edges: [
-      { user1Snowflake: "1001", user2Snowflake: "1002", sharedEvents: 71 },
-      { user1Snowflake: "1001", user2Snowflake: "1004", sharedEvents: 58 },
-      { user1Snowflake: "1002", user2Snowflake: "1003", sharedEvents: 54 },
-      { user1Snowflake: "1004", user2Snowflake: "1005", sharedEvents: 49 },
-      { user1Snowflake: "1001", user2Snowflake: "1003", sharedEvents: 46 },
-      { user1Snowflake: "1002", user2Snowflake: "1006", sharedEvents: 43 },
-      { user1Snowflake: "1003", user2Snowflake: "1007", sharedEvents: 38 },
-      { user1Snowflake: "1005", user2Snowflake: "1008", sharedEvents: 35 },
-      { user1Snowflake: "1001", user2Snowflake: "1007", sharedEvents: 32 },
-      { user1Snowflake: "1006", user2Snowflake: "1009", sharedEvents: 29 },
-      { user1Snowflake: "1002", user2Snowflake: "1008", sharedEvents: 27 },
-      { user1Snowflake: "1004", user2Snowflake: "1010", sharedEvents: 25 },
-      { user1Snowflake: "1003", user2Snowflake: "1005", sharedEvents: 22 },
-      { user1Snowflake: "1007", user2Snowflake: "1008", sharedEvents: 19 },
-      { user1Snowflake: "1009", user2Snowflake: "1010", sharedEvents: 17 },
-      { user1Snowflake: "1001", user2Snowflake: "1006", sharedEvents: 15 },
-      { user1Snowflake: "1002", user2Snowflake: "1009", sharedEvents: 13 },
-      { user1Snowflake: "1005", user2Snowflake: "1010", sharedEvents: 11 },
-      { user1Snowflake: "1006", user2Snowflake: "1007", sharedEvents: 9 },
-      { user1Snowflake: "1008", user2Snowflake: "1010", sharedEvents: 7 },
-    ],
-  },
+  socialGraph: buildSocialGraph(),
   eventsByMonth: {
     [`${year}-01`]: 7, [`${year}-02`]: 8, [`${year}-03`]: 10, [`${year}-04`]: 9,
     [`${year}-05`]: 8, [`${year}-06`]: 11, [`${year}-07`]: 7, [`${year}-08`]: 9,

@@ -66,11 +66,11 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .domain([minShared, maxShared])
       .range([1, 6]);
 
-    // Higher shared events → shorter edge distance; minimum of 80px to keep nodes readable
-    const linkDistanceScale = d3
+    // Higher shared events → slightly tighter edge; baseline added per-link from node radii below
+    const sharedDistanceScale = d3
       .scaleLinear()
       .domain([minShared, maxShared])
-      .range([200, 90]);
+      .range([155, 55]);
 
     const nameBySnowflake = new Map(
       graph.nodes.map((n) => [n.snowflake, n.displayName]),
@@ -227,38 +227,133 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
           : d.displayName,
       );
 
-const simulation = d3
+    // Approximate label half-width so collision keeps text from overlapping.
+    // Labels use font-size 11, font-weight 700; ~6.6px per char is a safe estimate,
+    // and we cap at 12 chars + ellipsis to match the truncation above.
+    const labelHalfWidth = (name: string) =>
+      (Math.min(name.length, 12) * 6.6) / 2 + 4;
+
+    const collisionRadius = (d: SimNode) => {
+      const r = radii.get(d.snowflake) ?? MIN_RADIUS;
+      const labelR = labelHalfWidth(d.displayName);
+      // Label sits below the node and is ~14px tall; pad enough that adjacent
+      // labels don't kiss. Use the larger of circle radius and label half-width.
+      return Math.max(r + 22, labelR + 10);
+    };
+
+    const maxDegree = Math.max(1, d3.max(degree.values()) ?? 1);
+    const cx = width / 2;
+    const cy = height / 2;
+    // Semi-axes for the outer ellipse. Using width/2 fills the horizontal
+    // space instead of leaving the dead bands a circular layout produces.
+    const semiX = width / 2 - 50;
+    const semiY = height / 2 - 40;
+
+    const ellipseRadial = (alpha: number) => {
+      for (const n of nodes) {
+        const deg = degree.get(n.snowflake) ?? 0;
+        const t = 1 - deg / maxDegree; // 0 for hubs, 1 for isolated
+        // Inner ellipse for hubs (~25% of the outer), outer ellipse for the
+        // most isolated nodes; smooth interpolation in between.
+        const ax = semiX * (0.25 + 0.75 * t);
+        const ay = semiY * (0.25 + 0.75 * t);
+        const dx = (n.x ?? cx) - cx;
+        const dy = (n.y ?? cy) - cy;
+        const angle = Math.atan2(dy, dx);
+        const targetX = cx + Math.cos(angle) * ax;
+        const targetY = cy + Math.sin(angle) * ay;
+        const strength = (0.04 + 0.35 * t) * alpha;
+        n.vx = (n.vx ?? 0) + (targetX - (n.x ?? cx)) * strength;
+        n.vy = (n.vy ?? 0) + (targetY - (n.y ?? cy)) * strength;
+      }
+    };
+
+    const linkRepulsion = (alpha: number) => {
+      const padding = 14;
+      for (const link of links) {
+        const a = link.source as SimNode;
+        const b = link.target as SimNode;
+        const ax = a.x ?? 0;
+        const ay = a.y ?? 0;
+        const bx = b.x ?? 0;
+        const by = b.y ?? 0;
+        const ex = bx - ax;
+        const ey = by - ay;
+        const lenSq = ex * ex + ey * ey;
+        if (lenSq < 1) continue;
+        for (const c of nodes) {
+          if (c.snowflake === a.snowflake || c.snowflake === b.snowflake) continue;
+          const ncx = c.x ?? 0;
+          const ncy = c.y ?? 0;
+          const tProj = ((ncx - ax) * ex + (ncy - ay) * ey) / lenSq;
+          if (tProj < 0.05 || tProj > 0.95) continue;
+          const projX = ax + tProj * ex;
+          const projY = ay + tProj * ey;
+          const offX = ncx - projX;
+          const offY = ncy - projY;
+          const dist = Math.sqrt(offX * offX + offY * offY);
+          const r = (radii.get(c.snowflake) ?? MIN_RADIUS) + padding;
+          if (dist > r || dist < 0.5) continue;
+          const push = ((r - dist) / r) * alpha * 4;
+          c.vx = (c.vx ?? 0) + (offX / dist) * push;
+          c.vy = (c.vy ?? 0) + (offY / dist) * push;
+        }
+      }
+    };
+
+    const simulation = d3
       .forceSimulation<SimNode>(nodes)
       .force(
         "link",
         d3
           .forceLink<SimNode, SimLink>(links)
           .id((d) => d.snowflake)
-          .distance((d) => linkDistanceScale(d.sharedEvents)),
+          .distance((d) => {
+            const s = d.source as SimNode;
+            const t = d.target as SimNode;
+            const rSum =
+              (radii.get(s.snowflake) ?? MIN_RADIUS) +
+              (radii.get(t.snowflake) ?? MIN_RADIUS);
+            return 70 + rSum + sharedDistanceScale(d.sharedEvents);
+          }),
       )
-      .force("charge", d3.forceManyBody().strength(-550))
-      .force("x", d3.forceX<SimNode>(width / 2).strength(0.04))
-      .force("y", d3.forceY<SimNode>(height / 2).strength(0.04))
+      // Mass-aware repulsion: hubs (high degree) and large nodes push harder,
+      // which is what GEM adds on top of plain Fruchterman-Reingold.
+      .force(
+        "charge",
+        d3
+          .forceManyBody<SimNode>()
+          .strength((d) => {
+            const deg = degree.get(d.snowflake) ?? 0;
+            const r = radii.get(d.snowflake) ?? MIN_RADIUS;
+            return -300 - deg * 60 - r * 8;
+          })
+          .distanceMax(width),
+      )
+      // forceCenter shifts the centroid to the viewport middle every tick
+      // without pulling nodes inward, so the cluster stays centered no matter
+      // how it ends up shaped.
+      .force("center", d3.forceCenter<SimNode>(width / 2, height / 2))
+      // Very gentle inward pull keeps stragglers from drifting to the edges
+      // during long settles.
+      .force("x", d3.forceX<SimNode>(width / 2).strength(0.008))
+      .force("y", d3.forceY<SimNode>(height / 2).strength(0.008))
       .force(
         "collide",
-        d3.forceCollide<SimNode>(
-          (d) => (radii.get(d.snowflake) ?? MIN_RADIUS) + 4,
-        ),
+        d3.forceCollide<SimNode>(collisionRadius).strength(0.9).iterations(2),
       )
-      // Push isolated nodes (degree 0) to the outer ring so they don't clump at center
-      .force(
-        "radial",
-        d3
-          .forceRadial<SimNode>(
-            Math.min(width, height) / 2 - 40,
-            width / 2,
-            height / 2,
-          )
-          .strength((d) => (degree.get(d.snowflake) === 0 ? 0.6 : 0)),
-      )
+      // Elliptical radial: hubs sit near the center, low-degree nodes get
+      // pulled toward the viewport ellipse. Using an ellipse (vs. forceRadial's
+      // circle) means wide viewports actually fill their horizontal space
+      // instead of leaving dead bands on the left/right.
+      .force("ellipse", ellipseRadial)
+      // Push nodes off of edges they aren't part of so links don't run through
+      // unrelated avatars. This is what most "tidy graph" tools call
+      // node-edge repulsion — also reduces crossings as a side effect.
+      .force("linkRepulsion", linkRepulsion)
       .stop();
 
-    simulation.on("tick", () => {
+    const redraw = () => {
       nodes.forEach((d) => {
         const r = radii.get(d.snowflake) ?? MIN_RADIUS;
         d.x = Math.max(r + 4, Math.min(width - r - 4, d.x ?? 0));
@@ -274,7 +369,9 @@ const simulation = d3
       linkEls.attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
       linkHitEls.attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
       nodeEls.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
-    });
+    };
+
+    simulation.on("tick", redraw);
 
     const drag = d3
       .drag<SVGGElement, SimNode>()
@@ -327,6 +424,24 @@ const simulation = d3
         nodeEls.style("opacity", 1);
       });
 
+    // Seed all nodes in a tight, deterministic ring around center. The visible
+    // animation lets the force simulation push them apart — charge repulsion,
+    // collide, and link springs produce real bouncing and settling rather than
+    // a uniform zoom.
+    nodes.forEach((n, i) => {
+      const angle = (i / nodes.length) * Math.PI * 2;
+      n.x = width / 2 + Math.cos(angle) * 8;
+      n.y = height / 2 + Math.sin(angle) * 8;
+      n.vx = 0;
+      n.vy = 0;
+    });
+    redraw();
+
+    // Slow the cooling so the settle is visible for ~3-4s. Default alphaDecay
+    // (~0.0228) settles in ~300 ticks; halving it gives a longer, more
+    // physical-looking balance pass with visible collisions.
+    simulation.alphaDecay(0.010).velocityDecay(0.28);
+
     // Delay animation + simulation start until the graph scrolls into view
     const observer = new IntersectionObserver(
       (entries) => {
@@ -336,7 +451,9 @@ const simulation = d3
             .delay((_, i) => i * 30)
             .duration(300)
             .style("opacity", 1);
-          simulation.alpha(1).restart();
+          // alpha > 1 gives the forces extra "kick" up front so the explosion
+          // is energetic before collide and links pull things into balance.
+          simulation.alpha(1.7).restart();
           observer.disconnect();
         }
       },
