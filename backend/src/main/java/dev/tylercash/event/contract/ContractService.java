@@ -6,7 +6,6 @@ import dev.tylercash.event.contract.model.*;
 import dev.tylercash.event.contract.repository.*;
 import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordChannelService;
-import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordMessageService;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
@@ -37,7 +36,6 @@ public class ContractService {
     private final DiscordMessageService messageService;
     private final DiscordAuthService authService;
     private final ContractConfiguration config;
-    private final DiscordConfiguration discordConfig;
     private final JDA jda;
     private final Clock clock;
     private final ObjectMapper objectMapper;
@@ -60,7 +58,7 @@ public class ContractService {
         contract.setSeedAmount(0L);
         contract.setBParameter(LmsrService.computeB(houseShares, outcomeLabels.size()));
         contract.setState(ContractState.CREATED);
-        contract.setServerId(discordConfig.getGuildId());
+        contract.setServerId(config.getGuildId());
         contract.setCreatedAt(clock.instant());
         contract = contractRepo.save(contract);
 
@@ -80,8 +78,8 @@ public class ContractService {
     }
 
     private void initChannel(Contract contract) {
-        Category category = channelService.getOrCreateCategory(
-                jda.getGuildById(discordConfig.getGuildId()), config.getCategoryName());
+        Category category =
+                channelService.getOrCreateCategory(jda.getGuildById(config.getGuildId()), config.getCategoryName());
         String channelName = slugify(contract.getTitle());
         TextChannel channel = channelService.createTextChannel(category, channelName);
         contract.setChannelId(channel.getIdLong());
