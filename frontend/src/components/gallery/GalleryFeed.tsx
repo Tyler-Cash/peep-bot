@@ -27,11 +27,16 @@ export function GalleryFeed() {
   const count = albums?.length ?? 0;
 
   return (
-    <div className="mx-auto max-w-[980px] px-4 sm:px-5 py-6">
-      <header className="flex items-end justify-between mb-5 gap-3">
-        <h1 className="text-[40px] sm:text-[64px] font-extrabold tracking-[-0.04em] leading-[0.95]">
-          gallery
-        </h1>
+    <div className="mx-auto max-w-[1200px] px-4 sm:px-5 py-6">
+      <header className="mb-5 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-[40px] sm:text-[54px] font-extrabold tracking-[-0.04em] leading-[0.95]">
+            the gallery
+          </h1>
+          <p className="mt-1.5 max-w-[560px] text-[15px] sm:text-[17px] font-medium leading-[1.4] text-mute">
+            drop your pics in the event channel after the event and peepbot will record it.
+          </p>
+        </div>
         <span
           className="inline-flex items-center gap-1.5 shrink-0 rounded-chip border-[1.5px] border-ink bg-leaf px-3 sm:px-4 py-1.5 text-[13px] sm:text-[15px] font-extrabold shadow-rest"
           style={{ transform: "rotate(-2deg)" }}
@@ -47,7 +52,7 @@ export function GalleryFeed() {
           <p className="text-[14px] text-mute">albums appear here after events you attended get photos uploaded.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-7 px-1 pt-1.5 pb-8">
           {albums!.map((album) => (
             <GalleryCard key={album.albumId} album={album} />
           ))}
