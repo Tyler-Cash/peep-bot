@@ -118,16 +118,18 @@ function GuildDropdown({
       ))}
 
       <div className="px-3 py-2.5">
-        <button
-          type="button"
-          disabled
-          className="w-full text-left text-[15px] font-semibold text-mute/50 cursor-not-allowed flex items-center gap-2"
+        <a
+          href={process.env.NEXT_PUBLIC_BOT_INSTALL_URL ?? "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onClose}
+          className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
         >
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink/20 bg-paper2 text-[14px]">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
             +
           </span>
           Add a server
-        </button>
+        </a>
       </div>
     </div>
   );
