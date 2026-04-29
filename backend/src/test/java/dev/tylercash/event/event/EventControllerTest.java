@@ -59,6 +59,8 @@ class EventControllerTest {
         when(member.getNickname()).thenReturn(DISPLAY_NAME);
         when(member.getUser()).thenReturn(jdaUser);
 
+        stubCreateEventStampsId(eventService);
+
         EventController controller = new EventController(
                 eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
         return new EventControllerTestContext(
@@ -70,6 +72,18 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService);
+    }
+
+    // Stand in for Hibernate's @GeneratedValue: stamp an id on persist.
+    private static void stubCreateEventStampsId(EventService eventService) {
+        lenient()
+                .doAnswer(invocation -> {
+                    Event arg = invocation.getArgument(0);
+                    arg.setId(UUID.randomUUID());
+                    return "Created event for " + arg.getName();
+                })
+                .when(eventService)
+                .createEvent(any(Event.class));
     }
 
     private EventDto buildEventDto() {
@@ -195,6 +209,7 @@ class EventControllerTest {
         when(member.getNickname()).thenReturn(null);
         when(member.getEffectiveName()).thenReturn("EffectiveName");
         when(member.getUser()).thenReturn(jdaUser);
+        stubCreateEventStampsId(eventService);
 
         EventController controller = new EventController(
                 eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
