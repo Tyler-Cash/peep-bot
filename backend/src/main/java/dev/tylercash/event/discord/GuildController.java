@@ -21,7 +21,7 @@ public class GuildController {
     private final JDA jda;
     private final DiscordConfiguration discordConfiguration;
     private final GuildMembershipService guildMembershipService;
-    private final GuildSettingsRepository settingsRepository;
+    private final GuildRepository guildRepository;
 
     @GetMapping
     public List<GuildDto> getGuilds(@AuthenticationPrincipal OAuth2User principal) {
@@ -38,17 +38,17 @@ public class GuildController {
                 .toList();
     }
 
-    private GuildDto toDto(Guild guild) {
+    private GuildDto toDto(net.dv8tion.jda.api.entities.Guild guild) {
         String name = guild.getName();
-        GuildSettings settings =
-                settingsRepository.findById(Long.parseLong(guild.getId())).orElse(null);
+        dev.tylercash.event.discord.Guild settings =
+                guildRepository.findById(Long.parseLong(guild.getId())).orElse(null);
         return new GuildDto(
                 guild.getId(),
                 name,
                 deriveInitials(name),
                 guild.getIconUrl(),
                 deriveColor(guild.getId()),
-                discordConfiguration.getSeperatorChannel(),
+                settings != null && settings.getSeparatorChannel() != null ? settings.getSeparatorChannel() : "",
                 guild.getMemberCount(),
                 settings != null ? settings.getPrimaryLocationLat() : null,
                 settings != null ? settings.getPrimaryLocationLng() : null);

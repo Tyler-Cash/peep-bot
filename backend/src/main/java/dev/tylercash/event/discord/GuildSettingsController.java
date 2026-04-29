@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Guild", description = "Discord guild info")
 public class GuildSettingsController {
 
-    private final GuildSettingsRepository settingsRepository;
+    private final GuildRepository guildRepository;
     private final GuildMembershipService guildMembershipService;
     private final DiscordService discordService;
 
@@ -23,7 +23,7 @@ public class GuildSettingsController {
         String snowflake = principal.getAttribute("id");
         long guildIdLong = Long.parseLong(guildId);
         guildMembershipService.assertMember(snowflake, guildIdLong);
-        return settingsRepository
+        return guildRepository
                 .findById(guildIdLong)
                 .map(s -> new GuildSettingsDto(
                         s.getPrimaryLocationPlaceId(),
@@ -45,13 +45,12 @@ public class GuildSettingsController {
         if (!isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
-        GuildSettings settings =
-                settingsRepository.findById(guildIdLong).orElse(new GuildSettings(guildIdLong, null, null, null, null));
+        Guild settings = guildRepository.findById(guildIdLong).orElse(Guild.withDefaults(guildIdLong));
         settings.setPrimaryLocationPlaceId(request.primaryLocationPlaceId());
         settings.setPrimaryLocationName(request.primaryLocationName());
         settings.setPrimaryLocationLat(request.primaryLocationLat());
         settings.setPrimaryLocationLng(request.primaryLocationLng());
-        settingsRepository.save(settings);
+        guildRepository.save(settings);
         return new GuildSettingsDto(
                 settings.getPrimaryLocationPlaceId(),
                 settings.getPrimaryLocationName(),
