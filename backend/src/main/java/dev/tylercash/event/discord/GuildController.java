@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Guild", description = "Discord guild info")
 public class GuildController {
     private final JDA jda;
-    private final DiscordConfiguration discordConfiguration;
     private final GuildMembershipService guildMembershipService;
     private final GuildRepository guildRepository;
 
@@ -27,10 +25,6 @@ public class GuildController {
     public List<GuildDto> getGuilds(@AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
         List<Long> userGuildIds = guildMembershipService.getGuildIdsForUser(snowflake);
-        if (userGuildIds.isEmpty()) {
-            Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
-            return guild != null ? List.of(toDto(guild)) : List.of();
-        }
         return userGuildIds.stream()
                 .map(jda::getGuildById)
                 .filter(Objects::nonNull)
