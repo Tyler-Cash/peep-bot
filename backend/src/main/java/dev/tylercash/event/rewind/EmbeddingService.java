@@ -1,11 +1,10 @@
 package dev.tylercash.event.rewind;
 
+import dev.tylercash.event.db.repository.EventCategoryRepository;
 import dev.tylercash.event.db.repository.EventEmbeddingRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.rewind.model.EventEmbedding;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,20 +26,20 @@ public class EmbeddingService {
     private final RewindConfiguration config;
     private final EventRepository eventRepository;
     private final EventEmbeddingRepository embeddingRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EventCategoryRepository eventCategoryRepository;
 
     public EmbeddingService(
             @Autowired(required = false) EmbeddingModel embeddingModel,
             TextNormalisationService normalisationService,
             RewindConfiguration config,
             EventRepository eventRepository,
-            EventEmbeddingRepository embeddingRepository) {
+            EventEmbeddingRepository embeddingRepository,
+            EventCategoryRepository eventCategoryRepository) {
         this.normalisationService = normalisationService;
         this.config = config;
         this.eventRepository = eventRepository;
         this.embeddingRepository = embeddingRepository;
+        this.eventCategoryRepository = eventCategoryRepository;
         if (embeddingModel != null) {
             this.embeddingModel = embeddingModel;
             log.info("EmbeddingService initialized — semantic clustering enabled");
@@ -92,19 +92,7 @@ public class EmbeddingService {
     }
 
     private void saveCategory(UUID eventId, String category) {
-        entityManager
-                .createNativeQuery(
-                        """
-            INSERT INTO event_category (event_id, category_label, category_centroid_event_id, assigned_at)
-            VALUES (CAST(:eventId AS UUID), :label, CAST(:centroidId AS UUID), NOW())
-            ON CONFLICT (event_id) DO UPDATE SET
-                category_label = EXCLUDED.category_label,
-                assigned_at = EXCLUDED.assigned_at
-            """)
-                .setParameter("eventId", eventId.toString())
-                .setParameter("label", category)
-                .setParameter("centroidId", eventId.toString())
-                .executeUpdate();
+        eventCategoryRepository.upsertCategory(eventId, category);
     }
 
     @Scheduled(fixedDelayString = "PT5M")
@@ -113,7 +101,8 @@ public class EmbeddingService {
     public void backfillMissingEmbeddings() {
         if (!isEmbeddingsAvailable()) return;
 
-        List<UUID> missingIds = embeddingRepository.findEventIdsWithoutEmbedding(config.getBackfillBatchSize());
+        List<UUID> missingIds =
+                embeddingRepository.findEventIdsWithoutEmbedding(Pageable.ofSize(config.getBackfillBatchSize()));
         if (missingIds.isEmpty()) return;
 
         log.info("Backfilling embeddings for {} events", missingIds.size());

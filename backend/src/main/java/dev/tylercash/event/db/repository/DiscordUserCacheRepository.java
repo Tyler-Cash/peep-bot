@@ -28,10 +28,12 @@ public interface DiscordUserCacheRepository extends JpaRepository<DiscordUserCac
     boolean haveSharedGuild(@Param("u1") String u1, @Param("u2") String u2);
 
     @Query(
-            value = "SELECT COUNT(*) > 0 FROM discord_user_guild WHERE snowflake = :snowflake AND guild_id = :guildId",
-            nativeQuery = true)
+            """
+            SELECT COUNT(g) > 0 FROM DiscordUserCache d JOIN d.guildIds g
+            WHERE d.snowflake = :snowflake AND g = :guildId
+            """)
     boolean isUserInGuild(@Param("snowflake") String snowflake, @Param("guildId") long guildId);
 
-    @Query(value = "SELECT guild_id FROM discord_user_guild WHERE snowflake = :snowflake", nativeQuery = true)
+    @Query("SELECT g FROM DiscordUserCache d JOIN d.guildIds g WHERE d.snowflake = :snowflake")
     List<Long> findGuildIdsBySnowflake(@Param("snowflake") String snowflake);
 }

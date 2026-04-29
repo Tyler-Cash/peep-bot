@@ -2,7 +2,6 @@ package dev.tylercash.event.rewind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -10,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.tylercash.event.db.repository.EventCategoryRepository;
 import dev.tylercash.event.db.repository.EventEmbeddingRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
@@ -29,6 +29,7 @@ class EmbeddingServiceTest {
     private RewindConfiguration config;
     private EventRepository eventRepository;
     private EventEmbeddingRepository embeddingRepository;
+    private EventCategoryRepository eventCategoryRepository;
 
     @BeforeEach
     void setUp() {
@@ -37,10 +38,12 @@ class EmbeddingServiceTest {
         config = new RewindConfiguration();
         eventRepository = mock(EventRepository.class);
         embeddingRepository = mock(EventEmbeddingRepository.class);
+        eventCategoryRepository = mock(EventCategoryRepository.class);
     }
 
     private EmbeddingService service(EmbeddingModel model) {
-        return new EmbeddingService(model, normalisationService, config, eventRepository, embeddingRepository);
+        return new EmbeddingService(
+                model, normalisationService, config, eventRepository, embeddingRepository, eventCategoryRepository);
     }
 
     private Event eventWithName(UUID id, String name) {
@@ -104,7 +107,7 @@ class EmbeddingServiceTest {
     void backfill_embedsEachMissingEvent() {
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
-        when(embeddingRepository.findEventIdsWithoutEmbedding(anyInt())).thenReturn(List.of(id1, id2));
+        when(embeddingRepository.findEventIdsWithoutEmbedding(any())).thenReturn(List.of(id1, id2));
 
         Event e1 = eventWithName(id1, "Brunch");
         Event e2 = eventWithName(id2, "Hike");
@@ -120,7 +123,7 @@ class EmbeddingServiceTest {
     @Test
     @DisplayName("backfillMissingEmbeddings is a no-op when no events are missing embeddings")
     void backfill_noopWhenNoMissing() {
-        when(embeddingRepository.findEventIdsWithoutEmbedding(anyInt())).thenReturn(List.of());
+        when(embeddingRepository.findEventIdsWithoutEmbedding(any())).thenReturn(List.of());
 
         service(embeddingModel).backfillMissingEmbeddings();
 

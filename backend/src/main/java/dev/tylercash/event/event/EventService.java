@@ -1,5 +1,6 @@
 package dev.tylercash.event.event;
 
+import dev.tylercash.event.db.repository.EventCategoryRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -39,6 +40,7 @@ public class EventService {
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
     private final EmbeddingService embeddingService;
+    private final EventCategoryRepository eventCategoryRepository;
 
     @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
@@ -94,8 +96,11 @@ public class EventService {
     }
 
     public String getEventCategory(UUID eventId) {
-        String category = eventRepository.findCategoryByEventId(eventId);
-        return category == null || category.isBlank() ? "unknown" : category;
+        return eventCategoryRepository
+                .findById(eventId)
+                .map(EventCategory::getCategoryLabel)
+                .filter(label -> !label.isBlank())
+                .orElse("unknown");
     }
 
     public Map<UUID, String> getEventCategories(Collection<UUID> eventIds) {
@@ -104,10 +109,12 @@ public class EventService {
         }
 
         Map<UUID, String> categories = new HashMap<>();
-        eventRepository.findCategoriesByEventIds(List.copyOf(eventIds)).forEach(row -> {
-            UUID eventId = UUID.fromString((String) row[0]);
-            String category = row[1] == null ? "unknown" : row[1].toString();
-            categories.put(eventId, category.isBlank() ? "unknown" : category);
+        for (UUID eventId : eventIds) {
+            categories.put(eventId, "unknown");
+        }
+        eventCategoryRepository.findByEventIdIn(eventIds).forEach(ec -> {
+            String label = ec.getCategoryLabel();
+            categories.put(ec.getEventId(), (label == null || label.isBlank()) ? "unknown" : label);
         });
         return categories;
     }

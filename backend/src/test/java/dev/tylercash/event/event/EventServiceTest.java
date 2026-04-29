@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import dev.tylercash.event.db.repository.EventCategoryRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -42,7 +43,8 @@ class EventServiceTest {
                 Clock.systemDefaultZone(),
                 attendanceService,
                 discordUserCacheService,
-                mock(EmbeddingService.class));
+                mock(EmbeddingService.class),
+                mock(EventCategoryRepository.class));
     }
 
     @Test
@@ -119,7 +121,8 @@ class EventServiceTest {
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mock(EmbeddingService.class));
+                mock(EmbeddingService.class),
+                mock(EventCategoryRepository.class));
 
         Event event = buildEvent();
         event.setState(EventState.POST_COMPLETED);
@@ -145,7 +148,8 @@ class EventServiceTest {
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mock(EmbeddingService.class));
+                mock(EmbeddingService.class),
+                mock(EventCategoryRepository.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -170,7 +174,8 @@ class EventServiceTest {
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mock(EmbeddingService.class));
+                mock(EmbeddingService.class),
+                mock(EventCategoryRepository.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -194,7 +199,8 @@ class EventServiceTest {
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                embeddingService);
+                embeddingService,
+                mock(EventCategoryRepository.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();

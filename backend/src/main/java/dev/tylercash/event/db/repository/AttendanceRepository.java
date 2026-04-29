@@ -22,13 +22,6 @@ public interface AttendanceRepository extends JpaRepository<AttendanceRecord, Lo
             nativeQuery = true)
     List<AttendanceRecord> findLatestPerAttendee(@Param("eventId") UUID eventId);
 
-    @Query(
-            value =
-                    """
-            SELECT DISTINCT snowflake
-            FROM attendance
-            WHERE snowflake IS NOT NULL
-            """,
-            nativeQuery = true)
+    @Query("SELECT DISTINCT a.snowflake FROM AttendanceRecord a WHERE a.snowflake IS NOT NULL")
     List<String> findAllDistinctSnowflakes();
 }
