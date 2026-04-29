@@ -3,6 +3,7 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,6 @@ public class AvatarController {
 
     private final DiscordUserCacheRepository cacheRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
-    private final DiscordConfiguration discordConfiguration;
     private final DiscordUserCacheService cacheService;
 
     @GetMapping("/{snowflake}")
@@ -59,31 +59,30 @@ public class AvatarController {
                     .body(entry.getAvatarBytes());
         }
 
-        // Fallback: try to get from JDA and redirect or serve
+        // Fallback: try each guild the viewer shares with the bot, pick the first that knows the target
+        List<Long> sharedGuilds = cacheRepository.findGuildIdsBySnowflake(viewerSnowflake);
         try {
             DiscordService discordService = discordServiceProvider.getIfAvailable();
             if (discordService != null) {
-                Member member = discordService.getMemberFromServer(
-                        discordConfiguration.getGuildId(), Long.parseLong(snowflake));
-                if (member != null) {
-                    String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                    // Trigger async cache update for next time
-                    cacheService.upsertUser(
-                            snowflake,
-                            DiscordUtil.getUserDisplayName(member),
-                            member.getUser().getName(),
-                            avatarUrl,
-                            discordConfiguration.getGuildId());
-
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .location(URI.create(avatarUrl))
-                            .build();
+                for (Long guildId : sharedGuilds) {
+                    Member member = discordService.getMemberFromServer(guildId, Long.parseLong(snowflake));
+                    if (member != null) {
+                        String avatarUrl = member.getEffectiveAvatar().getUrl(256);
+                        cacheService.upsertUser(
+                                snowflake,
+                                DiscordUtil.getUserDisplayName(member),
+                                member.getUser().getName(),
+                                avatarUrl,
+                                guildId);
+                        return ResponseEntity.status(HttpStatus.FOUND)
+                                .location(URI.create(avatarUrl))
+                                .build();
+                    }
                 }
             }
         } catch (Exception e) {
             // Ignore and fall back to 404
         }
-
         return ResponseEntity.notFound().build();
     }
 }

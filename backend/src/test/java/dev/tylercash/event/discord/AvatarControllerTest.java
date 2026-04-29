@@ -29,9 +29,6 @@ class AvatarControllerTest {
     private ObjectProvider<DiscordService> discordServiceProvider;
 
     @Mock
-    private DiscordConfiguration discordConfiguration;
-
-    @Mock
     private DiscordUserCacheService cacheService;
 
     @Mock
@@ -41,7 +38,7 @@ class AvatarControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AvatarController(repo, discordServiceProvider, discordConfiguration, cacheService);
+        controller = new AvatarController(repo, discordServiceProvider, cacheService);
     }
 
     @Test
@@ -67,8 +64,8 @@ class AvatarControllerTest {
     void getAvatar_returns302_whenAvatarMissingInCacheButFoundInJDA() {
         when(repo.findById("123")).thenReturn(Optional.empty());
         when(repo.haveSharedGuild("789", "123")).thenReturn(true);
+        when(repo.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
         when(discordServiceProvider.getIfAvailable()).thenReturn(discordService);
-        when(discordConfiguration.getGuildId()).thenReturn(456L);
 
         Member member = mock(Member.class);
         net.dv8tion.jda.api.entities.User user = mock(net.dv8tion.jda.api.entities.User.class);
@@ -95,8 +92,8 @@ class AvatarControllerTest {
     void getAvatar_returns404_whenUserNotCachedAndNotFoundInJDA() {
         when(repo.findById("999")).thenReturn(Optional.empty());
         when(repo.haveSharedGuild("789", "999")).thenReturn(true);
+        when(repo.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
         when(discordServiceProvider.getIfAvailable()).thenReturn(discordService);
-        when(discordConfiguration.getGuildId()).thenReturn(456L);
         when(discordService.getMemberFromServer(456L, 999L)).thenReturn(null);
 
         OAuth2User principal = mock(OAuth2User.class);
