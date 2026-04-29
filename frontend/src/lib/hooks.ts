@@ -1,8 +1,10 @@
 "use client";
 
 import useSWR, { mutate as globalMutate } from "swr";
+import { z } from "zod";
 import { apiFetch, api } from "./api";
 import { clearSwrCache } from "./swrCache";
+import { zGuildDto, zGuildSettingsDto, zUserInfoDto } from "./api/generated/zod.gen";
 import type {
   EventDetailDto,
   EventDto,
@@ -15,15 +17,18 @@ import type {
 } from "./types";
 
 const fetcher = <T>(path: string) => apiFetch<T>(path);
+const guildListSchema = z.array(zGuildDto);
 
 const ACTIVE_GUILD_KEY = "peepbot.activeGuild";
 
 export function useCurrentUser() {
-  return useSWR<UserInfo>("/auth/is-logged-in", fetcher);
+  return useSWR<UserInfo>("/auth/is-logged-in", (path) =>
+    apiFetch(path, {}, zUserInfoDto),
+  );
 }
 
 export function useGuilds() {
-  return useSWR<Guild[]>("/guild", fetcher);
+  return useSWR<Guild[]>("/guild", (path) => apiFetch(path, {}, guildListSchema));
 }
 
 export function getActiveGuildId(guilds: Guild[] | undefined): string | null {
@@ -231,7 +236,7 @@ export async function updateEvent(
 export function useGuildSettings(guildId: string | null) {
   return useSWR<GuildSettingsDto>(
     guildId ? `/guild/${guildId}/settings` : null,
-    fetcher,
+    (path) => apiFetch(path, {}, zGuildSettingsDto),
   );
 }
 
