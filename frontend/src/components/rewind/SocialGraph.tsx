@@ -8,6 +8,7 @@ import type { SocialGraphDto, GraphNodeDto, GraphEdgeDto } from "@/lib/types";
 const MIN_RADIUS = 12;
 const MAX_RADIUS = 30;
 const SVG_HEIGHT = 520;
+const MIN_EDGE_WEIGHT = 3;
 const INK = "#0E100D";
 const MUTE = "#6B6E66";
 
@@ -49,18 +50,30 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("height", height)
       .attr("viewBox", `0 0 ${width} ${height}`);
 
-    const maxCount = d3.max(graph.nodes, (n) => n.eventCount) ?? 1;
-    const minCount = d3.min(graph.nodes, (n) => n.eventCount) ?? 1;
+    const visibleEdges = graph.edges.filter(
+      (e) => e.sharedEvents >= MIN_EDGE_WEIGHT,
+    );
+    const connectedSnowflakes = new Set<string>();
+    visibleEdges.forEach((e) => {
+      connectedSnowflakes.add(e.user1Snowflake);
+      connectedSnowflakes.add(e.user2Snowflake);
+    });
+    const visibleNodes = graph.nodes.filter((n) =>
+      connectedSnowflakes.has(n.snowflake),
+    );
+
+    const maxCount = d3.max(visibleNodes, (n) => n.eventCount) ?? 1;
+    const minCount = d3.min(visibleNodes, (n) => n.eventCount) ?? 1;
     const radiusScale = d3
       .scaleSqrt()
       .domain([minCount, maxCount])
       .range([MIN_RADIUS, MAX_RADIUS]);
     const radii = new Map(
-      graph.nodes.map((n) => [n.snowflake, radiusScale(n.eventCount)]),
+      visibleNodes.map((n) => [n.snowflake, radiusScale(n.eventCount)]),
     );
 
-    const maxShared = d3.max(graph.edges, (e) => e.sharedEvents) ?? 1;
-    const minShared = d3.min(graph.edges, (e) => e.sharedEvents) ?? 1;
+    const maxShared = d3.max(visibleEdges, (e) => e.sharedEvents) ?? 1;
+    const minShared = d3.min(visibleEdges, (e) => e.sharedEvents) ?? 1;
     const strokeScale = d3
       .scaleLinear()
       .domain([minShared, maxShared])
@@ -73,11 +86,11 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .range([155, 55]);
 
     const nameBySnowflake = new Map(
-      graph.nodes.map((n) => [n.snowflake, n.displayName]),
+      visibleNodes.map((n) => [n.snowflake, n.displayName]),
     );
 
     const defs = svg.append("defs");
-    graph.nodes.forEach((node) => {
+    visibleNodes.forEach((node) => {
       const r = radii.get(node.snowflake)!;
       defs
         .append("clipPath")
@@ -88,13 +101,13 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
         .attr("r", r);
     });
 
-    const nodes: SimNode[] = graph.nodes.map((n) => ({
+    const nodes: SimNode[] = visibleNodes.map((n) => ({
       ...n,
       x: width / 2,
       y: height / 2,
     }));
 
-    const links: SimLink[] = graph.edges.map((e) => ({
+    const links: SimLink[] = visibleEdges.map((e) => ({
       source: e.user1Snowflake,
       target: e.user2Snowflake,
       sharedEvents: e.sharedEvents,
@@ -103,7 +116,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     }));
 
     const degree = new Map<string, number>(
-      graph.nodes.map((n) => [n.snowflake, 0]),
+      visibleNodes.map((n) => [n.snowflake, 0]),
     );
     links.forEach((l) => {
       const s = l.source as string;
@@ -147,12 +160,24 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .enter()
       .append("line")
       .attr("stroke", "rgba(0,0,0,0)")
-      .attr("stroke-width", 12)
+      .attr("stroke-width", 28)
+      .attr("stroke-linecap", "round")
       .style("pointer-events", "stroke")
       .attr("cursor", "default");
 
     linkHitEls
       .on("mouseover", (_event, d) => {
+        if (pinnedSnowflake) {
+          const src = (d.source as SimNode).snowflake ?? d.source;
+          const tgt = (d.target as SimNode).snowflake ?? d.target;
+          if (src !== pinnedSnowflake && tgt !== pinnedSnowflake) return;
+        } else {
+          linkEls
+            .filter((l) => l === d)
+            .attr("stroke", INK)
+            .attr("stroke-opacity", 0.85)
+            .attr("stroke-width", strokeScale(d.sharedEvents) * 1.5);
+        }
         tooltip
           .text(
             `${d.displayName1} and ${d.displayName2} · ${d.sharedEvents} events together`,
@@ -165,8 +190,15 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
           .style("left", `${x + 12}px`)
           .style("top", `${y - 28}px`);
       })
-      .on("mouseout", () => {
+      .on("mouseout", (_event, d) => {
         tooltip.style("opacity", "0");
+        if (!pinnedSnowflake) {
+          linkEls
+            .filter((l) => l === d)
+            .attr("stroke", MUTE)
+            .attr("stroke-opacity", 0.45)
+            .attr("stroke-width", strokeScale(d.sharedEvents));
+        }
       });
 
     const nodeEls = svg
@@ -220,7 +252,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       .attr("stroke-linejoin", "round")
       .style("paint-order", "stroke fill")
       .style("user-select", "none")
-      .style("pointer-events", "none")
+      .style("cursor", "pointer")
       .text((d) =>
         d.displayName.length > 12
           ? d.displayName.slice(0, 11) + "…"
@@ -241,6 +273,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
       return Math.max(r + 22, labelR + 10);
     };
 
+    let pinnedSnowflake: string | null = null;
+
     const maxDegree = Math.max(1, d3.max(degree.values()) ?? 1);
     const cx = width / 2;
     const cy = height / 2;
@@ -250,6 +284,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     const semiY = height / 2 - 40;
 
     const ellipseRadial = (alpha: number) => {
+      if (pinnedSnowflake) return;
       for (const n of nodes) {
         const deg = degree.get(n.snowflake) ?? 0;
         const t = 1 - deg / maxDegree; // 0 for hubs, 1 for isolated
@@ -375,6 +410,8 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
 
     const drag = d3
       .drag<SVGGElement, SimNode>()
+      .filter(() => pinnedSnowflake === null)
+      .clickDistance(5)
       .on("start", (event, d) => {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -392,37 +429,168 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
 
     nodeEls.call(drag);
 
+    const STAR_RADIUS = Math.min(width, height) * 0.28;
+
+    const pinForce = (alpha: number) => {
+      if (!pinnedSnowflake) return;
+      // Pull non-neighbors onto an outer ring around the star.
+      const neighbors = new Set<string>([pinnedSnowflake]);
+      links.forEach((l) => {
+        const src = (l.source as SimNode).snowflake;
+        const tgt = (l.target as SimNode).snowflake;
+        if (src === pinnedSnowflake) neighbors.add(tgt);
+        if (tgt === pinnedSnowflake) neighbors.add(src);
+      });
+      const outer = STAR_RADIUS * 2.1;
+      nodes.forEach((n) => {
+        if (neighbors.has(n.snowflake)) return;
+        const dx = (n.x ?? 0) - cx;
+        const dy = (n.y ?? 0) - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const factor = ((outer - dist) / dist) * 0.22 * alpha;
+        n.vx = (n.vx ?? 0) + dx * factor;
+        n.vy = (n.vy ?? 0) + dy * factor;
+      });
+    };
+
+    simulation.force("pin", pinForce);
+
+    type PinTarget = {
+      node: SimNode;
+      sx: number;
+      sy: number;
+      tx: number;
+      ty: number;
+      dur: number;
+    };
+
+    const pinLayout = (d: SimNode) => {
+      const neighborIds: string[] = [];
+      links.forEach((l) => {
+        const src = (l.source as SimNode).snowflake;
+        const tgt = (l.target as SimNode).snowflake;
+        if (src === d.snowflake) neighborIds.push(tgt);
+        else if (tgt === d.snowflake) neighborIds.push(src);
+      });
+      const count = neighborIds.length;
+      const targets: PinTarget[] = [];
+      const addTarget = (node: SimNode, tx: number, ty: number) => {
+        const sx = node.x ?? cx;
+        const sy = node.y ?? cy;
+        node.fx = sx;
+        node.fy = sy;
+        targets.push({
+          node,
+          sx,
+          sy,
+          tx,
+          ty,
+          dur: 500 + Math.random() * 200,
+        });
+      };
+      addTarget(d, cx, cy);
+      neighborIds.forEach((id, i) => {
+        const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+        const node = nodes.find((n) => n.snowflake === id);
+        if (!node) return;
+        addTarget(
+          node,
+          cx + Math.cos(angle) * STAR_RADIUS,
+          cy + Math.sin(angle) * STAR_RADIUS,
+        );
+      });
+      const sessionId = d.snowflake;
+      d3.timer((elapsed) => {
+        if (pinnedSnowflake !== sessionId) return true;
+        let allDone = true;
+        targets.forEach((t) => {
+          const k = Math.min(1, elapsed / t.dur);
+          const e = d3.easeCubicInOut(k);
+          t.node.fx = t.sx + (t.tx - t.sx) * e;
+          t.node.fy = t.sy + (t.ty - t.sy) * e;
+          if (k < 1) allDone = false;
+        });
+        return allDone;
+      });
+    };
+
+    const releaseLayout = () => {
+      nodes.forEach((n) => {
+        n.fx = null;
+        n.fy = null;
+      });
+    };
+
+    const applyHover = (d: SimNode) => {
+      const isAdjacent = (l: SimLink) => {
+        const src = (l.source as SimNode).snowflake;
+        const tgt = (l.target as SimNode).snowflake;
+        return src === d.snowflake || tgt === d.snowflake;
+      };
+      linkEls
+        .attr("stroke", (l) => (isAdjacent(l) ? INK : MUTE))
+        .attr("stroke-opacity", (l) => (isAdjacent(l) ? 0.85 : 0.06))
+        .attr("stroke-width", (l) =>
+          isAdjacent(l)
+            ? strokeScale(l.sharedEvents) * 1.5
+            : strokeScale(l.sharedEvents),
+        );
+      const neighbors = new Set<string>([d.snowflake]);
+      links.forEach((l) => {
+        const src = (l.source as SimNode).snowflake;
+        const tgt = (l.target as SimNode).snowflake;
+        if (src === d.snowflake) neighbors.add(tgt);
+        if (tgt === d.snowflake) neighbors.add(src);
+      });
+      nodeEls.style("opacity", (n) => (neighbors.has(n.snowflake) ? 1 : 0.2));
+      linkHitEls.style("pointer-events", (l) => {
+        const src = (l.source as SimNode).snowflake;
+        const tgt = (l.target as SimNode).snowflake;
+        return src === d.snowflake || tgt === d.snowflake ? "stroke" : "none";
+      });
+    };
+
+    const clearHover = () => {
+      linkEls
+        .attr("stroke", MUTE)
+        .attr("stroke-opacity", 0.45)
+        .attr("stroke-width", (l) => strokeScale(l.sharedEvents));
+      nodeEls.style("opacity", 1);
+      linkHitEls.style("pointer-events", "stroke");
+    };
+
     nodeEls
       .on("mouseover", (_event, d) => {
-        const isAdjacent = (l: SimLink) => {
-          const src = (l.source as SimNode).snowflake;
-          const tgt = (l.target as SimNode).snowflake;
-          return src === d.snowflake || tgt === d.snowflake;
-        };
-        linkEls
-          .attr("stroke", (l) => (isAdjacent(l) ? INK : MUTE))
-          .attr("stroke-opacity", (l) => (isAdjacent(l) ? 0.85 : 0.06))
-          .attr("stroke-width", (l) =>
-            isAdjacent(l)
-              ? strokeScale(l.sharedEvents) * 1.5
-              : strokeScale(l.sharedEvents),
-          );
-        const neighbors = new Set<string>([d.snowflake]);
-        links.forEach((l) => {
-          const src = (l.source as SimNode).snowflake;
-          const tgt = (l.target as SimNode).snowflake;
-          if (src === d.snowflake) neighbors.add(tgt);
-          if (tgt === d.snowflake) neighbors.add(src);
-        });
-        nodeEls.style("opacity", (n) => (neighbors.has(n.snowflake) ? 1 : 0.2));
+        if (pinnedSnowflake) return;
+        applyHover(d);
       })
       .on("mouseout", () => {
-        linkEls
-          .attr("stroke", MUTE)
-          .attr("stroke-opacity", 0.45)
-          .attr("stroke-width", (l) => strokeScale(l.sharedEvents));
-        nodeEls.style("opacity", 1);
+        if (pinnedSnowflake) return;
+        clearHover();
+      })
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        if (pinnedSnowflake) {
+          pinnedSnowflake = null;
+          releaseLayout();
+          clearHover();
+          simulation.alpha(0.6).restart();
+          return;
+        }
+        pinnedSnowflake = d.snowflake;
+        applyHover(d);
+        pinLayout(d);
+        simulation.alpha(0.8).restart();
       });
+
+    svg.on("click", () => {
+      if (pinnedSnowflake) {
+        pinnedSnowflake = null;
+        releaseLayout();
+        clearHover();
+        simulation.alpha(0.6).restart();
+      }
+    });
 
     // Seed all nodes in a tight, deterministic ring around center. The visible
     // animation lets the force simulation push them apart — charge repulsion,

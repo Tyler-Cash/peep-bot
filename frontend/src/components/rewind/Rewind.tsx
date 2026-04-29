@@ -256,7 +256,7 @@ function MonthChart({ data }: { data: Record<string, number> }) {
         const label = month.slice(5);
         const heightPct = Math.max((count / max) * 100, 8);
         return (
-          <div key={month} className="flex flex-col items-center gap-1 flex-1">
+          <div key={month} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
             <div
               className="w-full rounded-t-[4px] bg-leaf border-[1px] border-ink"
               style={{ height: `${heightPct}%` }}
@@ -278,7 +278,7 @@ function DayChart({ data }: { data: Record<string, number> }) {
       {entries.map(([day, count]) => {
         const heightPct = Math.max((count / max) * 100, 8);
         return (
-          <div key={day} className="flex flex-col items-center gap-1 flex-1">
+          <div key={day} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
             <div
               className="w-full rounded-t-[4px] bg-leaf border-[1px] border-ink"
               style={{ height: `${heightPct}%` }}
