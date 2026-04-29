@@ -72,10 +72,21 @@ afterEach(() => {
 describe("GuildSettingsForm", () => {
   it("redirects non-admin users away from the page", async () => {
     mockUseCurrentUser.mockReturnValue({
-      data: { admin: false, username: "joe" },
+      data: { adminGuildIds: [], username: "joe" },
     });
     mockUseGuildSettings.mockReturnValue({
-      data: { primaryLocationName: null },
+      data: {
+        primaryLocationName: null,
+        primaryLocationPlaceId: null,
+        primaryLocationLat: null,
+        primaryLocationLng: null,
+        eventsRole: "events",
+        adminRole: "event-admin",
+        separatorChannel: null,
+        emojiAccepted: "✅",
+        emojiDeclined: "❌",
+        emojiMaybe: "❓",
+      },
       isLoading: false,
     });
 
@@ -85,13 +96,19 @@ describe("GuildSettingsForm", () => {
   });
 
   it("submits a changed primary location and navigates home", async () => {
-    mockUseCurrentUser.mockReturnValue({ data: { admin: true } });
+    mockUseCurrentUser.mockReturnValue({ data: { adminGuildIds: ["g1"] } });
     mockUseGuildSettings.mockReturnValue({
       data: {
         primaryLocationName: "Old Town",
         primaryLocationPlaceId: "old-pid",
         primaryLocationLat: 1,
         primaryLocationLng: 2,
+        eventsRole: "events",
+        adminRole: "event-admin",
+        separatorChannel: null,
+        emojiAccepted: "✅",
+        emojiDeclined: "❌",
+        emojiMaybe: "❓",
       },
       isLoading: false,
     });
@@ -118,12 +135,18 @@ describe("GuildSettingsForm", () => {
       primaryLocationPlaceId: null,
       primaryLocationLat: null,
       primaryLocationLng: null,
+      eventsRole: "events",
+      adminRole: "event-admin",
+      separatorChannel: null,
+      emojiAccepted: "✅",
+      emojiDeclined: "❌",
+      emojiMaybe: "❓",
     });
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
   });
 
   it("shows the loading state and does not submit while settings are loading", async () => {
-    mockUseCurrentUser.mockReturnValue({ data: { admin: true } });
+    mockUseCurrentUser.mockReturnValue({ data: { adminGuildIds: ["g1"] } });
     mockUseGuildSettings.mockReturnValue({ data: undefined, isLoading: true });
 
     render(<GuildSettingsForm guildId="g1" />);

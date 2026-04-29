@@ -125,7 +125,7 @@ export function EventDetail({ id }: { id: string }) {
     await submitRsvp(guild.id, data.id, status);
   };
 
-  const isAdmin = me?.admin ?? false;
+  const isAdmin = me?.adminGuildIds.includes(guild?.id ?? "") ?? false;
 
   const confirmRemove = async () => {
     if (!pendingRemove || !guild || !data) return;
@@ -352,7 +352,7 @@ export function EventDetail({ id }: { id: string }) {
               </a>
             </div>
 
-            {me?.admin && !isCancelled && (
+            {isAdmin && !isCancelled && (
               <div className="rounded-card border-[1.5px] border-ink bg-paper2 p-5 shadow-rest flex flex-col gap-2">
                 <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
                   admin
