@@ -38,7 +38,7 @@ class DiscordUserCacheServiceTest {
     ObjectProvider<DiscordService> discordServiceProvider;
 
     @Mock
-    DiscordConfiguration discordConfiguration;
+    GuildRepository guildRepository;
 
     @Mock
     AvatarDownloadService avatarDownloadService;
@@ -49,7 +49,7 @@ class DiscordUserCacheServiceTest {
                 attendanceRepository,
                 eventRepository,
                 discordServiceProvider,
-                discordConfiguration,
+                guildRepository,
                 avatarDownloadService);
     }
 
@@ -191,7 +191,7 @@ class DiscordUserCacheServiceTest {
             long guildId = 999L;
             String snowflake = "123456789012345678";
             long snowflakeLong = Long.parseLong(snowflake);
-            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(Guild.withDefaults(guildId)));
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
@@ -238,7 +238,7 @@ class DiscordUserCacheServiceTest {
         void handlesApiFailure() {
             long guildId = 999L;
             String snowflake = "987654321098765432";
-            when(discordConfiguration.getGuildId()).thenReturn(guildId);
+            when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(Guild.withDefaults(guildId)));
             when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
             when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
 
