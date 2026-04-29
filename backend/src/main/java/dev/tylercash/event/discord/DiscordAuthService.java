@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class DiscordAuthService {
     private final JDA jda;
-    private final DiscordConfiguration discordConfiguration;
+    private final GuildRepository guildRepository;
     private final Optional<DevUserProperties> devUserProperties;
 
     public Member getMember(long guildId, long userId) {
@@ -45,6 +45,17 @@ public class DiscordAuthService {
     }
 
     public boolean isEventAdmin(long guildId, long userId) {
-        return hasRole(guildId, userId, discordConfiguration.getAdminRole());
+        String adminRole =
+                guildRepository.findById(guildId).map(Guild::getAdminRole).orElse("event-admin");
+        return hasRole(guildId, userId, adminRole);
+    }
+
+    public boolean isGuildOwner(long guildId, long userId) {
+        if (devUserProperties.isPresent() && devUserProperties.get().isForceAdmin()) {
+            return true;
+        }
+        net.dv8tion.jda.api.entities.Guild jdaGuild = jda.getGuildById(guildId);
+        if (jdaGuild == null) return false;
+        return jdaGuild.getOwnerIdLong() == userId;
     }
 }
