@@ -53,6 +53,8 @@ public class DiscordService {
     private final DiscordMessageService discordMessageService;
     private final DiscordRoleService discordRoleService;
     private final DiscordAuthService discordAuthService;
+    private final GuildEmojiResolver guildEmojiResolver;
+    private final GuildRepository guildRepository;
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
@@ -70,16 +72,18 @@ public class DiscordService {
 
     @Observed(name = "discord.post-message")
     public Message postEventMessage(Event event, TextChannel channel) {
-        List<Role> rolesToMention =
-                discordRoleService.getRolesByName(channel.getGuild().getIdLong(), discordConfiguration.getEventsRole());
+        long guildId = channel.getGuild().getIdLong();
+        String eventsRoleName =
+                guildRepository.findById(guildId).map(g -> g.getEventsRole()).orElse("events");
+        List<Role> rolesToMention = discordRoleService.getRolesByName(guildId, eventsRoleName);
+        GuildEmojiResolver.ResolvedEmoji emoji = guildEmojiResolver.forGuild(guildId);
+
         MessageCreateBuilder messageBuilder = new MessageCreateBuilder()
                 .addEmbeds(embedService.getMessage(event, clock))
                 .addComponents(List.of(ActionRow.of(
-                        Button.secondary(
-                                ACCEPTED, discordConfiguration.getEmoji().getAccepted()),
-                        Button.secondary(
-                                DECLINED, discordConfiguration.getEmoji().getDeclined()),
-                        Button.secondary(MAYBE, discordConfiguration.getEmoji().getMaybe()),
+                        Button.secondary(ACCEPTED, emoji.accepted()),
+                        Button.secondary(DECLINED, emoji.declined()),
+                        Button.secondary(MAYBE, emoji.maybe()),
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
@@ -132,19 +136,31 @@ public class DiscordService {
     @Observed(name = "discord.sort-active-channels")
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortActiveChannels() {
-        Category category = getEventCategory(discordConfiguration.getGuildId());
-        sortChannelsByEventDate(category, discordConfiguration.getSeperatorChannel());
+        for (dev.tylercash.event.discord.Guild row : guildRepository.findAllByActiveTrue()) {
+            try {
+                Category category = getEventCategory(row.getGuildId());
+                String separator = row.getSeparatorChannel() == null ? "" : row.getSeparatorChannel();
+                sortChannelsByEventDate(category, separator, row.getGuildId());
+            } catch (Exception e) {
+                log.warn("Failed to sort active channels for guild {}: {}", row.getGuildId(), e.getMessage());
+            }
+        }
     }
 
     @Observed(name = "discord.sort-archive-channels")
     @Scheduled(fixedDelay = 5, timeUnit = MINUTES)
     public void sortArchiveChannels() {
-        Category category =
-                discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
-        sortChannelsByChannelName(category);
+        for (dev.tylercash.event.discord.Guild row : guildRepository.findAllByActiveTrue()) {
+            try {
+                Category category = discordChannelService.getCategoryByName(row.getGuildId(), EVENT_ARCHIVE_CATEGORY);
+                sortChannelsByChannelName(category);
+            } catch (Exception e) {
+                log.warn("Failed to sort archive channels for guild {}: {}", row.getGuildId(), e.getMessage());
+            }
+        }
     }
 
-    public void sortChannelsByEventDate(Category eventCategory, String separator) {
+    public void sortChannelsByEventDate(Category eventCategory, String separator, long guildId) {
         List<TextChannel> channels = eventCategory.getTextChannels();
 
         int separatorIndex = -1;
@@ -197,8 +213,7 @@ public class DiscordService {
         List<TextChannel> keptOrphans = new ArrayList<>();
         if (featureToggles.isArchiveOrphanedChannels()) {
             OffsetDateTime cutoff = OffsetDateTime.now(clock).minusDays(ORPHAN_AGE_DAYS);
-            Category archiveCategory =
-                    discordChannelService.getCategoryByName(discordConfiguration.getGuildId(), EVENT_ARCHIVE_CATEGORY);
+            Category archiveCategory = discordChannelService.getCategoryByName(guildId, EVENT_ARCHIVE_CATEGORY);
             for (TextChannel orphan : withoutEvent) {
                 if (orphan.getTimeCreated().isBefore(cutoff)) {
                     log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
