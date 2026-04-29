@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "dev.tylercash.contract")
 public class ContractConfiguration {
+    private long guildId;
     private String resolverRole = "prediction-resolver";
     private String categoryName = "prediction contracts";
     private long defaultBalance = 1000L;

@@ -71,7 +71,9 @@ class DiscordServiceChannelOpsTest {
                 channelService,
                 messageService,
                 roleService,
-                authService);
+                authService,
+                mock(GuildEmojiResolver.class),
+                mock(GuildRepository.class));
     }
 
     private Event eventAt(ZonedDateTime dt, String name) {

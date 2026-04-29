@@ -58,7 +58,9 @@ class DiscordServiceRoleAssignmentTest {
                 mock(DiscordChannelService.class),
                 mock(DiscordMessageService.class),
                 roleService,
-                mock(DiscordAuthService.class));
+                mock(DiscordAuthService.class),
+                mock(GuildEmojiResolver.class),
+                mock(GuildRepository.class));
     }
 
     private Event event(String name) {
