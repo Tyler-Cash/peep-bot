@@ -1,9 +1,10 @@
 package dev.tylercash.event.security.oauth2;
 
 import dev.tylercash.event.discord.AvatarDownloadService;
-import dev.tylercash.event.discord.DiscordConfiguration;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.discord.Guild;
+import dev.tylercash.event.discord.GuildRepository;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
@@ -20,8 +21,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private DiscordService discordService;
-    private DiscordConfiguration discordConfiguration;
     private DiscordUserCacheService discordUserCacheService;
+    private GuildRepository guildRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -31,20 +32,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String globalName = oAuth2User.getAttribute("global_name");
         log.info("Authenticated user {}", username);
 
-        if (!discordService.isUserMemberOfServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake))) {
-            log.warn("User {} not a member of the server. id: {}", username, snowflake);
-            throw new OAuth2AuthenticationException(
-                    "User not a member of discord server " + discordConfiguration.getGuildId());
-        }
-
         String avatarHash = oAuth2User.getAttribute("avatar");
         String avatarUrl = AvatarDownloadService.discordAvatarUrl(snowflake, avatarHash);
-        discordUserCacheService.upsertUser(
-                snowflake,
-                globalName != null ? globalName : (username != null ? username : snowflake),
-                username != null ? username : snowflake,
-                avatarUrl,
-                discordConfiguration.getGuildId());
+        String displayName = globalName != null ? globalName : (username != null ? username : snowflake);
+        String name = username != null ? username : snowflake;
+        long userId = Long.parseLong(snowflake);
+
+        // Record membership in every active guild the bot shares with this user.
+        // Users in zero guilds still log in successfully — frontend renders an
+        // install CTA when GET /guild returns [].
+        for (Guild row : guildRepository.findAllByActiveTrue()) {
+            if (discordService.isUserMemberOfServer(row.getGuildId(), userId)) {
+                discordUserCacheService.upsertUser(snowflake, displayName, name, avatarUrl, row.getGuildId());
+            }
+        }
 
         return oAuth2User;
     }
