@@ -53,7 +53,7 @@ jobs:
           java-version: '21'
 
       - name: Cache Gradle packages
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             ~/.gradle/caches
@@ -63,7 +63,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -113,7 +113,7 @@ jobs:
           java-version: '21'
 
       - name: Cache Gradle packages
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             ~/.gradle/caches
@@ -123,7 +123,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -168,7 +168,7 @@ jobs:
           java-version: '21'
 
       - name: Cache Gradle packages
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             ~/.gradle/caches
@@ -178,7 +178,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -231,7 +231,7 @@ jobs:
           java-version: '21'
 
       - name: Cache Gradle packages
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             ~/.gradle/caches
@@ -368,7 +368,7 @@ jobs:
         working-directory: ./frontend
 
       - name: Cache Playwright browsers
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
