@@ -6,7 +6,6 @@ import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.contract.model.Contract;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.discord.DiscordAuthService;
-import dev.tylercash.event.discord.DiscordConfiguration;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -27,7 +26,6 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
     private final UserBalanceService balanceService;
     private final DiscordAuthService authService;
     private final ContractConfiguration contractConfig;
-    private final DiscordConfiguration discordConfig;
 
     @Override
     public void handleSlashCommand(SlashCommandInteractionEvent event) {
@@ -125,7 +123,7 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
     private void handleResolve(SlashCommandInteractionEvent event) {
         if (!authService.hasRole(
-                discordConfig.getGuildId(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
+                event.getGuild().getIdLong(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
             event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
                     .setEphemeral(true)
                     .queue();
@@ -162,7 +160,7 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
     private void handleCancel(SlashCommandInteractionEvent event) {
         if (!authService.hasRole(
-                discordConfig.getGuildId(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
+                event.getGuild().getIdLong(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
             event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
                     .setEphemeral(true)
                     .queue();

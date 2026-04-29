@@ -23,11 +23,14 @@ import net.dv8tion.jda.api.EmbedBuilder;
 @Slf4j
 @AllArgsConstructor
 public class EmbedRenderer {
+    private static final String ACCEPTED_EMOJI = "✅";
+    private static final String DECLINED_EMOJI = "❌";
+    private static final String MAYBE_EMOJI = "❔";
+
     private final Event event;
     private final Clock clock;
     private final String frontendUrl;
     private final String albumUrl;
-    private final DiscordConfiguration.Emoji emoji;
 
     public EmbedBuilder getEmbedBuilder() {
         long epochSecond = event.getDateTime().toEpochSecond();
@@ -85,17 +88,16 @@ public class EmbedRenderer {
         Set<Attendee> waitlist =
                 sortedAccepted.stream().skip(eventCapacity).collect(Collectors.toCollection(LinkedHashSet::new));
         embed.addField(
-                generateAttendanceTitle(emoji.getAccepted() + " Accepted", accepted.size(), event.getCapacity()),
+                generateAttendanceTitle(ACCEPTED_EMOJI + " Accepted", accepted.size(), event.getCapacity()),
                 reduceAttendeesToBlock(accepted),
                 true);
         embed.addField(
                 generateAttendanceTitle(
-                        emoji.getDeclined() + " Declined", event.getDeclined().size(), 0),
+                        DECLINED_EMOJI + " Declined", event.getDeclined().size(), 0),
                 reduceAttendeesToBlock(event.getDeclined()),
                 true);
         embed.addField(
-                generateAttendanceTitle(
-                        emoji.getMaybe() + " Maybe", event.getMaybe().size(), 0),
+                generateAttendanceTitle(MAYBE_EMOJI + " Maybe", event.getMaybe().size(), 0),
                 reduceAttendeesToBlock(event.getMaybe()),
                 true);
         if (!waitlist.isEmpty()) {

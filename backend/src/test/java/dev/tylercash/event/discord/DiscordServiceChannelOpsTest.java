@@ -48,7 +48,6 @@ class DiscordServiceChannelOpsTest {
     @BeforeEach
     void setUp() {
         config = new DiscordConfiguration();
-        config.setGuildId(GUILD_ID);
         embedService = mock(EmbedService.class);
         eventRepository = mock(EventRepository.class);
         featureToggles = mock(FeatureTogglesConfiguration.class);

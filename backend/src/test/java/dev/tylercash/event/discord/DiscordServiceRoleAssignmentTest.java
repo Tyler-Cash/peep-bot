@@ -40,7 +40,6 @@ class DiscordServiceRoleAssignmentTest {
     @BeforeEach
     void setUp() {
         config = new DiscordConfiguration();
-        config.setGuildId(GUILD_ID);
         jda = mock(JDA.class);
         guild = mock(Guild.class);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
