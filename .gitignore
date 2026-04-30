@@ -56,6 +56,7 @@ bin/
 *.yaml
 *.json
 !.releaserc.json
+!backend/openapi.json
 *.csv
 npm_output.log
 ### Worktrees and tooling ###
