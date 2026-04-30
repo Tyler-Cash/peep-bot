@@ -3,211 +3,211 @@
 import * as z from 'zod';
 
 export const zAttendeeDto = z.object({
-    avatarUrl: z.string().optional(),
-    instant: z.iso.datetime().optional(),
-    name: z.string().optional(),
-    ownerSnowflake: z.string().optional(),
-    snowflake: z.string().optional(),
-    username: z.string().optional()
+    avatarUrl: z.string().nullable().optional(),
+    instant: z.iso.datetime().nullable().optional(),
+    name: z.string().nullable().optional(),
+    ownerSnowflake: z.string().nullable().optional(),
+    snowflake: z.string().nullable().optional(),
+    username: z.string().nullable().optional()
 });
 
 export const zAttendeeStatDto = z.object({
-    avatarUrl: z.string().optional(),
-    displayName: z.string().optional(),
-    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    avatarUrl: z.string().nullable().optional(),
+    displayName: z.string().nullable().optional(),
+    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });
 
 export const zCsrfToken = z.object({
-    headerName: z.string().optional(),
-    parameterName: z.string().optional(),
-    token: z.string().optional()
+    headerName: z.string().nullable().optional(),
+    parameterName: z.string().nullable().optional(),
+    token: z.string().nullable().optional()
 });
 
 export const zEventCategoryDto = z.object({
-    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    name: z.string().optional(),
-    totalAttendees: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    name: z.string().nullable().optional(),
+    totalAttendees: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });
 
 export const zEventDetailDto = z.object({
-    accepted: z.array(zAttendeeDto).optional(),
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    category: z.string().optional(),
-    channelId: z.string().optional(),
-    completed: z.boolean().optional(),
-    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    accepted: z.array(zAttendeeDto).nullable().optional(),
+    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    category: z.string().nullable().optional(),
+    channelId: z.string().nullable().optional(),
+    completed: z.boolean().nullable().optional(),
+    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     dateTime: z.iso.datetime(),
-    declined: z.array(zAttendeeDto).optional(),
-    description: z.string().min(0).max(3800).optional(),
-    displayState: z.string().optional(),
+    declined: z.array(zAttendeeDto).nullable().optional(),
+    description: z.string().min(0).max(3800).nullable().optional(),
+    displayState: z.string().nullable().optional(),
     guildId: z.string().min(1),
-    hasPrivateChannel: z.boolean().optional(),
-    host: z.string().optional(),
-    hostAvatarUrl: z.string().optional(),
-    hostUsername: z.string().optional(),
-    id: z.uuid().optional(),
-    location: z.string().optional(),
-    locationPlaceId: z.string().optional(),
-    maybe: z.array(zAttendeeDto).optional(),
-    messageId: z.string().optional(),
+    hasPrivateChannel: z.boolean().nullable().optional(),
+    host: z.string().nullable().optional(),
+    hostAvatarUrl: z.string().nullable().optional(),
+    hostUsername: z.string().nullable().optional(),
+    id: z.uuid().nullable().optional(),
+    location: z.string().nullable().optional(),
+    locationPlaceId: z.string().nullable().optional(),
+    maybe: z.array(zAttendeeDto).nullable().optional(),
+    messageId: z.string().nullable().optional(),
     name: z.string().min(1),
-    notifyOnCreate: z.boolean().optional(),
-    state: z.string().optional()
+    notifyOnCreate: z.boolean().nullable().optional(),
+    state: z.string().nullable().optional()
 });
 
 export const zEventDto = z.object({
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    category: z.string().optional(),
-    channelId: z.string().optional(),
-    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    category: z.string().nullable().optional(),
+    channelId: z.string().nullable().optional(),
+    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     dateTime: z.iso.datetime(),
-    description: z.string().min(0).max(3800).optional(),
-    displayState: z.string().optional(),
+    description: z.string().min(0).max(3800).nullable().optional(),
+    displayState: z.string().nullable().optional(),
     guildId: z.string().min(1),
-    host: z.string().optional(),
-    hostAvatarUrl: z.string().optional(),
-    hostUsername: z.string().optional(),
-    id: z.uuid().optional(),
-    location: z.string().optional(),
-    locationPlaceId: z.string().optional(),
-    messageId: z.string().optional(),
+    host: z.string().nullable().optional(),
+    hostAvatarUrl: z.string().nullable().optional(),
+    hostUsername: z.string().nullable().optional(),
+    id: z.uuid().nullable().optional(),
+    location: z.string().nullable().optional(),
+    locationPlaceId: z.string().nullable().optional(),
+    messageId: z.string().nullable().optional(),
     name: z.string().min(1),
-    notifyOnCreate: z.boolean().optional(),
-    state: z.string().optional()
+    notifyOnCreate: z.boolean().nullable().optional(),
+    state: z.string().nullable().optional()
 });
 
 export const zEventSummaryDto = z.object({
-    dateTime: z.iso.datetime().optional(),
-    id: z.uuid().optional(),
-    name: z.string().optional()
+    dateTime: z.iso.datetime().nullable().optional(),
+    id: z.uuid().nullable().optional(),
+    name: z.string().nullable().optional()
 });
 
 export const zEventUpdateDto = z.object({
-    accepted: z.array(z.string()).optional(),
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    dateTime: z.iso.datetime().optional(),
-    description: z.string().optional(),
+    accepted: z.array(z.string()).nullable().optional(),
+    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    dateTime: z.iso.datetime().nullable().optional(),
+    description: z.string().nullable().optional(),
     id: z.uuid(),
-    location: z.string().optional(),
-    locationPlaceId: z.string().optional(),
-    name: z.string().optional()
+    location: z.string().nullable().optional(),
+    locationPlaceId: z.string().nullable().optional(),
+    name: z.string().nullable().optional()
 });
 
 export const zGalleryAlbumDto = z.object({
-    albumId: z.string().optional(),
-    albumUrl: z.string().optional(),
-    assetCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    attendees: z.array(zAttendeeDto).optional(),
-    eventDateTime: z.iso.datetime().optional(),
-    eventId: z.uuid().optional(),
-    eventName: z.string().optional(),
-    thumbnailUrl: z.string().optional()
+    albumId: z.string().nullable().optional(),
+    albumUrl: z.string().nullable().optional(),
+    assetCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    attendees: z.array(zAttendeeDto).nullable().optional(),
+    eventDateTime: z.iso.datetime().nullable().optional(),
+    eventId: z.uuid().nullable().optional(),
+    eventName: z.string().nullable().optional(),
+    thumbnailUrl: z.string().nullable().optional()
 });
 
 export const zGraphEdgeDto = z.object({
-    sharedEvents: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    user1Snowflake: z.string().optional(),
-    user2Snowflake: z.string().optional()
+    sharedEvents: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    user1Snowflake: z.string().nullable().optional(),
+    user2Snowflake: z.string().nullable().optional()
 });
 
 export const zGraphNodeDto = z.object({
-    avatarUrl: z.string().optional(),
-    displayName: z.string().optional(),
-    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    snowflake: z.string().optional()
+    avatarUrl: z.string().nullable().optional(),
+    displayName: z.string().nullable().optional(),
+    eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    snowflake: z.string().nullable().optional()
 });
 
 export const zGuildDto = z.object({
-    channel: z.string().optional(),
-    color: z.string().optional(),
-    iconUrl: z.string().optional(),
-    id: z.string().optional(),
-    initials: z.string().optional(),
-    members: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    name: z.string().optional(),
-    primaryLocationLat: z.number().optional(),
-    primaryLocationLng: z.number().optional()
+    channel: z.string().nullable().optional(),
+    color: z.string().nullable().optional(),
+    iconUrl: z.string().nullable().optional(),
+    id: z.string().nullable().optional(),
+    initials: z.string().nullable().optional(),
+    members: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    name: z.string().nullable().optional(),
+    primaryLocationLat: z.number().nullable().optional(),
+    primaryLocationLng: z.number().nullable().optional()
 });
 
 export const zGuildSettingsDto = z.object({
-    adminRole: z.string().optional(),
-    emojiAccepted: z.string().optional(),
-    emojiDeclined: z.string().optional(),
-    emojiMaybe: z.string().optional(),
-    eventsRole: z.string().optional(),
-    primaryLocationLat: z.number().optional(),
-    primaryLocationLng: z.number().optional(),
-    primaryLocationName: z.string().optional(),
-    primaryLocationPlaceId: z.string().optional(),
-    separatorChannel: z.string().optional()
+    adminRole: z.string().nullable().optional(),
+    emojiAccepted: z.string().nullable().optional(),
+    emojiDeclined: z.string().nullable().optional(),
+    emojiMaybe: z.string().nullable().optional(),
+    eventsRole: z.string().nullable().optional(),
+    primaryLocationLat: z.number().nullable().optional(),
+    primaryLocationLng: z.number().nullable().optional(),
+    primaryLocationName: z.string().nullable().optional(),
+    primaryLocationPlaceId: z.string().nullable().optional(),
+    separatorChannel: z.string().nullable().optional()
 });
 
 export const zGuildSettingsRequest = z.object({
-    adminRole: z.string().optional(),
-    emojiAccepted: z.string().optional(),
-    emojiDeclined: z.string().optional(),
-    emojiMaybe: z.string().optional(),
-    eventsRole: z.string().optional(),
-    primaryLocationLat: z.number().optional(),
-    primaryLocationLng: z.number().optional(),
-    primaryLocationName: z.string().optional(),
-    primaryLocationPlaceId: z.string().optional(),
-    separatorChannel: z.string().optional()
+    adminRole: z.string().nullable().optional(),
+    emojiAccepted: z.string().nullable().optional(),
+    emojiDeclined: z.string().nullable().optional(),
+    emojiMaybe: z.string().nullable().optional(),
+    eventsRole: z.string().nullable().optional(),
+    primaryLocationLat: z.number().nullable().optional(),
+    primaryLocationLng: z.number().nullable().optional(),
+    primaryLocationName: z.string().nullable().optional(),
+    primaryLocationPlaceId: z.string().nullable().optional(),
+    separatorChannel: z.string().nullable().optional()
 });
 
 export const zPageMetadata = z.object({
-    number: z.number().optional(),
-    size: z.number().optional(),
-    totalElements: z.number().optional(),
-    totalPages: z.number().optional()
+    number: z.number().nullable().optional(),
+    size: z.number().nullable().optional(),
+    totalElements: z.number().nullable().optional(),
+    totalPages: z.number().nullable().optional()
 });
 
 export const zPageable = z.object({
-    page: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    size: z.int().gte(1).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    sort: z.array(z.string()).optional()
+    page: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    size: z.int().gte(1).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    sort: z.array(z.string()).nullable().optional()
 });
 
 export const zPagedModelEventDto = z.object({
-    content: z.array(zEventDto).optional(),
-    page: zPageMetadata.optional()
+    content: z.array(zEventDto).nullable().optional(),
+    page: zPageMetadata.nullable().optional()
 });
 
 export const zRsvpRequest = z.object({
-    status: z.string().optional()
+    status: z.string().nullable().optional()
 });
 
 export const zSocialGraphDto = z.object({
-    edges: z.array(zGraphEdgeDto).optional(),
-    nodes: z.array(zGraphNodeDto).optional()
+    edges: z.array(zGraphEdgeDto).nullable().optional(),
+    nodes: z.array(zGraphNodeDto).nullable().optional()
 });
 
 export const zRewindStatsDto = z.object({
-    averageGroupSize: z.number().optional(),
-    embeddingsAvailable: z.boolean().optional(),
-    eventsByDayOfWeek: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).optional(),
-    eventsByMonth: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).optional(),
-    firstEvent: zEventSummaryDto.optional(),
-    lastEvent: zEventSummaryDto.optional(),
-    socialGraph: zSocialGraphDto.optional(),
-    topAttendees: z.array(zAttendeeStatDto).optional(),
-    topCategories: z.array(zEventCategoryDto).optional(),
-    topOrganizers: z.array(zAttendeeStatDto).optional(),
-    totalEvents: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    totalPlusOneGuests: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    totalRsvps: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    totalUniqueAttendees: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    averageGroupSize: z.number().nullable().optional(),
+    embeddingsAvailable: z.boolean().nullable().optional(),
+    eventsByDayOfWeek: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).nullable().optional(),
+    eventsByMonth: z.record(z.string(), z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).nullable().optional(),
+    firstEvent: zEventSummaryDto.nullable().optional(),
+    lastEvent: zEventSummaryDto.nullable().optional(),
+    socialGraph: zSocialGraphDto.nullable().optional(),
+    topAttendees: z.array(zAttendeeStatDto).nullable().optional(),
+    topCategories: z.array(zEventCategoryDto).nullable().optional(),
+    topOrganizers: z.array(zAttendeeStatDto).nullable().optional(),
+    totalEvents: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    totalPlusOneGuests: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    totalRsvps: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    totalUniqueAttendees: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });
 
 export const zStreamingResponseBody = z.unknown();
 
 export const zUserInfoDto = z.object({
-    adminGuildIds: z.array(z.string()).optional(),
-    avatarUrl: z.string().optional(),
-    discordId: z.string().optional(),
-    displayName: z.string().optional(),
-    username: z.string().optional()
+    adminGuildIds: z.array(z.string()).nullable().optional(),
+    avatarUrl: z.string().nullable().optional(),
+    discordId: z.string().nullable().optional(),
+    displayName: z.string().nullable().optional(),
+    username: z.string().nullable().optional()
 });
 
 /**
@@ -271,8 +271,8 @@ export const zRemoveAttendeePath = z.object({
 });
 
 export const zRemoveAttendeeQuery = z.object({
-    snowflake: z.string().optional(),
-    name: z.string().optional()
+    snowflake: z.string().nullable().optional(),
+    name: z.string().nullable().optional()
 });
 
 /**
@@ -372,7 +372,7 @@ export const zUpdateSettingsResponse = zGuildSettingsDto;
 
 export const zGetGuildStatsQuery = z.object({
     guildId: z.string(),
-    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });
 
 /**
@@ -382,7 +382,7 @@ export const zGetGuildStatsResponse = zRewindStatsDto;
 
 export const zGetMyStatsQuery = z.object({
     guildId: z.string(),
-    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });
 
 /**
