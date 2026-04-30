@@ -52,7 +52,7 @@ public class EventController {
     public Map<String, String> createEvent(
             @RequestBody @Valid EventDto event, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
-        long guildId = event.getGuildId();
+        long guildId = Long.parseLong(event.getGuildId());
         log.info("User {} creating event '{}' in guild {}", discordId, event.getName(), guildId);
         guildMembershipService.assertMember(discordId, guildId);
         Member member = discordService.getMemberFromServer(guildId, Long.parseLong(discordId));
@@ -122,12 +122,13 @@ public class EventController {
     @ApiResponse(responseCode = "200", description = "Events retrieved successfully")
     @GetMapping
     public Page<EventDto> getEvents(
-            @RequestParam long guildId,
+            @RequestParam String guildId,
             @PageableDefault Pageable pageable,
             @AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
-        Page<Event> events = eventService.getActiveEvents(pageable, guildId);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
+        Page<Event> events = eventService.getActiveEvents(pageable, guildIdLong);
         Set<String> creatorSnowflakes = events.stream()
                 .map(Event::getCreator)
                 .filter(s -> s != null && !s.isBlank())

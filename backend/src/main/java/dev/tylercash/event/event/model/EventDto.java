@@ -18,8 +18,8 @@ public class EventDto {
             "Name should be between " + NAME_SIZE_MIN + " and " + NAME_SIZE_MAX + " characters long";
     private UUID id;
 
-    @NotNull(message = "Guild ID is required.")
-    private long guildId;
+    @NotBlank(message = "Guild ID is required.")
+    private String guildId;
 
     @NotBlank(message = "Name is required.")
     @Size(min = NAME_SIZE_MIN, message = NAME_SIZE_ERROR)
@@ -58,7 +58,7 @@ public class EventDto {
 
     public EventDto(Event event) {
         this.id = event.getId();
-        this.guildId = event.getServerId();
+        this.guildId = String.valueOf(event.getServerId());
         this.name = event.getName();
         this.description = event.getDescription();
         this.location = event.getLocation();

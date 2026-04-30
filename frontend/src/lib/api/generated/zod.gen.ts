@@ -40,7 +40,7 @@ export const zEventDetailDto = z.object({
     declined: z.array(zAttendeeDto).optional(),
     description: z.string().min(0).max(3800).optional(),
     displayState: z.string().optional(),
-    guildId: z.number(),
+    guildId: z.string().min(1),
     hasPrivateChannel: z.boolean().optional(),
     host: z.string().optional(),
     hostAvatarUrl: z.string().optional(),
@@ -63,7 +63,7 @@ export const zEventDto = z.object({
     dateTime: z.iso.datetime(),
     description: z.string().min(0).max(3800).optional(),
     displayState: z.string().optional(),
-    guildId: z.number(),
+    guildId: z.string().min(1),
     host: z.string().optional(),
     hostAvatarUrl: z.string().optional(),
     hostUsername: z.string().optional(),
@@ -222,7 +222,7 @@ export const zCsrfQuery = z.object({
 export const zCsrfResponse = zCsrfToken;
 
 export const zGetEventsQuery = z.object({
-    guildId: z.number(),
+    guildId: z.string(),
     pageable: zPageable
 });
 
@@ -307,7 +307,7 @@ export const zRsvpEventPath = z.object({
 export const zRsvpEventResponse = zEventDetailDto;
 
 export const zGetGalleryQuery = z.object({
-    guildId: z.number()
+    guildId: z.string()
 });
 
 /**
@@ -339,7 +339,7 @@ export const zOpenAlbumResponse = z.record(z.string(), z.string());
 export const zGetGuildsResponse = z.array(zGuildDto);
 
 export const zGetSettingsPath = z.object({
-    guildId: z.number()
+    guildId: z.string()
 });
 
 /**
@@ -350,7 +350,7 @@ export const zGetSettingsResponse = zGuildSettingsDto;
 export const zUpdateSettingsBody = zGuildSettingsRequest;
 
 export const zUpdateSettingsPath = z.object({
-    guildId: z.number()
+    guildId: z.string()
 });
 
 /**
@@ -359,7 +359,7 @@ export const zUpdateSettingsPath = z.object({
 export const zUpdateSettingsResponse = zGuildSettingsDto;
 
 export const zGetGuildStatsQuery = z.object({
-    guildId: z.number(),
+    guildId: z.string(),
     year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
 });
 
@@ -369,7 +369,7 @@ export const zGetGuildStatsQuery = z.object({
 export const zGetGuildStatsResponse = zRewindStatsDto;
 
 export const zGetMyStatsQuery = z.object({
-    guildId: z.number(),
+    guildId: z.string(),
     year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
 });
 
@@ -379,7 +379,7 @@ export const zGetMyStatsQuery = z.object({
 export const zGetMyStatsResponse = zRewindStatsDto;
 
 export const zGetYearsQuery = z.object({
-    guildId: z.number()
+    guildId: z.string()
 });
 
 /**

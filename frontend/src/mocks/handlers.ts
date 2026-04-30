@@ -135,7 +135,7 @@ export const handlers = [
       const created: EventDetailDto = {
         id,
         // guildId is required in the generated type; use a sentinel for mock data.
-        guildId: body.guildId ?? 0,
+        guildId: body.guildId ?? "0",
         name: body.name ?? "untitled",
         description: body.description ?? "",
         location: body.location ?? "",

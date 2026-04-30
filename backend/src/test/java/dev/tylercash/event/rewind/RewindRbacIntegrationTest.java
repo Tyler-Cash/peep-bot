@@ -58,6 +58,8 @@ class RewindRbacIntegrationTest {
 
     private static final long GUILD_1 = 111L;
     private static final long GUILD_2 = 222L;
+    private static final String GUILD_1_STR = String.valueOf(GUILD_1);
+    private static final String GUILD_2_STR = String.valueOf(GUILD_2);
 
     private static final String USER_A = "userA";
     private static final String USER_B = "userB";
@@ -142,7 +144,7 @@ class RewindRbacIntegrationTest {
     @Test
     @DisplayName("userD (member of guild2 only) cannot read guild1's rewind stats")
     void userD_forbiddenFromGuild1Stats() {
-        assertThatThrownBy(() -> rewindController.getGuildStats(principal(USER_D), GUILD_1, null))
+        assertThatThrownBy(() -> rewindController.getGuildStats(principal(USER_D), GUILD_1_STR, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -150,7 +152,7 @@ class RewindRbacIntegrationTest {
     @Test
     @DisplayName("userD cannot read guild1's personal rewind even with their own snowflake")
     void userD_forbiddenFromGuild1Personal() {
-        assertThatThrownBy(() -> rewindController.getMyStats(principal(USER_D), GUILD_1, null))
+        assertThatThrownBy(() -> rewindController.getMyStats(principal(USER_D), GUILD_1_STR, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -158,7 +160,7 @@ class RewindRbacIntegrationTest {
     @Test
     @DisplayName("userD cannot read guild1's available rewind years")
     void userD_forbiddenFromGuild1Years() {
-        assertThatThrownBy(() -> rewindController.getYears(principal(USER_D), GUILD_1))
+        assertThatThrownBy(() -> rewindController.getYears(principal(USER_D), GUILD_1_STR))
                 .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -166,7 +168,7 @@ class RewindRbacIntegrationTest {
     @Test
     @DisplayName("userD's view of guild2 does not leak users or events from guild1")
     void userD_guild2View_isolatedFromGuild1() {
-        RewindStatsDto stats = rewindController.getGuildStats(principal(USER_D), GUILD_2, null);
+        RewindStatsDto stats = rewindController.getGuildStats(principal(USER_D), GUILD_2_STR, null);
 
         // Only the single guild2 event counts.
         assertThat(stats.totalEvents()).isEqualTo(1);
@@ -186,7 +188,7 @@ class RewindRbacIntegrationTest {
     @Test
     @DisplayName("a guild1 member sees all three guild1 attendees in the social graph")
     void guild1Member_seesAllGuild1Members() {
-        RewindStatsDto stats = rewindController.getGuildStats(principal(USER_A), GUILD_1, null);
+        RewindStatsDto stats = rewindController.getGuildStats(principal(USER_A), GUILD_1_STR, null);
 
         assertThat(stats.socialGraph()).isNotNull();
         assertThat(stats.socialGraph().nodes())

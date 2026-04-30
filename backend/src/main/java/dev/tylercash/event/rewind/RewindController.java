@@ -21,27 +21,30 @@ public class RewindController {
     @GetMapping
     public RewindStatsDto getGuildStats(
             @AuthenticationPrincipal OAuth2User principal,
-            @RequestParam long guildId,
+            @RequestParam String guildId,
             @RequestParam(required = false) Integer year) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
-        return rewindService.getGuildStats(guildId, year);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
+        return rewindService.getGuildStats(guildIdLong, year);
     }
 
     @GetMapping("/me")
     public RewindStatsDto getMyStats(
             @AuthenticationPrincipal OAuth2User principal,
-            @RequestParam long guildId,
+            @RequestParam String guildId,
             @RequestParam(required = false) Integer year) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
-        return rewindService.getUserStats(snowflake, guildId, year);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
+        return rewindService.getUserStats(snowflake, guildIdLong, year);
     }
 
     @GetMapping("/years")
-    public List<Integer> getYears(@AuthenticationPrincipal OAuth2User principal, @RequestParam long guildId) {
+    public List<Integer> getYears(@AuthenticationPrincipal OAuth2User principal, @RequestParam String guildId) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
-        return rewindService.getYears(guildId);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
+        return rewindService.getYears(guildIdLong);
     }
 }

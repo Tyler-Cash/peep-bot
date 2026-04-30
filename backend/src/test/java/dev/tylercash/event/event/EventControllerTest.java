@@ -37,6 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
 class EventControllerTest {
 
     private static final long GUILD_ID = 123456789L;
+    private static final String GUILD_ID_STR = String.valueOf(GUILD_ID);
     private static final String DISCORD_ID = "987654321";
     private static final String USERNAME = "testuser";
     private static final String DISPLAY_NAME = "Test Nickname";
@@ -94,7 +95,7 @@ class EventControllerTest {
         dto.setCapacity(0);
         dto.setCost(0);
         dto.setLocation("");
-        dto.setGuildId(GUILD_ID);
+        dto.setGuildId(GUILD_ID_STR);
         return dto;
     }
 
@@ -452,7 +453,7 @@ class EventControllerTest {
                 DISCORD_ID, "Resolved Name", "username", Instant.now(), null, null, Set.of(GUILD_ID));
         when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of(DISCORD_ID, user));
 
-        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID, PageRequest.of(0, 10), ctx.principal);
+        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID_STR, PageRequest.of(0, 10), ctx.principal);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getHost()).isEqualTo("Resolved Name");
@@ -477,7 +478,7 @@ class EventControllerTest {
         when(ctx.eventService.getActiveEvents(any(), eq(GUILD_ID))).thenReturn(eventPage);
         when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of());
 
-        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID, PageRequest.of(0, 10), ctx.principal);
+        Page<EventDto> result = ctx.controller.getEvents(GUILD_ID_STR, PageRequest.of(0, 10), ctx.principal);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getHost()).isEqualTo(DISCORD_ID);

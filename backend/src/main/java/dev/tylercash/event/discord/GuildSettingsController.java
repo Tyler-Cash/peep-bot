@@ -19,11 +19,12 @@ public class GuildSettingsController {
     private final DiscordService discordService;
 
     @GetMapping
-    public GuildSettingsDto getSettings(@PathVariable long guildId, @AuthenticationPrincipal OAuth2User principal) {
+    public GuildSettingsDto getSettings(@PathVariable String guildId, @AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
         return settingsRepository
-                .findById(guildId)
+                .findById(guildIdLong)
                 .map(s -> new GuildSettingsDto(
                         s.getPrimaryLocationPlaceId(),
                         s.getPrimaryLocationName(),
@@ -34,17 +35,18 @@ public class GuildSettingsController {
 
     @PatchMapping
     public GuildSettingsDto updateSettings(
-            @PathVariable long guildId,
+            @PathVariable String guildId,
             @RequestBody GuildSettingsRequest request,
             @AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
-        boolean isAdmin = discordService.isUserAdminOfServer(guildId, Long.parseLong(snowflake));
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
+        boolean isAdmin = discordService.isUserAdminOfServer(guildIdLong, Long.parseLong(snowflake));
         if (!isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         GuildSettings settings =
-                settingsRepository.findById(guildId).orElse(new GuildSettings(guildId, null, null, null, null));
+                settingsRepository.findById(guildIdLong).orElse(new GuildSettings(guildIdLong, null, null, null, null));
         settings.setPrimaryLocationPlaceId(request.primaryLocationPlaceId());
         settings.setPrimaryLocationName(request.primaryLocationName());
         settings.setPrimaryLocationLat(request.primaryLocationLat());

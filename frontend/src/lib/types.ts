@@ -6,11 +6,6 @@
 // doesn't annotate required fields. Consumers that need stronger guarantees
 // should validate at the call-site (e.g. using the Zod schemas in
 // src/lib/api/generated/zod.gen.ts) rather than tightening these types here.
-//
-// TODO(snowflake-as-string): Long-typed Discord IDs (guildId, channelId,
-// messageId, etc.) currently round-trip as JSON numbers. Snowflakes can exceed
-// 2^53 — annotate the Java DTO fields with @JsonFormat(shape = STRING) and
-// regenerate so they become strings everywhere. Tracked in a separate PR.
 export type {
   AttendeeDto,
   AttendeeStatDto,

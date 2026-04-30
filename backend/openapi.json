@@ -114,8 +114,8 @@
             "type" : "string"
           },
           "guildId" : {
-            "format" : "int64",
-            "type" : "integer"
+            "minLength" : 1,
+            "type" : "string"
           },
           "hasPrivateChannel" : {
             "type" : "boolean"
@@ -191,8 +191,8 @@
             "type" : "string"
           },
           "guildId" : {
-            "format" : "int64",
-            "type" : "integer"
+            "minLength" : 1,
+            "type" : "string"
           },
           "host" : {
             "type" : "string"
@@ -732,8 +732,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -1256,8 +1255,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -1411,8 +1409,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -1447,8 +1444,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         } ],
         "requestBody" : {
@@ -1495,8 +1491,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -1541,8 +1536,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -1587,8 +1581,7 @@
           "name" : "guildId",
           "required" : true,
           "schema" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "string"
           }
         } ],
         "responses" : {

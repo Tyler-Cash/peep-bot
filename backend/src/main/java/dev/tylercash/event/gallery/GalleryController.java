@@ -46,11 +46,13 @@ public class GalleryController {
 
     @Operation(summary = "List gallery albums", description = "Returns albums for events the user attended")
     @GetMapping
-    public List<GalleryAlbumDto> getGallery(@RequestParam long guildId, @AuthenticationPrincipal OAuth2User principal) {
+    public List<GalleryAlbumDto> getGallery(
+            @RequestParam String guildId, @AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
-        guildMembershipService.assertMember(snowflake, guildId);
+        long guildIdLong = Long.parseLong(guildId);
+        guildMembershipService.assertMember(snowflake, guildIdLong);
 
-        List<Event> events = eventRepository.findGalleryEventsForUser(guildId, snowflake);
+        List<Event> events = eventRepository.findGalleryEventsForUser(guildIdLong, snowflake);
         int immichFailures = 0;
         List<GalleryAlbumDto> result = new java.util.ArrayList<>();
         for (Event event : events) {

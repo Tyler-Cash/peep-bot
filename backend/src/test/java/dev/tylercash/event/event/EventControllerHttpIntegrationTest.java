@@ -77,7 +77,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
         String body = objectMapper.writeValueAsString(java.util.Map.of(
                 "guildId",
-                GUILD,
+                String.valueOf(GUILD),
                 "name",
                 "Integration Test Event",
                 "description",

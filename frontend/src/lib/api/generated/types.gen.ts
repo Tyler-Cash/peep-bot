@@ -42,7 +42,7 @@ export type EventDetailDto = {
     declined?: Array<AttendeeDto>;
     description?: string;
     displayState?: string;
-    guildId: number;
+    guildId: string;
     hasPrivateChannel?: boolean;
     host?: string;
     hostAvatarUrl?: string;
@@ -65,7 +65,7 @@ export type EventDto = {
     dateTime: string;
     description?: string;
     displayState?: string;
-    guildId: number;
+    guildId: string;
     host?: string;
     hostAvatarUrl?: string;
     hostUsername?: string;
@@ -297,7 +297,7 @@ export type GetEventsData = {
     body?: never;
     path?: never;
     query: {
-        guildId: number;
+        guildId: string;
         pageable: Pageable;
     };
     url: '/event';
@@ -624,7 +624,7 @@ export type GetGalleryData = {
     body?: never;
     path?: never;
     query: {
-        guildId: number;
+        guildId: string;
     };
     url: '/gallery';
 };
@@ -739,7 +739,7 @@ export type GetGuildsResponse = GetGuildsResponses[keyof GetGuildsResponses];
 export type GetSettingsData = {
     body?: never;
     path: {
-        guildId: number;
+        guildId: string;
     };
     query?: never;
     url: '/guild/{guildId}/settings';
@@ -768,7 +768,7 @@ export type GetSettingsResponse = GetSettingsResponses[keyof GetSettingsResponse
 export type UpdateSettingsData = {
     body: GuildSettingsRequest;
     path: {
-        guildId: number;
+        guildId: string;
     };
     query?: never;
     url: '/guild/{guildId}/settings';
@@ -798,7 +798,7 @@ export type GetGuildStatsData = {
     body?: never;
     path?: never;
     query: {
-        guildId: number;
+        guildId: string;
         year?: number;
     };
     url: '/rewind';
@@ -828,7 +828,7 @@ export type GetMyStatsData = {
     body?: never;
     path?: never;
     query: {
-        guildId: number;
+        guildId: string;
         year?: number;
     };
     url: '/rewind/me';
@@ -858,7 +858,7 @@ export type GetYearsData = {
     body?: never;
     path?: never;
     query: {
-        guildId: number;
+        guildId: string;
     };
     url: '/rewind/years';
 };

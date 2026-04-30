@@ -29,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 class GalleryControllerTest {
     private static final long GUILD_ID = 12345L;
+    private static final String GUILD_ID_STR = String.valueOf(GUILD_ID);
     private static final String SNOWFLAKE = "user-snowflake-1";
     private static final String USERNAME = "tylercash";
     private static final String ALBUM_ID = "album-abc";
@@ -75,7 +76,7 @@ class GalleryControllerTest {
         when(immichService.getAlbumDetails(ALBUM_ID))
                 .thenReturn(Optional.of(new ImmichAlbumResponse(ALBUM_ID, "name", "thumb-asset", 8)));
 
-        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID_STR, principal());
 
         assertThat(result).hasSize(1);
         GalleryAlbumDto dto = result.get(0);
@@ -93,7 +94,7 @@ class GalleryControllerTest {
         when(immichService.getAlbumDetails(ALBUM_ID))
                 .thenReturn(Optional.of(new ImmichAlbumResponse(ALBUM_ID, "n", "t", 0)));
 
-        assertThat(controller.getGallery(GUILD_ID, principal())).isEmpty();
+        assertThat(controller.getGallery(GUILD_ID_STR, principal())).isEmpty();
     }
 
     @Test
@@ -103,7 +104,7 @@ class GalleryControllerTest {
                 .thenReturn(List.of(event(ALBUM_ID, "share", 5)));
         when(immichService.getAlbumDetails(ALBUM_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> controller.getGallery(GUILD_ID, principal()))
+        assertThatThrownBy(() -> controller.getGallery(GUILD_ID_STR, principal()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("502");
     }
@@ -116,7 +117,7 @@ class GalleryControllerTest {
         when(immichService.getAlbumDetails(ALBUM_ID))
                 .thenReturn(Optional.of(new ImmichAlbumResponse(ALBUM_ID, "n", "t", 4)));
 
-        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID_STR, principal());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).albumUrl()).isEqualTo("/api/gallery/" + ALBUM_ID + "/open");
@@ -136,7 +137,7 @@ class GalleryControllerTest {
         when(immichService.getAlbumDetails(org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> controller.getGallery(GUILD_ID, principal()))
+        assertThatThrownBy(() -> controller.getGallery(GUILD_ID_STR, principal()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("502");
     }
@@ -147,7 +148,7 @@ class GalleryControllerTest {
         // The 502 path must not fire when the DB itself returns zero events —
         // that's the legitimate "no albums yet" state.
         when(eventRepository.findGalleryEventsForUser(GUILD_ID, SNOWFLAKE)).thenReturn(List.of());
-        assertThat(controller.getGallery(GUILD_ID, principal())).isEmpty();
+        assertThat(controller.getGallery(GUILD_ID_STR, principal())).isEmpty();
     }
 
     @Test
@@ -161,7 +162,7 @@ class GalleryControllerTest {
                 .thenReturn(Optional.of(new ImmichAlbumResponse("alb-1", "n", "t", 7)));
         when(immichService.getAlbumDetails("alb-2")).thenReturn(Optional.empty());
 
-        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID_STR, principal());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).albumId()).isEqualTo("alb-1");
@@ -181,7 +182,7 @@ class GalleryControllerTest {
         when(immichService.getAlbumDetails("alb-3"))
                 .thenReturn(Optional.of(new ImmichAlbumResponse("alb-3", "n", "t", 0)));
 
-        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID, principal());
+        List<GalleryAlbumDto> result = controller.getGallery(GUILD_ID_STR, principal());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).albumId()).isEqualTo("alb-1");
@@ -191,7 +192,7 @@ class GalleryControllerTest {
     @Test
     @DisplayName("list: asserts guild membership before doing anything")
     void list_assertsGuildMembership() {
-        controller.getGallery(GUILD_ID, principal());
+        controller.getGallery(GUILD_ID_STR, principal());
         verify(guildMembershipService).assertMember(SNOWFLAKE, GUILD_ID);
     }
 
