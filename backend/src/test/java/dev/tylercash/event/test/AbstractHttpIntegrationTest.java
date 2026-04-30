@@ -8,6 +8,7 @@ import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.immich.ImmichService;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,8 +23,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Shared boilerplate for HTTP-level integration tests. Each subclass implicitly gets:
@@ -39,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *       Discord user with this snowflake".</li>
  * </ul>
  */
+@ResourceLock("http-integration-test-db")
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -52,13 +52,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.write-capacity=10000",
         })
 @AutoConfigureMockMvc
-@Testcontainers
 @ActiveProfiles("local")
 @Import(HttpIntegrationFixtures.class)
 public abstract class AbstractHttpIntegrationTest {
 
-    @Container
-    protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
+    // Started once for the entire JVM session; not annotated @Container so Testcontainers never
+    // stops it between test classes.  Ryuk/shutdown-hook cleans it up at JVM exit.
+    protected static final PostgreSQLContainer<?> POSTGRES;
+
+    static {
+        POSTGRES = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
+        POSTGRES.start();
+    }
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry r) {
