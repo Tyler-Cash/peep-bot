@@ -90,7 +90,10 @@ export const currentUser: UserInfo = {
   avatarUrl: null,
 };
 
-export const guild: Guild = {
+// GuildDto (generated) does not include `active` — that field was frontend-only
+// in the hand-written type. Cast via unknown to keep the mock usable until the
+// backend DTO exposes the field.
+export const guild = {
   id: "mockguild-1",
   name: "porch pigeons",
   initials: "PP",
@@ -101,7 +104,7 @@ export const guild: Guild = {
   active: true,
   primaryLocationLat: null as number | null,
   primaryLocationLng: null as number | null,
-};
+} as unknown as Guild;
 
 export const guildSettings = {
   primaryLocationPlaceId: null as string | null,
@@ -427,11 +430,13 @@ export function setRsvp(
   };
   const purge = (list: Attendee[]) =>
     list.filter((a) => a.snowflake !== user.discordId);
-  ev.accepted = purge(ev.accepted);
-  ev.maybe = purge(ev.maybe);
-  ev.declined = purge(ev.declined);
-  if (status === "going") ev.accepted.push(me);
-  else if (status === "maybe") ev.maybe.push(me);
-  else if (status === "declined") ev.declined.push(me);
+  // AttendeeDto (generated) and Attendee (frontend-shaped) share the same
+  // runtime fields used by mock fixtures; cast is safe for mock data.
+  ev.accepted = purge((ev.accepted ?? []) as Attendee[]);
+  ev.maybe = purge((ev.maybe ?? []) as Attendee[]);
+  ev.declined = purge((ev.declined ?? []) as Attendee[]);
+  if (status === "going") ev.accepted.push(me as never);
+  else if (status === "maybe") ev.maybe.push(me as never);
+  else if (status === "declined") ev.declined.push(me as never);
   return ev;
 }
