@@ -52,12 +52,19 @@ export function EventDetail({ id }: { id: string }) {
   const isPast = new Date(data.dateTime) < new Date();
   const cat = categoryMeta(data.category);
   const stamp = dateStamp(data.dateTime);
+
+  // EventDetailDto lists are optional in the generated type (backend DTO has no
+  // required annotation); default to [] so the rest of the component stays clean.
+  const accepted = (data.accepted ?? []) as Attendee[];
+  const maybe = (data.maybe ?? []) as Attendee[];
+  const declined = (data.declined ?? []) as Attendee[];
+
   const meStatus: RsvpStatus | null =
-    data.accepted.some((a) => a.snowflake === me?.discordId)
+    accepted.some((a) => a.snowflake === me?.discordId)
       ? "going"
-      : data.maybe.some((a) => a.snowflake === me?.discordId)
+      : maybe.some((a) => a.snowflake === me?.discordId)
         ? "maybe"
-        : data.declined.some((a) => a.snowflake === me?.discordId)
+        : declined.some((a) => a.snowflake === me?.discordId)
           ? "declined"
           : null;
 
@@ -66,20 +73,20 @@ export function EventDetail({ id }: { id: string }) {
     mutate(
       (prev) => {
         if (!prev) return prev;
-        const strip = (l: typeof prev.accepted) =>
+        const strip = (l: Attendee[]) =>
           l.filter((a) => a.snowflake !== me.discordId);
-        const attendee = {
-          snowflake: me.discordId,
-          name: me.username,
+        const attendee: Attendee = {
+          snowflake: me.discordId ?? null,
+          name: me.username ?? "",
           instant: new Date().toISOString(),
           avatarUrl: me.avatarUrl ?? null,
           hue: "#7BC24F",
         };
         const next = {
           ...prev,
-          accepted: strip(prev.accepted),
-          maybe: strip(prev.maybe),
-          declined: strip(prev.declined),
+          accepted: strip((prev.accepted ?? []) as Attendee[]),
+          maybe: strip((prev.maybe ?? []) as Attendee[]),
+          declined: strip((prev.declined ?? []) as Attendee[]),
         };
         if (status === "going") next.accepted.push(attendee);
         if (status === "maybe") next.maybe.push(attendee);
@@ -100,15 +107,15 @@ export function EventDetail({ id }: { id: string }) {
     mutate(
       (prev) => {
         if (!prev) return prev;
-        const strip = (l: typeof prev.accepted) =>
+        const strip = (l: Attendee[]) =>
           l.filter(
             (a) => !(a.snowflake === attendee.snowflake && a.name === attendee.name),
           );
         return {
           ...prev,
-          accepted: strip(prev.accepted),
-          maybe: strip(prev.maybe),
-          declined: strip(prev.declined),
+          accepted: strip((prev.accepted ?? []) as Attendee[]),
+          maybe: strip((prev.maybe ?? []) as Attendee[]),
+          declined: strip((prev.declined ?? []) as Attendee[]),
         };
       },
       { revalidate: false },
@@ -297,15 +304,15 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 the guest list
               </span>
-              <RsvpGroup label="going" emoji="✅" image="/peepos/peepo-going.png" people={data.accepted} onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
-              <RsvpGroup label="maybe" emoji="🤔" image="/peepos/peepo-maybe.png" people={data.maybe}
+              <RsvpGroup label="going" emoji="✅" image="/peepos/peepo-going.png" people={accepted} onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
+              <RsvpGroup label="maybe" emoji="🤔" image="/peepos/peepo-maybe.png" people={maybe}
               onRemove={isAdmin && !data.completed ? setPendingRemove : undefined}
             />
             <RsvpGroup
               label="can't make it"
               emoji="❌"
               image="/peepos/peepo-no.png"
-              people={data.declined}
+              people={declined}
               onRemove={isAdmin && !data.completed ? setPendingRemove : undefined} />
             </Slab>
           </div>

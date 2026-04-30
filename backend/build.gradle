@@ -106,6 +106,19 @@ tasks.named('test') {
     finalizedBy jacocoTestReport
 }
 
+tasks.register('generateOpenApiDocs', Test) {
+    description = 'Regenerates backend/openapi.json from the live OpenAPI endpoint.'
+    group = 'documentation'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        // intentionally only run the spec generator
+    }
+    filter {
+        includeTestsMatching 'dev.tylercash.event.openapi.OpenApiSpecGenerationTest'
+    }
+}
+
 tasks.register('e2eTest', Test) {
     description = 'Runs e2e tests against real external services (Discord, DB). Requires credentials in environment.'
     group = 'verification'

@@ -1,0 +1,1645 @@
+{
+  "components" : {
+    "schemas" : {
+      "AttendeeDto" : {
+        "properties" : {
+          "avatarUrl" : {
+            "type" : "string"
+          },
+          "instant" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "ownerSnowflake" : {
+            "type" : "string"
+          },
+          "snowflake" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AttendeeStatDto" : {
+        "properties" : {
+          "avatarUrl" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "eventCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CsrfToken" : {
+        "properties" : {
+          "headerName" : {
+            "type" : "string"
+          },
+          "parameterName" : {
+            "type" : "string"
+          },
+          "token" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EventCategoryDto" : {
+        "properties" : {
+          "eventCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "totalAttendees" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "EventDetailDto" : {
+        "properties" : {
+          "accepted" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeDto"
+            },
+            "type" : "array"
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "channelId" : {
+            "type" : "string"
+          },
+          "completed" : {
+            "type" : "boolean"
+          },
+          "cost" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dateTime" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "declined" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeDto"
+            },
+            "type" : "array"
+          },
+          "description" : {
+            "maxLength" : 3800,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "displayState" : {
+            "type" : "string"
+          },
+          "guildId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "hasPrivateChannel" : {
+            "type" : "boolean"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "hostAvatarUrl" : {
+            "type" : "string"
+          },
+          "hostUsername" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "locationPlaceId" : {
+            "type" : "string"
+          },
+          "maybe" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeDto"
+            },
+            "type" : "array"
+          },
+          "messageId" : {
+            "type" : "string"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "notifyOnCreate" : {
+            "type" : "boolean"
+          },
+          "state" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "dateTime", "guildId", "name" ],
+        "type" : "object"
+      },
+      "EventDto" : {
+        "properties" : {
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "channelId" : {
+            "type" : "string"
+          },
+          "cost" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dateTime" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 3800,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "displayState" : {
+            "type" : "string"
+          },
+          "guildId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "hostAvatarUrl" : {
+            "type" : "string"
+          },
+          "hostUsername" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "locationPlaceId" : {
+            "type" : "string"
+          },
+          "messageId" : {
+            "type" : "string"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "notifyOnCreate" : {
+            "type" : "boolean"
+          },
+          "state" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "dateTime", "guildId", "name" ],
+        "type" : "object"
+      },
+      "EventSummaryDto" : {
+        "properties" : {
+          "dateTime" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EventUpdateDto" : {
+        "properties" : {
+          "accepted" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dateTime" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "locationPlaceId" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
+      "GalleryAlbumDto" : {
+        "properties" : {
+          "albumId" : {
+            "type" : "string"
+          },
+          "albumUrl" : {
+            "type" : "string"
+          },
+          "assetCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "attendees" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeDto"
+            },
+            "type" : "array"
+          },
+          "eventDateTime" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "eventId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "eventName" : {
+            "type" : "string"
+          },
+          "thumbnailUrl" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "GraphEdgeDto" : {
+        "properties" : {
+          "sharedEvents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "user1Snowflake" : {
+            "type" : "string"
+          },
+          "user2Snowflake" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "GraphNodeDto" : {
+        "properties" : {
+          "avatarUrl" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "eventCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "snowflake" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "GuildDto" : {
+        "properties" : {
+          "channel" : {
+            "type" : "string"
+          },
+          "color" : {
+            "type" : "string"
+          },
+          "iconUrl" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "initials" : {
+            "type" : "string"
+          },
+          "members" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "primaryLocationLat" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "primaryLocationLng" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "GuildSettingsDto" : {
+        "properties" : {
+          "primaryLocationLat" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "primaryLocationLng" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "primaryLocationName" : {
+            "type" : "string"
+          },
+          "primaryLocationPlaceId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "GuildSettingsRequest" : {
+        "properties" : {
+          "primaryLocationLat" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "primaryLocationLng" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "primaryLocationName" : {
+            "type" : "string"
+          },
+          "primaryLocationPlaceId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PageMetadata" : {
+        "properties" : {
+          "number" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Pageable" : {
+        "properties" : {
+          "page" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "sort" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PagedModelEventDto" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EventDto"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
+          }
+        },
+        "type" : "object"
+      },
+      "RewindStatsDto" : {
+        "properties" : {
+          "averageGroupSize" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "embeddingsAvailable" : {
+            "type" : "boolean"
+          },
+          "eventsByDayOfWeek" : {
+            "additionalProperties" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "eventsByMonth" : {
+            "additionalProperties" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "firstEvent" : {
+            "$ref" : "#/components/schemas/EventSummaryDto"
+          },
+          "lastEvent" : {
+            "$ref" : "#/components/schemas/EventSummaryDto"
+          },
+          "socialGraph" : {
+            "$ref" : "#/components/schemas/SocialGraphDto"
+          },
+          "topAttendees" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeStatDto"
+            },
+            "type" : "array"
+          },
+          "topCategories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EventCategoryDto"
+            },
+            "type" : "array"
+          },
+          "topOrganizers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendeeStatDto"
+            },
+            "type" : "array"
+          },
+          "totalEvents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalPlusOneGuests" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalRsvps" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalUniqueAttendees" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "RsvpRequest" : {
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SocialGraphDto" : {
+        "properties" : {
+          "edges" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GraphEdgeDto"
+            },
+            "type" : "array"
+          },
+          "nodes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GraphNodeDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "StreamingResponseBody" : { },
+      "UserInfoDto" : {
+        "properties" : {
+          "admin" : {
+            "type" : "boolean"
+          },
+          "avatarUrl" : {
+            "type" : "string"
+          },
+          "discordId" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/auth/is-logged-in" : {
+      "get" : {
+        "description" : "Returns current user info if authenticated",
+        "operationId" : "isLoggedIn",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserInfoDto"
+                }
+              }
+            },
+            "description" : "User is authenticated"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserInfoDto"
+                }
+              }
+            },
+            "description" : "User is not authenticated"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Check authentication status",
+        "tags" : [ "Authentication" ]
+      }
+    },
+    "/avatar/{snowflake}" : {
+      "get" : {
+        "operationId" : "getAvatar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "snowflake",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "avatar-controller" ]
+      }
+    },
+    "/csrf" : {
+      "get" : {
+        "operationId" : "csrf",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "token",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/CsrfToken"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CsrfToken"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "csrf-controller" ]
+      }
+    },
+    "/event" : {
+      "get" : {
+        "description" : "Returns paginated list of non-archived, non-deleted events",
+        "operationId" : "getEvents",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelEventDto"
+                }
+              }
+            },
+            "description" : "Events retrieved successfully"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "List active events",
+        "tags" : [ "Events" ]
+      },
+      "patch" : {
+        "description" : "Partially updates event details and syncs with Discord",
+        "operationId" : "updateEvent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventUpdateDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event updated successfully"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Validation error"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not authenticated"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Update an existing event",
+        "tags" : [ "Events" ]
+      },
+      "put" : {
+        "description" : "Creates an event and its associated Discord channel",
+        "operationId" : "createEvent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event created successfully"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Validation error"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not authenticated"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Create a new event",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}" : {
+      "get" : {
+        "description" : "Returns full event details including attendee lists",
+        "operationId" : "getEvent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventDetailDto"
+                }
+              }
+            },
+            "description" : "Event details retrieved"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Get event details",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}/attendee" : {
+      "delete" : {
+        "description" : "Removes an attendee from the event. Admins can remove anyone; non-admins can only remove their own +1s.",
+        "operationId" : "removeAttendee",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "snowflake",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "name",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Attendee removed"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not authorized to remove this attendee"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Remove an attendee",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}/cancel" : {
+      "post" : {
+        "description" : "Admin-only: cancels an event and archives it",
+        "operationId" : "cancelEvent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event cancelled"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event already completed"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Admin role required"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Cancel an event",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}/private-channel" : {
+      "post" : {
+        "description" : "Admin-only: creates a private Discord channel for accepted attendees",
+        "operationId" : "createPrivateChannel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Private channel created"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Admin role required"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Create a private channel",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}/recategorize" : {
+      "post" : {
+        "description" : "Admin-only: triggers a fresh categorization attempt for this event",
+        "operationId" : "recategorizeEvent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Recategorization triggered"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Admin role required"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "Re-categorize an event",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/event/{id}/rsvp" : {
+      "post" : {
+        "description" : "Record or update your attendance status for an event",
+        "operationId" : "rsvpEvent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RsvpRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventDetailDto"
+                }
+              }
+            },
+            "description" : "RSVP recorded"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Event not found"
+          }
+        },
+        "summary" : "RSVP to an event",
+        "tags" : [ "Events" ]
+      }
+    },
+    "/gallery" : {
+      "get" : {
+        "description" : "Returns albums for events the user attended",
+        "operationId" : "getGallery",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/GalleryAlbumDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "List gallery albums",
+        "tags" : [ "Gallery" ]
+      }
+    },
+    "/gallery/thumbnail/{albumId}" : {
+      "get" : {
+        "description" : "Streams the album cover thumbnail from Immich on demand — never buffered to disk or DB",
+        "operationId" : "getAlbumThumbnail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "albumId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StreamingResponseBody"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Get album thumbnail",
+        "tags" : [ "Gallery" ]
+      }
+    },
+    "/gallery/{albumId}/open" : {
+      "get" : {
+        "description" : "Generates a per-user 1-week Immich share link and returns its public URL as JSON",
+        "operationId" : "openAlbum",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "albumId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Resolve an album's share URL for the current user",
+        "tags" : [ "Gallery" ]
+      }
+    },
+    "/guild" : {
+      "get" : {
+        "operationId" : "getGuilds",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/GuildDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
+    "/guild/{guildId}/settings" : {
+      "get" : {
+        "operationId" : "getSettings",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuildSettingsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      },
+      "patch" : {
+        "operationId" : "updateSettings",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GuildSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuildSettingsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
+    "/rewind" : {
+      "get" : {
+        "operationId" : "getGuildStats",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RewindStatsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Rewind" ]
+      }
+    },
+    "/rewind/me" : {
+      "get" : {
+        "operationId" : "getMyStats",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RewindStatsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Rewind" ]
+      }
+    },
+    "/rewind/years" : {
+      "get" : {
+        "operationId" : "getYears",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "format" : "int32",
+                    "type" : "integer"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Rewind" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ],
+  "tags" : [ {
+    "description" : "Discord guild info",
+    "name" : "Guild"
+  }, {
+    "description" : "Event history statistics",
+    "name" : "Rewind"
+  }, {
+    "description" : "Photo album gallery for attended events",
+    "name" : "Gallery"
+  }, {
+    "description" : "Authentication status operations",
+    "name" : "Authentication"
+  }, {
+    "description" : "Event management operations",
+    "name" : "Events"
+  } ]
+}

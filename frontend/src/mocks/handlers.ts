@@ -130,10 +130,12 @@ export const handlers = [
       const user = getMockLoggedInUser();
       if (!user) return new HttpResponse(null, { status: 401 });
       const body = (await request.json()) as Partial<EventDto>;
-      const id = store.nextId++;
+      const id = String(store.nextId++);
       const now = new Date().toISOString();
       const created: EventDetailDto = {
         id,
+        // guildId is required in the generated type; use a sentinel for mock data.
+        guildId: body.guildId ?? 0,
         name: body.name ?? "untitled",
         description: body.description ?? "",
         location: body.location ?? "",
@@ -141,19 +143,20 @@ export const handlers = [
         cost: body.cost ?? 0,
         dateTime: body.dateTime ?? now,
         host: user.username,
-        hostAvatarUrl: user.avatarUrl,
+        hostAvatarUrl: user.avatarUrl ?? undefined,
         category: (body.category as string) ?? "unknown",
         state: "ACTIVE",
         hasPrivateChannel: false,
         completed: false,
+        // AttendeeDto (generated) doesn't have `hue`; cast to satisfy the
+        // array type — hue is a UI-only field used by Avatar for colour fallback.
         accepted: [
           {
             snowflake: user.discordId,
-            name: user.username,
+            name: user.username ?? undefined,
             instant: now,
-            avatarUrl: user.avatarUrl,
-            hue: "#7BC24F",
-          },
+            avatarUrl: user.avatarUrl ?? undefined,
+          } as EventDetailDto["accepted"][0] & { hue?: string },
         ],
         maybe: [],
         declined: [],
