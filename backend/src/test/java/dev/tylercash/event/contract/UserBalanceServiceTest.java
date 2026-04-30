@@ -1,7 +1,10 @@
 package dev.tylercash.event.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.web.server.ResponseStatusException;
 
 class UserBalanceServiceTest {
     private static final String SNOWFLAKE = "u1";
@@ -32,6 +36,9 @@ class UserBalanceServiceTest {
         clock = Clock.fixed(Instant.parse("2026-05-01T12:00:00Z"), ZoneOffset.UTC);
         service = new UserBalanceService(repo, config, clock);
         when(repo.save(any(UserBalance.class))).thenAnswer(inv -> inv.getArgument(0));
+        // By default, atomic adjust/deduct return 1 (success)
+        when(repo.atomicAdjust(any(), anyLong())).thenReturn(1);
+        when(repo.atomicDeductIfSufficient(any(), anyLong(), anyLong())).thenReturn(1);
     }
 
     @Test
@@ -86,47 +93,39 @@ class UserBalanceServiceTest {
     }
 
     @Test
-    @DisplayName("deduct subtracts the amount and updates the timestamp")
-    void deduct_subtractsAndTouchesUpdatedAt() {
-        UserBalance existing = new UserBalance();
-        existing.setSnowflake(SNOWFLAKE);
-        existing.setBalance(1000L);
-        existing.setUpdatedAt(Instant.EPOCH);
-        when(repo.findById(SNOWFLAKE)).thenReturn(Optional.of(existing));
-
+    @DisplayName("deduct issues an atomic deduct with the negativeTradeCap as the floor")
+    void deduct_issuesAtomicDeduct() {
         service.deduct(SNOWFLAKE, 150L);
 
-        assertThat(existing.getBalance()).isEqualTo(850L);
-        assertThat(existing.getUpdatedAt()).isEqualTo(clock.instant());
-        verify(repo).save(existing);
+        verify(repo).insertIfAbsent(SNOWFLAKE, 0L);
+        verify(repo).atomicDeductIfSufficient(SNOWFLAKE, 150L, -config.getNegativeTradeCap());
     }
 
     @Test
-    @DisplayName("credit adds the amount and updates the timestamp")
-    void credit_addsAndTouchesUpdatedAt() {
-        UserBalance existing = new UserBalance();
-        existing.setSnowflake(SNOWFLAKE);
-        existing.setBalance(500L);
-        existing.setUpdatedAt(Instant.EPOCH);
-        when(repo.findById(SNOWFLAKE)).thenReturn(Optional.of(existing));
+    @DisplayName("deduct throws BAD_REQUEST when insufficient balance (0 rows updated)")
+    void deduct_throwsBadRequestOnInsufficientBalance() {
+        when(repo.atomicDeductIfSufficient(any(), anyLong(), anyLong())).thenReturn(0);
 
+        assertThatThrownBy(() -> service.deduct(SNOWFLAKE, 9999L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Insufficient balance");
+    }
+
+    @Test
+    @DisplayName("credit issues an atomic adjustment")
+    void credit_issuesAtomicAdjust() {
         service.credit(SNOWFLAKE, 75L);
 
-        assertThat(existing.getBalance()).isEqualTo(575L);
-        assertThat(existing.getUpdatedAt()).isEqualTo(clock.instant());
-        verify(repo).save(existing);
+        verify(repo).insertIfAbsent(SNOWFLAKE, 0L);
+        verify(repo).atomicAdjust(SNOWFLAKE, 75L);
     }
 
     @Test
-    @DisplayName("deduct auto-creates the user with the default balance before subtracting")
+    @DisplayName("deduct auto-creates the user row via insertIfAbsent before subtracting")
     void deduct_autoCreatesUser() {
-        when(repo.findById(SNOWFLAKE)).thenReturn(Optional.empty());
-
         service.deduct(SNOWFLAKE, 100L);
 
-        ArgumentCaptor<UserBalance> captor = ArgumentCaptor.forClass(UserBalance.class);
-        verify(repo, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
-        UserBalance last = captor.getValue();
-        assertThat(last.getBalance()).isEqualTo(config.getDefaultBalance() - 100L);
+        verify(repo).insertIfAbsent(eq(SNOWFLAKE), eq(0L));
+        verify(repo).atomicDeductIfSufficient(eq(SNOWFLAKE), eq(100L), anyLong());
     }
 }
