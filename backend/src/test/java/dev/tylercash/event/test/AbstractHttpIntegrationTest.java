@@ -110,7 +110,7 @@ public abstract class AbstractHttpIntegrationTest {
         jdbc.execute("DELETE FROM event");
         jdbc.execute("DELETE FROM discord_user_guild");
         jdbc.execute("DELETE FROM discord_user_cache");
-        jdbc.execute("DELETE FROM guild_settings");
+        jdbc.execute("DELETE FROM guild");
     }
 
     /** Authenticate the request as the given Discord snowflake. */

@@ -49,7 +49,7 @@ class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegration
     void member_get_returnsExistingSettings() throws Exception {
         fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
         jdbc.update(
-                "INSERT INTO guild_settings (guild_id, primary_location_place_id, primary_location_name, primary_location_lat, primary_location_lng) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO guild (guild_id, primary_location_place_id, primary_location_name, primary_location_lat, primary_location_lng) VALUES (?, ?, ?, ?, ?)",
                 GUILD_1,
                 "place-1",
                 "Melbourne",

@@ -25,6 +25,7 @@ import dev.tylercash.event.discord.DiscordMessageService;
 import dev.tylercash.event.discord.DiscordService;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
@@ -195,6 +196,12 @@ class ContractSlashCommandListenerImplIntegrationTest {
         lenient().when(user.getId()).thenReturn(userId);
         lenient().when(user.getIdLong()).thenReturn(Long.parseLong(userId));
         lenient().when(evt.getUser()).thenReturn(user);
+
+        // Multi-guild: handleResolve/handleCancel read event.getGuild().getIdLong()
+        // to scope role lookups. Stub a guild so those handlers don't NPE.
+        Guild guild = mock(Guild.class);
+        lenient().when(guild.getIdLong()).thenReturn(427465120554418177L);
+        lenient().when(evt.getGuild()).thenReturn(guild);
 
         ReplyCallbackAction deferAction = mock(ReplyCallbackAction.class);
         lenient().when(evt.deferReply(true)).thenReturn(deferAction);

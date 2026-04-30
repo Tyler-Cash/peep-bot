@@ -31,9 +31,6 @@ class SecurityControllerHttpIntegrationTest extends AbstractHttpIntegrationTest 
         String body = result.getResponse().getContentAsString();
         assertThat(body).contains("\"discordId\":\"" + SNOWFLAKE + "\"");
         assertThat(body).contains("\"avatarUrl\":\"/api/avatar/" + SNOWFLAKE + "\"");
-        // The `admin` boolean field is what main returns today; assert presence.
-        // (Multi-guild branch will replace with adminGuildIds — that's caught
-        // by this test failing on rebase, exactly the harness's job.)
-        assertThat(body).contains("\"admin\":");
+        assertThat(body).contains("\"adminGuildIds\":");
     }
 }
