@@ -80,6 +80,14 @@ jobs:
         run: ./gradlew test jacocoTestReport
         working-directory: ./backend
 
+      - name: Verify openapi.json is up to date
+        run: |
+          if ! git diff --exit-code openapi.json; then
+            echo "::error::backend/openapi.json is out of date. Run './gradlew generateOpenApiDocs' locally and commit the result."
+            exit 1
+          fi
+        working-directory: ./backend
+
       - name: Publish test results
         uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4 # v6
         if: success() || failure()
@@ -334,6 +342,10 @@ jobs:
 
       - name: Test
         run: npm run test
+        working-directory: ./frontend
+
+      - name: Verify generated types match openapi.json
+        run: npm run codegen:check
         working-directory: ./frontend
 
       - name: Build
