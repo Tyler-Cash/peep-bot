@@ -132,17 +132,29 @@ export type GuildDto = {
 };
 
 export type GuildSettingsDto = {
+    adminRole?: string;
+    emojiAccepted?: string;
+    emojiDeclined?: string;
+    emojiMaybe?: string;
+    eventsRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
     primaryLocationPlaceId?: string;
+    separatorChannel?: string;
 };
 
 export type GuildSettingsRequest = {
+    adminRole?: string;
+    emojiAccepted?: string;
+    emojiDeclined?: string;
+    emojiMaybe?: string;
+    eventsRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
     primaryLocationPlaceId?: string;
+    separatorChannel?: string;
 };
 
 export type PageMetadata = {
@@ -197,7 +209,7 @@ export type SocialGraphDto = {
 export type StreamingResponseBody = unknown;
 
 export type UserInfoDto = {
-    admin?: boolean;
+    adminGuildIds?: Array<string>;
     avatarUrl?: string;
     discordId?: string;
     displayName?: string;

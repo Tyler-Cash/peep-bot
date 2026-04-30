@@ -130,17 +130,29 @@ export const zGuildDto = z.object({
 });
 
 export const zGuildSettingsDto = z.object({
+    adminRole: z.string().optional(),
+    emojiAccepted: z.string().optional(),
+    emojiDeclined: z.string().optional(),
+    emojiMaybe: z.string().optional(),
+    eventsRole: z.string().optional(),
     primaryLocationLat: z.number().optional(),
     primaryLocationLng: z.number().optional(),
     primaryLocationName: z.string().optional(),
-    primaryLocationPlaceId: z.string().optional()
+    primaryLocationPlaceId: z.string().optional(),
+    separatorChannel: z.string().optional()
 });
 
 export const zGuildSettingsRequest = z.object({
+    adminRole: z.string().optional(),
+    emojiAccepted: z.string().optional(),
+    emojiDeclined: z.string().optional(),
+    emojiMaybe: z.string().optional(),
+    eventsRole: z.string().optional(),
     primaryLocationLat: z.number().optional(),
     primaryLocationLng: z.number().optional(),
     primaryLocationName: z.string().optional(),
-    primaryLocationPlaceId: z.string().optional()
+    primaryLocationPlaceId: z.string().optional(),
+    separatorChannel: z.string().optional()
 });
 
 export const zPageMetadata = z.object({
@@ -191,7 +203,7 @@ export const zRewindStatsDto = z.object({
 export const zStreamingResponseBody = z.unknown();
 
 export const zUserInfoDto = z.object({
-    admin: z.boolean().optional(),
+    adminGuildIds: z.array(z.string()).optional(),
     avatarUrl: z.string().optional(),
     discordId: z.string().optional(),
     displayName: z.string().optional(),
