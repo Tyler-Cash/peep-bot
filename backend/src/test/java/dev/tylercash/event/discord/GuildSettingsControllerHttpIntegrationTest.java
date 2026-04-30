@@ -5,7 +5,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -13,11 +12,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
     private static final String USER_ID = "300";
-
-    @BeforeEach
-    void truncateGuildSettings() {
-        jdbc.execute("DELETE FROM guild_settings");
-    }
 
     private static final long GUILD_1 = 2001L;
     private static final long GUILD_2 = 2002L;

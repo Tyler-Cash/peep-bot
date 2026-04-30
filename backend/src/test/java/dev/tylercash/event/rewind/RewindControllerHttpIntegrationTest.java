@@ -1,0 +1,95 @@
+package dev.tylercash.event.rewind;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import dev.tylercash.event.rewind.model.RewindStatsDto;
+import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import java.time.ZonedDateTime;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
+
+    private static final String MEMBER = "501";
+    private static final String NON_MEMBER = "502";
+    private static final long GUILD_A = 4001L;
+    private static final long GUILD_B = 4002L;
+
+    @Test
+    void anonymous_get_rewind_returns401() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind").param("guildId", String.valueOf(GUILD_A)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymous_get_rewindMe_returns401() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind/me").param("guildId", String.valueOf(GUILD_A)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymous_get_years_returns401() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind/years").param("guildId", String.valueOf(GUILD_A)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void nonMember_get_rewind_returns403() throws Exception {
+        fixtures.registerMember(NON_MEMBER, GUILD_B, "Bob", "bob");
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(NON_MEMBER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void member_get_rewind_returnsStats() throws Exception {
+        fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rewind")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(MEMBER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEvents").exists())
+                .andReturn();
+
+        RewindStatsDto dto = objectMapper.readValue(result.getResponse().getContentAsString(), RewindStatsDto.class);
+        assertThat(dto.totalEvents()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    void member_get_rewindMe_returnsStats() throws Exception {
+        fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rewind/me")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(MEMBER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEvents").exists())
+                .andReturn();
+
+        RewindStatsDto dto = objectMapper.readValue(result.getResponse().getContentAsString(), RewindStatsDto.class);
+        assertThat(dto.totalEvents()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void member_get_years_returnsYearsArray() throws Exception {
+        fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
+
+        int currentYear = ZonedDateTime.now().getYear();
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind/years")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(MEMBER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasItem(currentYear)));
+    }
+}
