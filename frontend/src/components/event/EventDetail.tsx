@@ -22,11 +22,12 @@ import {
   useEvent,
 } from "@/lib/hooks";
 import type { Attendee, RsvpStatus } from "@/lib/types";
+import { ApiError } from "@/lib/api";
 import { PencilIcon } from "@/components/icons/PencilIcon";
 
 export function EventDetail({ id }: { id: string }) {
   const router = useRouter();
-  const { data, mutate, isLoading } = useEvent(id);
+  const { data, mutate, isLoading, error } = useEvent(id);
   const { data: me } = useCurrentUser();
   const guild = useActiveGuild();
   const [pendingRemove, setPendingRemove] = useState<Attendee | null>(null);
@@ -44,7 +45,30 @@ export function EventDetail({ id }: { id: string }) {
     }
   };
 
-  if (isLoading || !data) {
+  if (isLoading && !data && !error) {
+    return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
+  }
+
+  if (error) {
+    const is404 = error instanceof ApiError && error.status === 404;
+    return (
+      <div className="mx-auto max-w-[640px] px-4 py-16 text-center">
+        <h1 className="text-[32px] font-extrabold tracking-[-0.04em]">
+          {is404 ? "event not found" : "couldn't load event"}
+        </h1>
+        <p className="mt-3 text-[17px] text-mute">
+          {is404
+            ? "This event doesn't exist or may have been removed."
+            : "Something went wrong. Try refreshing the page."}
+        </p>
+        <Link href="/" className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink">
+          ← back to events
+        </Link>
+      </div>
+    );
+  }
+
+  if (!data) {
     return <div className="mx-auto max-w-[1200px] p-8 text-mute">loading…</div>;
   }
 

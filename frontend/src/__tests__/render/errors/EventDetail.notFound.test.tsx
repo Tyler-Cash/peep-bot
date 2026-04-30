@@ -14,20 +14,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("EventDetail render — 404 not found", () => {
-  it("renders a loading/not-found state without crashing when /event/:id returns 404", async () => {
+  it("renders an 'event not found' error panel when /event/:id returns 404", async () => {
     server.use(
       http.get(/\/event\/999$/, () => new HttpResponse(null, { status: 404 })),
     );
     const { errors, restore } = trapConsoleError();
     try {
       renderWithProviders(<EventDetail id="999" />);
-      // TODO: EventDetail.tsx has NO dedicated not-found/error UI state — bug to fix.
-      // When useEvent errors (404), `data` stays undefined and `isLoading` becomes false
-      // but the component stays in the `if (isLoading || !data)` branch showing "loading…"
-      // forever rather than surfacing a not-found message.
-      // Bug location: frontend/src/components/event/EventDetail.tsx line 47-49
-      // Fix needed: check `error` from useEvent() and render a "event not found" message.
-      await screen.findByText(/loading/i, undefined, { timeout: 3000 });
+      await screen.findByText(/event not found/i, undefined, { timeout: 3000 });
+      expect(screen.queryByText(/^loading…$/i)).toBeNull();
     } finally {
       restore();
     }
