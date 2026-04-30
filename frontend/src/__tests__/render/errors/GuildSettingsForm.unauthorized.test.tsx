@@ -14,7 +14,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("GuildSettingsForm render — 403 unauthorized", () => {
-  it("renders without crashing when /guild/:id/settings returns 403", async () => {
+  it("renders an 'access denied' error panel when /guild/:id/settings returns 403", async () => {
+    // Note: apiFetch redirects to /login in live mode on 401/403, but in mock mode
+    // (NEXT_PUBLIC_API_MODE=mock) it throws UnauthorizedError without the redirect.
+    // The component now reads error from useGuildSettings() and renders an error panel.
     server.use(
       http.get(/\/guild\/[^/]+\/settings$/, () =>
         new HttpResponse(null, { status: 403 }),
@@ -23,15 +26,8 @@ describe("GuildSettingsForm render — 403 unauthorized", () => {
     const { errors, restore } = trapConsoleError();
     try {
       renderWithProviders(<GuildSettingsForm guildId="mockguild-1" />);
-      // TODO: GuildSettingsForm.tsx has NO dedicated unauthorized/error UI state — bug to fix.
-      // When useGuildSettings() errors with 403 (UnauthorizedError via apiFetch/fetcher),
-      // `settings` stays undefined so the component shows "loading…" forever.
-      // There is a non-admin redirect (line 48-50) but it only fires when `user.admin` is false,
-      // not when the settings fetch itself is unauthorized.
-      // Bug location: frontend/src/components/guild/GuildSettingsForm.tsx line 71-73
-      // Fix needed: read `error` from useGuildSettings() and render an access-denied message
-      // (or redirect) when it throws UnauthorizedError.
-      await screen.findByText(/loading/i, undefined, { timeout: 3000 });
+      await screen.findByText(/access denied/i, undefined, { timeout: 3000 });
+      expect(screen.queryByText(/^loading…$/i)).toBeNull();
     } finally {
       restore();
     }

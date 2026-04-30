@@ -12,6 +12,7 @@ import {
   useCurrentUser,
   useGuildSettings,
 } from "@/lib/hooks";
+import { UnauthorizedError } from "@/lib/api";
 import {
   fetchPlaceDetails,
   geocodePlace,
@@ -23,7 +24,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const router = useRouter();
   const { data: user } = useCurrentUser();
   const activeGuild = useActiveGuild();
-  const { data: settings, isLoading } = useGuildSettings(guildId);
+  const { data: settings, isLoading, error } = useGuildSettings(guildId);
   const sessionToken = useMemo(newPlacesSessionToken, []);
 
   const [primaryLocation, setPrimaryLocation] = useState("");
@@ -68,7 +69,30 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
     }
   };
 
-  if (isLoading || !settings) {
+  if (isLoading && !settings && !error) {
+    return <div className="mx-auto max-w-[820px] p-8 text-mute">loading…</div>;
+  }
+
+  if (error) {
+    const isUnauthorized = error instanceof UnauthorizedError;
+    return (
+      <div className="mx-auto max-w-[640px] px-4 py-16 text-center">
+        <h1 className="text-[32px] font-extrabold tracking-[-0.04em]">
+          {isUnauthorized ? "access denied" : "couldn't load settings"}
+        </h1>
+        <p className="mt-3 text-[17px] text-mute">
+          {isUnauthorized
+            ? "You don't have permission to view server settings."
+            : "Something went wrong. Try refreshing the page."}
+        </p>
+        <Link href="/" className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink">
+          ← back
+        </Link>
+      </div>
+    );
+  }
+
+  if (!settings) {
     return <div className="mx-auto max-w-[820px] p-8 text-mute">loading…</div>;
   }
 
