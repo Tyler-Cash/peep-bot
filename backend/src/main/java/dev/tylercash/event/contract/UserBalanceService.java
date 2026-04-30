@@ -5,7 +5,9 @@ import dev.tylercash.event.contract.repository.UserBalanceRepository;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @AllArgsConstructor
@@ -25,18 +27,27 @@ public class UserBalanceService {
 
     @Transactional
     public void deduct(String snowflake, long amount) {
-        UserBalance ub = getOrCreate(snowflake);
-        ub.setBalance(ub.getBalance() - amount);
-        ub.setUpdatedAt(clock.instant());
-        repo.save(ub);
+        ensureRowExists(snowflake);
+        long floor = -config.getNegativeTradeCap();
+        int updated = repo.atomicDeductIfSufficient(snowflake, amount, floor);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient balance");
+        }
     }
 
     @Transactional
     public void credit(String snowflake, long amount) {
-        UserBalance ub = getOrCreate(snowflake);
-        ub.setBalance(ub.getBalance() + amount);
-        ub.setUpdatedAt(clock.instant());
-        repo.save(ub);
+        ensureRowExists(snowflake);
+        repo.atomicAdjust(snowflake, amount);
+    }
+
+    /**
+     * Guarantees a row exists for the given snowflake, creating one with a zero balance if absent.
+     * The atomic adjustment that follows will then set the correct final balance. Safe to call
+     * concurrently — uses INSERT ... ON CONFLICT DO NOTHING.
+     */
+    private void ensureRowExists(String snowflake) {
+        repo.insertIfAbsent(snowflake, 0L);
     }
 
     private UserBalance getOrCreate(String snowflake) {
