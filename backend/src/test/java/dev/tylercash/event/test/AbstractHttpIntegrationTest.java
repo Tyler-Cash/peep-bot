@@ -46,6 +46,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.frontend.hostname=test.local",
+            "dev.tylercash.contract.guild-id=1",
             // Existing yaml has a single-guild yaml field; keep zero so nothing
             // accidentally targets a real guild from a test.
             "dev.tylercash.rate-limit.read-capacity=10000",
