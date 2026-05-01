@@ -64,7 +64,7 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
 
       <Link
         href={`/events/${album.eventId}`}
-        className="flex items-end justify-between gap-3 px-1 pt-3.5 pb-4"
+        className="flex items-end justify-between gap-2.5 px-1 pt-3.5 pb-[18px]"
       >
         <div className="flex flex-col min-w-0 flex-1">
           <h2 className="text-[18px] font-extrabold tracking-[-0.02em] leading-[1.1] truncate">
@@ -75,8 +75,8 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
           </p>
         </div>
         {(album.attendees ?? []).length > 0 && (
-          <div className="shrink-0">
-            <Avas people={album.attendees ?? []} max={3} size={22} />
+          <div className="shrink-0 self-end -mb-0.5">
+            <Avas people={album.attendees ?? []} max={3} size={24} />
           </div>
         )}
       </Link>

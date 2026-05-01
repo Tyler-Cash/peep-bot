@@ -38,10 +38,15 @@ export function GalleryFeed() {
           </p>
         </div>
         <span
-          className="inline-flex items-center gap-1.5 shrink-0 rounded-chip border-[1.5px] border-ink bg-leaf px-3 sm:px-4 py-1.5 text-[13px] sm:text-[15px] font-extrabold shadow-rest"
+          className="inline-flex items-baseline gap-2 shrink-0 rounded-card border-[1.5px] border-ink bg-leaf px-3 sm:px-3.5 pt-1.5 pb-2 shadow-hero"
           style={{ transform: "rotate(-2deg)" }}
         >
-          {count} {count === 1 ? "album" : "albums"} 📷
+          <span className="text-[28px] sm:text-[38px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
+            {count}
+          </span>
+          <span className="text-[11px] sm:text-eyebrow font-extrabold uppercase leading-none tracking-[0.16em]">
+            {count === 1 ? "album" : "albums"}
+          </span>
         </span>
       </header>
 
