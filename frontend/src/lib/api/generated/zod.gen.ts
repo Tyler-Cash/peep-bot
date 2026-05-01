@@ -370,6 +370,11 @@ export const zUpdateSettingsPath = z.object({
  */
 export const zUpdateSettingsResponse = zGuildSettingsDto;
 
+/**
+ * OK
+ */
+export const zGetResponse = z.record(z.string(), z.string());
+
 export const zGetGuildStatsQuery = z.object({
     guildId: z.string(),
     year: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()

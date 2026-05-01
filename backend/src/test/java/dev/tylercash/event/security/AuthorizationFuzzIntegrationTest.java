@@ -105,7 +105,9 @@ class AuthorizationFuzzIntegrationTest {
             "GET /v3/api-docs.yaml",
             "GET /v3/api-docs/swagger-config",
             "GET /actuator/health",
-            "GET /actuator/prometheus");
+            "GET /actuator/prometheus",
+            // Bot install URL — public so the empty-state CTA works for anonymous users.
+            "GET /install-url");
 
     @MockitoBean
     JDA jda;

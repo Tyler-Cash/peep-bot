@@ -233,6 +233,10 @@ export async function updateEvent(
   ]);
 }
 
+export function useInstallUrl() {
+  return useSWR<{ url: string }>("/install-url", fetcher);
+}
+
 export function useGuildSettings(guildId: string | null) {
   return useSWR<GuildSettingsDto>(
     guildId ? `/guild/${guildId}/settings` : null,

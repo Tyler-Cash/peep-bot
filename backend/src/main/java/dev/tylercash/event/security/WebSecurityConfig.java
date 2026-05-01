@@ -53,6 +53,8 @@ public class WebSecurityConfig {
                         .permitAll()
                         .requestMatchers("/actuator/prometheus")
                         .permitAll()
+                        .requestMatchers("/install-url")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .logout(logout -> logout.logoutUrl("/auth/logout")

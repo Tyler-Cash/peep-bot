@@ -72,6 +72,12 @@ export const handlers = [
     return new HttpResponse(null, { status: 200 });
   }),
 
+  http.get(API("/install-url"), () =>
+    HttpResponse.json({
+      url: "https://discord.com/api/oauth2/authorize?client_id=mock&permissions=268954640&scope=bot+applications.commands",
+    }),
+  ),
+
   http.get(API("/guild"), requireAuth(() => HttpResponse.json([guild]))),
 
   http.get(

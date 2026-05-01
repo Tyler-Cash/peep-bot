@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "@/lib/clsx";
-import { useActiveGuild, useCurrentUser, useGuilds } from "@/lib/hooks";
+import { useActiveGuild, useCurrentUser, useGuilds, useInstallUrl } from "@/lib/hooks";
 import type { Guild } from "@/lib/types";
 
 export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
@@ -74,6 +74,7 @@ function GuildDropdown({
 }) {
   const { data: guilds } = useGuilds();
   const { data: user } = useCurrentUser();
+  const { data: installUrl } = useInstallUrl();
   const router = useRouter();
 
   return (
@@ -119,7 +120,7 @@ function GuildDropdown({
 
       <div className="px-3 py-2.5">
         <a
-          href={process.env.NEXT_PUBLIC_BOT_INSTALL_URL ?? "#"}
+          href={installUrl?.url ?? "#"}
           target="_blank"
           rel="noopener noreferrer"
           onClick={onClose}

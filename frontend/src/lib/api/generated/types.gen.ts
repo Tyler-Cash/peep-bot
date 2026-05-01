@@ -806,6 +806,35 @@ export type UpdateSettingsResponses = {
 
 export type UpdateSettingsResponse = UpdateSettingsResponses[keyof UpdateSettingsResponses];
 
+export type GetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/install-url';
+};
+
+export type GetErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetError = GetErrors[keyof GetErrors];
+
+export type GetResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type GetResponse = GetResponses[keyof GetResponses];
+
 export type GetGuildStatsData = {
     body?: never;
     path?: never;

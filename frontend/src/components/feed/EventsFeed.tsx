@@ -5,18 +5,19 @@ import { Chunky } from "@/components/ui/Chunky";
 import { DayMarker } from "@/components/ui/DayMarker";
 import { PeepoSleep } from "@/components/Peepo";
 import { monthKey, monthLabel } from "@/lib/format";
-import { useEvents, useGuilds } from "@/lib/hooks";
+import { useEvents, useGuilds, useInstallUrl } from "@/lib/hooks";
 import { FeedCard } from "./FeedCard";
 import { EventDto } from "@/lib/types";
 
 export function EventsFeed() {
   const { data: guilds, isLoading: guildsLoading } = useGuilds();
   const { data, error, isLoading } = useEvents();
+  const { data: installUrlData } = useInstallUrl();
   const events = data?.content ?? [];
   const count = events.length;
 
   if (!guildsLoading && guilds && guilds.length === 0) {
-    const installUrl = process.env.NEXT_PUBLIC_BOT_INSTALL_URL || "/login";
+    const installUrl = installUrlData?.url ?? "/login";
     return (
       <div className="mx-auto max-w-[640px] px-4 py-16 text-center">
         <h1 className="text-[28px] font-extrabold tracking-[-0.03em] mb-3">
