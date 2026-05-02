@@ -1,5 +1,6 @@
 package dev.tylercash.event.global;
 
+import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.Guild;
 import dev.tylercash.event.discord.GuildRepository;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Authentication", description = "Authentication status operations")
 public class SecurityController {
     private final DiscordService discordService;
+    private final DiscordAuthService discordAuthService;
     private final GuildRepository guildRepository;
 
     @Operation(summary = "Check authentication status", description = "Returns current user info if authenticated")
@@ -41,11 +43,18 @@ public class SecurityController {
         String globalName = principal.getAttribute("global_name");
         String displayName = globalName != null ? globalName : username;
         long userId = Long.parseLong(userSnowflake);
-        List<String> adminGuildIds = guildRepository.findAllByActiveTrue().stream()
+        List<dev.tylercash.event.discord.Guild> activeGuilds = guildRepository.findAllByActiveTrue();
+        List<String> organiserGuildIds = activeGuilds.stream()
                 .map(Guild::getGuildId)
-                .filter(id -> discordService.isUserAdminOfServer(id, userId))
+                .filter(id -> discordService.isUserOrganiserOfServer(id, userId))
                 .map(String::valueOf)
                 .toList();
-        return new UserInfoDto(username, displayName, userSnowflake, adminGuildIds, "/api/avatar/" + userSnowflake);
+        List<String> ownedGuildIds = activeGuilds.stream()
+                .map(Guild::getGuildId)
+                .filter(id -> discordAuthService.isGuildOwner(id, userId))
+                .map(String::valueOf)
+                .toList();
+        return new UserInfoDto(
+                username, displayName, userSnowflake, organiserGuildIds, ownedGuildIds, "/api/avatar/" + userSnowflake);
     }
 }
