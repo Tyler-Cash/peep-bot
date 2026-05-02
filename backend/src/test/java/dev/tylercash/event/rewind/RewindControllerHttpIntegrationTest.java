@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
@@ -17,6 +18,19 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     private static final String NON_MEMBER = "502";
     private static final long GUILD_A = 4001L;
     private static final long GUILD_B = 4002L;
+
+    private void seedGuild(long guildId, boolean rewindEnabled) {
+        jdbc.execute(
+                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                        + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                        + " rewind_enabled)"
+                        + " VALUES ("
+                        + guildId
+                        + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, "
+                        + rewindEnabled
+                        + ")"
+                        + " ON CONFLICT (guild_id) DO UPDATE SET rewind_enabled = EXCLUDED.rewind_enabled");
+    }
 
     @Test
     void anonymous_get_rewind_returns401() throws Exception {
@@ -47,8 +61,19 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     }
 
     @Test
+    void member_rewindFeatureOff_returns403() throws Exception {
+        fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        // No guild row → rewind_enabled defaults to false in FeatureFlagService
+        mockMvc.perform(MockMvcRequestBuilders.get("/rewind")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(MEMBER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void member_get_rewind_returnsStats() throws Exception {
         fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        seedGuild(GUILD_A, true);
         fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rewind")
@@ -65,6 +90,7 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     @Test
     void member_get_rewindMe_returnsStats() throws Exception {
         fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        seedGuild(GUILD_A, true);
         fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rewind/me")
@@ -81,6 +107,7 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     @Test
     void member_get_years_returnsYearsArray() throws Exception {
         fixtures.registerMember(MEMBER, GUILD_A, "Alice", "alice");
+        seedGuild(GUILD_A, true);
         fixtures.seedEvent(GUILD_A, MEMBER, "Test Event");
 
         int currentYear = ZonedDateTime.now().getYear();

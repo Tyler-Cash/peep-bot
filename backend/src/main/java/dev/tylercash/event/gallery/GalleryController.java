@@ -1,6 +1,8 @@
 package dev.tylercash.event.gallery;
 
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.Feature;
+import dev.tylercash.event.discord.FeatureFlagService;
 import dev.tylercash.event.discord.GuildMembershipService;
 import dev.tylercash.event.event.model.AttendeeDto;
 import dev.tylercash.event.event.model.Event;
@@ -42,6 +44,7 @@ public class GalleryController {
     private final EventRepository eventRepository;
     private final ImmichService immichService;
     private final GuildMembershipService guildMembershipService;
+    private final FeatureFlagService featureFlagService;
     private final Clock clock;
 
     @Operation(summary = "List gallery albums", description = "Returns albums for events the user attended")
@@ -51,6 +54,10 @@ public class GalleryController {
         String snowflake = principal.getAttribute("id");
         long guildIdLong = Long.parseLong(guildId);
         guildMembershipService.assertMember(snowflake, guildIdLong);
+
+        if (!featureFlagService.isEnabled(guildIdLong, Feature.IMMICH)) {
+            return List.of();
+        }
 
         List<Event> events = eventRepository.findGalleryEventsForUser(guildIdLong, snowflake);
         int immichFailures = 0;
