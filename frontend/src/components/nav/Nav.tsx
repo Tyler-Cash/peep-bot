@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Peepo } from "@/components/Peepo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useCurrentUser } from "@/lib/hooks";
 import { DesktopBar } from "./DesktopBar";
@@ -26,8 +26,8 @@ export function Nav() {
     <nav className="sticky top-0 z-20 bg-white border-b-[1.5px] border-ink">
       <div className="mx-auto flex max-w-[1200px] items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3">
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
-          <span className="inline-flex items-center justify-center w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] rounded-card bg-leaf border-[1.5px] border-ink shadow-rest shrink-0">
-            <Peepo size={26} />
+          <span className="inline-flex items-center justify-center w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] rounded-card bg-leaf border-[1.5px] border-ink shadow-rest shrink-0 overflow-hidden">
+            <Image src="/peepos/peepo.png" alt="" aria-hidden width={36} height={36} className="w-[36px] h-[36px] object-contain" priority />
           </span>
           <span className="flex flex-col leading-none min-w-0">
             <span className="text-[16px] sm:text-[17px] font-extrabold tracking-[-0.02em] truncate">

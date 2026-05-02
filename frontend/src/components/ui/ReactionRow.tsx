@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import clsx from "@/lib/clsx";
 import type { RsvpStatus } from "@/lib/types";
 
@@ -42,8 +43,7 @@ export function ReactionRow({
               : "bg-paper text-ink shadow-rest hover:bg-paper2",
           )}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={it.image} alt={it.alt} width={imgSize} height={imgSize} className="shrink-0" />
+          <Image src={it.image} alt={it.alt} width={imgSize} height={imgSize} className="shrink-0" />
           <span className="tabular-nums">{it.n}</span>
         </button>
       ))}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
-import { Peepo } from "@/components/Peepo";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useCurrentUser } from "@/lib/hooks";
@@ -91,6 +91,12 @@ export function LoginHero() {
     window.location.reload();
   };
 
+  // Stable per-peepo tilt/lift so the lineup doesn't reshuffle on every render.
+  const lineup = useMemo(
+    () => Array.from({ length: 14 }, (_, i) => ({ tilt: ((i * 37) % 9) - 4, lift: (i * 13) % 6 })),
+    [],
+  );
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper font-sans text-ink">
       <div
@@ -100,18 +106,45 @@ export function LoginHero() {
           background: "radial-gradient(ellipse at 10% 0%, rgba(255,255,255,0.7), transparent 50%)",
         }}
       />
+      {/* Background — large cheering peepo, vertically centered so it doesn't
+          jump as viewport height changes. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute right-[-8%] bottom-[-15%] w-[70%] opacity-[0.85]"
-        style={{ aspectRatio: "1/1" }}
+        className="pointer-events-none fixed right-[-6%] top-1/2 -translate-y-1/2 w-[60%] sm:w-[48%] max-w-[680px] opacity-[0.22] select-none"
       >
-        <Peepo size={760} />
+        <Image
+          src="/peepos/peepo-cheer.png"
+          alt=""
+          width={112}
+          height={112}
+          className="w-full h-auto"
+          style={{ transform: "rotate(-4deg)" }}
+        />
+      </div>
+      {/* Foreground lineup — a row of peepoHappys, vertically centered against
+          the viewport (fixed) so the row never jumps as content height shifts
+          across breakpoints. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-1/2 -translate-y-1/2 flex items-end justify-center gap-1 sm:gap-2 opacity-[0.55] select-none"
+      >
+        {lineup.map((p, i) => (
+          <Image
+            key={i}
+            src="/peepos/peepo.png"
+            alt=""
+            width={112}
+            height={112}
+            className="h-[110px] sm:h-[150px] w-auto shrink-0"
+            style={{ transform: `translateY(${p.lift}px) rotate(${p.tilt}deg)` }}
+          />
+        ))}
       </div>
 
       <header className="relative z-10 flex items-center justify-between gap-3 px-4 sm:px-9 py-[18px] sm:py-[22px]">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip bg-leaf border-[1.5px] border-ink shadow-rest">
-            <Peepo size={28} />
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip bg-leaf border-[1.5px] border-ink shadow-rest overflow-hidden">
+            <Image src="/peepos/peepo.png" alt="" aria-hidden width={32} height={32} className="w-[32px] h-[32px] object-contain" priority />
           </span>
           <div className="flex flex-col leading-none">
             <span className="text-[18px] font-extrabold tracking-[-0.02em]">peepbot</span>

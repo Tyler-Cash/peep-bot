@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { categoryMeta } from "@/lib/categories";
 
 export function CatTag({
@@ -28,8 +29,7 @@ export function CatTag({
       style={{ background: m.bg, color: m.ink }}
     >
       {m.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={m.image} alt="" aria-hidden width={20} height={20} className="shrink-0" />
+        <Image src={m.image} alt="" aria-hidden width={20} height={20} className="shrink-0" />
       ) : m.emoji ? (
         <span aria-hidden className="text-[16px]">{m.emoji}</span>
       ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Chunky } from "@/components/ui/Chunky";
@@ -8,9 +9,10 @@ import { Slab } from "@/components/ui/Slab";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { DateTile } from "@/components/ui/DateTile";
 import { RsvpGroup } from "./RsvpGroup";
 import { categoryMeta } from "@/lib/categories";
-import { dateStamp, timeLabel } from "@/lib/format";
+import { dateStamp, seededTilt, timeLabel } from "@/lib/format";
 import {
   cancelEvent,
   createPrivateChannel,
@@ -76,6 +78,7 @@ export function EventDetail({ id }: { id: string }) {
   const isPast = new Date(data.dateTime) < new Date();
   const cat = categoryMeta(data.category);
   const stamp = dateStamp(data.dateTime);
+  const tileTilt = seededTilt(`tile-${data.id}`, 1.6);
 
   // EventDetailDto lists are optional in the generated type (backend DTO has no
   // required annotation); default to [] so the rest of the component stays clean.
@@ -194,8 +197,7 @@ export function EventDetail({ id }: { id: string }) {
               </div>
           )}
           {cat.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={cat.image}
               alt=""
               aria-hidden
@@ -214,30 +216,10 @@ export function EventDetail({ id }: { id: string }) {
             </span>
           )}
             <div className="relative flex items-start gap-3 sm:gap-4">
-              <div className="flex flex-col items-center justify-center rounded-card bg-white/95 border-[1.5px] border-ink w-[68px] sm:w-[86px] py-2 shadow-rest shrink-0">
-                <span className="text-[11px] sm:text-[13px] font-extrabold tracking-[0.14em]">{stamp.month}</span>
-                <span className="text-[28px] sm:text-[36px] font-extrabold leading-none tabular-nums">{stamp.day}</span>
-                <span className="text-[11px] sm:text-[13px] font-extrabold tracking-[0.14em] uppercase">
-                  {stamp.weekday}
-                </span>
-              </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                      <CatTag category={data.category} displayState={data.displayState} />
-                    <CountdownChip iso={data.dateTime} />
-                  </div>
-                  {!isPast && !isCancelled && (
-                    <Link
-                      href={`/events/${id}/edit`}
-                      aria-label="edit event"
-                      className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-current bg-white/80 px-3 sm:px-4 py-1.5 text-[14px] sm:text-[16px] font-extrabold tracking-[-0.01em] shadow-rest hover:bg-white/95 transition-colors"
-                    >
-                      <PencilIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">edit event</span>
-                      <span className="sm:hidden">edit</span>
-                    </Link>
-                  )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CatTag category={data.category} displayState={data.displayState} />
+                  <CountdownChip iso={data.dateTime} />
                 </div>
                 <h1 className="mt-2 text-[32px] sm:text-[56px] font-extrabold tracking-[-0.05em] leading-[0.98] break-words">
                   {data.name}
@@ -248,6 +230,20 @@ export function EventDetail({ id }: { id: string }) {
                     <span className="text-[13px] sm:text-[16px] text-ink/70 font-medium ml-1">@{data.hostUsername}</span>
                   )}
                 </p>
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <DateTile iso={data.dateTime} tilt={tileTilt} variant="desktop" />
+                {!isPast && !isCancelled && (
+                  <Link
+                    href={`/events/${id}/edit`}
+                    aria-label="edit event"
+                    className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-current bg-white/80 px-3 sm:px-4 py-1.5 text-[14px] sm:text-[16px] font-extrabold tracking-[-0.01em] shadow-rest hover:bg-white/95 transition-colors"
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">edit event</span>
+                    <span className="sm:hidden">edit</span>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -264,24 +260,21 @@ export function EventDetail({ id }: { id: string }) {
                     variant={meStatus === "going" ? "leaf" : "paper"}
                     onClick={() => setStatus("going")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/peepos/peepo-going.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    <Image src="/peepos/peepo-going.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
                     going
                   </Chunky>
                   <Chunky
                     variant={meStatus === "maybe" ? "leaf" : "paper"}
                     onClick={() => setStatus("maybe")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/peepos/peepo-maybe.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    <Image src="/peepos/peepo-maybe.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
                     maybe
                   </Chunky>
                   <Chunky
                     variant={meStatus === "declined" ? "leaf" : "paper"}
                     onClick={() => setStatus("declined")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/peepos/peepo-no.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
+                    <Image src="/peepos/peepo-no.png" alt="" aria-hidden width={20} height={20} className="inline shrink-0 mr-1" />
                     can&apos;t
                   </Chunky>
                 </div>

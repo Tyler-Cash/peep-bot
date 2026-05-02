@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Avas } from "@/components/ui/Avas";
@@ -19,13 +20,16 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
   const thumbnail = (
     <div className="relative aspect-square overflow-hidden border-[1.5px] border-ink bg-paper2">
       {showFallback ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="/peepos/peepo-empty.png"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 m-auto h-1/2 w-1/2 object-contain opacity-90 transition-[transform,opacity] duration-200 group-hover/photo:opacity-50 group-hover/photo:scale-[1.02]"
-        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image
+            src="/peepos/peepo-empty.png"
+            alt=""
+            aria-hidden
+            width={112}
+            height={112}
+            className="w-1/2 h-1/2 object-contain opacity-90 transition-[transform,opacity] duration-200 group-hover/photo:opacity-50 group-hover/photo:scale-[1.02]"
+          />
+        </div>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img

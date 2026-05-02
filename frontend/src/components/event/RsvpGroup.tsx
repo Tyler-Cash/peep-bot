@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
 import clsx from "@/lib/clsx";
 import type { Attendee } from "@/lib/types";
@@ -19,8 +20,7 @@ export function RsvpGroup({
     <div className="flex items-start gap-3">
       <span className="inline-flex items-center gap-1.5 rounded-chip border-[1.5px] border-ink bg-paper px-3 py-1.5 text-[15px] font-extrabold shadow-rest shrink-0">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" aria-hidden width={22} height={22} className="shrink-0" />
+          <Image src={image} alt="" aria-hidden width={22} height={22} className="shrink-0" />
         ) : (
           <span aria-hidden className="text-[18px]">{emoji}</span>
         )}

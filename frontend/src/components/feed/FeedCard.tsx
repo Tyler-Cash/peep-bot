@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import clsx from "@/lib/clsx";
 import { CatTag } from "@/components/ui/CatTag";
@@ -7,8 +8,9 @@ import { CountdownChip } from "@/components/ui/CountdownChip";
 import { ReactionRow } from "@/components/ui/ReactionRow";
 import { Avas } from "@/components/ui/Avas";
 import { Avatar } from "@/components/ui/Avatar";
+import { DateTile } from "@/components/ui/DateTile";
 import { categoryMeta } from "@/lib/categories";
-import { dateStamp, seededTilt, timeLabel } from "@/lib/format";
+import { seededTilt, timeLabel } from "@/lib/format";
 import { submitRsvp, useActiveGuild, useCurrentUser, useEvent } from "@/lib/hooks";
 import type { EventDto, RsvpStatus } from "@/lib/types";
 
@@ -18,7 +20,6 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const { data: me } = useCurrentUser();
   const guild = useActiveGuild();
   const cat = categoryMeta(event.category);
-  const stamp = dateStamp(event.dateTime);
   const tileTilt = seededTilt(`tile-${event.id}`, 1.6);
   const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2.5);
 
@@ -104,20 +105,27 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
             style={{ background: cat.bg, color: cat.ink }}
           >
             {cat.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={cat.image}
                 alt=""
                 aria-hidden
                 width={140}
                 height={140}
                 className="absolute select-none pointer-events-none opacity-[0.22]"
-                style={{ left: -22, bottom: -46, transform: "rotate(8deg)" }}
+                style={{
+                  left: -22,
+                  bottom: 0,
+                  transform: "rotate(8deg)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, transparent 0%, black 18%)",
+                  maskImage:
+                    "linear-gradient(to bottom, transparent 0%, black 18%)",
+                }}
               />
             ) : cat.emoji ? (
               <span
                 className="absolute text-[140px] leading-none opacity-[0.22] select-none pointer-events-none"
-                style={{ left: -22, bottom: -46, transform: "rotate(8deg)" }}
+                style={{ left: -22, bottom: 0, transform: "rotate(8deg)" }}
                 aria-hidden
               >
                 {cat.emoji}
@@ -128,40 +136,16 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 title and meta below get the full content width. */}
             <div className="sm:hidden relative z-[2] flex items-center justify-between gap-2 mb-2">
               <CatTag category={event.category} displayState={event.displayState} />
-              <span
-                className="inline-flex items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95 shrink-0"
-                style={{ transform: `rotate(${tileTilt}deg)` }}
-              >
-                <span className="flex items-center gap-1 px-2 py-1.5">
-                  <span className="text-[18px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
-                    {stamp.day}
-                  </span>
-                  <span className="text-[14px] font-extrabold leading-none tracking-[-0.03em] lowercase">
-                    {stamp.month.toLowerCase()}
-                  </span>
-                </span>
-              </span>
+              <DateTile iso={event.dateTime} tilt={tileTilt} variant="mobile" />
             </div>
             {/* desktop: horizontal date tile pinned top-right with the full
                 day / month / weekday breakdown. */}
-            <div
-              className="hidden sm:inline-flex absolute top-3 right-3 z-[2] items-stretch border-[1.5px] border-ink rounded-chip shadow-rest overflow-hidden bg-white/95"
-              style={{ transform: `rotate(${tileTilt}deg)` }}
-            >
-              <span className="flex items-center gap-1.5 px-3 py-2">
-                <span className="text-[26px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
-                  {stamp.day}
-                </span>
-                <span className="text-[20px] font-extrabold leading-none tracking-[-0.03em] lowercase">
-                  {stamp.month.toLowerCase()}
-                </span>
-              </span>
-              <span className="flex items-center justify-center px-3 border-l-[1.5px] border-ink bg-white/55">
-                <span className="text-[13px] font-extrabold tracking-[0.04em] lowercase leading-none">
-                  {stamp.weekday}
-                </span>
-              </span>
-            </div>
+            <DateTile
+              iso={event.dateTime}
+              tilt={tileTilt}
+              variant="desktop"
+              className="hidden sm:inline-flex absolute top-3 right-3 z-[2]"
+            />
             {/* content — pl clears watermark so the title never collides */}
             <div className="relative sm:pl-[80px] min-w-0">
               {/* desktop-only inline category — on mobile the cat tag sits in the row above */}
