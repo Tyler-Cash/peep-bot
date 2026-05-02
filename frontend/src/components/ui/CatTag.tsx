@@ -33,11 +33,6 @@ export function CatTag({
       ) : m.emoji ? (
         <span aria-hidden className="text-[16px]">{m.emoji}</span>
       ) : null}
-      <span
-        aria-hidden
-        className="h-2.5 w-2.5 rounded-full"
-        style={{ background: m.dot }}
-      />
       <span className="uppercase tracking-[0.08em]">{m.label}</span>
     </span>
   );
