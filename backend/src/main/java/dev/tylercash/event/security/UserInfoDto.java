@@ -8,4 +8,5 @@ public record UserInfoDto(
         String discordId,
         List<String> organiserGuildIds,
         List<String> ownedGuildIds,
+        boolean admin,
         String avatarUrl) {}

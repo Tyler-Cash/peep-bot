@@ -4,6 +4,7 @@ import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.Guild;
 import dev.tylercash.event.discord.GuildRepository;
+import dev.tylercash.event.security.BotAdminService;
 import dev.tylercash.event.security.UserInfoDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +28,7 @@ public class SecurityController {
     private final DiscordService discordService;
     private final DiscordAuthService discordAuthService;
     private final GuildRepository guildRepository;
+    private final BotAdminService botAdminService;
 
     @Operation(summary = "Check authentication status", description = "Returns current user info if authenticated")
     @ApiResponses({
@@ -54,7 +56,14 @@ public class SecurityController {
                 .filter(id -> discordAuthService.isGuildOwner(id, userId))
                 .map(String::valueOf)
                 .toList();
+        boolean admin = botAdminService.isBotAdmin(userSnowflake);
         return new UserInfoDto(
-                username, displayName, userSnowflake, organiserGuildIds, ownedGuildIds, "/api/avatar/" + userSnowflake);
+                username,
+                displayName,
+                userSnowflake,
+                organiserGuildIds,
+                ownedGuildIds,
+                admin,
+                "/api/avatar/" + userSnowflake);
     }
 }

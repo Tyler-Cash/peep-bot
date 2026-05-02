@@ -33,5 +33,6 @@ class SecurityControllerHttpIntegrationTest extends AbstractHttpIntegrationTest 
         assertThat(body).contains("\"avatarUrl\":\"/api/avatar/" + SNOWFLAKE + "\"");
         assertThat(body).contains("\"organiserGuildIds\":");
         assertThat(body).contains("\"ownedGuildIds\":");
+        assertThat(body).contains("\"admin\":");
     }
 }
