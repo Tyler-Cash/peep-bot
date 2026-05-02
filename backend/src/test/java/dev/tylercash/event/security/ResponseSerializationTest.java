@@ -81,7 +81,7 @@ class ResponseSerializationTest {
      */
     static List<Object> populatedControllerDtos() {
         List<Object> out = new ArrayList<>();
-        out.add(new UserInfoDto("alice", "Alice", "111", List.of(), List.of(), "/api/avatar/111"));
+        out.add(new UserInfoDto("alice", "Alice", "111", List.of(), List.of(), false, "/api/avatar/111"));
         out.add(new GuildDto("123", "Guild", "G", "icon", "#fff", "channel", 5, 1.0, 2.0));
         out.add(new GuildSettingsDto("place-id", "place-name", 1.0, 2.0, null, null, null, null, null, null));
 

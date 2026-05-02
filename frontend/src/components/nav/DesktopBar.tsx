@@ -4,17 +4,20 @@ import Link from "next/link";
 import clsx from "@/lib/clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chunky } from "@/components/ui/Chunky";
-import { logout, useCurrentUser } from "@/lib/hooks";
+import { logout, useActiveGuild, useCurrentUser, useGuildFeatures } from "@/lib/hooks";
 import { GuildSwitcher } from "./GuildSwitcher";
-import { NAV_TABS, isTabActive } from "./navTabs";
+import { NAV_TABS, filterNavTabs, isTabActive } from "./navTabs";
 
 export function DesktopBar({ pathname }: { pathname: string }) {
   const { data: user } = useCurrentUser();
+  const activeGuild = useActiveGuild();
+  const { data: features } = useGuildFeatures(activeGuild?.id);
+  const visibleTabs = filterNavTabs(NAV_TABS, features);
 
   return (
     <>
       <div className="hidden md:flex ml-4 items-center gap-2">
-        {NAV_TABS.map((t) => {
+        {visibleTabs.map((t) => {
           const active = isTabActive(pathname, t.href);
           return (
             <Link

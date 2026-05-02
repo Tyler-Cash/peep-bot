@@ -203,6 +203,7 @@ export const zRewindStatsDto = z.object({
 export const zStreamingResponseBody = z.unknown();
 
 export const zUserInfoDto = z.object({
+    admin: z.boolean().nullable().optional(),
     avatarUrl: z.string().nullable().optional(),
     discordId: z.string().nullable().optional(),
     displayName: z.string().nullable().optional(),

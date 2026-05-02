@@ -17,14 +17,13 @@ class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     private static final long GUILD_A = 6001L;
 
     private void seedGuild(long guildId) {
-        jdbc.execute(
-                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
-                        + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
-                        + " rewind_enabled)"
-                        + " VALUES ("
-                        + guildId
-                        + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, false)"
-                        + " ON CONFLICT (guild_id) DO NOTHING");
+        jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                + " rewind_enabled)"
+                + " VALUES ("
+                + guildId
+                + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, false)"
+                + " ON CONFLICT (guild_id) DO NOTHING");
     }
 
     @Test

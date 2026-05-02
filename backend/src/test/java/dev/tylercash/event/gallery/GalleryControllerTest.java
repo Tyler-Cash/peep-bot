@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.Feature;
+import dev.tylercash.event.discord.FeatureFlagService;
 import dev.tylercash.event.discord.GuildMembershipService;
 import dev.tylercash.event.event.model.Attendee;
 import dev.tylercash.event.event.model.Event;
@@ -38,9 +40,15 @@ class GalleryControllerTest {
     private final EventRepository eventRepository = mock(EventRepository.class);
     private final ImmichService immichService = mock(ImmichService.class);
     private final GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
+    private final FeatureFlagService featureFlagService = mock(FeatureFlagService.class);
     private final Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
     private final GalleryController controller =
-            new GalleryController(eventRepository, immichService, guildMembershipService, clock);
+            new GalleryController(eventRepository, immichService, guildMembershipService, featureFlagService, clock);
+
+    {
+        // Default: immich feature enabled for all tests unless overridden
+        when(featureFlagService.isEnabled(GUILD_ID, Feature.IMMICH)).thenReturn(true);
+    }
 
     private OAuth2User principal() {
         OAuth2User p = mock(OAuth2User.class);

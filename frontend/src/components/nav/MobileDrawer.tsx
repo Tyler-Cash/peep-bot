@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect } from "react";
 import clsx from "@/lib/clsx";
 import { Chunky } from "@/components/ui/Chunky";
-import { logout } from "@/lib/hooks";
+import { logout, useActiveGuild, useGuildFeatures } from "@/lib/hooks";
 import { GuildSwitcher } from "./GuildSwitcher";
-import { NAV_TABS, isTabActive } from "./navTabs";
+import { NAV_TABS, filterNavTabs, isTabActive } from "./navTabs";
 
 export function MobileDrawer({
   pathname,
@@ -15,6 +15,10 @@ export function MobileDrawer({
   pathname: string;
   onClose: () => void;
 }) {
+  const activeGuild = useActiveGuild();
+  const { data: features } = useGuildFeatures(activeGuild?.id);
+  const visibleTabs = filterNavTabs(NAV_TABS, features);
+
   // Lock background scroll while the drawer is open
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -28,7 +32,7 @@ export function MobileDrawer({
     <div className="md:hidden absolute top-full left-0 right-0 z-40 border-b-[1.5px] border-ink bg-paper shadow-hero">
         <div className="px-4 py-4 flex flex-col gap-3 max-h-[calc(100vh-64px)] overflow-y-auto">
           <div className="flex flex-col gap-1.5">
-            {NAV_TABS.map((t) => {
+            {visibleTabs.map((t) => {
               const active = isTabActive(pathname, t.href);
               return (
                 <Link

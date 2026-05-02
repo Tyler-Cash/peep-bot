@@ -8,6 +8,8 @@ import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.Guild;
 import dev.tylercash.event.discord.GuildRepository;
+import dev.tylercash.event.security.BotAdminProperties;
+import dev.tylercash.event.security.BotAdminService;
 import dev.tylercash.event.security.UserInfoDto;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,9 @@ class SecurityControllerTest {
         when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, discordAuthService, guildRepository);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.username()).isEqualTo(USERNAME);
@@ -66,7 +70,9 @@ class SecurityControllerTest {
         when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
-        SecurityController controller = new SecurityController(discordService, discordAuthService, guildRepository);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.organiserGuildIds()).isEmpty();
@@ -89,7 +95,9 @@ class SecurityControllerTest {
         when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, discordAuthService, guildRepository);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.organiserGuildIds()).isEmpty();
@@ -103,7 +111,9 @@ class SecurityControllerTest {
         DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
         GuildRepository guildRepository = mock(GuildRepository.class);
 
-        SecurityController controller = new SecurityController(discordService, discordAuthService, guildRepository);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
 
         assertThatThrownBy(() -> controller.isLoggedIn(null))
                 .isInstanceOf(ResponseStatusException.class)
@@ -134,7 +144,9 @@ class SecurityControllerTest {
         when(discordAuthService.isGuildOwner(111L, Long.parseLong(DISCORD_ID))).thenReturn(false);
         when(discordAuthService.isGuildOwner(222L, Long.parseLong(DISCORD_ID))).thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, discordAuthService, guildRepository);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
         assertThat(result.organiserGuildIds()).containsExactly("111");

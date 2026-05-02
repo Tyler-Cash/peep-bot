@@ -441,7 +441,8 @@ class AuthorizationFuzzIntegrationTest {
                         false),
 
                 // AdminController
-                new EndpointCase("GET", "/admin/guilds", () -> MockMvcRequestBuilders.get("/admin/guilds"), false, true),
+                new EndpointCase(
+                        "GET", "/admin/guilds", () -> MockMvcRequestBuilders.get("/admin/guilds"), false, true),
                 new EndpointCase(
                         "PATCH",
                         "/admin/guilds/{guildId}/features",

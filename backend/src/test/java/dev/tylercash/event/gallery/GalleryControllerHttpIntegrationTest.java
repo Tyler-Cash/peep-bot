@@ -27,16 +27,15 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
     /** Insert a guild row with the given immich_enabled value. */
     private void seedGuild(long guildId, boolean immichEnabled) {
-        jdbc.execute(
-                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
-                        + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
-                        + " rewind_enabled)"
-                        + " VALUES ("
-                        + guildId
-                        + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, "
-                        + immichEnabled
-                        + ", false, false)"
-                        + " ON CONFLICT (guild_id) DO UPDATE SET immich_enabled = EXCLUDED.immich_enabled");
+        jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                + " rewind_enabled)"
+                + " VALUES ("
+                + guildId
+                + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, "
+                + immichEnabled
+                + ", false, false)"
+                + " ON CONFLICT (guild_id) DO UPDATE SET immich_enabled = EXCLUDED.immich_enabled");
     }
 
     // -----------------------------------------------------------------------
@@ -100,6 +99,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     void member_listAlbums_immichOutage_returns502() throws Exception {
         // All events have album IDs but every Immich lookup fails → 502
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        seedGuild(GUILD_A, true);
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Gallery Event Outage");
 
         eventRepository.findById(eventId).ifPresent(event -> {

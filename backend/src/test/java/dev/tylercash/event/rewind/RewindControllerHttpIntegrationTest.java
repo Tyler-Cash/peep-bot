@@ -10,7 +10,6 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
@@ -20,16 +19,15 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     private static final long GUILD_B = 4002L;
 
     private void seedGuild(long guildId, boolean rewindEnabled) {
-        jdbc.execute(
-                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
-                        + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
-                        + " rewind_enabled)"
-                        + " VALUES ("
-                        + guildId
-                        + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, "
-                        + rewindEnabled
-                        + ")"
-                        + " ON CONFLICT (guild_id) DO UPDATE SET rewind_enabled = EXCLUDED.rewind_enabled");
+        jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                + " rewind_enabled)"
+                + " VALUES ("
+                + guildId
+                + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, "
+                + rewindEnabled
+                + ")"
+                + " ON CONFLICT (guild_id) DO UPDATE SET rewind_enabled = EXCLUDED.rewind_enabled");
     }
 
     @Test

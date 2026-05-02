@@ -209,6 +209,7 @@ export type SocialGraphDto = {
 export type StreamingResponseBody = unknown;
 
 export type UserInfoDto = {
+    admin?: boolean;
     avatarUrl?: string;
     discordId?: string;
     displayName?: string;

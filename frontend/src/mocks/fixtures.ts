@@ -88,6 +88,7 @@ export const currentUser: UserInfo = {
   discordId: "1002",
   organiserGuildIds: ["mockguild-1"],
   ownedGuildIds: ["mockguild-1"],
+  admin: true,
   avatarUrl: null,
 };
 

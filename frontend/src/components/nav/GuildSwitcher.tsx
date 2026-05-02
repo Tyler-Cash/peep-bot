@@ -118,6 +118,24 @@ function GuildDropdown({
         </div>
       ))}
 
+      {user?.admin && (
+        <div className="px-3 py-2.5 border-t-[1px] border-ink/10">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/admin");
+            }}
+            className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
+              ⚙
+            </span>
+            Admin
+          </button>
+        </div>
+      )}
+
       <div className="px-3 py-2.5">
         <a
           href={installUrl?.url ?? "#"}

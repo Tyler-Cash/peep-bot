@@ -5,6 +5,7 @@ import type {
   RsvpStatus,
   UserInfo,
 } from "@/lib/types";
+import type { AdminGuild } from "@/lib/hooks";
 import {
   currentUser,
   findEvent,
@@ -15,6 +16,18 @@ import {
   setRsvp,
   store,
 } from "./fixtures";
+
+// In-memory admin guild store
+const adminGuilds: AdminGuild[] = [
+  {
+    guildId: guild.id,
+    name: guild.name,
+    active: true,
+    immichEnabled: true,
+    googleAutocompleteEnabled: true,
+    rewindEnabled: true,
+  },
+];
 
 const API = (path: string) => new RegExp(`(^|/api)${path}$`);
 
@@ -257,6 +270,33 @@ export const handlers = [
         (a, b) => +new Date(b.eventDateTime) - +new Date(a.eventDateTime),
       );
       return HttpResponse.json(sorted);
+    }),
+  ),
+
+  // Feature flags — all enabled in mock mode so existing render tests don't break
+  http.get(
+    API("/guild/[^/]+/features"),
+    requireAuth(() =>
+      HttpResponse.json({
+        immichEnabled: true,
+        googleAutocompleteEnabled: true,
+        rewindEnabled: true,
+      }),
+    ),
+  ),
+
+  // Bot admin endpoints
+  http.get(API("/admin/guilds"), requireAuth(() => HttpResponse.json(adminGuilds))),
+
+  http.patch(
+    API("/admin/guilds/[^/]+/features"),
+    requireAuth(async ({ request, params }) => {
+      const guildId = (params as Record<string, string>)["0"] ?? guild.id;
+      const body = (await request.json()) as Partial<AdminGuild>;
+      const row = adminGuilds.find((g) => g.guildId === guildId);
+      if (!row) return new HttpResponse(null, { status: 404 });
+      Object.assign(row, body);
+      return HttpResponse.json(row);
     }),
   ),
 ];

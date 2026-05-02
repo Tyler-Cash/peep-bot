@@ -9,6 +9,7 @@ import {
   suggestionToLocation,
   type PlaceSuggestion,
 } from "@/lib/places";
+import { useActiveGuild, useGuildFeatures } from "@/lib/hooks";
 
 export function LocationAutocomplete({
   value,
@@ -29,6 +30,11 @@ export function LocationAutocomplete({
   recent?: string[];
   locationBias?: { lat: number; lng: number };
 }) {
+  const activeGuild = useActiveGuild();
+  const { data: features } = useGuildFeatures(activeGuild?.id);
+  // Default true while loading (avoids flicker hiding the dropdown on mount)
+  const googleEnabled = features ? features.googleAutocompleteEnabled : true;
+
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [highlight, setHighlight] = useState(0);
@@ -55,7 +61,7 @@ export function LocationAutocomplete({
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !googleEnabled) return;
     const q = value.trim();
     if (!q) {
       setMode("recent");
@@ -122,7 +128,33 @@ export function LocationAutocomplete({
       }
       ctrl.abort();
     };
-  }, [value, open, sessionToken, recentSuggestions, onChange, locationBias]);
+  }, [value, open, googleEnabled, sessionToken, recentSuggestions, onChange, locationBias]);
+
+  // When google autocomplete is disabled, render a plain text input
+  if (!googleEnabled) {
+    return (
+      <div className={clsx("relative", className)}>
+        <div className="relative">
+          <span
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 pointer-events-none z-[2]"
+            aria-hidden
+          >
+            📍
+          </span>
+          <input
+            value={value}
+            required={required}
+            placeholder={placeholder ?? "where?"}
+            onChange={(e) => onChange(e.target.value)}
+            autoComplete="off"
+            className={clsx(
+              "relative w-full h-12 border-[1.5px] border-ink bg-white pl-10 pr-[14px] text-[16px] font-semibold text-ink placeholder:font-medium placeholder:text-mute focus:outline-none rounded-chip shadow-rest",
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const pick = (s: PlaceSuggestion) => {
     const displayValue = suggestionToLocation(s);
