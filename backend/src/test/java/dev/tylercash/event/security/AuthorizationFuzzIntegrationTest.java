@@ -212,8 +212,8 @@ class AuthorizationFuzzIntegrationTest {
     @ParameterizedTest(name = "non-admin {0} → 403")
     @MethodSource("adminOnlyEndpoints")
     void nonAdmin_isForbidden(EndpointCase ec) throws Exception {
-        // discordService is a @MockitoBean, so isUserAdminOfServer defaults to
-        // false — exactly what we want for "not an admin".
+        // discordService.isUserOrganiserOfServer and discordAuthService.isGuildOwner are
+        // both @MockitoBean defaults (false) — exactly what we want for "not an organiser/owner".
         mockMvc.perform(withCsrfIfMutating(ec).with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
                 .andExpect(result -> assertThat(result.getResponse().getStatus())
                         .as("Endpoint %s should reject non-admin", ec)
@@ -374,7 +374,7 @@ class AuthorizationFuzzIntegrationTest {
                         "POST",
                         "/event/{id}/cancel",
                         () -> MockMvcRequestBuilders.post("/event/" + guild1EventId + "/cancel"),
-                        // Cancel checks isUserAdminOfServer, which uses
+                        // Cancel checks isUserOrganiserOfServer, which uses
                         // guild_id but does not first call assertMember, so
                         // wrong-guild is rejected the same way as non-admin (403).
                         true,

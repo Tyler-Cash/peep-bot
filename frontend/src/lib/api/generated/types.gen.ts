@@ -132,11 +132,11 @@ export type GuildDto = {
 };
 
 export type GuildSettingsDto = {
-    adminRole?: string;
     emojiAccepted?: string;
     emojiDeclined?: string;
     emojiMaybe?: string;
     eventsRole?: string;
+    organiserRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
@@ -145,11 +145,11 @@ export type GuildSettingsDto = {
 };
 
 export type GuildSettingsRequest = {
-    adminRole?: string;
     emojiAccepted?: string;
     emojiDeclined?: string;
     emojiMaybe?: string;
     eventsRole?: string;
+    organiserRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
@@ -209,10 +209,11 @@ export type SocialGraphDto = {
 export type StreamingResponseBody = unknown;
 
 export type UserInfoDto = {
-    adminGuildIds?: Array<string>;
     avatarUrl?: string;
     discordId?: string;
     displayName?: string;
+    organiserGuildIds?: Array<string>;
+    ownedGuildIds?: Array<string>;
     username?: string;
 };
 

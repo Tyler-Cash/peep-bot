@@ -86,13 +86,13 @@ class MultiGuildStartupIntegrationTest {
 
         assertThat(guildRepository.findById(1L)).isPresent().hasValueSatisfying(g -> {
             assertThat(g.getEventsRole()).isEqualTo("events");
-            assertThat(g.getAdminRole()).isEqualTo("event-admin");
+            assertThat(g.getOrganiserRole()).isEqualTo("event-organiser");
             assertThat(g.isActive()).isTrue();
         });
 
         assertThat(guildRepository.findById(2L)).isPresent().hasValueSatisfying(g -> {
             assertThat(g.getEventsRole()).isEqualTo("events");
-            assertThat(g.getAdminRole()).isEqualTo("event-admin");
+            assertThat(g.getOrganiserRole()).isEqualTo("event-organiser");
             assertThat(g.isActive()).isTrue();
         });
     }

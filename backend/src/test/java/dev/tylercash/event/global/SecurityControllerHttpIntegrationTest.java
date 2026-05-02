@@ -31,6 +31,7 @@ class SecurityControllerHttpIntegrationTest extends AbstractHttpIntegrationTest 
         String body = result.getResponse().getContentAsString();
         assertThat(body).contains("\"discordId\":\"" + SNOWFLAKE + "\"");
         assertThat(body).contains("\"avatarUrl\":\"/api/avatar/" + SNOWFLAKE + "\"");
-        assertThat(body).contains("\"adminGuildIds\":");
+        assertThat(body).contains("\"organiserGuildIds\":");
+        assertThat(body).contains("\"ownedGuildIds\":");
     }
 }

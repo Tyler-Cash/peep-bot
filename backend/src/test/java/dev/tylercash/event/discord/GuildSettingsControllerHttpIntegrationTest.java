@@ -66,9 +66,9 @@ class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegration
     }
 
     @Test
-    void nonAdmin_patch_returns403() throws Exception {
+    void nonOwner_patch_returns403() throws Exception {
         fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
-        // discordService.isUserAdminOfServer returns false by default (Mockito)
+        // discordAuthService.isGuildOwner returns false by default (Mockito)
 
         String body =
                 "{\"primaryLocationPlaceId\":\"place-2\",\"primaryLocationName\":\"Sydney\",\"primaryLocationLat\":-33.86,\"primaryLocationLng\":151.20}";
@@ -82,10 +82,9 @@ class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegration
     }
 
     @Test
-    void admin_patch_persists() throws Exception {
+    void owner_patch_persists() throws Exception {
         fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
-        when(discordService.isUserAdminOfServer(GUILD_1, Long.parseLong(USER_ID)))
-                .thenReturn(true);
+        when(discordAuthService.isGuildOwner(GUILD_1, Long.parseLong(USER_ID))).thenReturn(true);
 
         String body =
                 "{\"primaryLocationPlaceId\":\"place-2\",\"primaryLocationName\":\"Sydney\",\"primaryLocationLat\":-33.86,\"primaryLocationLng\":151.20}";

@@ -259,7 +259,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
         when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
         Map<String, String> result = ctx.controller.removeAttendee(eventId, "other_user", null, ctx.principal);
@@ -273,7 +273,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
         when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
         Map<String, String> result = ctx.controller.removeAttendee(eventId, null, "[+1] Dave", ctx.principal);
@@ -287,7 +287,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
         when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> ctx.controller.removeAttendee(eventId, "other_user", null, ctx.principal))
@@ -302,7 +302,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
         when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
         when(ctx.attendanceService.isOwnerOfPlusOne(eventId, "[+1] MyGuest", DISCORD_ID))
                 .thenReturn(true);
@@ -318,7 +318,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupRemoveAttendeeContext();
         UUID eventId = UUID.randomUUID();
         when(ctx.eventService.getEvent(eventId)).thenReturn(buildEventInGuild(eventId));
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
         when(ctx.attendanceService.isOwnerOfPlusOne(eventId, "[+1] NotMine", DISCORD_ID))
                 .thenReturn(false);
@@ -493,7 +493,7 @@ class EventControllerTest {
         event.setId(id);
 
         when(ctx.eventService.getEvent(id)).thenReturn(event);
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
 
         Map<String, String> result = ctx.controller.recategorizeEvent(id, ctx.principal);
@@ -510,7 +510,7 @@ class EventControllerTest {
         event.setId(id);
 
         when(ctx.eventService.getEvent(id)).thenReturn(event);
-        when(ctx.discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(ctx.discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> ctx.controller.recategorizeEvent(id, ctx.principal))

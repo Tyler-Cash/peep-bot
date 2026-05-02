@@ -388,9 +388,6 @@
       },
       "GuildSettingsDto" : {
         "properties" : {
-          "adminRole" : {
-            "type" : "string"
-          },
           "emojiAccepted" : {
             "type" : "string"
           },
@@ -401,6 +398,9 @@
             "type" : "string"
           },
           "eventsRole" : {
+            "type" : "string"
+          },
+          "organiserRole" : {
             "type" : "string"
           },
           "primaryLocationLat" : {
@@ -425,9 +425,6 @@
       },
       "GuildSettingsRequest" : {
         "properties" : {
-          "adminRole" : {
-            "type" : "string"
-          },
           "emojiAccepted" : {
             "type" : "string"
           },
@@ -438,6 +435,9 @@
             "type" : "string"
           },
           "eventsRole" : {
+            "type" : "string"
+          },
+          "organiserRole" : {
             "type" : "string"
           },
           "primaryLocationLat" : {
@@ -617,12 +617,6 @@
       "StreamingResponseBody" : { },
       "UserInfoDto" : {
         "properties" : {
-          "adminGuildIds" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
           "avatarUrl" : {
             "type" : "string"
           },
@@ -631,6 +625,18 @@
           },
           "displayName" : {
             "type" : "string"
+          },
+          "organiserGuildIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "ownedGuildIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           },
           "username" : {
             "type" : "string"

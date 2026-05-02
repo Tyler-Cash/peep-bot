@@ -3,6 +3,7 @@ package dev.tylercash.event.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.AvatarDownloadService;
+import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.immich.ImmichService;
@@ -79,6 +80,9 @@ public abstract class AbstractHttpIntegrationTest {
 
     @MockitoBean
     protected DiscordService discordService;
+
+    @MockitoBean
+    protected DiscordAuthService discordAuthService;
 
     @MockitoBean
     protected DiscordInitializationService discordInitializationService;

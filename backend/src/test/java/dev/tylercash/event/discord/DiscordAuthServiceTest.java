@@ -131,33 +131,33 @@ class DiscordAuthServiceTest {
     }
 
     @Nested
-    @DisplayName("isEventAdmin")
-    class IsEventAdmin {
+    @DisplayName("isEventOrganiser")
+    class IsEventOrganiser {
         @Test
-        @DisplayName("delegates to hasRole with the admin role from the guild row")
-        void usesGuildRowAdminRole() {
+        @DisplayName("delegates to hasRole with the organiser role from the guild row")
+        void usesGuildRowOrganiserRole() {
             dev.tylercash.event.discord.Guild guildRow = dev.tylercash.event.discord.Guild.withDefaults(GUILD_ID);
-            guildRow.setAdminRole("custom-admin");
+            guildRow.setOrganiserRole("custom-organiser");
             when(guildRepository.findById(GUILD_ID)).thenReturn(Optional.of(guildRow));
             Member member = mock(Member.class);
-            List<Role> roles = List.of(roleNamed("custom-admin"));
+            List<Role> roles = List.of(roleNamed("custom-organiser"));
             when(member.getRoles()).thenReturn(roles);
             stubMemberLookup(member);
 
-            assertThat(service(Optional.empty()).isEventAdmin(GUILD_ID, USER_ID))
+            assertThat(service(Optional.empty()).isEventOrganiser(GUILD_ID, USER_ID))
                     .isTrue();
         }
 
         @Test
-        @DisplayName("returns false when member lacks the admin role")
-        void returnsFalseWithoutAdminRole() {
+        @DisplayName("returns false when member lacks the organiser role")
+        void returnsFalseWithoutOrganiserRole() {
             when(guildRepository.findById(GUILD_ID)).thenReturn(Optional.empty());
             Member member = mock(Member.class);
             List<Role> roles = List.of(roleNamed("regular-user"));
             when(member.getRoles()).thenReturn(roles);
             stubMemberLookup(member);
 
-            assertThat(service(Optional.empty()).isEventAdmin(GUILD_ID, USER_ID))
+            assertThat(service(Optional.empty()).isEventOrganiser(GUILD_ID, USER_ID))
                     .isFalse();
         }
     }
