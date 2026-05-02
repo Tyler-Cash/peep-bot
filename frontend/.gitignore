@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-live
 .env.local
 .env*.local
 next-env.d.ts

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 import { Peepo } from "@/components/Peepo";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
@@ -22,10 +23,19 @@ export function LoginHero() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { data: user } = useCurrentUser();
+  const popupRef = useRef<Window | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (user) router.replace("/");
   }, [user, router]);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+    };
+  }, []);
 
   const onContinue = () => {
     if (loading) return;
@@ -36,7 +46,44 @@ export function LoginHero() {
       setTimeout(() => router.push("/"), 700);
       return;
     }
-    window.location.href = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+    const oauthUrl = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+    const w = 520;
+    const h = 720;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top = window.screenY + (window.outerHeight - h) / 2;
+    const popup = window.open(
+      oauthUrl,
+      "peepbot-discord-login",
+      `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no`,
+    );
+    if (!popup) {
+      // Popup blocked — fall back to full-page redirect.
+      window.location.href = oauthUrl;
+      return;
+    }
+    popupRef.current = popup;
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      if (popup.closed) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        const refreshed = await mutate("/auth/is-logged-in");
+        if (refreshed) {
+          router.replace("/");
+        } else {
+          setLoading(false);
+        }
+        return;
+      }
+      // Once the popup returns to our origin, OAuth is done — close it.
+      try {
+        if (popup.location.origin === window.location.origin) {
+          popup.close();
+        }
+      } catch {
+        // Cross-origin during Discord auth; ignore.
+      }
+    }, 500);
   };
 
   const onDevLogin = () => {
