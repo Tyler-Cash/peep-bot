@@ -6,6 +6,7 @@ import dev.tylercash.event.security.BotAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +14,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
@@ -51,11 +53,39 @@ public class AdminController {
         Guild row = guildRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guild not found"));
+        boolean oldImmich = row.isImmichEnabled();
+        boolean oldGoogle = row.isGoogleAutocompleteEnabled();
+        boolean oldRewind = row.isRewindEnabled();
         if (request.immichEnabled() != null) row.setImmichEnabled(request.immichEnabled());
         if (request.googleAutocompleteEnabled() != null)
             row.setGoogleAutocompleteEnabled(request.googleAutocompleteEnabled());
         if (request.rewindEnabled() != null) row.setRewindEnabled(request.rewindEnabled());
         guildRepository.save(row);
+        String snowflake = principal.getAttribute("id");
+        if (request.immichEnabled() != null && oldImmich != row.isImmichEnabled()) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} IMMICH {} -> {}",
+                    snowflake,
+                    id,
+                    oldImmich,
+                    row.isImmichEnabled());
+        }
+        if (request.googleAutocompleteEnabled() != null && oldGoogle != row.isGoogleAutocompleteEnabled()) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} GOOGLE_AUTOCOMPLETE {} -> {}",
+                    snowflake,
+                    id,
+                    oldGoogle,
+                    row.isGoogleAutocompleteEnabled());
+        }
+        if (request.rewindEnabled() != null && oldRewind != row.isRewindEnabled()) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} REWIND {} -> {}",
+                    snowflake,
+                    id,
+                    oldRewind,
+                    row.isRewindEnabled());
+        }
         var jdaGuild = jda.getGuildById(id);
         return new AdminGuildDto(
                 String.valueOf(id),
