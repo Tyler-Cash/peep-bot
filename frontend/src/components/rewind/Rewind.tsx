@@ -3,11 +3,10 @@
 import { useMemo, useState } from "react";
 import { Peepo } from "@/components/Peepo";
 import { Slab } from "@/components/ui/Slab";
-import { Chunky } from "@/components/ui/Chunky";
 import { Avatar } from "@/components/ui/Avatar";
 import { categoryMeta } from "@/lib/categories";
 import { dateStamp } from "@/lib/format";
-import { useRewind, useRewindYears } from "@/lib/hooks";
+import { useRewind } from "@/lib/hooks";
 import type { AttendeeStatDto, EventCategoryDto } from "@/lib/types";
 import { SocialGraph } from "@/components/rewind/SocialGraph";
 
@@ -15,12 +14,13 @@ const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satu
 
 export function Rewind() {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
-  const [year, setYear] = useState(currentYear);
-  const [scope, setScope] = useState<"guild" | "me">("guild");
-  const { data: years } = useRewindYears();
-  const { data } = useRewind(year, scope);
+  const [year, setYear] = useState<number | null>(currentYear);
+  const { data } = useRewind(year);
 
-  const availableYears = years ?? [currentYear];
+  const ranges: { label: string; value: number | null }[] = [
+    { label: String(currentYear), value: currentYear },
+    { label: "all time", value: null },
+  ];
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 sm:px-5 py-6 flex flex-col gap-6">
@@ -33,46 +33,26 @@ export function Rewind() {
           PEEPBOT REWIND
         </span>
         <h1 className="mt-2 text-[56px] sm:text-[72px] font-extrabold tracking-[-0.04em] leading-none">
-          {year}
+          {year ?? "all time"}
         </h1>
         <p className="mt-2 text-[14px] sm:text-[15px] text-paper3 max-w-[480px]">
-          {scope === "guild"
-            ? "what happened this year in our corner of discord."
-            : "your year in events."}
+          what happened in our corner of discord.
         </p>
         <div className="mt-5 flex items-center gap-3 flex-wrap">
-          {/* year selector */}
           <div className="flex items-center gap-1 flex-wrap">
-            {availableYears.map((y) => (
+            {ranges.map((r) => (
               <button
-                key={y}
-                onClick={() => setYear(y)}
+                key={r.label}
+                onClick={() => setYear(r.value)}
                 className={
-                  y === year
+                  r.value === year
                     ? "px-3 py-1 rounded-chip bg-paper text-ink text-[13px] font-extrabold border-[1.5px] border-paper"
                     : "px-3 py-1 rounded-chip text-paper3 text-[13px] font-extrabold border-[1.5px] border-paper/30 hover:border-paper/70 transition-colors"
                 }
               >
-                {y}
+                {r.label}
               </button>
             ))}
-          </div>
-          {/* scope toggle */}
-          <div className="flex items-center gap-1 ml-auto">
-            <Chunky
-              variant={scope === "guild" ? "leaf" : "paper"}
-              size="sm"
-              onClick={() => setScope("guild")}
-            >
-              server
-            </Chunky>
-            <Chunky
-              variant={scope === "me" ? "leaf" : "paper"}
-              size="sm"
-              onClick={() => setScope("me")}
-            >
-              just me
-            </Chunky>
           </div>
         </div>
       </div>

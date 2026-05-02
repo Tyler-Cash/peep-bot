@@ -85,22 +85,14 @@ export function useRecentLocations(limit = 8): string[] {
     .map(([loc]) => loc);
 }
 
-export function useRewind(year: number, scope: "guild" | "me" = "guild") {
+export function useRewind(year: number | null) {
   const guild = useActiveGuild();
-  const key = guild ? (["rewind", guild.id, scope, year] as const) : null;
-  return useSWR<RewindStats>(key, () =>
-    fetcher<RewindStats>(
-      `/rewind${scope === "me" ? "/me" : ""}?guildId=${guild!.id}&year=${year}`,
-    ),
-  );
-}
-
-export function useRewindYears() {
-  const guild = useActiveGuild();
-  const key = guild ? (["rewind-years", guild.id] as const) : null;
-  return useSWR<number[]>(key, () =>
-    fetcher<number[]>(`/rewind/years?guildId=${guild!.id}`),
-  );
+  const key = guild ? (["rewind", guild.id, year] as const) : null;
+  return useSWR<RewindStats>(key, () => {
+    const params = new URLSearchParams({ guildId: guild!.id });
+    if (year !== null) params.set("year", String(year));
+    return fetcher<RewindStats>(`/rewind?${params.toString()}`);
+  });
 }
 
 export function useGallery() {
