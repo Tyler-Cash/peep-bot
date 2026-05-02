@@ -239,6 +239,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} cancelling event id={}", discordId, id);
         Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
         if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
@@ -260,6 +261,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} creating private channel for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
         if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
@@ -314,6 +316,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} triggering recategorization for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
         if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
