@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Avas } from "@/components/ui/Avas";
 import { dateStamp, seededTilt } from "@/lib/format";
 import type { GalleryAlbumDto } from "@/lib/types";
@@ -9,19 +10,32 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
   const stamp = dateStamp(album.eventDateTime);
   const tilt = seededTilt(album.eventName, 3);
   const dateLine = `${stamp.day} ${stamp.month.toLowerCase()}`;
+  const [thumbBroken, setThumbBroken] = useState(false);
+  const showFallback = thumbBroken || !album.thumbnailUrl;
 
   // The thumbnail acts as the door to the Immich album. The rest of the card
   // navigates to the local event detail page so attendees / RSVPs / chat
   // remain reachable from here.
   const thumbnail = (
     <div className="relative aspect-square overflow-hidden border-[1.5px] border-ink bg-paper2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={album.thumbnailUrl}
-        alt={album.eventName}
-        className="w-full h-full object-cover transition-[transform,opacity] duration-200 group-hover/photo:opacity-40 group-hover/photo:scale-[1.02]"
-        loading="lazy"
-      />
+      {showFallback ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/peepos/peepo-empty.png"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 m-auto h-1/2 w-1/2 object-contain opacity-90 transition-[transform,opacity] duration-200 group-hover/photo:opacity-50 group-hover/photo:scale-[1.02]"
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={album.thumbnailUrl}
+          alt={album.eventName}
+          className="w-full h-full object-cover transition-[transform,opacity] duration-200 group-hover/photo:opacity-40 group-hover/photo:scale-[1.02]"
+          loading="lazy"
+          onError={() => setThumbBroken(true)}
+        />
+      )}
       <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-[8px] border-[1.5px] border-ink bg-white/95 px-2 py-[3px] text-[11px] font-extrabold tracking-[-0.01em]">
         📷 {album.assetCount}
       </span>
