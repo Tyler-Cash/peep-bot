@@ -56,6 +56,15 @@ public class Guild {
     @Column(name = "active", nullable = false)
     private boolean active;
 
+    @Column(name = "immich_enabled", nullable = false)
+    private boolean immichEnabled;
+
+    @Column(name = "google_autocomplete_enabled", nullable = false)
+    private boolean googleAutocompleteEnabled;
+
+    @Column(name = "rewind_enabled", nullable = false)
+    private boolean rewindEnabled;
+
     public static Guild withDefaults(long guildId) {
         Guild g = new Guild();
         g.setGuildId(guildId);
@@ -66,6 +75,9 @@ public class Guild {
         g.setEmojiMaybe("❓");
         g.setJoinedAt(Instant.now());
         g.setActive(true);
+        g.setImmichEnabled(false);
+        g.setGoogleAutocompleteEnabled(false);
+        g.setRewindEnabled(false);
         return g;
     }
 }

@@ -951,6 +951,35 @@ databaseChangeLog:
             newColumnName: organiser_role
             columnDataType: varchar(100)
 
+  - changeSet:
+      id: add per-guild feature flags
+      author: tyler
+      comment: >
+        Per-guild opt-in for cost/infra-bearing integrations. Default false so a
+        newly-onboarded guild gets nothing until a bot admin enables it.
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: immich_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: google_autocomplete_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rewind_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
