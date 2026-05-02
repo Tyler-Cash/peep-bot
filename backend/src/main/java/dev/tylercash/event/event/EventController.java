@@ -113,6 +113,15 @@ public class EventController {
                         event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
         eventService.populateAttendance(event);
         eventService.updateEvent(event);
+        log.info(
+                "AUDIT user {} updated event {} in guild {}: name={} dateTime={} capacity={} location={}",
+                discordId,
+                event.getId(),
+                event.getServerId(),
+                event.getName(),
+                event.getDateTime(),
+                event.getCapacity(),
+                event.getLocation());
         return Map.of("message", "Updated event for " + event.getName());
     }
 
