@@ -430,7 +430,26 @@ class AuthorizationFuzzIntegrationTest {
                         "/avatar/{snowflake}",
                         () -> MockMvcRequestBuilders.get("/avatar/" + USER_IN_GUILD_1),
                         false,
-                        false));
+                        false),
+
+                // GuildFeaturesController
+                new EndpointCase(
+                        "GET",
+                        "/guild/{guildId}/features",
+                        () -> MockMvcRequestBuilders.get("/guild/" + GUILD_1 + "/features"),
+                        true,
+                        false),
+
+                // AdminController
+                new EndpointCase("GET", "/admin/guilds", () -> MockMvcRequestBuilders.get("/admin/guilds"), false, true),
+                new EndpointCase(
+                        "PATCH",
+                        "/admin/guilds/{guildId}/features",
+                        () -> MockMvcRequestBuilders.patch("/admin/guilds/" + GUILD_1 + "/features")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content("{}"),
+                        false,
+                        true));
     }
 
     static Stream<EndpointCase> guildScopedEndpoints() {
