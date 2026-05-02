@@ -111,6 +111,16 @@ public class GalleryController {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
+        String snowflake = principal.getAttribute("id");
+        if (snowflake == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        // Authz: only users who accepted the event may fetch its thumbnail.
+        Optional<Event> eventOpt = eventRepository.findGalleryEventByAlbumIdForUser(albumId, snowflake);
+        if (eventOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No thumbnail available");
+        }
 
         Optional<ImmichAlbumResponse> albumOpt = immichService.getAlbumDetails(albumId);
         if (albumOpt.isEmpty()) {
