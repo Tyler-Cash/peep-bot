@@ -129,8 +129,8 @@ public class DiscordService {
         return discordAuthService.isMember(serverId, userId);
     }
 
-    public boolean isUserAdminOfServer(long serverId, long userId) {
-        return discordAuthService.isEventAdmin(serverId, userId);
+    public boolean isUserOrganiserOfServer(long serverId, long userId) {
+        return discordAuthService.isEventOrganiser(serverId, userId);
     }
 
     @Observed(name = "discord.sort-active-channels")

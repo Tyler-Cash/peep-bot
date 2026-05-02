@@ -239,7 +239,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} cancelling event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.cancelEvent(id);
@@ -260,7 +260,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} creating private channel for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.createPrivateChannel(id);
@@ -285,7 +285,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} removing attendee from event id={} snowflake={} name={}", discordId, id, snowflake, name);
         Event event = eventService.getEvent(id);
-        boolean isAdmin = discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId));
+        boolean isAdmin = discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId));
 
         if (!isAdmin) {
             if (snowflake != null && !snowflake.isBlank()) {
@@ -314,7 +314,7 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} triggering recategorization for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.recategorizeEvent(id);

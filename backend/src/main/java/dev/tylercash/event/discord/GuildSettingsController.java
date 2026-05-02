@@ -17,7 +17,6 @@ public class GuildSettingsController {
 
     private final GuildRepository guildRepository;
     private final GuildMembershipService guildMembershipService;
-    private final DiscordService discordService;
     private final DiscordAuthService discordAuthService;
     private final JDA jda;
     private final GuildEmojiResolver guildEmojiResolver;
@@ -40,10 +39,8 @@ public class GuildSettingsController {
         long guildIdLong = Long.parseLong(guildId);
         guildMembershipService.assertMember(snowflake, guildIdLong);
         long userId = Long.parseLong(snowflake);
-        boolean isAdmin = discordService.isUserAdminOfServer(guildIdLong, userId)
-                || discordAuthService.isGuildOwner(guildIdLong, userId);
-        if (!isAdmin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role or guild owner required");
+        if (!discordAuthService.isGuildOwner(guildIdLong, userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the guild owner can edit settings");
         }
         Guild row = guildRepository.findById(guildIdLong).orElseGet(() -> Guild.withDefaults(guildIdLong));
 
@@ -55,7 +52,8 @@ public class GuildSettingsController {
 
         // Role and emoji fields keep the existing value when the request omits them or sends blank
         if (request.eventsRole() != null && !request.eventsRole().isBlank()) row.setEventsRole(request.eventsRole());
-        if (request.adminRole() != null && !request.adminRole().isBlank()) row.setAdminRole(request.adminRole());
+        if (request.organiserRole() != null && !request.organiserRole().isBlank())
+            row.setOrganiserRole(request.organiserRole());
         // separator_channel: null clears, blank clears, anything else sets
         row.setSeparatorChannel(
                 (request.separatorChannel() == null

@@ -6,7 +6,7 @@ public record GuildSettingsRequest(
         Double primaryLocationLat,
         Double primaryLocationLng,
         String eventsRole,
-        String adminRole,
+        String organiserRole,
         String separatorChannel,
         String emojiAccepted,
         String emojiDeclined,

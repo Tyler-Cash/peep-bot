@@ -23,8 +23,8 @@ public class Guild {
     @Column(name = "events_role", nullable = false)
     private String eventsRole;
 
-    @Column(name = "admin_role", nullable = false)
-    private String adminRole;
+    @Column(name = "organiser_role", nullable = false)
+    private String organiserRole;
 
     @Column(name = "separator_channel")
     private String separatorChannel;
@@ -60,7 +60,7 @@ public class Guild {
         Guild g = new Guild();
         g.setGuildId(guildId);
         g.setEventsRole("events");
-        g.setAdminRole("event-admin");
+        g.setOrganiserRole("event-organiser");
         g.setEmojiAccepted("✅");
         g.setEmojiDeclined("❌");
         g.setEmojiMaybe("❓");

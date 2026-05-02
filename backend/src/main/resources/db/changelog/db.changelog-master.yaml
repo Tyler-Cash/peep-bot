@@ -936,6 +936,21 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: rename admin_role to organiser_role
+      author: tyler
+      comment: >
+        Renames the column to match the new "event organiser" terminology.
+        Existing rows keep their stored value (e.g. "event-admin") — auto-migration
+        is intentionally skipped so servers do not lose their existing Discord role
+        assignment. New rows default to "event-organiser" via Guild.withDefaults().
+      changes:
+        - renameColumn:
+            tableName: guild
+            oldColumnName: admin_role
+            newColumnName: organiser_role
+            columnDataType: varchar(100)
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

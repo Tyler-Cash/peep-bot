@@ -44,10 +44,10 @@ public class DiscordAuthService {
                 && member.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase(roleName));
     }
 
-    public boolean isEventAdmin(long guildId, long userId) {
-        String adminRole =
-                guildRepository.findById(guildId).map(Guild::getAdminRole).orElse("event-admin");
-        return hasRole(guildId, userId, adminRole);
+    public boolean isEventOrganiser(long guildId, long userId) {
+        String organiserRole =
+                guildRepository.findById(guildId).map(Guild::getOrganiserRole).orElse("event-organiser");
+        return hasRole(guildId, userId, organiserRole);
     }
 
     public boolean isGuildOwner(long guildId, long userId) {
