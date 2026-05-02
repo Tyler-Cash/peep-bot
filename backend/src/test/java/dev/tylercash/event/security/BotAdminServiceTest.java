@@ -30,4 +30,12 @@ class BotAdminServiceTest {
         BotAdminService svc = service(List.of("111"));
         assertThat(svc.isBotAdmin(null)).isFalse();
     }
+
+    @Test
+    void entriesWithWhitespaceAreTrimmed() {
+        BotAdminService svc = service(List.of(" 111 ", "222"));
+        assertThat(svc.isBotAdmin("111")).isTrue();
+        assertThat(svc.isBotAdmin(" 111  ")).isTrue();
+        assertThat(svc.isBotAdmin("222")).isTrue();
+    }
 }

@@ -19,11 +19,18 @@ public class BotAdminService {
             log.warn(
                     "No bot-admins configured (dev.tylercash.bot-admins is empty). Admin endpoints will reject every request.");
         } else {
-            log.info("Bot admin allowlist: {} ({} entries)", admins, admins.size());
+            List<String> trimmed =
+                    admins.stream().filter(a -> a != null).map(String::trim).toList();
+            log.info("Bot admin allowlist: {} ({} entries)", trimmed, trimmed.size());
         }
     }
 
     public boolean isBotAdmin(String snowflake) {
-        return snowflake != null && properties.getBotAdmins().contains(snowflake);
+        if (snowflake == null) return false;
+        String trimmed = snowflake.trim();
+        return properties.getBotAdmins().stream()
+                .filter(a -> a != null)
+                .map(String::trim)
+                .anyMatch(trimmed::equals);
     }
 }
