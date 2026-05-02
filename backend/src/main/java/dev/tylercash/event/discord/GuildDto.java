@@ -6,7 +6,6 @@ public record GuildDto(
         String initials,
         String iconUrl,
         String color,
-        String channel,
         int members,
         Double primaryLocationLat,
         Double primaryLocationLng) {}

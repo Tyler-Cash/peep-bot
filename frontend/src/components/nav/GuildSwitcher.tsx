@@ -41,7 +41,7 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
           "transition-[box-shadow,transform] select-none",
           fullWidth && "w-full",
         )}
-        title={`${guild.name} · #${guild.channel}`}
+        title={guild.name}
       >
         <GuildIcon guild={guild} />
         <span className="flex flex-col leading-none min-w-0 flex-1 text-left">
@@ -53,9 +53,7 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
           >
             {guild.name}
           </span>
-          <span className="text-[13px] text-mute font-semibold mt-0.5 whitespace-nowrap">
-            ● #{guild.channel}
-          </span>
+
         </span>
         <span className="ml-1 text-[18px] text-mute">▾</span>
       </button>
@@ -97,9 +95,6 @@ function GuildDropdown({
           <span className="flex-1 min-w-0">
             <span className="block text-[15px] font-extrabold tracking-[-0.01em] truncate">
               {g.name}
-            </span>
-            <span className="block text-[13px] text-mute font-semibold">
-              #{g.channel}
             </span>
           </span>
           {user?.ownedGuildIds?.includes(g.id) && (

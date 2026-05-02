@@ -2,6 +2,21 @@
 
 import * as z from 'zod';
 
+export const zAdminFeaturesRequest = z.object({
+    googleAutocompleteEnabled: z.boolean().nullable().optional(),
+    immichEnabled: z.boolean().nullable().optional(),
+    rewindEnabled: z.boolean().nullable().optional()
+});
+
+export const zAdminGuildDto = z.object({
+    active: z.boolean().nullable().optional(),
+    googleAutocompleteEnabled: z.boolean().nullable().optional(),
+    guildId: z.string().nullable().optional(),
+    immichEnabled: z.boolean().nullable().optional(),
+    name: z.string().nullable().optional(),
+    rewindEnabled: z.boolean().nullable().optional()
+});
+
 export const zAttendeeDto = z.object({
     avatarUrl: z.string().nullable().optional(),
     instant: z.iso.datetime().nullable().optional(),
@@ -118,7 +133,6 @@ export const zGraphNodeDto = z.object({
 });
 
 export const zGuildDto = z.object({
-    channel: z.string().nullable().optional(),
     color: z.string().nullable().optional(),
     iconUrl: z.string().nullable().optional(),
     id: z.string().nullable().optional(),
@@ -211,6 +225,22 @@ export const zUserInfoDto = z.object({
     ownedGuildIds: z.array(z.string()).nullable().optional(),
     username: z.string().nullable().optional()
 });
+
+/**
+ * OK
+ */
+export const zListGuildsResponse = z.array(zAdminGuildDto);
+
+export const zUpdateFeaturesBody = zAdminFeaturesRequest;
+
+export const zUpdateFeaturesPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zUpdateFeaturesResponse = zAdminGuildDto;
 
 /**
  * User is authenticated
@@ -351,6 +381,15 @@ export const zOpenAlbumResponse = z.record(z.string(), z.string());
  * OK
  */
 export const zGetGuildsResponse = z.array(zGuildDto);
+
+export const zGetFeaturesPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zGetFeaturesResponse = z.record(z.string(), z.boolean());
 
 export const zGetSettingsPath = z.object({
     guildId: z.string()

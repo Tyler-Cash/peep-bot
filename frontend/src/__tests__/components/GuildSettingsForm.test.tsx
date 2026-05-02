@@ -28,7 +28,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/lib/hooks", () => ({
   updateGuildSettings: (...args: unknown[]) => mockUpdateGuildSettings(...args),
-  useActiveGuild: () => ({ id: "g1", name: "My Guild", channel: "outings" }),
+  useActiveGuild: () => ({ id: "g1", name: "My Guild" }),
   useCurrentUser: () => mockUseCurrentUser(),
   useGuildSettings: (id: string) => mockUseGuildSettings(id),
 }));

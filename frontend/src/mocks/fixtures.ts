@@ -101,7 +101,6 @@ export const guild = {
   initials: "PP",
   iconUrl: null,
   color: "#7BC24F",
-  channel: "outings",
   members: 27,
   active: true,
   primaryLocationLat: null as number | null,

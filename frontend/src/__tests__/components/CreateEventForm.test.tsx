@@ -17,7 +17,6 @@ vi.mock("@/lib/hooks", () => ({
   useActiveGuild: () => ({
     id: "guild-1",
     name: "Test Guild",
-    channel: "outings",
   }),
   useRecentLocations: () => [],
 }));

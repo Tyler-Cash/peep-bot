@@ -1,6 +1,43 @@
 {
   "components" : {
     "schemas" : {
+      "AdminFeaturesRequest" : {
+        "properties" : {
+          "googleAutocompleteEnabled" : {
+            "type" : "boolean"
+          },
+          "immichEnabled" : {
+            "type" : "boolean"
+          },
+          "rewindEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminGuildDto" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "googleAutocompleteEnabled" : {
+            "type" : "boolean"
+          },
+          "guildId" : {
+            "type" : "string"
+          },
+          "immichEnabled" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "rewindEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AttendeeDto" : {
         "properties" : {
           "avatarUrl" : {
@@ -353,9 +390,6 @@
       },
       "GuildDto" : {
         "properties" : {
-          "channel" : {
-            "type" : "string"
-          },
           "color" : {
             "type" : "string"
           },
@@ -617,6 +651,9 @@
       "StreamingResponseBody" : { },
       "UserInfoDto" : {
         "properties" : {
+          "admin" : {
+            "type" : "boolean"
+          },
           "avatarUrl" : {
             "type" : "string"
           },
@@ -652,6 +689,85 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/admin/guilds" : {
+      "get" : {
+        "operationId" : "listGuilds",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AdminGuildDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/guilds/{guildId}/features" : {
+      "patch" : {
+        "operationId" : "updateFeatures",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminFeaturesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminGuildDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
     "/auth/is-logged-in" : {
       "get" : {
         "description" : "Returns current user info if authenticated",
@@ -1446,6 +1562,46 @@
         "tags" : [ "Guild" ]
       }
     },
+    "/guild/{guildId}/features" : {
+      "get" : {
+        "operationId" : "getFeatures",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "boolean"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
     "/guild/{guildId}/settings" : {
       "get" : {
         "operationId" : "getSettings",
@@ -1708,6 +1864,9 @@
   }, {
     "description" : "Discord bot install URL",
     "name" : "Bot install"
+  }, {
+    "description" : "Operator endpoints for managing per-guild features",
+    "name" : "Bot admin"
   }, {
     "description" : "Authentication status operations",
     "name" : "Authentication"

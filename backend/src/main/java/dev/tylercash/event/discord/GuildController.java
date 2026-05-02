@@ -42,7 +42,6 @@ public class GuildController {
                 deriveInitials(name),
                 guild.getIconUrl(),
                 deriveColor(guild.getId()),
-                settings != null && settings.getSeparatorChannel() != null ? settings.getSeparatorChannel() : "",
                 guild.getMemberCount(),
                 settings != null ? settings.getPrimaryLocationLat() : null,
                 settings != null ? settings.getPrimaryLocationLng() : null);
