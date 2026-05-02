@@ -349,6 +349,17 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void removeAttendee_neitherSnowflakeNorName_returns400() throws Exception {
+        fixtures.registerMember(USER, GUILD, "Admin User", "adminuser");
+        UUID eventId = fixtures.seedEvent(GUILD, USER, "Bad Remove Event");
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/event/{id}/attendee", eventId)
+                        .with(authedAs(USER))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
     // ---------------------------------------------------------------------------
     // POST /event/{id}/recategorize — admin only
     // ---------------------------------------------------------------------------

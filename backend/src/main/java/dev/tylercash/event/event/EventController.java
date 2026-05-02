@@ -287,6 +287,10 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} removing attendee from event id={} snowflake={} name={}", discordId, id, snowflake, name);
         Event event = eventService.getEvent(id);
+        guildMembershipService.assertMember(discordId, event.getServerId());
+        if ((snowflake == null || snowflake.isBlank()) && (name == null || name.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either snowflake or name must be provided");
+        }
         boolean isAdmin = discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId));
 
         if (!isAdmin) {
