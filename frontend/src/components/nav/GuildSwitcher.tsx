@@ -102,7 +102,7 @@ function GuildDropdown({
               #{g.channel}
             </span>
           </span>
-          {user?.adminGuildIds.includes(g.id) && (
+          {user?.ownedGuildIds?.includes(g.id) && (
             <button
               type="button"
               title="Server settings"

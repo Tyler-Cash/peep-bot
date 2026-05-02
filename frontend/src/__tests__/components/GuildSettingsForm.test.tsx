@@ -72,7 +72,7 @@ afterEach(() => {
 describe("GuildSettingsForm", () => {
   it("redirects non-admin users away from the page", async () => {
     mockUseCurrentUser.mockReturnValue({
-      data: { adminGuildIds: [], username: "joe" },
+      data: { ownedGuildIds: [], username: "joe" },
     });
     mockUseGuildSettings.mockReturnValue({
       data: {
@@ -81,7 +81,7 @@ describe("GuildSettingsForm", () => {
         primaryLocationLat: null,
         primaryLocationLng: null,
         eventsRole: "events",
-        adminRole: "event-admin",
+        organiserRole: "event-organiser",
         separatorChannel: null,
         emojiAccepted: "✅",
         emojiDeclined: "❌",
@@ -96,7 +96,7 @@ describe("GuildSettingsForm", () => {
   });
 
   it("submits a changed primary location and navigates home", async () => {
-    mockUseCurrentUser.mockReturnValue({ data: { adminGuildIds: ["g1"] } });
+    mockUseCurrentUser.mockReturnValue({ data: { ownedGuildIds: ["g1"] } });
     mockUseGuildSettings.mockReturnValue({
       data: {
         primaryLocationName: "Old Town",
@@ -104,7 +104,7 @@ describe("GuildSettingsForm", () => {
         primaryLocationLat: 1,
         primaryLocationLng: 2,
         eventsRole: "events",
-        adminRole: "event-admin",
+        organiserRole: "event-organiser",
         separatorChannel: null,
         emojiAccepted: "✅",
         emojiDeclined: "❌",
@@ -136,7 +136,7 @@ describe("GuildSettingsForm", () => {
       primaryLocationLat: null,
       primaryLocationLng: null,
       eventsRole: "events",
-      adminRole: "event-admin",
+      organiserRole: "event-organiser",
       separatorChannel: null,
       emojiAccepted: "✅",
       emojiDeclined: "❌",
@@ -146,7 +146,7 @@ describe("GuildSettingsForm", () => {
   });
 
   it("shows the loading state and does not submit while settings are loading", async () => {
-    mockUseCurrentUser.mockReturnValue({ data: { adminGuildIds: ["g1"] } });
+    mockUseCurrentUser.mockReturnValue({ data: { ownedGuildIds: ["g1"] } });
     mockUseGuildSettings.mockReturnValue({ data: undefined, isLoading: true });
 
     render(<GuildSettingsForm guildId="g1" />);

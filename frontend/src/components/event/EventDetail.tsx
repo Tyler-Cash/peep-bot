@@ -125,7 +125,7 @@ export function EventDetail({ id }: { id: string }) {
     await submitRsvp(guild.id, data.id, status);
   };
 
-  const isAdmin = me?.adminGuildIds.includes(guild?.id ?? "") ?? false;
+  const isAdmin = me?.organiserGuildIds?.includes(guild?.id ?? "") ?? false;
 
   const confirmRemove = async () => {
     if (!pendingRemove || !guild || !data) return;
