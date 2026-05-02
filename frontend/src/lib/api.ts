@@ -1,3 +1,6 @@
+import { clearSwrCache } from "./swrCache";
+import { noteAuthFailure, noteAuthSuccess } from "./authLoopGuard";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 
@@ -109,14 +112,22 @@ async function apiFetchInner<T>(
   }
 
   if (res.status === 401 || res.status === 403) {
-    if (
-      typeof window !== "undefined" &&
-      MODE === "live" &&
-      !window.location.pathname.startsWith("/login")
-    ) {
-      window.location.href = "/login";
+    if (typeof window !== "undefined" && MODE === "live") {
+      const onLogin = window.location.pathname.startsWith("/login");
+      if (!onLogin) {
+        // Stale client-side auth state (persisted SWR cache, csrf token) is
+        // what causes /login to bounce us straight back to /. Wipe it before
+        // navigating so /login renders against a clean slate.
+        clearSwrCache();
+        csrfToken = null;
+        noteAuthFailure();
+        window.location.href = "/login";
+      }
     }
     throw new UnauthorizedError();
+  }
+  if (res.ok && path === "/auth/is-logged-in") {
+    noteAuthSuccess();
   }
   if (res.status === 429) {
     if (retries >= 2) {

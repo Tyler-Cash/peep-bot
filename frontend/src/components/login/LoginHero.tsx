@@ -8,6 +8,7 @@ import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useCurrentUser } from "@/lib/hooks";
 import { activateDevMode } from "@/lib/devMode";
+import { isAuthLoopTripped, noteAuthSuccess } from "@/lib/authLoopGuard";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
@@ -27,7 +28,10 @@ export function LoginHero() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (user) router.replace("/");
+    // If we've bounced between / and /login too many times, stay put — the
+    // cached `user` here is almost certainly stale. The user can click the
+    // login button to start a fresh OAuth flow, which will reset the guard.
+    if (user && !isAuthLoopTripped()) router.replace("/");
   }, [user, router]);
 
   useEffect(() => {
@@ -40,6 +44,9 @@ export function LoginHero() {
   const onContinue = () => {
     if (loading) return;
     setLoading(true);
+    // User is explicitly trying to log in — clear any prior bounce-loop state
+    // so a successful auth ends at /, not stuck on /login.
+    noteAuthSuccess();
     if (MODE === "mock") {
       // Clear the mock logout flag so the user is logged in
       window.localStorage.removeItem("mock-auth-logged-out");
