@@ -57,6 +57,8 @@ public class WebSecurityConfig {
                         .permitAll()
                         .requestMatchers("/install-url")
                         .permitAll()
+                        .requestMatchers("/events/*/cover")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .logout(logout -> logout.logoutUrl("/auth/logout")
