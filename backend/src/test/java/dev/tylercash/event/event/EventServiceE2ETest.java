@@ -23,7 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * Run explicitly with: ./gradlew e2eTest
  */
-@SpringBootTest(classes = PeepBotApplication.class)
+@SpringBootTest(classes = PeepBotApplication.class, properties = "dev.tylercash.contract.guild-id=1")
 @Testcontainers
 @ActiveProfiles("local")
 @Tag("e2e")
