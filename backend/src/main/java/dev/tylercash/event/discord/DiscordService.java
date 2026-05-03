@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
@@ -30,6 +31,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -87,20 +89,48 @@ public class DiscordService {
                         Button.secondary(PLUS_ONE_ID, PLUS_ONE))));
         messageBuilder.addContent(event.getName() + " created\n");
         if (event.isNotifyOnCreate()) {
-            addNotificationToMessage(messageBuilder, rolesToMention);
+            addNotificationToMessage(messageBuilder, rolesToMention, channel.getGuild());
         }
         Message message = channel.sendMessage(messageBuilder.build()).complete();
-        message.pin().queue();
+        pinSilently(message, "event embed");
         return message;
     }
 
-    private void addNotificationToMessage(MessageCreateBuilder messageBuilder, List<Role> rolesToMention) {
+    /**
+     * Pin the message, but log and continue if the bot is missing
+     * {@code PIN_MESSAGES} in the channel. Pinning is a UX nicety; the event
+     * still works without it.
+     */
+    private void pinSilently(Message message, String description) {
+        message.pin().queue(null, t -> {
+            if (t instanceof InsufficientPermissionException) {
+                log.warn(
+                        "Skipping pin of {} in #{}: bot lacks PIN_MESSAGES.",
+                        description,
+                        message.getChannel().getName());
+            } else {
+                log.warn("Failed to pin {}: {}", description, t.getMessage());
+            }
+        });
+    }
+
+    private void addNotificationToMessage(MessageCreateBuilder messageBuilder, List<Role> rolesToMention, Guild guild) {
         if (notifyEventRoles.acquirePermission()) {
             try {
-                rolesToMention.forEach(role -> messageBuilder
-                        .mentionRoles(role.getId())
-                        .addContent(role.getAsMention())
-                        .addContent("\n"));
+                boolean canMentionAny = guild.getSelfMember().hasPermission(Permission.MESSAGE_MENTION_EVERYONE);
+                rolesToMention.forEach(role -> {
+                    if (!canMentionAny && !role.isMentionable()) {
+                        log.warn(
+                                "Skipping ping of @{} in guild '{}': bot lacks MENTION_EVERYONE and the role is not mentionable.",
+                                role.getName(),
+                                guild.getName());
+                        return;
+                    }
+                    messageBuilder
+                            .mentionRoles(role.getId())
+                            .addContent(role.getAsMention())
+                            .addContent("\n");
+                });
                 notifyEventRoles.onSuccess();
             } catch (Exception e) {
                 notifyEventRoles.onError(e);
@@ -269,7 +299,11 @@ public class DiscordService {
                         "⚠️ **Private Channel** — This channel is for sharing private event details only. "
                                 + "Please keep all discussion in the main event channel. Do not chat here.")
                 .complete();
-        alert.pin().complete();
+        try {
+            alert.pin().complete();
+        } catch (InsufficientPermissionException e) {
+            log.warn("Skipping pin of privacy notice in #{}: bot lacks PIN_MESSAGES.", channel.getName());
+        }
         // Hide the auto-generated "BotName pinned a message" system notification.
         // Discord sets the author of CHANNEL_PINNED_ADD to the user who pinned,
         // so the bot is deleting its own message — no MANAGE_MESSAGES needed.
@@ -306,7 +340,7 @@ public class DiscordService {
         TextChannel channel = getChannel(event);
         Message message = channel.sendMessage("[Post photos of the event in the album!](" + albumUrl + ")")
                 .complete();
-        message.pin().queue();
+        pinSilently(message, "album link");
         event.getNotifications()
                 .add(new Notification(
                         NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
@@ -315,21 +349,35 @@ public class DiscordService {
     @Observed(name = "discord.create-event-roles")
     public void createEventRoles(Event event) {
         Guild guild = jda.getGuildById(event.getServerId());
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            log.warn(
+                    "Skipping per-event role creation for '{}' in guild '{}': bot lacks MANAGE_ROLES. RSVP buttons will still work but won't toggle roles.",
+                    event.getName(),
+                    guild.getName());
+            return;
+        }
         String baseName = event.getName();
         if (baseName.length() > 89) {
             baseName = baseName.substring(0, 89);
         }
-        if (event.getAcceptedRoleId() == null) {
-            Role accepted = discordRoleService.createRole(guild, baseName + " - Accepted");
-            event.setAcceptedRoleId(accepted.getIdLong());
-        }
-        if (event.getDeclinedRoleId() == null) {
-            Role declined = discordRoleService.createRole(guild, baseName + " - Declined");
-            event.setDeclinedRoleId(declined.getIdLong());
-        }
-        if (event.getMaybeRoleId() == null) {
-            Role maybe = discordRoleService.createRole(guild, baseName + " - Maybe");
-            event.setMaybeRoleId(maybe.getIdLong());
+        try {
+            if (event.getAcceptedRoleId() == null) {
+                Role accepted = discordRoleService.createRole(guild, baseName + " - Accepted");
+                event.setAcceptedRoleId(accepted.getIdLong());
+            }
+            if (event.getDeclinedRoleId() == null) {
+                Role declined = discordRoleService.createRole(guild, baseName + " - Declined");
+                event.setDeclinedRoleId(declined.getIdLong());
+            }
+            if (event.getMaybeRoleId() == null) {
+                Role maybe = discordRoleService.createRole(guild, baseName + " - Maybe");
+                event.setMaybeRoleId(maybe.getIdLong());
+            }
+        } catch (InsufficientPermissionException e) {
+            log.warn(
+                    "Stopped creating event roles for '{}' partway: {}. Existing role IDs are kept; missing ones stay null.",
+                    event.getName(),
+                    e.getMessage());
         }
     }
 

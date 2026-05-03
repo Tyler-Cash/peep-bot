@@ -17,8 +17,12 @@ public class DiscordAuthService {
     private final Optional<DevUserProperties> devUserProperties;
 
     public Member getMember(long guildId, long userId) {
+        net.dv8tion.jda.api.entities.Guild jdaGuild = jda.getGuildById(guildId);
+        if (jdaGuild == null) {
+            return null;
+        }
         try {
-            return jda.getGuildById(guildId).retrieveMemberById(userId).complete();
+            return jdaGuild.retrieveMemberById(userId).complete();
         } catch (ErrorResponseException e) {
             if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER
                     || e.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER) {
