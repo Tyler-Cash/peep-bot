@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Configuration;
 public class PlacesConfiguration {
     private String apiKey = "";
     private int maxHeightPx = 720;
+    private int perUserPerHour = 50;
+    private int globalPerDay = 500;
 
     public boolean isEnabled() {
         return apiKey != null && !apiKey.isBlank();

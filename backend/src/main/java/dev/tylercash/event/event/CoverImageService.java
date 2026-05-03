@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.places.PhotoBytes;
 import dev.tylercash.event.places.PlacesPhotoClient;
+import dev.tylercash.event.places.PlacesRateLimiter;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CoverImageService {
     private final PlacesPhotoClient placesPhotoClient;
+    private final PlacesRateLimiter placesRateLimiter;
 
     public void refreshIfNeeded(Event event) {
         String placeId = event.getLocationPlaceId();
@@ -29,6 +31,11 @@ public class CoverImageService {
         }
 
         if (Objects.equals(placeId, event.getCoverImagePlaceId()) && event.getCoverImageBytes() != null) {
+            return;
+        }
+
+        if (!placesRateLimiter.tryAcquire(event.getCreator())) {
+            log.info("Skipping Places photo fetch for event {} due to rate limit", event.getId());
             return;
         }
 
