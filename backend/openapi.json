@@ -422,6 +422,10 @@
       },
       "GuildSettingsDto" : {
         "properties" : {
+          "defaultEventCreateRateLimitPerHour" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "emojiAccepted" : {
             "type" : "string"
           },
@@ -430,6 +434,10 @@
           },
           "emojiMaybe" : {
             "type" : "string"
+          },
+          "eventCreateRateLimitPerHour" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "eventsRole" : {
             "type" : "string"
@@ -467,6 +475,10 @@
           },
           "emojiMaybe" : {
             "type" : "string"
+          },
+          "eventCreateRateLimitPerHour" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "eventsRole" : {
             "type" : "string"
