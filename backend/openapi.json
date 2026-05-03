@@ -494,6 +494,20 @@
         },
         "type" : "object"
       },
+      "InstallUrlDto" : {
+        "properties" : {
+          "permissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionDto"
+            },
+            "type" : "array"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "PageMetadata" : {
         "properties" : {
           "number" : {
@@ -546,6 +560,17 @@
           },
           "page" : {
             "$ref" : "#/components/schemas/PageMetadata"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionDto" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -1692,10 +1717,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "additionalProperties" : {
-                    "type" : "string"
-                  },
-                  "type" : "object"
+                  "$ref" : "#/components/schemas/InstallUrlDto"
                 }
               }
             },

@@ -87,7 +87,22 @@ export const handlers = [
 
   http.get(API("/install-url"), () =>
     HttpResponse.json({
-      url: "https://discord.com/api/oauth2/authorize?client_id=mock&permissions=2251800082631696&scope=bot+applications.commands",
+      url: "https://discord.com/api/oauth2/authorize?client_id=mock&permissions=2251800082598928&scope=bot",
+      permissions: [
+        { name: "View channels", reason: "Look up channels and categories" },
+        { name: "Manage channels", reason: "Create, sort, and archive event channels" },
+        { name: "Manage roles", reason: "Per-event Accepted / Declined / Maybe roles" },
+        { name: "Send messages", reason: "Event message and RSVP / cancel notifications" },
+        { name: "Embed links", reason: "Event embed body" },
+        { name: "Pin messages", reason: "Pin event messages in their channel" },
+        {
+          name: "Read message history",
+          reason:
+            'Find and delete Discord\'s "pinned a message" system notification in private event channels',
+        },
+        { name: "Use external emojis", reason: "Custom guild emoji in buttons" },
+        { name: "Mention everyone", reason: "Ping the @events role" },
+      ],
     }),
   ),
 

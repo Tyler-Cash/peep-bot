@@ -171,6 +171,11 @@ export type GuildSettingsRequest = {
     separatorChannel?: string;
 };
 
+export type InstallUrlDto = {
+    permissions?: Array<PermissionDto>;
+    url?: string;
+};
+
 export type PageMetadata = {
     number?: number;
     size?: number;
@@ -187,6 +192,11 @@ export type Pageable = {
 export type PagedModelEventDto = {
     content?: Array<EventDto>;
     page?: PageMetadata;
+};
+
+export type PermissionDto = {
+    name?: string;
+    reason?: string;
 };
 
 export type RewindStatsDto = {
@@ -931,9 +941,7 @@ export type GetResponses = {
     /**
      * OK
      */
-    200: {
-        [key: string]: string;
-    };
+    200: InstallUrlDto;
 };
 
 export type GetResponse = GetResponses[keyof GetResponses];

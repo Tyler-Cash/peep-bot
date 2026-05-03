@@ -187,6 +187,16 @@ export const zPagedModelEventDto = z.object({
     page: zPageMetadata.nullable().optional()
 });
 
+export const zPermissionDto = z.object({
+    name: z.string().nullable().optional(),
+    reason: z.string().nullable().optional()
+});
+
+export const zInstallUrlDto = z.object({
+    permissions: z.array(zPermissionDto).nullable().optional(),
+    url: z.string().nullable().optional()
+});
+
 export const zRsvpRequest = z.object({
     status: z.string().nullable().optional()
 });
@@ -414,7 +424,7 @@ export const zUpdateSettingsResponse = zGuildSettingsDto;
 /**
  * OK
  */
-export const zGetResponse = z.record(z.string(), z.string());
+export const zGetResponse = zInstallUrlDto;
 
 export const zGetGuildStatsQuery = z.object({
     guildId: z.string(),

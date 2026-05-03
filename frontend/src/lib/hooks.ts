@@ -233,8 +233,10 @@ export async function updateEvent(
   ]);
 }
 
+export type InstallPermission = { name: string; reason: string };
+
 export function useInstallUrl() {
-  return useSWR<{ url: string }>("/install-url", fetcher);
+  return useSWR<{ url: string; permissions: InstallPermission[] }>("/install-url", fetcher);
 }
 
 export type GuildFeatures = {

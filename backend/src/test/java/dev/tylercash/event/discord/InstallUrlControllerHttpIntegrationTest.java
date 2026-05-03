@@ -23,8 +23,20 @@ class InstallUrlControllerHttpIntegrationTest extends AbstractHttpIntegrationTes
         mockMvc.perform(get("/install-url"))
                 .andExpect(status().isOk())
                 .andExpect(
-                        jsonPath("$.url").value(org.hamcrest.Matchers.containsString("permissions=2251800082631696")))
+                        jsonPath("$.url").value(org.hamcrest.Matchers.containsString("permissions=2251800082598928")))
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.containsString("scope=bot")))
                 .andExpect(jsonPath("$.url")
-                        .value(org.hamcrest.Matchers.containsString("scope=bot+applications.commands")));
+                        .value(org.hamcrest.Matchers.not(
+                                org.hamcrest.Matchers.containsString("applications.commands"))));
+    }
+
+    @Test
+    void responseIncludesPermissionsList() throws Exception {
+        mockMvc.perform(get("/install-url"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions").isArray())
+                .andExpect(jsonPath("$.permissions.length()").value(BotPermission.values().length))
+                .andExpect(jsonPath("$.permissions[?(@.name == 'Manage roles')].reason")
+                        .value(org.hamcrest.Matchers.hasItem("Per-event Accepted / Declined / Maybe roles")));
     }
 }
