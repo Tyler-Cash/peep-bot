@@ -8,9 +8,9 @@ import { Slab } from "@/components/ui/Slab";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import {
   updateGuildSettings,
-  useActiveGuild,
   useCurrentUser,
   useGuildSettings,
+  useGuilds,
 } from "@/lib/hooks";
 import { UnauthorizedError } from "@/lib/api";
 import {
@@ -23,7 +23,8 @@ import { useMemo } from "react";
 export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const router = useRouter();
   const { data: user } = useCurrentUser();
-  const activeGuild = useActiveGuild();
+  const { data: guilds } = useGuilds();
+  const guild = guilds?.find((g) => g.id === guildId) ?? null;
   const { data: settings, isLoading, error } = useGuildSettings(guildId);
   const sessionToken = useMemo(newPlacesSessionToken, []);
 
@@ -139,8 +140,8 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   };
 
   const locationBias =
-    activeGuild?.primaryLocationLat != null && activeGuild?.primaryLocationLng != null
-      ? { lat: activeGuild.primaryLocationLat, lng: activeGuild.primaryLocationLng }
+    guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
+      ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
       : undefined;
 
   return (
@@ -163,7 +164,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
             SERVER SETTINGS
           </span>
           <h1 className="text-[26px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-tight mt-0.5 break-words">
-            {activeGuild?.name ?? "server config"}
+            {guild?.name ?? "server config"}
           </h1>
         </div>
       </header>

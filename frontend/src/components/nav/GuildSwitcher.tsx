@@ -107,8 +107,17 @@ function GuildDropdown({
         return (
           <div
             key={g.id}
-            className="flex items-center border-b-[1px] border-ink/10 last:border-b-0 hover:bg-paper2"
+            className={clsx(
+              "relative flex items-center border-b-[1px] border-ink/10 last:border-b-0",
+              isActive ? "bg-leafLt/60" : "hover:bg-paper2",
+            )}
           >
+            {isActive && (
+              <span
+                className="absolute left-0 top-0 bottom-0 w-[5px] bg-leaf border-r-[1.5px] border-ink"
+                aria-hidden
+              />
+            )}
             <button
               type="button"
               onClick={() => {
@@ -118,17 +127,17 @@ function GuildDropdown({
               className="flex-1 min-w-0 flex items-center gap-2.5 px-3 py-2.5 text-left"
               aria-pressed={isActive}
             >
-              <GuildIcon guild={g} />
+              <GuildIcon guild={g} active={isActive} />
               <span className="flex-1 min-w-0">
                 <span className="block text-[15px] font-extrabold tracking-[-0.01em] truncate">
                   {g.name}
                 </span>
+                {isActive && (
+                  <span className="block text-[10px] font-extrabold tracking-[0.18em] text-leafDk uppercase mt-0.5">
+                    active
+                  </span>
+                )}
               </span>
-              {isActive && (
-                <span className="text-[12px] text-mute" aria-hidden>
-                  ✓
-                </span>
-              )}
             </button>
             {user?.ownedGuildIds?.includes(g.id) && (
               <button
@@ -139,7 +148,7 @@ function GuildDropdown({
                   onClose();
                   router.push(`/guild/${g.id}/settings`);
                 }}
-                className="mr-2 inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[12px] text-mute opacity-70 hover:opacity-100 hover:text-ink hover:bg-paper flex-shrink-0"
+                className="mr-2 inline-flex items-center justify-center w-9 h-9 rounded-chip border-[1.5px] border-ink bg-paper2 text-[16px] text-ink shadow-rest hover:bg-paper active:shadow-press active:translate-x-[0.5px] active:translate-y-[0.5px] transition-[box-shadow,transform] flex-shrink-0"
               >
                 ⚙
               </button>
@@ -149,16 +158,16 @@ function GuildDropdown({
       })}
 
       {user?.admin && (
-        <div className="px-3 py-2.5 border-t-[1px] border-ink/10">
+        <div className="border-t-[1px] border-ink/10 hover:bg-paper2">
           <button
             type="button"
             onClick={() => {
               onClose();
               router.push("/admin");
             }}
-            className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-[15px] font-extrabold tracking-[-0.01em] text-ink"
           >
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px] shrink-0">
               ⚙
             </span>
             Admin
@@ -166,16 +175,16 @@ function GuildDropdown({
         </div>
       )}
 
-      <div className="px-3 py-2.5">
+      <div className="border-t-[1px] border-ink/10 hover:bg-paper2">
         <button
           type="button"
           onClick={() => {
             onClose();
             onOpenAddServer();
           }}
-          className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-[15px] font-extrabold tracking-[-0.01em] text-ink"
         >
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-chip border-[1.5px] border-ink bg-paper2 text-[16px] shrink-0">
             +
           </span>
           Add a server
@@ -185,10 +194,13 @@ function GuildDropdown({
   );
 }
 
-function GuildIcon({ guild }: { guild: Guild }) {
+function GuildIcon({ guild, active = false }: { guild: Guild; active?: boolean }) {
   return (
     <span
-      className="inline-flex items-center justify-center w-8 h-8 rounded-chip border-[1.5px] border-ink text-[12px] font-extrabold shrink-0"
+      className={clsx(
+        "inline-flex items-center justify-center w-8 h-8 rounded-chip border-[1.5px] border-ink text-[12px] font-extrabold shrink-0",
+        active && "shadow-rest",
+      )}
       style={{ background: guild.color, color: "#0E100D" }}
     >
       {guild.initials}
