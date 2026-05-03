@@ -1,83 +1,82 @@
-# Restricted permissions install
+# Installing Peep Bot with limited permissions
 
-The default "Add to Discord" link grants Peep Bot every permission it might
-ever need across the entire server. That's the easy path. If you'd rather
-keep the bot scoped to a single category (for example, `#outings`) and grant
-nothing server-wide unless absolutely required, follow this guide.
+The "Add to Discord" button in the app gives Peep Bot every permission it
+might use, across your whole server. That's the simple option — pick it
+unless you have a reason not to.
 
-## What stays server-wide
+If you'd rather keep Peep Bot confined to one category (say, `#outings`)
+and out of every other channel in your server, this guide walks you
+through it.
 
-One permission cannot be scoped to a category, because the underlying Discord
-operation is server-level:
+## Manage Roles
 
-| Permission | Why it must be global |
+Peep Bot uses Manage Roles to create an `Accepted`, `Declined`, and
+`Maybe` role for each event, and to add and remove those roles when
+members click an RSVP button. It doesn't touch any role it didn't
+create.
+
+You can skip it. RSVPs still work — buttons still record who clicked
+and show the attendee list — you just don't get the per-event roles,
+so you can't `@Accepted` to ping everyone coming to an event.
+
+Discord doesn't let you scope this permission to a single category;
+it's granted at the server level or not at all.
+
+## Everything else: scope it to one category
+
+The remaining permissions can all be set as overrides on a single
+category. Channels Peep Bot creates inside that category inherit the
+overrides, so new event channels work without any extra setup.
+
+| Permission | What you lose if you skip it |
 |---|---|
-| Manage Roles | The bot creates per-event `Accepted` / `Declined` / `Maybe` roles and adds/removes them when members RSVP. Role creation is a server-level action; Discord has no per-channel override for it. |
+| View Channels | Required. Without it the bot can't see the category and nothing works. |
+| Manage Channels | Required. The bot creates and archives event channels. |
+| Send Messages | Required. The bot can't post the event itself or RSVP updates. |
+| Embed Links | The event details show up as plain text instead of a nicely formatted card. |
+| Pin Messages | The event card and album link aren't pinned to the top of the channel. Everything still works, you just have to scroll for them. |
+| Read Message History | Discord's "Peep Bot pinned a message" system notice stays in private event channels. Purely cosmetic. |
+| Use External Emojis | If you've configured custom RSVP emojis from another server, the buttons fall back to standard ones. No effect if you use the defaults. |
+| Mention Everyone | The bot can't ping your `@events` role when an event is announced. Workaround: in **Server Settings → Roles → events**, turn on "Allow anyone to @mention this role" — pings then work without this permission. |
 
-If you cannot grant Manage Roles, the RSVP buttons stop working — there is no
-graceful degradation. Don't install Peep Bot under those conditions.
+## Setup
 
-## What can be scoped to a category
+1. **Onboard the bot with no permissions.** Click "Add to Discord" as
+   usual, but on Discord's authorization screen deselect every
+   permission checkbox before clicking **Authorize**. Discord adds a
+   `Peep Bot` role to your server with no permissions granted.
 
-Everything else Peep Bot uses can be granted as a category-level permission
-override on the events category alone. Channels created by the bot under that
-category inherit the override, so new event channels work without further
-setup.
+2. **Server-wide: grant Manage Roles** *(optional — skip if you don't
+   want per-event roles)*. Server Settings → Roles → Peep Bot → turn
+   on **Manage Roles**. Leave every other server-wide toggle off.
 
-| Permission | What breaks if missing |
-|---|---|
-| View Channels | Bot can't see the category at all — nothing works. |
-| Manage Channels | Can't create, sort, archive, or delete event channels. |
-| Send Messages | Can't post the event embed, RSVP notifications, or the album link. |
-| Embed Links | Event embed renders as plain text. |
-| Pin Messages | Event embed, privacy notice, and album link aren't pinned. |
-| Read Message History | Discord's auto-generated "pinned a message" notification stays in private event channels. Cosmetic only. |
-| Use External Emojis | RSVP buttons fall back to the default unicode emojis if you've configured a custom emoji from another server. No effect if you use the unicode defaults. |
-| Mention @everyone | Bot can't ping the `@events` role on event creation, unless you mark that role mentionable. (Discord requires this permission to ping any non-mentionable role, despite the misleading name.) |
+3. **Check role order.** The `Peep Bot` role needs to sit *below* any
+   role you don't want it touching (admin/moderator) and *above* the
+   per-event roles it will create. Discord places new bot roles low by
+   default, which is correct — just don't drag it above your admin
+   role.
 
-## Setup steps
-
-1. **Install with the bot scope only.** Open the install URL with permissions
-   stripped:
-
-   ```
-   https://discord.com/api/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot&permissions=0
-   ```
-
-   Pick the target server and click Authorize. Discord will create a
-   `Peep Bot` role in the server with no permissions.
-
-2. **Grant Manage Roles to the `Peep Bot` role at the server level.**
-   Server Settings → Roles → Peep Bot → enable **Manage Roles**. Leave every
-   other server-wide toggle off.
-
-3. **Position the `Peep Bot` role correctly.** It must be above the per-event
-   roles it will create (it will be, automatically) and below any role you
-   don't want it touching (admin roles, moderator roles).
-
-4. **Grant per-category overrides on your events category** (e.g. `#outings`).
-   Right-click the category → Edit Category → Permissions → add the
-   `Peep Bot` role and enable, at minimum:
+4. **Category-wide: grant the rest.** Right-click your events category
+   → **Edit Category → Permissions** → add **Peep Bot** and enable:
 
    - View Channels
    - Manage Channels
    - Send Messages
    - Embed Links
-   - Pin Messages
-   - Read Message History *(skip if you don't mind the system pin notice)*
-   - Use External Emojis *(skip if you'll use unicode RSVP emojis)*
-   - Mention @everyone *(skip if you mark the `events` role mentionable yourself)*
+   - Pin Messages *(optional — skip if you don't care about pinning)*
+   - Read Message History *(optional — skip if the system pin notice
+     doesn't bother you)*
+   - Use External Emojis *(optional — skip if you use default RSVP
+     emojis)*
+   - Mention Everyone *(optional — skip if you marked `@events`
+     mentionable in step 2-ish)*
 
-5. **Verify.** Create a test event in the category and RSVP to it. If the
-   embed posts, the channel is created, and clicking RSVP toggles a role,
-   you're done.
+5. **Test it.** Create an event in the category, click an RSVP button.
+   If the event card shows up, the channel gets created, and the
+   button updates the attendee list, you're done.
 
-## What this does **not** restrict
+## What this doesn't change
 
-- The bot still receives `MessageReceivedEvent` for every channel it can see.
-  In this configuration that's only the events category, which is a feature,
-  not a bug.
-- The OAuth login flow on the web app is unaffected — login uses the
-  `identify` scope and doesn't require any bot permissions.
-- Per-guild feature flags (Immich, Rewind, Google autocomplete) are still
-  controlled separately via the bot-admin panel, not by this permission set.
+- **Login still works the same.** Signing into the web app uses your
+  Discord account info and doesn't depend on any of these bot
+  permissions.
