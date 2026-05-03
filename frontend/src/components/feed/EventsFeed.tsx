@@ -1,23 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
 import { DayMarker } from "@/components/ui/DayMarker";
+import { AddServerModal } from "@/components/nav/AddServerModal";
 import { PeepoSleep } from "@/components/Peepo";
 import { monthKey, monthLabel } from "@/lib/format";
-import { useEvents, useGuilds, useInstallUrl } from "@/lib/hooks";
+import { useEvents, useGuilds } from "@/lib/hooks";
 import { FeedCard } from "./FeedCard";
 import { EventDto } from "@/lib/types";
 
 export function EventsFeed() {
   const { data: guilds, isLoading: guildsLoading } = useGuilds();
   const { data, error, isLoading } = useEvents();
-  const { data: installUrlData } = useInstallUrl();
+  const [addOpen, setAddOpen] = useState(false);
   const events = data?.content ?? [];
   const count = events.length;
 
   if (!guildsLoading && guilds && guilds.length === 0) {
-    const installUrl = installUrlData?.url ?? "/login";
     return (
       <div className="mx-auto max-w-[640px] px-4 py-16 text-center">
         <h1 className="text-[28px] font-extrabold tracking-[-0.03em] mb-3">
@@ -27,9 +28,14 @@ export function EventsFeed() {
           You&apos;re logged in, but Peep Bot isn&apos;t in any of your Discord servers yet.
           Add it to start managing events.
         </p>
-        <Link href={installUrl} className="inline-flex items-center gap-2 px-5 py-3 rounded-chip border-[1.5px] border-ink shadow-rest bg-paper2 font-semibold">
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-chip border-[1.5px] border-ink shadow-rest bg-paper2 font-semibold hover:bg-paper"
+        >
           Add to Discord
-        </Link>
+        </button>
+        <AddServerModal open={addOpen} onClose={() => setAddOpen(false)} />
       </div>
     );
   }
