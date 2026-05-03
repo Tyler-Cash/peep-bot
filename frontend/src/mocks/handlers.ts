@@ -87,7 +87,7 @@ export const handlers = [
 
   http.get(API("/install-url"), () =>
     HttpResponse.json({
-      url: "https://discord.com/api/oauth2/authorize?client_id=mock&permissions=268954640&scope=bot+applications.commands",
+      url: "https://discord.com/api/oauth2/authorize?client_id=mock&permissions=2251800082631696&scope=bot+applications.commands",
     }),
   ),
 

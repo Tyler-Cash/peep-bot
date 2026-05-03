@@ -270,9 +270,9 @@ public class DiscordService {
                                 + "Please keep all discussion in the main event channel. Do not chat here.")
                 .complete();
         alert.pin().complete();
-        channel.getHistory().retrievePast(5).complete().stream()
-                .filter(m -> m.getType() == net.dv8tion.jda.api.entities.MessageType.CHANNEL_PINNED_ADD)
-                .forEach(m -> m.delete().queue());
+        // Note: the auto-generated "BotName pinned a message" system notification
+        // remains visible. Hiding it would require MANAGE_MESSAGES (deleting
+        // others' messages); we run with PIN_MESSAGES only.
     }
 
     @Observed(name = "discord.delete-private-channel")

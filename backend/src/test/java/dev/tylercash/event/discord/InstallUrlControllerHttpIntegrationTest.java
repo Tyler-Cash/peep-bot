@@ -22,7 +22,8 @@ class InstallUrlControllerHttpIntegrationTest extends AbstractHttpIntegrationTes
     void urlContainsRequiredPermissions() throws Exception {
         mockMvc.perform(get("/install-url"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.containsString("permissions=268954640")))
+                .andExpect(
+                        jsonPath("$.url").value(org.hamcrest.Matchers.containsString("permissions=2251800082631696")))
                 .andExpect(jsonPath("$.url")
                         .value(org.hamcrest.Matchers.containsString("scope=bot+applications.commands")));
     }

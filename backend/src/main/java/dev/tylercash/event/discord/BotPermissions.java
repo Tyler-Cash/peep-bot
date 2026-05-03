@@ -17,7 +17,7 @@ public final class BotPermissions {
     private static final long SEND_MESSAGES = 0x0000_0800L; // event message + RSVP/cancel notifications
     private static final long EMBED_LINKS = 0x0000_4000L; // event embed body
     private static final long ATTACH_FILES = 0x0000_8000L; // contract chart PNGs
-    private static final long MANAGE_MESSAGES = 0x0000_2000L; // pin event message
+    private static final long PIN_MESSAGES = 0x0008_0000_0000_0000L; // bit 51 — Discord 2025+; pin event messages
     private static final long READ_MESSAGE_HISTORY = 0x0001_0000L; // scanning existing channels for sort
     private static final long USE_EXTERNAL_EMOJIS = 0x0004_0000L; // custom guild emoji in buttons
     private static final long MENTION_EVERYONE = 0x0002_0000L; // ping the @events role
@@ -28,7 +28,7 @@ public final class BotPermissions {
             | SEND_MESSAGES
             | EMBED_LINKS
             | ATTACH_FILES
-            | MANAGE_MESSAGES
+            | PIN_MESSAGES
             | READ_MESSAGE_HISTORY
             | USE_EXTERNAL_EMOJIS
             | MENTION_EVERYONE;
