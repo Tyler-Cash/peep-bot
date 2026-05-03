@@ -50,6 +50,11 @@ public class ServiceConfiguration {
     }
 
     @Bean
+    public RestClient placesRestClient() {
+        return RestClient.builder().baseUrl("https://places.googleapis.com").build();
+    }
+
+    @Bean
     public RestClient immichRestClient(ImmichConfiguration immichConfiguration) {
         return RestClient.builder()
                 .baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
