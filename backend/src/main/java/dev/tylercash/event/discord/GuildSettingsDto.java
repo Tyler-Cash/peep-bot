@@ -10,9 +10,11 @@ public record GuildSettingsDto(
         String separatorChannel,
         String emojiAccepted,
         String emojiDeclined,
-        String emojiMaybe) {
+        String emojiMaybe,
+        Integer eventCreateRateLimitPerHour,
+        int defaultEventCreateRateLimitPerHour) {
 
-    public static GuildSettingsDto from(Guild row) {
+    public static GuildSettingsDto from(Guild row, int defaultEventCreateRateLimitPerHour) {
         return new GuildSettingsDto(
                 row.getPrimaryLocationPlaceId(),
                 row.getPrimaryLocationName(),
@@ -23,6 +25,8 @@ public record GuildSettingsDto(
                 row.getSeparatorChannel(),
                 row.getEmojiAccepted(),
                 row.getEmojiDeclined(),
-                row.getEmojiMaybe());
+                row.getEmojiMaybe(),
+                row.getEventCreateRateLimitPerHour(),
+                defaultEventCreateRateLimitPerHour);
     }
 }

@@ -10,4 +10,5 @@ public record GuildSettingsRequest(
         String separatorChannel,
         String emojiAccepted,
         String emojiDeclined,
-        String emojiMaybe) {}
+        String emojiMaybe,
+        Integer eventCreateRateLimitPerHour) {}
