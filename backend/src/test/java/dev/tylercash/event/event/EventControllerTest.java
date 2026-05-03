@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -42,6 +43,12 @@ class EventControllerTest {
     private static final String USERNAME = "testuser";
     private static final String DISPLAY_NAME = "Test Nickname";
 
+    private static EventCreateRateLimiter allowingCreateLimiter() {
+        EventCreateRateLimiter limiter = mock(EventCreateRateLimiter.class);
+        lenient().when(limiter.tryAcquire(anyLong())).thenReturn(EventCreateRateLimiter.AcquireResult.allowed());
+        return limiter;
+    }
+
     private EventControllerTestContext setupContext() {
         EventService eventService = mock(EventService.class);
         DiscordService discordService = mock(DiscordService.class);
@@ -63,7 +70,12 @@ class EventControllerTest {
         stubCreateEventStampsId(eventService);
 
         EventController controller = new EventController(
-                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter());
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -97,6 +109,34 @@ class EventControllerTest {
         dto.setLocation("");
         dto.setGuildId(GUILD_ID_STR);
         return dto;
+    }
+
+    @Test
+    void createEvent_returns429WhenGuildRateLimitExceeded() {
+        EventService eventService = mock(EventService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
+        OAuth2User principal = mock(OAuth2User.class);
+        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+
+        EventCreateRateLimiter limiter = mock(EventCreateRateLimiter.class);
+        when(limiter.tryAcquire(GUILD_ID)).thenReturn(EventCreateRateLimiter.AcquireResult.denied(42));
+
+        EventController controller = new EventController(
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                limiter);
+
+        assertThatThrownBy(() -> controller.createEvent(buildEventDto(), principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("429")
+                .hasMessageContaining("42");
+        verify(eventService, never()).createEvent(any());
     }
 
     @Test
@@ -213,7 +253,12 @@ class EventControllerTest {
         stubCreateEventStampsId(eventService);
 
         EventController controller = new EventController(
-                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter());
         EventDto eventDto = buildEventDto();
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
@@ -235,7 +280,12 @@ class EventControllerTest {
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
 
         EventController controller = new EventController(
-                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter());
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -340,7 +390,12 @@ class EventControllerTest {
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
 
         EventController controller = new EventController(
-                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter());
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -424,7 +479,12 @@ class EventControllerTest {
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
 
         EventController controller = new EventController(
-                eventService, discordService, attendanceService, discordUserCacheService, guildMembershipService);
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter());
         return new EventControllerTestContext(
                 controller,
                 eventService,

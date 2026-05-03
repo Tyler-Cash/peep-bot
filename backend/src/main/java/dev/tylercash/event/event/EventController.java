@@ -41,6 +41,7 @@ public class EventController {
     private AttendanceService attendanceService;
     private DiscordUserCacheService discordUserCacheService;
     private GuildMembershipService guildMembershipService;
+    private EventCreateRateLimiter eventCreateRateLimiter;
 
     @Operation(summary = "Create a new event", description = "Creates an event and its associated Discord channel")
     @ApiResponses({
@@ -55,6 +56,13 @@ public class EventController {
         long guildId = Long.parseLong(event.getGuildId());
         log.info("User {} creating event '{}' in guild {}", discordId, event.getName(), guildId);
         guildMembershipService.assertMember(discordId, guildId);
+        EventCreateRateLimiter.AcquireResult rate = eventCreateRateLimiter.tryAcquire(guildId);
+        if (!rate.ok()) {
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Event creation rate limit exceeded for this server. Retry in " + rate.retryAfterSeconds()
+                            + " seconds.");
+        }
         Member member = discordService.getMemberFromServer(guildId, Long.parseLong(discordId));
         String displayName = DiscordUtil.getUserDisplayName(member);
 
