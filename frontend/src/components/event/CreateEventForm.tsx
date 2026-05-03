@@ -10,6 +10,10 @@ import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
 import { dateToLocalInput } from "@/lib/format";
 import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
+// EventDto field names (camelCase from backend) that map to a visible input.
+// Anything not listed falls through to the global error banner.
+const FIELD_INPUTS = new Set(["name", "description", "location", "capacity"]);
+
 export function CreateEventForm() {
   const router = useRouter();
   const guild = useActiveGuild();
@@ -23,7 +27,8 @@ export function CreateEventForm() {
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const locationBias =
     guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
@@ -34,7 +39,8 @@ export function CreateEventForm() {
     e.preventDefault();
     if (!guild) return;
     setSubmitting(true);
-    setError(null);
+    setGlobalError(null);
+    setFieldErrors({});
     try {
       const created = await createEvent(guild.id, {
         name,
@@ -48,11 +54,13 @@ export function CreateEventForm() {
     } catch (e) {
       if (e instanceof UnauthorizedError) return;
       if (e instanceof BackendUnreachable) {
-        setError("can't reach the server — check your connection and try again");
+        setGlobalError("can't reach the server — check your connection and try again");
       } else if (e instanceof ApiError) {
-        setError(messageForApiError(e));
+        const { fieldErrors: fe, globalError: ge } = splitApiError(e);
+        setFieldErrors(fe);
+        setGlobalError(ge);
       } else {
-        setError("something went wrong posting this event");
+        setGlobalError("something went wrong posting this event");
       }
     } finally {
       setSubmitting(false);
@@ -72,7 +80,7 @@ export function CreateEventForm() {
           plan something cool with friends in <b className="font-extrabold">{guild?.name ?? "your server"}</b>.
         </p>
 
-        <Field label="event name">
+        <Field label="event name" error={fieldErrors.name}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -92,7 +100,7 @@ export function CreateEventForm() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-3">
-          <Field label="where">
+          <Field label="where" error={fieldErrors.location}>
             <LocationAutocomplete
               value={location}
               onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
@@ -102,12 +110,12 @@ export function CreateEventForm() {
               locationBias={locationBias}
             />
           </Field>
-          <Field label="cap">
+          <Field label="cap" error={fieldErrors.capacity}>
             <Stepper value={capacity} onChange={setCapacity} />
           </Field>
         </div>
 
-        <Field label="description">
+        <Field label="description" error={fieldErrors.description}>
           <textarea
             value={info}
             onChange={(e) => setInfo(e.target.value)}
@@ -117,12 +125,12 @@ export function CreateEventForm() {
           />
         </Field>
 
-        {error && (
+        {globalError && (
           <div
             role="alert"
             className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
           >
-            {error}
+            {globalError}
           </div>
         )}
 
@@ -136,26 +144,42 @@ export function CreateEventForm() {
   );
 }
 
-function messageForApiError(e: ApiError): string {
+function splitApiError(e: ApiError): {
+  fieldErrors: Record<string, string>;
+  globalError: string | null;
+} {
   if (e.status === 429) {
-    return "event creation is rate-limited for this server — please wait a moment and try again";
+    return {
+      fieldErrors: {},
+      globalError:
+        "event creation is rate-limited for this server — please wait a moment and try again",
+    };
   }
   if (e.status === 400) {
     const body = e.body as { fieldErrors?: Array<Record<string, unknown>> } | null;
-    const fields = body?.fieldErrors ?? [];
-    if (fields.length > 0) {
-      const lines = fields
-        .map((f) => {
-          const field = (f.field ?? f.path) as string | undefined;
-          const msg = (f.defaultMessage ?? f.message) as string | undefined;
-          if (field && msg) return `${field}: ${msg}`;
-          return msg ?? field ?? null;
-        })
-        .filter((s): s is string => Boolean(s));
-      if (lines.length > 0) return lines.join("; ");
+    const raw = body?.fieldErrors ?? [];
+    const mapped: Record<string, string> = {};
+    const leftover: string[] = [];
+    for (const f of raw) {
+      const field = (f.field ?? f.path) as string | undefined;
+      const msg = (f.defaultMessage ?? f.message) as string | undefined;
+      if (!msg) continue;
+      if (field && FIELD_INPUTS.has(field)) {
+        mapped[field] = msg;
+      } else if (field) {
+        leftover.push(`${field}: ${msg}`);
+      } else {
+        leftover.push(msg);
+      }
+    }
+    if (Object.keys(mapped).length > 0 || leftover.length > 0) {
+      return {
+        fieldErrors: mapped,
+        globalError: leftover.length > 0 ? leftover.join("; ") : null,
+      };
     }
   }
-  return e.message;
+  return { fieldErrors: {}, globalError: e.message };
 }
 
 const inputCls =
@@ -167,9 +191,11 @@ const areaCls =
 function Field({
   label,
   children,
+  error,
 }: {
   label: string;
   children: React.ReactNode;
+  error?: string;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -177,6 +203,11 @@ function Field({
         {label}
       </span>
       {children}
+      {error && (
+        <span className="text-[12.5px] font-semibold text-rose-700 leading-[1.35]">
+          {error}
+        </span>
+      )}
     </label>
   );
 }
