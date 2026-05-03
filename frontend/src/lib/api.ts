@@ -1,9 +1,6 @@
-<<<<<<< HEAD
+import type { ZodType } from "zod";
 import { clearSwrCache } from "./swrCache";
 import { noteAuthFailure, noteAuthSuccess } from "./authLoopGuard";
-=======
-import type { ZodType } from "zod";
->>>>>>> b64e10c (feat(frontend): zod-validate API responses at apiFetch boundary)
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
