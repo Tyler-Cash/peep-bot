@@ -68,7 +68,15 @@ export function AddServerModal({ open, onClose }: { open: boolean; onClose: () =
 
         <div className="px-5 py-4">
           <p className="text-[14px] text-mute mb-4">
-            We&apos;ll open Discord in a popup. Here&apos;s what Peep Bot will be allowed to do, and why.
+            We&apos;ll open Discord in a popup. Here&apos;s what Peep Bot will be allowed to do, and why.{" "}
+            <a
+              href="https://github.com/Tyler-Cash/peep-bot/blob/main/docs/restricted-permissions.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-ink underline hover:no-underline"
+            >
+              Want to install with limited permissions?
+            </a>
           </p>
 
           {isLoading || !data ? (
