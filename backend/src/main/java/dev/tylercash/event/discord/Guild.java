@@ -65,6 +65,9 @@ public class Guild {
     @Column(name = "rewind_enabled", nullable = false)
     private boolean rewindEnabled;
 
+    @Column(name = "event_create_rate_limit_per_hour")
+    private Integer eventCreateRateLimitPerHour;
+
     public static Guild withDefaults(long guildId) {
         Guild g = new Guild();
         g.setGuildId(guildId);

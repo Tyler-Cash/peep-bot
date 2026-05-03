@@ -1053,6 +1053,17 @@ databaseChangeLog:
                   name: cover_image_place_id
                   type: text
 
+  - changeSet:
+      id: add event_create_rate_limit_per_hour to guild
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: event_create_rate_limit_per_hour
+                  type: int
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
