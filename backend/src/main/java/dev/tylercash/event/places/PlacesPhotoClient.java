@@ -33,7 +33,9 @@ public class PlacesPhotoClient {
                     .uri("/v1/places/{id}?fields=photos&key={key}", placeId, config.getApiKey())
                     .retrieve()
                     .body(JsonNode.class);
-            if (place == null || !place.hasNonNull("photos") || place.get("photos").isEmpty()) {
+            if (place == null
+                    || !place.hasNonNull("photos")
+                    || place.get("photos").isEmpty()) {
                 return Optional.empty();
             }
             String photoName = place.get("photos").get(0).get("name").asText();

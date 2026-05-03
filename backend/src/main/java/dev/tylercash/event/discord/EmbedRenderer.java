@@ -28,6 +28,7 @@ public class EmbedRenderer {
     private final String frontendUrl;
     private final String albumUrl;
     private final GuildEmojiResolver.ResolvedEmoji emoji;
+    private final String coverImageUrl;
 
     public EmbedBuilder getEmbedBuilder() {
         long epochSecond = event.getDateTime().toEpochSecond();
@@ -37,6 +38,10 @@ public class EmbedRenderer {
                 .setDescription(event.getDescription())
                 .addField("Time", timeMessage, false)
                 .setColor(Color.YELLOW);
+
+        if (coverImageUrl != null) {
+            embed.setImage(coverImageUrl);
+        }
 
         if (!event.getLocation().isBlank()) {
             String encodedLocation = URLEncoder.encode(event.getLocation(), StandardCharsets.UTF_8);

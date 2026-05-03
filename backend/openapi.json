@@ -1432,6 +1432,45 @@
         "tags" : [ "Events" ]
       }
     },
+    "/events/{id}/cover" : {
+      "get" : {
+        "operationId" : "getCover",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "event-cover-controller" ]
+      }
+    },
     "/gallery" : {
       "get" : {
         "description" : "Returns albums for events the user attended",

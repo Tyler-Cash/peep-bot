@@ -30,8 +30,9 @@ class PlacesPhotoClientTest {
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess(
                         "{\"photos\":[{\"name\":\"places/abc/photos/PHOTO_REF\"}]}", MediaType.APPLICATION_JSON));
-        server.expect(requestTo(
-                        "https://places.googleapis.com/v1/places/abc/photos/PHOTO_REF/media?maxHeightPx=720&key=fake-key"))
+        server.expect(
+                        requestTo(
+                                "https://places.googleapis.com/v1/places/abc/photos/PHOTO_REF/media?maxHeightPx=720&key=fake-key"))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess(new byte[] {1, 2, 3}, MediaType.IMAGE_JPEG));
 
@@ -76,8 +77,7 @@ class PlacesPhotoClientTest {
         PlacesConfiguration disabled = new PlacesConfiguration();
         disabled.setApiKey("");
 
-        PlacesPhotoClient client =
-                new PlacesPhotoClient(RestClient.builder().build(), disabled);
+        PlacesPhotoClient client = new PlacesPhotoClient(RestClient.builder().build(), disabled);
 
         assertThat(client.fetchPhoto("abc")).isEmpty();
     }

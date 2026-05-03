@@ -21,7 +21,11 @@ public class EmbedService {
         String albumUrl =
                 event.getImmichShareKey() != null ? immichService.getShareUrl(event.getImmichShareKey()) : null;
         GuildEmojiResolver.ResolvedEmoji emoji = guildEmojiResolver.forGuild(event.getServerId());
-        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl, emoji)
+        String coverImageUrl =
+                (event.getCoverImageBytes() != null && event.getCoverImageBytes().length > 0 && event.getId() != null)
+                        ? frontendConfiguration.getUrl() + "api/events/" + event.getId() + "/cover"
+                        : null;
+        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl, emoji, coverImageUrl)
                 .getEmbedBuilder()
                 .build());
     }

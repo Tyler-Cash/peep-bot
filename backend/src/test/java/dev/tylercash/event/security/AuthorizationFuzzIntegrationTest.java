@@ -107,7 +107,9 @@ class AuthorizationFuzzIntegrationTest {
             "GET /actuator/health",
             "GET /actuator/prometheus",
             // Bot install URL — public so the empty-state CTA works for anonymous users.
-            "GET /install-url");
+            "GET /install-url",
+            // Event cover image — fetched by Discord (no session) when rendering embed.
+            "GET /events/{id}/cover");
 
     @MockitoBean
     JDA jda;
