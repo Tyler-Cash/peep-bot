@@ -54,6 +54,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
+  // `next dev` compiles routes on first visit. Pre-warm them in globalSetup
+  // so the cold compile doesn't bleed into the first test's 30s budget on CI.
+  globalSetup: require.resolve("./e2e/globalSetup.ts"),
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
