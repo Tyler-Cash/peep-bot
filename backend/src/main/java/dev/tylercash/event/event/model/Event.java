@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
@@ -96,6 +97,19 @@ public class Event {
     // Resolved creator display name for rendering
     @Transient
     private String creatorDisplayName;
+
+    @Column(name = "cover_image_bytes")
+    @ToString.Exclude
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private byte[] coverImageBytes;
+
+    @Column(name = "cover_image_content_type")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private String coverImageContentType;
+
+    @Column(name = "cover_image_place_id")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private String coverImagePlaceId;
 
     public Event(
             long messageId,

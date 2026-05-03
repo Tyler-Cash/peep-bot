@@ -1036,6 +1036,23 @@ databaseChangeLog:
               - column:
                   name: avatar_content_type
 
+  - changeSet:
+      id: add cover image to event
+      author: tyler
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: cover_image_bytes
+                  type: bytea
+              - column:
+                  name: cover_image_content_type
+                  type: text
+              - column:
+                  name: cover_image_place_id
+                  type: text
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
