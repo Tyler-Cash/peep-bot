@@ -23,9 +23,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * Run explicitly with: ./gradlew e2eTest
  */
-@SpringBootTest(classes = PeepBotApplication.class, properties = "dev.tylercash.contract.guild-id=1")
+@SpringBootTest(classes = PeepBotApplication.class)
 @Testcontainers
-@ActiveProfiles("local")
+@ActiveProfiles({"local", "docker"})
 @Tag("e2e")
 class EventServiceE2ETest {
 
