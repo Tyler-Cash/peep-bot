@@ -90,7 +90,7 @@ class EventServiceTest {
     }
 
     @Test
-    void removeAttendee_whenCompleted_throwsForbidden() {
+    void removeAttendee_whenArchived_throwsForbidden() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         AttendanceService attendanceService = mock(AttendanceService.class);
@@ -98,19 +98,19 @@ class EventServiceTest {
         EventService service = createService(eventRepository, discordService, attendanceService, cacheService);
 
         Event event = buildEvent();
-        event.setState(EventState.POST_COMPLETED);
+        event.setState(EventState.ARCHIVED);
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
         assertThatThrownBy(() -> service.removeAttendee(id, "12345", null))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Attendance is locked");
+                .hasMessageContaining("archived");
 
         verifyNoInteractions(attendanceService);
     }
 
     @Test
-    void cancelEvent_throwsBadRequest_whenEventAlreadyCompleted() {
+    void cancelEvent_throwsBadRequest_whenEventArchived() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
         EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
@@ -125,13 +125,13 @@ class EventServiceTest {
                 mock(EventCategoryRepository.class));
 
         Event event = buildEvent();
-        event.setState(EventState.POST_COMPLETED);
+        event.setState(EventState.ARCHIVED);
         UUID id = UUID.randomUUID();
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
 
         assertThatThrownBy(() -> service.cancelEvent(id))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("already completed or cancelled");
+                .hasMessageContaining("archived");
 
         verifyNoInteractions(stateMachineService);
     }

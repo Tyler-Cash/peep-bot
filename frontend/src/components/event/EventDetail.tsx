@@ -96,7 +96,7 @@ export function EventDetail({ id }: { id: string }) {
           : null;
 
   const setStatus = async (status: RsvpStatus) => {
-    if (!guild || !me || isCancelled || isPast) return;
+    if (!guild || !me || isCancelled || data.completed) return;
     mutate(
       (prev) => {
         if (!prev) return prev;
@@ -254,7 +254,7 @@ export function EventDetail({ id }: { id: string }) {
                 your rsvp
               </span>
               <p className="mt-1 text-[22px] sm:text-[26px] font-extrabold tracking-[-0.02em]">{rsvpHeadline}</p>
-              {!isCancelled && !isPast && (
+              {!isCancelled && !data.completed && (
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <Chunky
                     variant={meStatus === "going" ? "leaf" : "paper"}
@@ -279,7 +279,7 @@ export function EventDetail({ id }: { id: string }) {
                   </Chunky>
                 </div>
               )}
-              {(isCancelled || isPast) && (
+              {(isCancelled || data.completed) && (
                 <p className="mt-2 text-[13px] text-mute">
                   {isCancelled ? "this event was cancelled" : "rsvps are closed"}
                 </p>

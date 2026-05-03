@@ -124,9 +124,8 @@ public class EventService {
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
     }
 
-    public boolean isRsvpClosed(Event event) {
-        return event.getState().ordinal() >= EventState.POST_COMPLETED.ordinal()
-                || ZonedDateTime.now(clock).isAfter(event.getDateTime());
+    public boolean isArchived(Event event) {
+        return event.getState().ordinal() >= EventState.ARCHIVED.ordinal();
     }
 
     @Caching(
@@ -139,8 +138,8 @@ public class EventService {
         MDC.put("eventId", id.toString());
         log.info("Cancelling event id={}", id);
         Event event = getEvent(id);
-        if (isCompleted(event)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is already completed or cancelled");
+        if (isArchived(event)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is archived");
         }
         boolean transitioned = stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL);
         if (!transitioned) {
@@ -159,8 +158,8 @@ public class EventService {
         MDC.put("eventId", id.toString());
         log.info("Removing attendee from event id={} snowflake={} name={}", id, snowflake, name);
         Event event = getEvent(id);
-        if (isCompleted(event)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance is locked for this event");
+        if (isArchived(event)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Event is archived");
         }
         attendanceService.removeAttendee(id, snowflake, name);
         populateAttendance(event);

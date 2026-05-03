@@ -67,7 +67,7 @@ public class ModalInteractionListener extends ListenerAdapter {
 
         Event event = eventRepository.findByChannelId(
                 modalInteractionEvent.getChannel().getIdLong());
-        if (event == null || eventServiceProvider.getObject().isRsvpClosed(event)) {
+        if (event == null || eventServiceProvider.getObject().isCompleted(event)) {
             modalInteractionEvent
                     .reply("Attendance is locked for this event.")
                     .setEphemeral(true)

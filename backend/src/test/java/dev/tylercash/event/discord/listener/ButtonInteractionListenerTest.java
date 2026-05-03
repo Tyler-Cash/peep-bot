@@ -87,7 +87,7 @@ class ButtonInteractionListenerTest {
         when(buttonInteractionEvent.getButton().getCustomId()).thenReturn(ACCEPTED);
         when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(eventRepository.findByMessageId(messageId)).thenReturn(event);
-        when(eventService.isRsvpClosed(event)).thenReturn(false);
+        when(eventService.isCompleted(event)).thenReturn(false);
         when(embedService.getMessage(event, fixedClock)).thenReturn(List.of(mock(MessageEmbed.class)));
         when(buttonInteractionEvent.editMessageEmbeds(embedService.getMessage(event, fixedClock)))
                 .thenReturn(mock(MessageEditCallbackAction.class));
@@ -150,7 +150,7 @@ class ButtonInteractionListenerTest {
         Event futureEvent = mock(Event.class);
         when(futureEvent.getId()).thenReturn(UUID.randomUUID());
         when(futureEvent.getDateTime()).thenReturn(ZonedDateTime.parse("2025-01-01T13:00:00Z"));
-        when(eventService.isRsvpClosed(futureEvent)).thenReturn(false);
+        when(eventService.isCompleted(futureEvent)).thenReturn(false);
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
         when(buttonInteractionEvent.getButton().getCustomId()).thenReturn(PLUS_ONE_ID);
         when(buttonInteractionEvent.replyModal(any())).thenReturn(modalCallbackAction);
