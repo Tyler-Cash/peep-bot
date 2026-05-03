@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import { z } from "zod";
 import { apiFetch, api } from "./api";
@@ -20,6 +21,22 @@ const fetcher = <T>(path: string) => apiFetch<T>(path);
 const guildListSchema = z.array(zGuildDto);
 
 const ACTIVE_GUILD_KEY = "peepbot.activeGuild";
+const ACTIVE_GUILD_EVENT = "peepbot:active-guild-changed";
+
+function subscribeActiveGuild(cb: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(ACTIVE_GUILD_EVENT, cb);
+  window.addEventListener("storage", cb);
+  return () => {
+    window.removeEventListener(ACTIVE_GUILD_EVENT, cb);
+    window.removeEventListener("storage", cb);
+  };
+}
+
+function getStoredActiveGuildId(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACTIVE_GUILD_KEY);
+}
 
 export function useCurrentUser() {
   return useSWR<UserInfo>("/auth/is-logged-in", (path) =>
@@ -41,13 +58,23 @@ export function getActiveGuildId(guilds: Guild[] | undefined): string | null {
 export function setActiveGuildId(id: string) {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(ACTIVE_GUILD_KEY, id);
+    window.dispatchEvent(new Event(ACTIVE_GUILD_EVENT));
   }
 }
 
 export function useActiveGuild(): Guild | null {
   const { data } = useGuilds();
-  const id = getActiveGuildId(data);
-  return data?.find((g) => g.id === id) ?? data?.[0] ?? null;
+  const stored = useSyncExternalStore(
+    subscribeActiveGuild,
+    getStoredActiveGuildId,
+    () => null,
+  );
+  if (!data || data.length === 0) return null;
+  if (stored) {
+    const match = data.find((g) => g.id === stored);
+    if (match) return match;
+  }
+  return data[0];
 }
 
 type EventsPage = { content: EventDto[]; totalElements: number };

@@ -12,6 +12,7 @@ import {
   galleryAlbums,
   guild,
   guildSettings,
+  secondGuild,
   rewindStats,
   setRsvp,
   store,
@@ -106,14 +107,15 @@ export const handlers = [
     }),
   ),
 
-  http.get(API("/guild"), requireAuth(() => HttpResponse.json([guild]))),
+  http.get(API("/guild"), requireAuth(() => HttpResponse.json([guild, secondGuild]))),
 
   http.get(
     API("/guild/[^/]+"),
     requireAuth(({ params }) => {
       const id = (params as Record<string, string>)["0"] ?? guild.id;
-      if (id !== guild.id) return new HttpResponse(null, { status: 404 });
-      return HttpResponse.json(guild);
+      if (id === guild.id) return HttpResponse.json(guild);
+      if (id === secondGuild.id) return HttpResponse.json(secondGuild);
+      return new HttpResponse(null, { status: 404 });
     }),
   ),
 

@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "@/lib/clsx";
-import { useActiveGuild, useCurrentUser, useGuilds } from "@/lib/hooks";
+import {
+  setActiveGuildId,
+  useActiveGuild,
+  useCurrentUser,
+  useGuilds,
+} from "@/lib/hooks";
 import type { Guild } from "@/lib/types";
 import { AddServerModal } from "./AddServerModal";
 
@@ -83,6 +88,7 @@ function GuildDropdown({
 }) {
   const { data: guilds } = useGuilds();
   const { data: user } = useCurrentUser();
+  const active = useActiveGuild();
   const router = useRouter();
 
   return (
@@ -96,32 +102,51 @@ function GuildDropdown({
         your servers
       </div>
 
-      {(guilds ?? []).map((g) => (
-        <div
-          key={g.id}
-          className="flex items-center gap-2.5 px-3 py-2.5 border-b-[1px] border-ink/10 last:border-b-0 hover:bg-paper2"
-        >
-          <GuildIcon guild={g} />
-          <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-extrabold tracking-[-0.01em] truncate">
-              {g.name}
-            </span>
-          </span>
-          {user?.ownedGuildIds?.includes(g.id) && (
+      {(guilds ?? []).map((g) => {
+        const isActive = active?.id === g.id;
+        return (
+          <div
+            key={g.id}
+            className="flex items-center border-b-[1px] border-ink/10 last:border-b-0 hover:bg-paper2"
+          >
             <button
               type="button"
-              title="Server settings"
               onClick={() => {
+                setActiveGuildId(g.id);
                 onClose();
-                router.push(`/guild/${g.id}/settings`);
               }}
-              className="text-mute hover:text-ink text-[16px] p-1 rounded-chip hover:bg-paper2 flex-shrink-0"
+              className="flex-1 min-w-0 flex items-center gap-2.5 px-3 py-2.5 text-left"
+              aria-pressed={isActive}
             >
-              ✏️
+              <GuildIcon guild={g} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-[15px] font-extrabold tracking-[-0.01em] truncate">
+                  {g.name}
+                </span>
+              </span>
+              {isActive && (
+                <span className="text-[12px] text-mute" aria-hidden>
+                  ✓
+                </span>
+              )}
             </button>
-          )}
-        </div>
-      ))}
+            {user?.ownedGuildIds?.includes(g.id) && (
+              <button
+                type="button"
+                title="Server settings"
+                aria-label={`Settings for ${g.name}`}
+                onClick={() => {
+                  onClose();
+                  router.push(`/guild/${g.id}/settings`);
+                }}
+                className="mr-2 inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[12px] text-mute opacity-70 hover:opacity-100 hover:text-ink hover:bg-paper flex-shrink-0"
+              >
+                ⚙
+              </button>
+            )}
+          </div>
+        );
+      })}
 
       {user?.admin && (
         <div className="px-3 py-2.5 border-t-[1px] border-ink/10">

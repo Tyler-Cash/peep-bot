@@ -107,6 +107,18 @@ export const guild = {
   primaryLocationLng: null as number | null,
 } as unknown as Guild;
 
+export const secondGuild = {
+  id: "mockguild-2",
+  name: "moonlight bowls",
+  initials: "MB",
+  iconUrl: null,
+  color: "#A2527F",
+  members: 12,
+  active: true,
+  primaryLocationLat: null as number | null,
+  primaryLocationLng: null as number | null,
+} as unknown as Guild;
+
 export const guildSettings = {
   primaryLocationPlaceId: null as string | null,
   primaryLocationName: null as string | null,
