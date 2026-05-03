@@ -58,6 +58,8 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const [emojiAccepted, setEmojiAccepted] = useState("✅");
   const [emojiDeclined, setEmojiDeclined] = useState("❌");
   const [emojiMaybe, setEmojiMaybe] = useState("❓");
+  const [rateLimit, setRateLimit] = useState<number | null>(null);
+  const [rateLimitDefault, setRateLimitDefault] = useState<number>(5);
   const initialOrganiserRole = useRef<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -74,6 +76,8 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       setEmojiAccepted(settings.emojiAccepted ?? "✅");
       setEmojiDeclined(settings.emojiDeclined ?? "❌");
       setEmojiMaybe(settings.emojiMaybe ?? "❓");
+      setRateLimit(settings.eventCreateRateLimitPerHour ?? null);
+      setRateLimitDefault(settings.defaultEventCreateRateLimitPerHour ?? 5);
       initialOrganiserRole.current = settings.organiserRole ?? "event-organiser";
       setInitialized(true);
     }
@@ -149,6 +153,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
         emojiAccepted,
         emojiDeclined,
         emojiMaybe,
+        eventCreateRateLimitPerHour: rateLimit,
       });
       router.push("/");
     } finally {
@@ -292,6 +297,43 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
               />
               <p className="text-[11.5px] text-mute font-semibold mt-1">
                 Used to bias venue search results towards your group&apos;s area.
+              </p>
+            </Field>
+
+            <Field label="event-create rate limit">
+              <label className="flex items-center gap-2 text-[14px] font-semibold">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 border-[1.5px] border-ink rounded-sm"
+                  checked={rateLimit === null}
+                  onChange={(e) =>
+                    setRateLimit(e.target.checked ? null : (rateLimit ?? rateLimitDefault))
+                  }
+                />
+                Use server default ({rateLimitDefault} / hour)
+              </label>
+              {rateLimit !== null && (
+                <div className="flex gap-2 flex-wrap mt-2">
+                  {[3, 5, 7, 10].map((n) => {
+                    const active = rateLimit === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setRateLimit(n)}
+                        className={
+                          "px-4 py-2 rounded-chip border-[1.5px] border-ink text-[14px] font-extrabold " +
+                          (active ? "bg-ink text-paper shadow-rest" : "bg-paper2 text-ink hover:bg-paper3")
+                        }
+                      >
+                        {n} / hour
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11.5px] text-mute font-semibold mt-1">
+                Caps how many events members of this server can create each hour.
               </p>
             </Field>
           </Slab>
