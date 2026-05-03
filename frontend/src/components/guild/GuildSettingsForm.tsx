@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
@@ -18,7 +18,19 @@ import {
   geocodePlace,
   newPlacesSessionToken,
 } from "@/lib/places";
-import { useMemo } from "react";
+
+type TabKey = "roles" | "emoji" | "defaults";
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "roles", label: "Roles & channels" },
+  { key: "emoji", label: "RSVP emoji" },
+  { key: "defaults", label: "Defaults & limits" },
+];
+
+function readTabFromHash(): TabKey {
+  if (typeof window === "undefined") return "roles";
+  const m = window.location.hash.match(/tab=(roles|emoji|defaults)/);
+  return (m?.[1] as TabKey) ?? "roles";
+}
 
 export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const router = useRouter();
@@ -27,6 +39,14 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const guild = guilds?.find((g) => g.id === guildId) ?? null;
   const { data: settings, isLoading, error } = useGuildSettings(guildId);
   const sessionToken = useMemo(newPlacesSessionToken, []);
+
+  const [activeTab, setActiveTab] = useState<TabKey>("roles");
+  useEffect(() => {
+    setActiveTab(readTabFromHash());
+    const onHash = () => setActiveTab(readTabFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const [primaryLocation, setPrimaryLocation] = useState("");
   const [primaryLocationPlaceId, setPrimaryLocationPlaceId] = useState<string | null>(null);
@@ -42,7 +62,6 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const [initialized, setInitialized] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Populate from loaded settings once
   useEffect(() => {
     if (settings && !initialized) {
       setPrimaryLocation(settings.primaryLocationName ?? "");
@@ -60,14 +79,12 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
     }
   }, [settings, initialized]);
 
-  // Redirect non-admins
   useEffect(() => {
     if (user && !user.ownedGuildIds?.includes(guildId)) router.push("/");
   }, [user, router, guildId]);
 
   const handleLocationChange = (value: string) => {
     setPrimaryLocation(value);
-    // Clear resolved coords when user edits the field manually
     setPrimaryLocationPlaceId(null);
     setPrimaryLocationLat(null);
     setPrimaryLocationLng(null);
@@ -144,8 +161,15 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
       : undefined;
 
+  const switchTab = (key: TabKey) => {
+    setActiveTab(key);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#tab=${key}`);
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-[820px] px-4 sm:px-5 py-6">
+    <div className="mx-auto max-w-[820px] px-4 sm:px-5 py-6 pb-28">
       <div className="flex items-center justify-between mb-5">
         <Link
           href="/"
@@ -169,87 +193,122 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
         </div>
       </header>
 
+      <nav
+        role="tablist"
+        className="flex gap-2 overflow-x-auto -mx-4 px-4 mb-4 sticky top-0 bg-paper z-10 py-2"
+      >
+        {TABS.map((t) => {
+          const active = t.key === activeTab;
+          return (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={active}
+              type="button"
+              onClick={() => switchTab(t.key)}
+              className={
+                "shrink-0 px-4 py-2 rounded-chip border-[1.5px] border-ink text-[14px] font-extrabold tracking-[-0.01em] " +
+                (active ? "bg-ink text-paper shadow-rest" : "bg-paper2 text-ink hover:bg-paper3")
+              }
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <Slab className="p-5 flex flex-col gap-4">
-          <Field label="primary location">
-            <LocationAutocomplete
-              value={primaryLocation}
-              onChange={handleLocationChange}
-              onPick={handleLocationPick}
-              placeholder="e.g. Melbourne, VIC"
-              locationBias={locationBias}
-            />
-            <p className="text-[11.5px] text-mute font-semibold mt-1">
-              Used to bias venue search results towards your group&apos;s area.
-            </p>
-          </Field>
-        </Slab>
+        {activeTab === "roles" && (
+          <Slab className="p-5 flex flex-col gap-4">
+            <Field label="events role">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={eventsRole}
+                onChange={(e) => setEventsRole(e.target.value)}
+              />
+              <p className="text-[11.5px] text-mute font-semibold mt-1">
+                Role pinged when new events are created.
+              </p>
+            </Field>
+            <Field label="event organiser role">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={organiserRole}
+                onChange={(e) => setOrganiserRole(e.target.value)}
+              />
+              <p className="text-[11.5px] text-mute font-semibold mt-1">
+                Members with this role can cancel events, recategorize, remove attendees, and create private channels.
+              </p>
+            </Field>
+            <Field label="separator channel">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={separatorChannel}
+                onChange={(e) => setSeparatorChannel(e.target.value)}
+                placeholder="(none)"
+              />
+            </Field>
+          </Slab>
+        )}
 
-        <Slab className="p-5 flex flex-col gap-4">
-          <Field label="events role">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={eventsRole}
-              onChange={(e) => setEventsRole(e.target.value)}
-            />
-            <p className="text-[11.5px] text-mute font-semibold mt-1">
-              Role pinged when new events are created.
-            </p>
-          </Field>
-          <Field label="event organiser role">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={organiserRole}
-              onChange={(e) => setOrganiserRole(e.target.value)}
-            />
-            <p className="text-[11.5px] text-mute font-semibold mt-1">
-              Members with this role can cancel events, recategorize, remove attendees, and create private channels.
-            </p>
-          </Field>
-          <Field label="separator channel">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={separatorChannel}
-              onChange={(e) => setSeparatorChannel(e.target.value)}
-              placeholder="(none)"
-            />
-          </Field>
-          <Field label="accepted emoji">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={emojiAccepted}
-              onChange={(e) => setEmojiAccepted(e.target.value)}
-            />
-            <p className="text-[11.5px] text-mute font-semibold mt-1">
-              Unicode emoji or the name of a custom emoji in this guild.
-            </p>
-          </Field>
-          <Field label="declined emoji">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={emojiDeclined}
-              onChange={(e) => setEmojiDeclined(e.target.value)}
-            />
-          </Field>
-          <Field label="maybe emoji">
-            <input
-              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-              value={emojiMaybe}
-              onChange={(e) => setEmojiMaybe(e.target.value)}
-            />
-          </Field>
-        </Slab>
+        {activeTab === "emoji" && (
+          <Slab className="p-5 flex flex-col gap-4">
+            <Field label="accepted emoji">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={emojiAccepted}
+                onChange={(e) => setEmojiAccepted(e.target.value)}
+              />
+              <p className="text-[11.5px] text-mute font-semibold mt-1">
+                Unicode emoji or the name of a custom emoji in this guild.
+              </p>
+            </Field>
+            <Field label="declined emoji">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={emojiDeclined}
+                onChange={(e) => setEmojiDeclined(e.target.value)}
+              />
+            </Field>
+            <Field label="maybe emoji">
+              <input
+                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+                value={emojiMaybe}
+                onChange={(e) => setEmojiMaybe(e.target.value)}
+              />
+            </Field>
+          </Slab>
+        )}
 
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
-          >
-            cancel
-          </Link>
-          <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
-            {submitting ? "saving…" : "save settings"}
-          </Chunky>
+        {activeTab === "defaults" && (
+          <Slab className="p-5 flex flex-col gap-4">
+            <Field label="primary location">
+              <LocationAutocomplete
+                value={primaryLocation}
+                onChange={handleLocationChange}
+                onPick={handleLocationPick}
+                placeholder="e.g. Melbourne, VIC"
+                locationBias={locationBias}
+              />
+              <p className="text-[11.5px] text-mute font-semibold mt-1">
+                Used to bias venue search results towards your group&apos;s area.
+              </p>
+            </Field>
+          </Slab>
+        )}
+
+        <div className="fixed bottom-0 left-0 right-0 border-t-[1.5px] border-ink bg-paper px-4 py-3 z-20">
+          <div className="mx-auto max-w-[820px] flex items-center justify-between">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-[16px] font-semibold text-mute hover:text-ink"
+            >
+              cancel
+            </Link>
+            <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
+              {submitting ? "saving…" : "save settings"}
+            </Chunky>
+          </div>
         </div>
       </form>
     </div>
