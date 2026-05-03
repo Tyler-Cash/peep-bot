@@ -1,5 +1,8 @@
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+export const preferredRegion = "syd1";
+
 export async function GET(req: Request) {
   const cookieStore = await cookies();
   const sessionKey = cookieStore.get("SESSION")?.value;

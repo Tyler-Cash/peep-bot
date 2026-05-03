@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const preferredRegion = "syd1";
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const placeId = url.searchParams.get("placeId");

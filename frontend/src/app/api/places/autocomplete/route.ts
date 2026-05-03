@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { checkPlacesRateLimit } from "@/lib/rateLimiter";
 
+export const runtime = "nodejs";
+export const preferredRegion = "syd1";
+
 type GoogleSuggestion = {
   placePrediction?: {
     placeId: string;

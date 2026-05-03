@@ -34,7 +34,10 @@ export async function checkPlacesRateLimit(
   sessionKey: string,
 ): Promise<RateLimitResult> {
   try {
-    const windowResult = await getWindowLimiter().limit(sessionKey);
+    const [windowResult, hourlyResult] = await Promise.all([
+      getWindowLimiter().limit(sessionKey),
+      getHourlyLimiter().limit(sessionKey),
+    ]);
     if (!windowResult.success) {
       return {
         allowed: false,
@@ -44,7 +47,6 @@ export async function checkPlacesRateLimit(
         ),
       };
     }
-    const hourlyResult = await getHourlyLimiter().limit(sessionKey);
     if (!hourlyResult.success) {
       return {
         allowed: false,
