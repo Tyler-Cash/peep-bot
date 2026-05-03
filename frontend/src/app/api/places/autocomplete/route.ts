@@ -15,11 +15,60 @@ type GoogleSuggestion = {
   };
 };
 
+type PlaceResult = { id: string; title: string; subtitle?: string };
+
+const FIELD_MASK = [
+  "suggestions.placePrediction.placeId",
+  "suggestions.placePrediction.structuredFormat",
+  "suggestions.placePrediction.text",
+].join(",");
+
+async function callGoogleAutocomplete(
+  apiKey: string,
+  q: string,
+  sessionToken: string,
+  lat: number | null,
+  lng: number | null,
+): Promise<PlaceResult[]> {
+  const body: Record<string, unknown> = { input: q, sessionToken };
+  if (lat !== null && lng !== null) {
+    body.locationBias = {
+      circle: {
+        center: { latitude: lat, longitude: lng },
+        radius: 50000.0,
+      },
+    };
+  }
+
+  const res = await fetch(
+    "https://places.googleapis.com/v1/places:autocomplete",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": FIELD_MASK,
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as { suggestions?: GoogleSuggestion[] };
+  return (data.suggestions ?? [])
+    .map((s) => s.placePrediction)
+    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    .map((p) => ({
+      id: p.placeId,
+      title: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+      subtitle: p.structuredFormat?.secondaryText?.text,
+    }));
+}
+
 export async function GET(req: Request) {
   const cookieStore = await cookies();
   const sessionKey = cookieStore.get("SESSION")?.value;
-  req.headers.get("x-forwarded-for")?.split(",")[0] ??
-  "anonymous";
   if (!sessionKey) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -45,47 +94,20 @@ export async function GET(req: Request) {
   const key = process.env.GOOGLE_MAPS_KEY;
   if (!key) return Response.json([]);
 
-  const body: Record<string, unknown> = { input: q, sessionToken };
+  let lat: number | null = null;
+  let lng: number | null = null;
   if (latParam && lngParam) {
-    const lat = parseFloat(latParam);
-    const lng = parseFloat(lngParam);
-    if (isFinite(lat) && isFinite(lng)) {
-      body.locationBias = {
-        circle: {
-          center: { latitude: lat, longitude: lng },
-          radius: 50000.0,
-        },
-      };
+    const parsedLat = parseFloat(latParam);
+    const parsedLng = parseFloat(lngParam);
+    if (isFinite(parsedLat) && isFinite(parsedLng)) {
+      lat = parsedLat;
+      lng = parsedLng;
     }
   }
 
   try {
-    const res = await fetch(
-      "https://places.googleapis.com/v1/places:autocomplete",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": key,
-        },
-        body: JSON.stringify(body),
-      },
-    );
-
-    if (!res.ok) return Response.json([]);
-
-    const data = (await res.json()) as { suggestions?: GoogleSuggestion[] };
-
-    return Response.json(
-      (data.suggestions ?? [])
-        .map((s) => s.placePrediction)
-        .filter((p): p is NonNullable<typeof p> => Boolean(p))
-        .map((p) => ({
-          id: p.placeId,
-          title: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
-          subtitle: p.structuredFormat?.secondaryText?.text,
-        })),
-    );
+    const results = await callGoogleAutocomplete(key, q, sessionToken, lat, lng);
+    return Response.json(results);
   } catch {
     return Response.json([]);
   }

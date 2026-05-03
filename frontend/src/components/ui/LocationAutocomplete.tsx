@@ -118,7 +118,7 @@ export function LocationAutocomplete({
           setLoading(false);
         }
       }, retryAfter * 1000);
-    }, 300);
+    }, 150);
 
     return () => {
       clearTimeout(t);

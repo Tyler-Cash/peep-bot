@@ -18,9 +18,11 @@
     "codegen:check": "npm run codegen && git diff --exit-code src/lib/api/generated"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/otel": "^2.1.2",
     "@vercel/speed-insights": "^2.0.0",
     "d3": "^7.9.0",
     "next": "^15.1.0",
