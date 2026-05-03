@@ -44,7 +44,8 @@ class EventServiceTest {
                 attendanceService,
                 discordUserCacheService,
                 mock(EmbeddingService.class),
-                mock(EventCategoryRepository.class));
+                mock(EventCategoryRepository.class),
+                mock(CoverImageService.class));
     }
 
     @Test
@@ -122,7 +123,8 @@ class EventServiceTest {
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
-                mock(EventCategoryRepository.class));
+                mock(EventCategoryRepository.class),
+                mock(CoverImageService.class));
 
         Event event = buildEvent();
         event.setState(EventState.ARCHIVED);
@@ -149,7 +151,8 @@ class EventServiceTest {
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
-                mock(EventCategoryRepository.class));
+                mock(EventCategoryRepository.class),
+                mock(CoverImageService.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -175,7 +178,8 @@ class EventServiceTest {
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
-                mock(EventCategoryRepository.class));
+                mock(EventCategoryRepository.class),
+                mock(CoverImageService.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -200,7 +204,8 @@ class EventServiceTest {
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 embeddingService,
-                mock(EventCategoryRepository.class));
+                mock(EventCategoryRepository.class),
+                mock(CoverImageService.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();

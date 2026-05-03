@@ -41,12 +41,14 @@ public class EventService {
     private final DiscordUserCacheService discordUserCacheService;
     private final EmbeddingService embeddingService;
     private final EventCategoryRepository eventCategoryRepository;
+    private final CoverImageService coverImageService;
 
     @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
     @Transactional
     public String createEvent(Event event) {
         log.info("Creating event '{}' by creator {}", event.getName(), event.getCreator());
+        coverImageService.refreshIfNeeded(event);
         eventRepository.save(event);
         MDC.put("eventId", event.getId().toString());
         try {
@@ -77,6 +79,7 @@ public class EventService {
     public Event updateEvent(Event event) {
         MDC.put("eventId", event.getId().toString());
         log.info("Updating event '{}' id={}", event.getName(), event.getId());
+        coverImageService.refreshIfNeeded(event);
         discordService.updateEventMessage(event);
         discordService.updateChannelName(event);
         eventRepository.save(event);
