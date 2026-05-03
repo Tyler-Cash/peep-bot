@@ -146,9 +146,11 @@ export type GuildDto = {
 };
 
 export type GuildSettingsDto = {
+    defaultEventCreateRateLimitPerHour?: number;
     emojiAccepted?: string;
     emojiDeclined?: string;
     emojiMaybe?: string;
+    eventCreateRateLimitPerHour?: number;
     eventsRole?: string;
     organiserRole?: string;
     primaryLocationLat?: number;
@@ -162,6 +164,7 @@ export type GuildSettingsRequest = {
     emojiAccepted?: string;
     emojiDeclined?: string;
     emojiMaybe?: string;
+    eventCreateRateLimitPerHour?: number;
     eventsRole?: string;
     organiserRole?: string;
     primaryLocationLat?: number;
@@ -713,6 +716,35 @@ export type RsvpEventResponses = {
 };
 
 export type RsvpEventResponse = RsvpEventResponses[keyof RsvpEventResponses];
+
+export type GetCoverData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}/cover';
+};
+
+export type GetCoverErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetCoverError = GetCoverErrors[keyof GetCoverErrors];
+
+export type GetCoverResponses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type GetCoverResponse = GetCoverResponses[keyof GetCoverResponses];
 
 export type GetGalleryData = {
     body?: never;

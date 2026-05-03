@@ -144,9 +144,11 @@ export const zGuildDto = z.object({
 });
 
 export const zGuildSettingsDto = z.object({
+    defaultEventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     emojiAccepted: z.string().nullable().optional(),
     emojiDeclined: z.string().nullable().optional(),
     emojiMaybe: z.string().nullable().optional(),
+    eventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     eventsRole: z.string().nullable().optional(),
     organiserRole: z.string().nullable().optional(),
     primaryLocationLat: z.number().nullable().optional(),
@@ -160,6 +162,7 @@ export const zGuildSettingsRequest = z.object({
     emojiAccepted: z.string().nullable().optional(),
     emojiDeclined: z.string().nullable().optional(),
     emojiMaybe: z.string().nullable().optional(),
+    eventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     eventsRole: z.string().nullable().optional(),
     organiserRole: z.string().nullable().optional(),
     primaryLocationLat: z.number().nullable().optional(),
@@ -359,6 +362,15 @@ export const zRsvpEventPath = z.object({
  * RSVP recorded
  */
 export const zRsvpEventResponse = zEventDetailDto;
+
+export const zGetCoverPath = z.object({
+    id: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetCoverResponse = z.string();
 
 export const zGetGalleryQuery = z.object({
     guildId: z.string()
