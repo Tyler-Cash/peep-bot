@@ -124,6 +124,11 @@ public class EventService {
                 || ZonedDateTime.now(clock).isAfter(event.getDateTime().plusHours(6));
     }
 
+    public boolean isRsvpClosed(Event event) {
+        return event.getState().ordinal() >= EventState.POST_COMPLETED.ordinal()
+                || ZonedDateTime.now(clock).isAfter(event.getDateTime());
+    }
+
     @Caching(
             evict = {
                 @CacheEvict(value = "activeEvents", allEntries = true),

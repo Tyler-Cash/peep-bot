@@ -198,6 +198,9 @@ public class EventController {
         log.info("User {} RSVPing to event id={} with status={}", discordId, id, request.status());
         Event event = eventService.getEvent(id);
         guildMembershipService.assertMember(discordId, event.getServerId());
+        if (eventService.isRsvpClosed(event)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "RSVPs are closed for this event");
+        }
 
         AttendanceStatus attendanceStatus =
                 switch (request.status()) {

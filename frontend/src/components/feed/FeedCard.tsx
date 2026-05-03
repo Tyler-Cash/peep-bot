@@ -22,6 +22,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const cat = categoryMeta(event.category);
   const tileTilt = seededTilt(`tile-${event.id}`, 1.6);
   const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2.5);
+  const isPast = new Date(event.dateTime) < new Date();
 
   const ds = detail ?? {
     accepted: [],
@@ -43,7 +44,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
           : null;
 
   const onPick = async (status: RsvpStatus) => {
-    if (!guild || !me) return;
+    if (!guild || !me || isPast) return;
     // optimistic
     mutate(
       (prev) => {
@@ -168,7 +169,7 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
                 {counts.going} going · {counts.maybe} maybe
               </span>
               <span className="flex-1" />
-              <ReactionRow counts={counts} active={active} onPick={onPick} tilt={rsvpTilt} />
+              {!isPast && <ReactionRow counts={counts} active={active} onPick={onPick} tilt={rsvpTilt} />}
             </div>
           </div>
         </div>

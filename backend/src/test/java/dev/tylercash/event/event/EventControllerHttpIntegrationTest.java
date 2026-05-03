@@ -255,6 +255,21 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                         jsonPath("$.declined[?(@.snowflake == '" + USER + "')]").exists());
     }
 
+    @Test
+    void member_rsvpAfterEventStart_returns403() throws Exception {
+        fixtures.registerMember(USER, GUILD, "Test User", "testuser");
+        fixtures.registerMember(OTHER_USER, GUILD, "Other User", "otheruser");
+        UUID eventId = fixtures.seedEvent(
+                GUILD, OTHER_USER, "Past Event", ZonedDateTime.now().minusHours(1));
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/event/{id}/rsvp", eventId)
+                        .with(authedAs(USER))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"going\"}"))
+                .andExpect(status().isForbidden());
+    }
+
     // ---------------------------------------------------------------------------
     // POST /event/{id}/cancel — admin only
     // ---------------------------------------------------------------------------

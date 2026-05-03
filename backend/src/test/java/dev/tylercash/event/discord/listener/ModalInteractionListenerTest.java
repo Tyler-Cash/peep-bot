@@ -117,7 +117,7 @@ class ModalInteractionListenerTest {
         event.setCreator("host");
         event.setDateTime(ZonedDateTime.parse("2026-06-01T18:00:00Z"));
         when(eventRepository.findByChannelId(CHANNEL_ID)).thenReturn(event);
-        when(eventService.isCompleted(event)).thenReturn(false);
+        when(eventService.isRsvpClosed(event)).thenReturn(false);
         when(embedService.getMessage(event, clock)).thenReturn(List.of(mock(MessageEmbed.class)));
         when(evt.editMessageEmbeds(embedService.getMessage(event, clock)))
                 .thenReturn(mock(MessageEditCallbackAction.class));
@@ -160,7 +160,7 @@ class ModalInteractionListenerTest {
         Event event = new Event();
         event.setId(UUID.randomUUID());
         when(eventRepository.findByChannelId(CHANNEL_ID)).thenReturn(event);
-        when(eventService.isCompleted(event)).thenReturn(true);
+        when(eventService.isRsvpClosed(event)).thenReturn(true);
 
         listener.onModalInteraction(evt);
 
@@ -182,6 +182,6 @@ class ModalInteractionListenerTest {
         verifyNoInteractions(discordUserCacheService);
         verifyNoInteractions(embedService);
         verify(eventRepository, never()).findByChannelId(anyLong());
-        verify(eventService, never()).isCompleted(any());
+        verify(eventService, never()).isRsvpClosed(any());
     }
 }

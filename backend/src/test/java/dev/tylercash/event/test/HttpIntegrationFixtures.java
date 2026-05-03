@@ -29,9 +29,13 @@ public class HttpIntegrationFixtures {
 
     /** Seed a PLANNED event in the given guild, returns its UUID. */
     public UUID seedEvent(long guildId, String creatorSnowflake, String name) {
+        return seedEvent(guildId, creatorSnowflake, name, ZonedDateTime.now().plusDays(1));
+    }
+
+    /** Seed a PLANNED event with an explicit start time. */
+    public UUID seedEvent(long guildId, String creatorSnowflake, String name, ZonedDateTime dateTime) {
         long id = messageIdCounter.incrementAndGet();
-        Event event = new Event(
-                id, guildId, id, name, creatorSnowflake, ZonedDateTime.now().plusDays(1), "test event description");
+        Event event = new Event(id, guildId, id, name, creatorSnowflake, dateTime, "test event description");
         event.setState(EventState.PLANNED);
         Event saved = eventRepository.save(event);
         attendanceService.recordAttendance(saved.getId(), creatorSnowflake, null, AttendanceStatus.ACCEPTED, null);

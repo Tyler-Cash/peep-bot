@@ -89,7 +89,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             return;
         }
         MDC.put("eventId", event.getId().toString());
-        if (eventServiceProvider.getObject().isCompleted(event)) {
+        if (eventServiceProvider.getObject().isRsvpClosed(event)) {
             buttonInteractionEvent
                     .reply("Attendance is locked for this event.")
                     .setEphemeral(true)
