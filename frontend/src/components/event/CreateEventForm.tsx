@@ -50,7 +50,7 @@ export function CreateEventForm() {
       if (e instanceof BackendUnreachable) {
         setError("can't reach the server — check your connection and try again");
       } else if (e instanceof ApiError) {
-        setError(e.message);
+        setError(messageForApiError(e));
       } else {
         setError("something went wrong posting this event");
       }
@@ -134,6 +134,28 @@ export function CreateEventForm() {
       </form>
     </div>
   );
+}
+
+function messageForApiError(e: ApiError): string {
+  if (e.status === 429) {
+    return "event creation is rate-limited for this server — please wait a moment and try again";
+  }
+  if (e.status === 400) {
+    const body = e.body as { fieldErrors?: Array<Record<string, unknown>> } | null;
+    const fields = body?.fieldErrors ?? [];
+    if (fields.length > 0) {
+      const lines = fields
+        .map((f) => {
+          const field = (f.field ?? f.path) as string | undefined;
+          const msg = (f.defaultMessage ?? f.message) as string | undefined;
+          if (field && msg) return `${field}: ${msg}`;
+          return msg ?? field ?? null;
+        })
+        .filter((s): s is string => Boolean(s));
+      if (lines.length > 0) return lines.join("; ");
+    }
+  }
+  return e.message;
 }
 
 const inputCls =
