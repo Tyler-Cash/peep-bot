@@ -81,9 +81,9 @@ class ResponseSerializationTest {
      */
     static List<Object> populatedControllerDtos() {
         List<Object> out = new ArrayList<>();
-        out.add(new UserInfoDto("alice", "Alice", "111", true, "/api/avatar/111"));
-        out.add(new GuildDto("123", "Guild", "G", "icon", "#fff", "channel", 5, 1.0, 2.0));
-        out.add(new GuildSettingsDto("place-id", "place-name", 1.0, 2.0));
+        out.add(new UserInfoDto("alice", "Alice", "111", List.of(), List.of(), false, "/api/avatar/111"));
+        out.add(new GuildDto("123", "Guild", "G", "icon", "#fff", 5, 1.0, 2.0));
+        out.add(new GuildSettingsDto("place-id", "place-name", 1.0, 2.0, null, null, null, null, null, null));
 
         Event event =
                 new Event(42L, 311L, 100L, "fuzz-event", "111", ZonedDateTime.parse("2099-01-01T00:00:00Z"), "desc");

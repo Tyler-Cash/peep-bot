@@ -5,6 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.tylercash.event.discord.Feature;
+import dev.tylercash.event.discord.FeatureFlagService;
 import dev.tylercash.event.discord.GuildMembershipService;
 import dev.tylercash.event.rewind.model.RewindStatsDto;
 import java.util.List;
@@ -19,7 +21,14 @@ class RewindControllerTest {
 
     private final RewindService rewindService = mock(RewindService.class);
     private final GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
-    private final RewindController controller = new RewindController(rewindService, guildMembershipService);
+    private final FeatureFlagService featureFlagService = mock(FeatureFlagService.class);
+    private final RewindController controller =
+            new RewindController(rewindService, guildMembershipService, featureFlagService);
+
+    {
+        // Default: rewind feature enabled for all tests unless overridden
+        when(featureFlagService.isEnabled(GUILD_ID, Feature.REWIND)).thenReturn(true);
+    }
 
     private OAuth2User principalWithSnowflake(String snowflake) {
         OAuth2User principal = mock(OAuth2User.class);

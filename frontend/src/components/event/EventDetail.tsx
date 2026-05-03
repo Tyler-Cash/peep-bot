@@ -125,7 +125,7 @@ export function EventDetail({ id }: { id: string }) {
     await submitRsvp(guild.id, data.id, status);
   };
 
-  const isAdmin = me?.admin ?? false;
+  const isAdmin = me?.organiserGuildIds?.includes(guild?.id ?? "") ?? false;
 
   const confirmRemove = async () => {
     if (!pendingRemove || !guild || !data) return;
@@ -179,7 +179,7 @@ export function EventDetail({ id }: { id: string }) {
           href="/"
           className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
         >
-          ← back to #{guild?.channel ?? "outings"}
+          ← back to events
         </Link>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-7">
@@ -339,7 +339,7 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-muteDk uppercase">
                 KEEP CHATTING IN
               </span>
-              <p className="mt-1 text-[24px] sm:text-[28px] font-extrabold tracking-[-0.02em] break-words"># {guild?.channel ?? "outings"}</p>
+              <p className="mt-1 text-[24px] sm:text-[28px] font-extrabold tracking-[-0.02em] break-words">{guild?.name ?? "events"}</p>
               <a
                 href={`https://discord.com/channels/${guild?.id ?? ""}/${data.channelId ?? ""}/${data.messageId ?? ""}`}
                 target="_blank"
@@ -352,7 +352,7 @@ export function EventDetail({ id }: { id: string }) {
               </a>
             </div>
 
-            {me?.admin && !isCancelled && (
+            {isAdmin && !isCancelled && (
               <div className="rounded-card border-[1.5px] border-ink bg-paper2 p-5 shadow-rest flex flex-col gap-2">
                 <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
                   admin

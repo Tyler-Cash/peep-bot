@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
@@ -23,6 +24,19 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
     @Autowired
     private dev.tylercash.event.db.repository.EventRepository eventRepository;
+
+    /** Insert a guild row with the given immich_enabled value. */
+    private void seedGuild(long guildId, boolean immichEnabled) {
+        jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                + " rewind_enabled)"
+                + " VALUES ("
+                + guildId
+                + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, "
+                + immichEnabled
+                + ", false, false)"
+                + " ON CONFLICT (guild_id) DO UPDATE SET immich_enabled = EXCLUDED.immich_enabled");
+    }
 
     // -----------------------------------------------------------------------
     // GET /gallery?guildId=N
@@ -46,8 +60,22 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     }
 
     @Test
+    void member_immichFeatureOff_returnsEmptyList() throws Exception {
+        fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        // Guild row exists but immich_enabled = false
+        seedGuild(GUILD_A, false);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/gallery")
+                        .param("guildId", String.valueOf(GUILD_A))
+                        .with(authedAs(VIEWER)))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().json("[]"));
+    }
+
+    @Test
     void member_listAlbums_returnsAlbums() throws Exception {
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        seedGuild(GUILD_A, true);
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Gallery Event");
 
         // Attach an Immich album ID to the event via the repository
@@ -71,6 +99,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     void member_listAlbums_immichOutage_returns502() throws Exception {
         // All events have album IDs but every Immich lookup fails → 502
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        seedGuild(GUILD_A, true);
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Gallery Event Outage");
 
         eventRepository.findById(eventId).ifPresent(event -> {
@@ -100,6 +129,12 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     @Test
     void member_thumbnail_returnsBytes() throws Exception {
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        // Seed event and record attendance so findGalleryEventByAlbumIdForUser returns a result
+        UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Thumbnail Event");
+        eventRepository.findById(eventId).ifPresent(event -> {
+            event.setImmichAlbumId(ALBUM_ID);
+            eventRepository.save(event);
+        });
 
         String assetId = "asset-thumb-1";
         ImmichAlbumResponse album = new ImmichAlbumResponse(ALBUM_ID, "Gallery Event", assetId, 3);
@@ -117,6 +152,22 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                         .with(authedAs(VIEWER)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("image/jpeg"));
+    }
+
+    @Test
+    void nonAttendee_thumbnail_returns404() throws Exception {
+        // OTHER is a member of GUILD_A but did NOT attend the event
+        fixtures.registerMember(OTHER, GUILD_A, "Other", "other");
+        fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
+        UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Non-Attendee Thumbnail Event");
+        eventRepository.findById(eventId).ifPresent(event -> {
+            event.setImmichAlbumId(ALBUM_ID);
+            eventRepository.save(event);
+        });
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/gallery/thumbnail/{albumId}", ALBUM_ID)
+                        .with(authedAs(OTHER)))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -2,6 +2,7 @@ package dev.tylercash.event.security;
 
 import dev.tylercash.event.security.dev.DevAutoLoginFilter;
 import dev.tylercash.event.security.oauth2.CustomOAuth2UserService;
+import dev.tylercash.event.security.oauth2.OAuth2LoginFailureHandler;
 import dev.tylercash.event.security.oauth2.RedirectToFrontendAfterAuth;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
@@ -26,6 +27,7 @@ import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessi
 public class WebSecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final RedirectToFrontendAfterAuth redirectToFrontendAfterAuth;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final JdbcHttpSessionConfiguration jdbcHttpSessionConfiguration;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RateLimitFilter rateLimitFilter;
@@ -53,6 +55,8 @@ public class WebSecurityConfig {
                         .permitAll()
                         .requestMatchers("/actuator/prometheus")
                         .permitAll()
+                        .requestMatchers("/install-url")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
                 .logout(logout -> logout.logoutUrl("/auth/logout")
@@ -67,7 +71,8 @@ public class WebSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(
                         oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                                .successHandler(redirectToFrontendAfterAuth));
+                                .successHandler(redirectToFrontendAfterAuth)
+                                .failureHandler(oAuth2LoginFailureHandler));
         if (devAutoLoginFilter != null) {
             http.addFilterBefore(devAutoLoginFilter, AnonymousAuthenticationFilter.class);
         }

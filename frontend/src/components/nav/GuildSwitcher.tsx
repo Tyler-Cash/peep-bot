@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import clsx from "@/lib/clsx";
 import { useActiveGuild, useCurrentUser, useGuilds } from "@/lib/hooks";
 import type { Guild } from "@/lib/types";
+import { AddServerModal } from "./AddServerModal";
 
 export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
   const guild = useActiveGuild();
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
           "transition-[box-shadow,transform] select-none",
           fullWidth && "w-full",
         )}
-        title={`${guild.name} · #${guild.channel}`}
+        title={guild.name}
       >
         <GuildIcon guild={guild} />
         <span className="flex flex-col leading-none min-w-0 flex-1 text-left">
@@ -53,23 +55,30 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
           >
             {guild.name}
           </span>
-          <span className="text-[13px] text-mute font-semibold mt-0.5 whitespace-nowrap">
-            ● #{guild.channel}
-          </span>
+
         </span>
         <span className="ml-1 text-[18px] text-mute">▾</span>
       </button>
 
-      {open && <GuildDropdown onClose={() => setOpen(false)} fullWidth={fullWidth} />}
+      {open && (
+        <GuildDropdown
+          onClose={() => setOpen(false)}
+          onOpenAddServer={() => setAddOpen(true)}
+          fullWidth={fullWidth}
+        />
+      )}
+      <AddServerModal open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }
 
 function GuildDropdown({
   onClose,
+  onOpenAddServer,
   fullWidth,
 }: {
   onClose: () => void;
+  onOpenAddServer: () => void;
   fullWidth?: boolean;
 }) {
   const { data: guilds } = useGuilds();
@@ -97,11 +106,8 @@ function GuildDropdown({
             <span className="block text-[15px] font-extrabold tracking-[-0.01em] truncate">
               {g.name}
             </span>
-            <span className="block text-[13px] text-mute font-semibold">
-              #{g.channel}
-            </span>
           </span>
-          {user?.admin && (
+          {user?.ownedGuildIds?.includes(g.id) && (
             <button
               type="button"
               title="Server settings"
@@ -117,13 +123,34 @@ function GuildDropdown({
         </div>
       ))}
 
+      {user?.admin && (
+        <div className="px-3 py-2.5 border-t-[1px] border-ink/10">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/admin");
+            }}
+            className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
+              ⚙
+            </span>
+            Admin
+          </button>
+        </div>
+      )}
+
       <div className="px-3 py-2.5">
         <button
           type="button"
-          disabled
-          className="w-full text-left text-[15px] font-semibold text-mute/50 cursor-not-allowed flex items-center gap-2"
+          onClick={() => {
+            onClose();
+            onOpenAddServer();
+          }}
+          className="w-full text-left text-[15px] font-semibold text-ink hover:text-mute flex items-center gap-2"
         >
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink/20 bg-paper2 text-[14px]">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-chip border-[1.5px] border-ink bg-paper2 text-[14px]">
             +
           </span>
           Add a server

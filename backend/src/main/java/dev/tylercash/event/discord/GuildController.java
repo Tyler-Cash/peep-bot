@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,18 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Guild", description = "Discord guild info")
 public class GuildController {
     private final JDA jda;
-    private final DiscordConfiguration discordConfiguration;
     private final GuildMembershipService guildMembershipService;
-    private final GuildSettingsRepository settingsRepository;
+    private final GuildRepository guildRepository;
 
     @GetMapping
     public List<GuildDto> getGuilds(@AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
         List<Long> userGuildIds = guildMembershipService.getGuildIdsForUser(snowflake);
-        if (userGuildIds.isEmpty()) {
-            Guild guild = jda.getGuildById(discordConfiguration.getGuildId());
-            return guild != null ? List.of(toDto(guild)) : List.of();
-        }
         return userGuildIds.stream()
                 .map(jda::getGuildById)
                 .filter(Objects::nonNull)
@@ -38,17 +32,16 @@ public class GuildController {
                 .toList();
     }
 
-    private GuildDto toDto(Guild guild) {
+    private GuildDto toDto(net.dv8tion.jda.api.entities.Guild guild) {
         String name = guild.getName();
-        GuildSettings settings =
-                settingsRepository.findById(Long.parseLong(guild.getId())).orElse(null);
+        dev.tylercash.event.discord.Guild settings =
+                guildRepository.findById(Long.parseLong(guild.getId())).orElse(null);
         return new GuildDto(
                 guild.getId(),
                 name,
                 deriveInitials(name),
                 guild.getIconUrl(),
                 deriveColor(guild.getId()),
-                discordConfiguration.getSeperatorChannel(),
                 guild.getMemberCount(),
                 settings != null ? settings.getPrimaryLocationLat() : null,
                 settings != null ? settings.getPrimaryLocationLng() : null);

@@ -876,6 +876,110 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: rename guild_settings to guild and add config columns
+      author: tyler
+      comment: >
+        Per-guild Discord config moves from application.yaml into the DB so the
+        bot can serve multiple guilds. Column defaults match the previous yaml
+        defaults so existing rows pick them up without a backfill.
+      changes:
+        - renameTable:
+            oldTableName: guild_settings
+            newTableName: guild
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: events_role
+                  type: varchar(100)
+                  defaultValue: "events"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: admin_role
+                  type: varchar(100)
+                  defaultValue: "event-admin"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: separator_channel
+                  type: varchar(100)
+              - column:
+                  name: emoji_accepted
+                  type: varchar(200)
+                  defaultValue: "✅"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: emoji_declined
+                  type: varchar(200)
+                  defaultValue: "❌"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: emoji_maybe
+                  type: varchar(200)
+                  defaultValue: "❓"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: joined_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: rename admin_role to organiser_role
+      author: tyler
+      comment: >
+        Renames the column to match the new "event organiser" terminology.
+        Existing rows keep their stored value (e.g. "event-admin") — auto-migration
+        is intentionally skipped so servers do not lose their existing Discord role
+        assignment. New rows default to "event-organiser" via Guild.withDefaults().
+      changes:
+        - renameColumn:
+            tableName: guild
+            oldColumnName: admin_role
+            newColumnName: organiser_role
+            columnDataType: varchar(100)
+
+  - changeSet:
+      id: add per-guild feature flags
+      author: tyler
+      comment: >
+        Per-guild opt-in for cost/infra-bearing integrations. Default false so a
+        newly-onboarded guild gets nothing until a bot admin enables it.
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: immich_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: google_autocomplete_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rewind_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

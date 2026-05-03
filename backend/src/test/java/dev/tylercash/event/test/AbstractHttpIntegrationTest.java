@@ -3,6 +3,7 @@ package dev.tylercash.event.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.AvatarDownloadService;
+import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.immich.ImmichService;
@@ -46,6 +47,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.frontend.hostname=test.local",
+            "dev.tylercash.contract.guild-id=1",
             // Existing yaml has a single-guild yaml field; keep zero so nothing
             // accidentally targets a real guild from a test.
             "dev.tylercash.rate-limit.read-capacity=10000",
@@ -79,6 +82,9 @@ public abstract class AbstractHttpIntegrationTest {
     protected DiscordService discordService;
 
     @MockitoBean
+    protected DiscordAuthService discordAuthService;
+
+    @MockitoBean
     protected DiscordInitializationService discordInitializationService;
 
     @MockitoBean
@@ -110,7 +116,7 @@ public abstract class AbstractHttpIntegrationTest {
         jdbc.execute("DELETE FROM event");
         jdbc.execute("DELETE FROM discord_user_guild");
         jdbc.execute("DELETE FROM discord_user_cache");
-        jdbc.execute("DELETE FROM guild_settings");
+        jdbc.execute("DELETE FROM guild");
     }
 
     /** Authenticate the request as the given Discord snowflake. */

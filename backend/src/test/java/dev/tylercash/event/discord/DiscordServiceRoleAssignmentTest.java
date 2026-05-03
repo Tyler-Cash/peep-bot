@@ -18,9 +18,11 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,10 +42,12 @@ class DiscordServiceRoleAssignmentTest {
     @BeforeEach
     void setUp() {
         config = new DiscordConfiguration();
-        config.setGuildId(GUILD_ID);
         jda = mock(JDA.class);
         guild = mock(Guild.class);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
+        SelfMember selfMember = mock(SelfMember.class);
+        when(guild.getSelfMember()).thenReturn(selfMember);
+        when(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true);
         roleService = mock(DiscordRoleService.class);
 
         Clock clock = Clock.fixed(ZonedDateTime.parse("2026-05-01T12:00:00Z").toInstant(), ZoneId.of("UTC"));
@@ -58,7 +62,9 @@ class DiscordServiceRoleAssignmentTest {
                 mock(DiscordChannelService.class),
                 mock(DiscordMessageService.class),
                 roleService,
-                mock(DiscordAuthService.class));
+                mock(DiscordAuthService.class),
+                mock(GuildEmojiResolver.class),
+                mock(GuildRepository.class));
     }
 
     private Event event(String name) {

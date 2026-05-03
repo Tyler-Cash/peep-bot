@@ -55,6 +55,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.frontend.hostname=test.local",
+            "dev.tylercash.contract.guild-id=1",
             // Disable Immich so PrepareAlbum guard returns false by default;
             // individual tests that exercise PrepareAlbum re-enable it via the
             // ImmichService mock stubs.

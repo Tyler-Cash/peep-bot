@@ -48,7 +48,6 @@ class DiscordServiceChannelOpsTest {
     @BeforeEach
     void setUp() {
         config = new DiscordConfiguration();
-        config.setGuildId(GUILD_ID);
         embedService = mock(EmbedService.class);
         eventRepository = mock(EventRepository.class);
         featureToggles = mock(FeatureTogglesConfiguration.class);
@@ -71,7 +70,9 @@ class DiscordServiceChannelOpsTest {
                 channelService,
                 messageService,
                 roleService,
-                authService);
+                authService,
+                mock(GuildEmojiResolver.class),
+                mock(GuildRepository.class));
     }
 
     private Event eventAt(ZonedDateTime dt, String name) {

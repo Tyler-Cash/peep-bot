@@ -31,7 +31,7 @@ public class DiscordUserCacheService {
     private final AttendanceRepository attendanceRepository;
     private final EventRepository eventRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
-    private final DiscordConfiguration discordConfiguration;
+    private final GuildRepository guildRepository;
     private final AvatarDownloadService avatarDownloadService;
 
     public DiscordUserCacheService(
@@ -39,13 +39,13 @@ public class DiscordUserCacheService {
             AttendanceRepository attendanceRepository,
             EventRepository eventRepository,
             ObjectProvider<DiscordService> discordServiceProvider,
-            DiscordConfiguration discordConfiguration,
+            GuildRepository guildRepository,
             AvatarDownloadService avatarDownloadService) {
         this.cacheRepository = cacheRepository;
         this.attendanceRepository = attendanceRepository;
         this.eventRepository = eventRepository;
         this.discordServiceProvider = discordServiceProvider;
-        this.discordConfiguration = discordConfiguration;
+        this.guildRepository = guildRepository;
         this.avatarDownloadService = avatarDownloadService;
     }
 
@@ -152,19 +152,29 @@ public class DiscordUserCacheService {
                 .limit(REFRESH_BATCH_SIZE)
                 .toList();
 
+        List<Long> activeGuilds = guildRepository.findAllByActiveTrue().stream()
+                .map(Guild::getGuildId)
+                .toList();
+
         for (String snowflake : toRefresh) {
-            try {
-                Member member = discordServiceProvider
-                        .getObject()
-                        .getMemberFromServer(discordConfiguration.getGuildId(), Long.parseLong(snowflake));
-                if (member != null) {
-                    String displayName = DiscordUtil.getUserDisplayName(member);
-                    String username = member.getUser().getName();
-                    String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                    upsertUser(snowflake, displayName, username, avatarUrl, discordConfiguration.getGuildId());
+            for (long guildId : activeGuilds) {
+                try {
+                    Member member =
+                            discordServiceProvider.getObject().getMemberFromServer(guildId, Long.parseLong(snowflake));
+                    if (member != null) {
+                        String displayName = DiscordUtil.getUserDisplayName(member);
+                        String username = member.getUser().getName();
+                        String avatarUrl = member.getEffectiveAvatar().getUrl(256);
+                        upsertUser(snowflake, displayName, username, avatarUrl, guildId);
+                        break;
+                    }
+                } catch (Exception e) {
+                    log.debug(
+                            "Failed to refresh cache for snowflake {} via guild {}: {}",
+                            snowflake,
+                            guildId,
+                            e.getMessage());
                 }
-            } catch (Exception e) {
-                log.debug("Failed to refresh cache for snowflake {}: {}", snowflake, e.getMessage());
             }
         }
 

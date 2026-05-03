@@ -1,14 +1,12 @@
 package dev.tylercash.event.security;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import java.util.List;
 
-@Data
-@AllArgsConstructor
-public class UserInfoDto {
-    private String username;
-    private String displayName;
-    private String discordId;
-    private boolean admin;
-    private String avatarUrl;
-}
+public record UserInfoDto(
+        String username,
+        String displayName,
+        String discordId,
+        List<String> organiserGuildIds,
+        List<String> ownedGuildIds,
+        boolean admin,
+        String avatarUrl) {}

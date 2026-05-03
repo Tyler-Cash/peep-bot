@@ -4,17 +4,24 @@ import Link from "next/link";
 import clsx from "@/lib/clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chunky } from "@/components/ui/Chunky";
-import { logout, useCurrentUser } from "@/lib/hooks";
+import { logout, useActiveGuild, useCurrentUser, useGuildFeatures, useGuilds } from "@/lib/hooks";
 import { GuildSwitcher } from "./GuildSwitcher";
-import { NAV_TABS, isTabActive } from "./navTabs";
+import { NAV_TABS, filterNavTabs, isTabActive } from "./navTabs";
 
 export function DesktopBar({ pathname }: { pathname: string }) {
   const { data: user } = useCurrentUser();
+  const activeGuild = useActiveGuild();
+  const { data: features } = useGuildFeatures(activeGuild?.id);
+  const { data: guilds } = useGuilds();
+  // While `guilds` is undefined (loading) keep the chrome visible; only hide
+  // it once we know the user is in zero servers.
+  const hasGuilds = !guilds || guilds.length > 0;
+  const visibleTabs = filterNavTabs(NAV_TABS, features);
 
   return (
     <>
       <div className="hidden md:flex ml-4 items-center gap-2">
-        {NAV_TABS.map((t) => {
+        {hasGuilds && visibleTabs.map((t) => {
           const active = isTabActive(pathname, t.href);
           return (
             <Link
@@ -36,12 +43,16 @@ export function DesktopBar({ pathname }: { pathname: string }) {
       <div className="flex-1 hidden md:block" />
 
       <div className="hidden md:flex items-center gap-2.5">
-        <GuildSwitcher />
-        <Link href="/events/new">
-          <Chunky variant="leaf" className="h-[46px] px-5 text-[14.5px]">
-            + new event
-          </Chunky>
-        </Link>
+        {hasGuilds && (
+          <>
+            <GuildSwitcher />
+            <Link href="/events/new">
+              <Chunky variant="leaf" className="h-[46px] px-5 text-[14.5px]">
+                + new event
+              </Chunky>
+            </Link>
+          </>
+        )}
         {user && (
           <>
             <Avatar

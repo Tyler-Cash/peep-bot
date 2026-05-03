@@ -4,9 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import dev.tylercash.event.discord.DiscordConfiguration;
+import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.discord.Guild;
+import dev.tylercash.event.discord.GuildRepository;
+import dev.tylercash.event.security.BotAdminProperties;
+import dev.tylercash.event.security.BotAdminService;
 import dev.tylercash.event.security.UserInfoDto;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,53 +27,93 @@ class SecurityControllerTest {
     private static final String USERNAME = "testuser";
 
     @Test
-    void isLoggedIn_returnsUserInfoDtoWithAdminTrue_whenUserHasAdminRole() {
+    void isLoggedIn_returnsOrganiserGuildIdsWhenUserIsOrganiser() {
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
+        GuildRepository guildRepository = mock(GuildRepository.class);
         OAuth2User principal = mock(OAuth2User.class);
 
-        when(config.getGuildId()).thenReturn(GUILD_ID);
+        Guild guild = Guild.withDefaults(GUILD_ID);
+        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(guild));
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(principal.getAttribute("username")).thenReturn(USERNAME);
-        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(true);
-
-        SecurityController controller = new SecurityController(discordService, config);
-        UserInfoDto result = controller.isLoggedIn(principal);
-
-        assertThat(result.getUsername()).isEqualTo(USERNAME);
-        assertThat(result.getDiscordId()).isEqualTo(DISCORD_ID);
-        assertThat(result.isAdmin()).isTrue();
-        assertThat(result.getAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
-    }
-
-    @Test
-    void isLoggedIn_returnsUserInfoDtoWithAdminFalse_whenUserLacksAdminRole() {
-        DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration config = mock(DiscordConfiguration.class);
-        OAuth2User principal = mock(OAuth2User.class);
-
-        when(config.getGuildId()).thenReturn(GUILD_ID);
-        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
-        when(principal.getAttribute("username")).thenReturn(USERNAME);
-        when(discordService.isUserAdminOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+        when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
                 .thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, config);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
         UserInfoDto result = controller.isLoggedIn(principal);
 
-        assertThat(result.isAdmin()).isFalse();
-        assertThat(result.getUsername()).isEqualTo(USERNAME);
-        assertThat(result.getDiscordId()).isEqualTo(DISCORD_ID);
-        assertThat(result.getAvatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
+        assertThat(result.username()).isEqualTo(USERNAME);
+        assertThat(result.discordId()).isEqualTo(DISCORD_ID);
+        assertThat(result.organiserGuildIds()).containsExactly(String.valueOf(GUILD_ID));
+        assertThat(result.ownedGuildIds()).isEmpty();
+        assertThat(result.avatarUrl()).isEqualTo("/api/avatar/" + DISCORD_ID);
     }
 
     @Test
-    void isLoggedIn_throwsUnauthorized_whenPrincipalIsNull() {
+    void isLoggedIn_returnsOwnedGuildIdsWhenUserIsOwner() {
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
+        GuildRepository guildRepository = mock(GuildRepository.class);
+        OAuth2User principal = mock(OAuth2User.class);
 
-        SecurityController controller = new SecurityController(discordService, config);
+        Guild guild = Guild.withDefaults(GUILD_ID);
+        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(guild));
+        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+        when(principal.getAttribute("username")).thenReturn(USERNAME);
+        when(discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+        when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
+        UserInfoDto result = controller.isLoggedIn(principal);
+
+        assertThat(result.organiserGuildIds()).isEmpty();
+        assertThat(result.ownedGuildIds()).containsExactly(String.valueOf(GUILD_ID));
+    }
+
+    @Test
+    void isLoggedIn_returnsEmptyListsWhenUserLacksOrganiserAndOwner() {
+        DiscordService discordService = mock(DiscordService.class);
+        DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
+        GuildRepository guildRepository = mock(GuildRepository.class);
+        OAuth2User principal = mock(OAuth2User.class);
+
+        Guild guild = Guild.withDefaults(GUILD_ID);
+        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(guild));
+        when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
+        when(principal.getAttribute("username")).thenReturn(USERNAME);
+        when(discordService.isUserOrganiserOfServer(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+        when(discordAuthService.isGuildOwner(GUILD_ID, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
+        UserInfoDto result = controller.isLoggedIn(principal);
+
+        assertThat(result.organiserGuildIds()).isEmpty();
+        assertThat(result.ownedGuildIds()).isEmpty();
+        assertThat(result.username()).isEqualTo(USERNAME);
+    }
+
+    @Test
+    void isLoggedIn_throwsUnauthorizedWhenPrincipalIsNull() {
+        DiscordService discordService = mock(DiscordService.class);
+        DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
+        GuildRepository guildRepository = mock(GuildRepository.class);
+
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
 
         assertThatThrownBy(() -> controller.isLoggedIn(null))
                 .isInstanceOf(ResponseStatusException.class)
@@ -77,24 +122,37 @@ class SecurityControllerTest {
                     assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
                 });
 
-        verifyNoInteractions(discordService);
+        verifyNoInteractions(discordService, discordAuthService, guildRepository);
     }
 
     @Test
-    void isLoggedIn_usesGuildIdFromConfiguration() {
+    void isLoggedIn_iteratesAllActiveGuilds() {
         DiscordService discordService = mock(DiscordService.class);
-        DiscordConfiguration config = mock(DiscordConfiguration.class);
+        DiscordAuthService discordAuthService = mock(DiscordAuthService.class);
+        GuildRepository guildRepository = mock(GuildRepository.class);
         OAuth2User principal = mock(OAuth2User.class);
 
-        long specificGuildId = 999888777L;
-        when(config.getGuildId()).thenReturn(specificGuildId);
+        Guild g1 = Guild.withDefaults(111L);
+        Guild g2 = Guild.withDefaults(222L);
+        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(g1, g2));
         when(principal.getAttribute("id")).thenReturn(DISCORD_ID);
         when(principal.getAttribute("username")).thenReturn(USERNAME);
-        when(discordService.isUserAdminOfServer(eq(specificGuildId), anyLong())).thenReturn(false);
+        when(discordService.isUserOrganiserOfServer(111L, Long.parseLong(DISCORD_ID)))
+                .thenReturn(true);
+        when(discordService.isUserOrganiserOfServer(222L, Long.parseLong(DISCORD_ID)))
+                .thenReturn(false);
+        when(discordAuthService.isGuildOwner(111L, Long.parseLong(DISCORD_ID))).thenReturn(false);
+        when(discordAuthService.isGuildOwner(222L, Long.parseLong(DISCORD_ID))).thenReturn(false);
 
-        SecurityController controller = new SecurityController(discordService, config);
-        controller.isLoggedIn(principal);
+        BotAdminService botAdminService = new BotAdminService(new BotAdminProperties());
+        SecurityController controller =
+                new SecurityController(discordService, discordAuthService, guildRepository, botAdminService);
+        UserInfoDto result = controller.isLoggedIn(principal);
 
-        verify(discordService).isUserAdminOfServer(specificGuildId, Long.parseLong(DISCORD_ID));
+        assertThat(result.organiserGuildIds()).containsExactly("111");
+        assertThat(result.ownedGuildIds()).isEmpty();
+        verify(guildRepository).findAllByActiveTrue();
+        verify(discordService).isUserOrganiserOfServer(111L, Long.parseLong(DISCORD_ID));
+        verify(discordService).isUserOrganiserOfServer(222L, Long.parseLong(DISCORD_ID));
     }
 }

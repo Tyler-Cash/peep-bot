@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @SpringBootTest(classes = PeepBotApplication.class)
 @Testcontainers
-@ActiveProfiles("local")
+@ActiveProfiles({"local", "docker"})
 @Tag("e2e")
 class EventServiceE2ETest {
 

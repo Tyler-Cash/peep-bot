@@ -69,7 +69,7 @@ export function CreateEventForm() {
           new event
         </h2>
         <p className="text-[14.5px] text-mute leading-[1.45] -mt-2 mb-1">
-          plan something cool with friends in <b className="font-extrabold">#{guild?.channel ?? "outings"}</b>.
+          plan something cool with friends in <b className="font-extrabold">{guild?.name ?? "your server"}</b>.
         </p>
 
         <Field label="event name">

@@ -4,6 +4,21 @@ export type ClientOptions = {
     baseUrl: 'http://localhost' | (string & {});
 };
 
+export type AdminFeaturesRequest = {
+    googleAutocompleteEnabled?: boolean;
+    immichEnabled?: boolean;
+    rewindEnabled?: boolean;
+};
+
+export type AdminGuildDto = {
+    active?: boolean;
+    googleAutocompleteEnabled?: boolean;
+    guildId?: string;
+    immichEnabled?: boolean;
+    name?: string;
+    rewindEnabled?: boolean;
+};
+
 export type AttendeeDto = {
     avatarUrl?: string;
     instant?: string;
@@ -120,7 +135,6 @@ export type GraphNodeDto = {
 };
 
 export type GuildDto = {
-    channel?: string;
     color?: string;
     iconUrl?: string;
     id?: string;
@@ -132,17 +146,34 @@ export type GuildDto = {
 };
 
 export type GuildSettingsDto = {
+    emojiAccepted?: string;
+    emojiDeclined?: string;
+    emojiMaybe?: string;
+    eventsRole?: string;
+    organiserRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
     primaryLocationPlaceId?: string;
+    separatorChannel?: string;
 };
 
 export type GuildSettingsRequest = {
+    emojiAccepted?: string;
+    emojiDeclined?: string;
+    emojiMaybe?: string;
+    eventsRole?: string;
+    organiserRole?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
     primaryLocationPlaceId?: string;
+    separatorChannel?: string;
+};
+
+export type InstallUrlDto = {
+    permissions?: Array<PermissionDto>;
+    url?: string;
 };
 
 export type PageMetadata = {
@@ -161,6 +192,11 @@ export type Pageable = {
 export type PagedModelEventDto = {
     content?: Array<EventDto>;
     page?: PageMetadata;
+};
+
+export type PermissionDto = {
+    name?: string;
+    reason?: string;
 };
 
 export type RewindStatsDto = {
@@ -201,8 +237,66 @@ export type UserInfoDto = {
     avatarUrl?: string;
     discordId?: string;
     displayName?: string;
+    organiserGuildIds?: Array<string>;
+    ownedGuildIds?: Array<string>;
     username?: string;
 };
+
+export type ListGuildsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/guilds';
+};
+
+export type ListGuildsErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type ListGuildsError = ListGuildsErrors[keyof ListGuildsErrors];
+
+export type ListGuildsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AdminGuildDto>;
+};
+
+export type ListGuildsResponse = ListGuildsResponses[keyof ListGuildsResponses];
+
+export type UpdateFeaturesData = {
+    body: AdminFeaturesRequest;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/admin/guilds/{guildId}/features';
+};
+
+export type UpdateFeaturesErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type UpdateFeaturesError = UpdateFeaturesErrors[keyof UpdateFeaturesErrors];
+
+export type UpdateFeaturesResponses = {
+    /**
+     * OK
+     */
+    200: AdminGuildDto;
+};
+
+export type UpdateFeaturesResponse = UpdateFeaturesResponses[keyof UpdateFeaturesResponses];
 
 export type IsLoggedInData = {
     body?: never;
@@ -736,6 +830,37 @@ export type GetGuildsResponses = {
 
 export type GetGuildsResponse = GetGuildsResponses[keyof GetGuildsResponses];
 
+export type GetFeaturesData = {
+    body?: never;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/guild/{guildId}/features';
+};
+
+export type GetFeaturesErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetFeaturesError = GetFeaturesErrors[keyof GetFeaturesErrors];
+
+export type GetFeaturesResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: boolean;
+    };
+};
+
+export type GetFeaturesResponse = GetFeaturesResponses[keyof GetFeaturesResponses];
+
 export type GetSettingsData = {
     body?: never;
     path: {
@@ -793,6 +918,33 @@ export type UpdateSettingsResponses = {
 };
 
 export type UpdateSettingsResponse = UpdateSettingsResponses[keyof UpdateSettingsResponses];
+
+export type GetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/install-url';
+};
+
+export type GetErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetError = GetErrors[keyof GetErrors];
+
+export type GetResponses = {
+    /**
+     * OK
+     */
+    200: InstallUrlDto;
+};
+
+export type GetResponse = GetResponses[keyof GetResponses];
 
 export type GetGuildStatsData = {
     body?: never;

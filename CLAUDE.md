@@ -42,7 +42,8 @@ contain at minimum:
 dev.tylercash:
   discord:
     token: "<discord-bot-token>"
-    guild-id: <discord-guild-id>
+  contract:
+    guild-id: <discord-guild-id>  # required only if you use prediction contracts
 
 spring:
   security:
@@ -201,6 +202,10 @@ All code changes **must** pass linting and formatting checks before committing. 
 - **Swagger UI** — Available at `http://localhost:8080/api/swagger-ui.html` (no auth required)
 - **Metrics** — Prometheus endpoint at `/api/actuator/prometheus`
 
+### Multi-guild support
+
+Per-guild configuration (events role, admin role, separator channel, emoji overrides, primary location) lives in the `guild` table — one row per guild the bot is in. Rows are upserted automatically on `GuildJoinEvent`. Login is unconditional: any Discord user can authenticate; the frontend renders an "Add Peep Bot to your server" CTA when `GET /guild` returns `[]`. Contracts remain single-guild via `dev.tylercash.contract.guild-id`.
+
 ### Frontend
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
@@ -219,7 +224,7 @@ All code changes **must** pass linting and formatting checks before committing. 
 | `dev.tylercash.cors.allowed-origins`   | `https://event.tylercash.dev` | CORS allowed origins — **must override for local dev** |
 | `dev.tylercash.frontend.hostname`      | `event.tylercash.dev`         | Used in OAuth2 redirect after login                    |
 | `dev.tylercash.discord.token`          | *(required)*                  | Discord bot token — in `application-local.yaml`        |
-| `dev.tylercash.discord.guild-id`       | *(required)*                  | Discord server ID — in `application-local.yaml`        |
+| `dev.tylercash.contract.guild-id`      | *(required for contracts)*    | Discord server ID where prediction contracts run       |
 | `spring.datasource.url`                | *(not set in default yaml)*   | Must be provided via local config or CLI               |
 | `server.servlet.session.cookie.secure` | `true`                        | Set to `false` locally to avoid HTTPS redirect         |
 

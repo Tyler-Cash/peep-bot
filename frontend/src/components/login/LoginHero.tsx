@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { mutate } from "swr";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
@@ -22,7 +22,13 @@ const features = [
 
 export function LoginHero() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<{ code: string; cid: string | null } | null>(() => {
+    const code = searchParams.get("error");
+    if (!code) return null;
+    return { code, cid: searchParams.get("cid") };
+  });
   const { data: user } = useCurrentUser();
   const popupRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -43,6 +49,7 @@ export function LoginHero() {
 
   const onContinue = () => {
     if (loading) return;
+    setAuthError(null);
     setLoading(true);
     // User is explicitly trying to log in — clear any prior bounce-loop state
     // so a successful auth ends at /, not stuck on /login.
@@ -82,9 +89,16 @@ export function LoginHero() {
         }
         return;
       }
-      // Once the popup returns to our origin, OAuth is done — close it.
+      // Once the popup returns to our origin, OAuth is done. Capture any
+      // error params from the popup's URL before closing so the parent can
+      // render a modal dialog the user must dismiss.
       try {
         if (popup.location.origin === window.location.origin) {
+          const params = new URLSearchParams(popup.location.search);
+          const code = params.get("error");
+          if (code) {
+            setAuthError({ code, cid: params.get("cid") });
+          }
           popup.close();
         }
       } catch {
@@ -207,6 +221,7 @@ export function LoginHero() {
             <span aria-hidden className="ml-0.5 text-[18px]">→</span>
           </button>
 
+
           {SHOW_DEV_PANEL && (
             <div className="mt-5 inline-flex items-center gap-3 rounded-chip border border-dashed border-ink/30 bg-white/60 px-4 py-2.5">
               <span className="text-[11.5px] font-extrabold uppercase tracking-widest text-mute">
@@ -243,6 +258,84 @@ export function LoginHero() {
       </main>
 
       {loading && <LoadingOverlay />}
+      {authError && (
+        <AuthErrorModal error={authError} onClose={() => setAuthError(null)} />
+      )}
+    </div>
+  );
+}
+
+function AuthErrorModal({
+  error,
+  onClose,
+}: {
+  error: { code: string; cid: string | null };
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-error-title"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+    >
+      <div className="absolute inset-0 bg-ink/50" onClick={onClose} aria-hidden />
+      <div className="relative w-full max-w-[460px] rounded-card border-[2px] border-[#991b1b] bg-paper shadow-rest overflow-hidden">
+        <div className="flex items-center gap-3 bg-[#dc2626] text-white px-5 py-3 border-b-[2px] border-[#991b1b]">
+          <span
+            aria-hidden
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white text-[#dc2626] font-extrabold text-[18px] leading-none shrink-0"
+          >
+            !
+          </span>
+          <h2
+            id="auth-error-title"
+            className="flex-1 text-[19px] font-extrabold tracking-[-0.02em] leading-tight"
+          >
+            Sign-in failed
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-white/80 hover:text-white text-[20px] leading-none p-1 -mr-1 rounded-chip hover:bg-white/10"
+          >
+            ×
+          </button>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-[14px] text-ink2 leading-[1.5]">
+            sorry, the login failed for some reason. if it keeps happening, share this error:
+          </p>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px] font-mono rounded-card border-[1.5px] border-ink/15 bg-paper2 px-3 py-2.5">
+            <dt className="text-mute">code</dt>
+            <dd className="text-ink break-all">{error.code}</dd>
+            {error.cid && (
+              <>
+                <dt className="text-mute">id</dt>
+                <dd className="text-ink break-all">{error.cid}</dd>
+              </>
+            )}
+          </dl>
+        </div>
+        <div className="flex justify-end px-5 pb-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 rounded-chip border-[1.5px] border-[#991b1b] bg-[#dc2626] text-white px-5 py-2 text-[15px] font-bold shadow-rest hover:bg-[#b91c1c] active:shadow-press active:translate-x-[0.5px] active:translate-y-[0.5px]"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

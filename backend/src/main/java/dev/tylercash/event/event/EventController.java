@@ -113,6 +113,15 @@ public class EventController {
                         event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
         eventService.populateAttendance(event);
         eventService.updateEvent(event);
+        log.info(
+                "AUDIT user {} updated event {} in guild {}: name={} dateTime={} capacity={} location={}",
+                discordId,
+                event.getId(),
+                event.getServerId(),
+                event.getName(),
+                event.getDateTime(),
+                event.getCapacity(),
+                event.getLocation());
         return Map.of("message", "Updated event for " + event.getName());
     }
 
@@ -239,7 +248,8 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} cancelling event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        guildMembershipService.assertMember(discordId, event.getServerId());
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.cancelEvent(id);
@@ -260,7 +270,8 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} creating private channel for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        guildMembershipService.assertMember(discordId, event.getServerId());
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.createPrivateChannel(id);
@@ -285,7 +296,11 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} removing attendee from event id={} snowflake={} name={}", discordId, id, snowflake, name);
         Event event = eventService.getEvent(id);
-        boolean isAdmin = discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId));
+        guildMembershipService.assertMember(discordId, event.getServerId());
+        if ((snowflake == null || snowflake.isBlank()) && (name == null || name.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either snowflake or name must be provided");
+        }
+        boolean isAdmin = discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId));
 
         if (!isAdmin) {
             if (snowflake != null && !snowflake.isBlank()) {
@@ -314,7 +329,8 @@ public class EventController {
         String discordId = principal.getAttribute("id");
         log.info("User {} triggering recategorization for event id={}", discordId, id);
         Event event = eventService.getEvent(id);
-        if (!discordService.isUserAdminOfServer(event.getServerId(), Long.parseLong(discordId))) {
+        guildMembershipService.assertMember(discordId, event.getServerId());
+        if (!discordService.isUserOrganiserOfServer(event.getServerId(), Long.parseLong(discordId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
         eventService.recategorizeEvent(id);

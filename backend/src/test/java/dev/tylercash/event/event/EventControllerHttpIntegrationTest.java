@@ -263,7 +263,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     void admin_cancelsEvent_marksCancelled() throws Exception {
         fixtures.registerMember(USER, GUILD, "Admin User", "adminuser");
         UUID eventId = fixtures.seedEvent(GUILD, USER, "Cancel Me Event");
-        when(discordService.isUserAdminOfServer(eq(GUILD), eq(Long.parseLong(USER))))
+        when(discordService.isUserOrganiserOfServer(eq(GUILD), eq(Long.parseLong(USER))))
                 .thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/event/{id}/cancel", eventId)
@@ -284,7 +284,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     void admin_createsPrivateChannel_returnsOk() throws Exception {
         fixtures.registerMember(USER, GUILD, "Admin User", "adminuser");
         UUID eventId = fixtures.seedEvent(GUILD, USER, "Private Channel Event");
-        when(discordService.isUserAdminOfServer(eq(GUILD), eq(Long.parseLong(USER))))
+        when(discordService.isUserOrganiserOfServer(eq(GUILD), eq(Long.parseLong(USER))))
                 .thenReturn(true);
         doNothing().when(discordService).createPrivateEventChannel(any());
 
@@ -315,7 +315,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                         .content("{\"status\":\"going\"}"))
                 .andExpect(status().isOk());
 
-        when(discordService.isUserAdminOfServer(eq(GUILD), eq(Long.parseLong(USER))))
+        when(discordService.isUserOrganiserOfServer(eq(GUILD), eq(Long.parseLong(USER))))
                 .thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/event/{id}/attendee", eventId)
@@ -339,7 +339,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         UUID eventId = fixtures.seedEvent(GUILD, OTHER_USER, "Forbidden Remove Event");
 
         // USER is not admin
-        when(discordService.isUserAdminOfServer(anyLong(), eq(Long.parseLong(USER))))
+        when(discordService.isUserOrganiserOfServer(anyLong(), eq(Long.parseLong(USER))))
                 .thenReturn(false);
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/event/{id}/attendee", eventId)
@@ -347,6 +347,17 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                         .with(authedAs(USER))
                         .with(csrf()))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void removeAttendee_neitherSnowflakeNorName_returns400() throws Exception {
+        fixtures.registerMember(USER, GUILD, "Admin User", "adminuser");
+        UUID eventId = fixtures.seedEvent(GUILD, USER, "Bad Remove Event");
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/event/{id}/attendee", eventId)
+                        .with(authedAs(USER))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
     }
 
     // ---------------------------------------------------------------------------
@@ -357,7 +368,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
     void admin_recategorizes_returnsOk() throws Exception {
         fixtures.registerMember(USER, GUILD, "Admin User", "adminuser");
         UUID eventId = fixtures.seedEvent(GUILD, USER, "Recategorize Event");
-        when(discordService.isUserAdminOfServer(eq(GUILD), eq(Long.parseLong(USER))))
+        when(discordService.isUserOrganiserOfServer(eq(GUILD), eq(Long.parseLong(USER))))
                 .thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/event/{id}/recategorize", eventId)

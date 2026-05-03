@@ -65,6 +65,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.frontend.hostname=test.local",
+            "dev.tylercash.contract.guild-id=1",
             // Defaults are 60 read / 5 write per minute — way too small for a
             // parameterized test that fans out across every endpoint from a
             // single client IP. Crank them up so RateLimitFilter doesn't mask
@@ -103,7 +105,9 @@ class AuthorizationFuzzIntegrationTest {
             "GET /v3/api-docs.yaml",
             "GET /v3/api-docs/swagger-config",
             "GET /actuator/health",
-            "GET /actuator/prometheus");
+            "GET /actuator/prometheus",
+            // Bot install URL — public so the empty-state CTA works for anonymous users.
+            "GET /install-url");
 
     @MockitoBean
     JDA jda;
@@ -208,8 +212,8 @@ class AuthorizationFuzzIntegrationTest {
     @ParameterizedTest(name = "non-admin {0} → 403")
     @MethodSource("adminOnlyEndpoints")
     void nonAdmin_isForbidden(EndpointCase ec) throws Exception {
-        // discordService is a @MockitoBean, so isUserAdminOfServer defaults to
-        // false — exactly what we want for "not an admin".
+        // discordService.isUserOrganiserOfServer and discordAuthService.isGuildOwner are
+        // both @MockitoBean defaults (false) — exactly what we want for "not an organiser/owner".
         mockMvc.perform(withCsrfIfMutating(ec).with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
                 .andExpect(result -> assertThat(result.getResponse().getStatus())
                         .as("Endpoint %s should reject non-admin", ec)
@@ -370,7 +374,7 @@ class AuthorizationFuzzIntegrationTest {
                         "POST",
                         "/event/{id}/cancel",
                         () -> MockMvcRequestBuilders.post("/event/" + guild1EventId + "/cancel"),
-                        // Cancel checks isUserAdminOfServer, which uses
+                        // Cancel checks isUserOrganiserOfServer, which uses
                         // guild_id but does not first call assertMember, so
                         // wrong-guild is rejected the same way as non-admin (403).
                         true,
@@ -426,7 +430,27 @@ class AuthorizationFuzzIntegrationTest {
                         "/avatar/{snowflake}",
                         () -> MockMvcRequestBuilders.get("/avatar/" + USER_IN_GUILD_1),
                         false,
-                        false));
+                        false),
+
+                // GuildFeaturesController
+                new EndpointCase(
+                        "GET",
+                        "/guild/{guildId}/features",
+                        () -> MockMvcRequestBuilders.get("/guild/" + GUILD_1 + "/features"),
+                        true,
+                        false),
+
+                // AdminController
+                new EndpointCase(
+                        "GET", "/admin/guilds", () -> MockMvcRequestBuilders.get("/admin/guilds"), false, true),
+                new EndpointCase(
+                        "PATCH",
+                        "/admin/guilds/{guildId}/features",
+                        () -> MockMvcRequestBuilders.patch("/admin/guilds/" + GUILD_1 + "/features")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content("{}"),
+                        false,
+                        true));
     }
 
     static Stream<EndpointCase> guildScopedEndpoints() {

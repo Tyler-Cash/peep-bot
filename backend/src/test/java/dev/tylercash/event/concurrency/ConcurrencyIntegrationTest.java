@@ -50,6 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.contract.guild-id=1",
             "dev.tylercash.rate-limit.read-capacity=100000",
             "dev.tylercash.rate-limit.write-capacity=100000"
         })

@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:all": "ALL_BROWSERS=1 playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "codegen": "openapi-ts && sed -i \"s/z\\.coerce\\.bigint()\\.min(BigInt('[^']*'), { error: '[^']*' })\\.max(BigInt('[^']*'), { error: '[^']*' })/z.number()/g\" src/lib/api/generated/zod.gen.ts",
+    "codegen": "openapi-ts && sed -i \"s/z\\.coerce\\.bigint()\\.min(BigInt('[^']*'), { error: '[^']*' })\\.max(BigInt('[^']*'), { error: '[^']*' })/z.number()/g\" src/lib/api/generated/zod.gen.ts && sed -i \"s/\\.optional()$/.nullable().optional()/g; s/\\.optional(),/.nullable().optional(),/g\" src/lib/api/generated/zod.gen.ts",
     "codegen:check": "npm run codegen && git diff --exit-code src/lib/api/generated"
   },
   "dependencies": {

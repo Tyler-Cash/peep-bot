@@ -23,19 +23,18 @@ class DiscordAuthServiceTest {
 
     private JDA jda;
     private Guild guild;
-    private DiscordConfiguration config;
+    private GuildRepository guildRepository;
 
     @BeforeEach
     void setUp() {
         jda = mock(JDA.class);
         guild = mock(Guild.class);
-        config = new DiscordConfiguration();
-        config.setAdminRole("event-admin");
+        guildRepository = mock(GuildRepository.class);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
     }
 
     private DiscordAuthService service(Optional<DevUserProperties> devUser) {
-        return new DiscordAuthService(jda, config, devUser);
+        return new DiscordAuthService(jda, guildRepository, devUser);
     }
 
     @SuppressWarnings("unchecked")
@@ -132,30 +131,33 @@ class DiscordAuthServiceTest {
     }
 
     @Nested
-    @DisplayName("isEventAdmin")
-    class IsEventAdmin {
+    @DisplayName("isEventOrganiser")
+    class IsEventOrganiser {
         @Test
-        @DisplayName("delegates to hasRole with the configured admin role name")
-        void usesConfiguredAdminRole() {
-            config.setAdminRole("custom-admin");
+        @DisplayName("delegates to hasRole with the organiser role from the guild row")
+        void usesGuildRowOrganiserRole() {
+            dev.tylercash.event.discord.Guild guildRow = dev.tylercash.event.discord.Guild.withDefaults(GUILD_ID);
+            guildRow.setOrganiserRole("custom-organiser");
+            when(guildRepository.findById(GUILD_ID)).thenReturn(Optional.of(guildRow));
             Member member = mock(Member.class);
-            List<Role> roles = List.of(roleNamed("custom-admin"));
+            List<Role> roles = List.of(roleNamed("custom-organiser"));
             when(member.getRoles()).thenReturn(roles);
             stubMemberLookup(member);
 
-            assertThat(service(Optional.empty()).isEventAdmin(GUILD_ID, USER_ID))
+            assertThat(service(Optional.empty()).isEventOrganiser(GUILD_ID, USER_ID))
                     .isTrue();
         }
 
         @Test
-        @DisplayName("returns false when member lacks the admin role")
-        void returnsFalseWithoutAdminRole() {
+        @DisplayName("returns false when member lacks the organiser role")
+        void returnsFalseWithoutOrganiserRole() {
+            when(guildRepository.findById(GUILD_ID)).thenReturn(Optional.empty());
             Member member = mock(Member.class);
             List<Role> roles = List.of(roleNamed("regular-user"));
             when(member.getRoles()).thenReturn(roles);
             stubMemberLookup(member);
 
-            assertThat(service(Optional.empty()).isEventAdmin(GUILD_ID, USER_ID))
+            assertThat(service(Optional.empty()).isEventOrganiser(GUILD_ID, USER_ID))
                     .isFalse();
         }
     }

@@ -1,6 +1,5 @@
 package dev.tylercash.event.discord;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -8,7 +7,6 @@ import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.Collections;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.ChannelAction;
@@ -19,26 +17,34 @@ import org.junit.jupiter.api.Test;
 class DiscordInitializationServiceTest {
 
     private JDA jda;
-    private Guild guild;
-    private DiscordConfiguration config;
+    private net.dv8tion.jda.api.entities.Guild jdaGuild;
     private DiscordChannelService discordChannelService;
     private ContractConfiguration contractConfig;
     private DiscordUserCacheService discordUserCacheService;
+    private ContractGuildResolver contractGuildResolver;
+    private GuildRegistrationService guildRegistrationService;
     private DiscordInitializationService service;
 
     @BeforeEach
     void setUp() {
         jda = mock(JDA.class);
-        guild = mock(Guild.class);
-        config = new DiscordConfiguration();
-        config.setGuildId(123L);
-        config.setSeperatorChannel("organising");
+        jdaGuild = mock(net.dv8tion.jda.api.entities.Guild.class);
+        when(jdaGuild.getIdLong()).thenReturn(123L);
+        when(jdaGuild.getName()).thenReturn("Test Guild");
+
         discordChannelService = mock(DiscordChannelService.class);
         discordUserCacheService = mock(DiscordUserCacheService.class);
         contractConfig = new ContractConfiguration();
-        when(jda.getGuildById(123L)).thenReturn(guild);
+        contractGuildResolver = mock(ContractGuildResolver.class);
+        guildRegistrationService = mock(GuildRegistrationService.class);
+
         service = new DiscordInitializationService(
-                jda, config, discordChannelService, contractConfig, discordUserCacheService);
+                jda,
+                discordChannelService,
+                contractConfig,
+                discordUserCacheService,
+                contractGuildResolver,
+                guildRegistrationService);
     }
 
     @SuppressWarnings("unchecked")
@@ -49,115 +55,136 @@ class DiscordInitializationServiceTest {
         when(action.complete()).thenReturn(mock(TextChannel.class));
     }
 
+    private Guild makeRow(String separatorChannel) {
+        Guild row = Guild.withDefaults(123L);
+        row.setSeparatorChannel(separatorChannel);
+        return row;
+    }
+
     @Test
     @DisplayName("creates all categories and separator channel when none exist")
-    void initializeGuild_createsEverything() {
+    void initialise_createsEverything() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
-        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 
-        service.initializeGuild();
+        service.initialise(jdaGuild, makeRow("organising"));
 
-        verify(discordChannelService).getOrCreateCategory(guild, "outings");
-        verify(discordChannelService).getOrCreateCategory(guild, "outings-archive");
+        verify(discordChannelService).getOrCreateCategory(jdaGuild, "outings");
+        verify(discordChannelService).getOrCreateCategory(jdaGuild, "outings-archive");
         verify(outings).createTextChannel("organising");
     }
 
     @Test
     @DisplayName("skips creation when categories and separator already exist")
-    void initializeGuild_skipsWhenAllExist() {
+    void initialise_skipsWhenAllExist() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
-        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
         when(outings.getTextChannels()).thenReturn(List.of(separatorChannel));
 
-        service.initializeGuild();
+        service.initialise(jdaGuild, makeRow("organising"));
 
         verify(outings, never()).createTextChannel(anyString());
     }
 
     @Test
     @DisplayName("creates only missing category when one already exists")
-    void initializeGuild_createsOnlyMissing() {
+    void initialise_createsOnlyMissing() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
-        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
         when(outings.getTextChannels()).thenReturn(List.of(separatorChannel));
 
-        service.initializeGuild();
+        service.initialise(jdaGuild, makeRow("organising"));
 
-        verify(discordChannelService).getOrCreateCategory(guild, "outings");
-        verify(discordChannelService).getOrCreateCategory(guild, "outings-archive");
+        verify(discordChannelService).getOrCreateCategory(jdaGuild, "outings");
+        verify(discordChannelService).getOrCreateCategory(jdaGuild, "outings-archive");
     }
 
     @Test
     @DisplayName("creates separator channel when category exists but channel does not")
-    void initializeGuild_createsSeparatorInExistingCategory() {
+    void initialise_createsSeparatorInExistingCategory() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
-        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 
-        service.initializeGuild();
+        service.initialise(jdaGuild, makeRow("organising"));
 
         verify(outings).createTextChannel("organising");
     }
 
     @Test
-    @DisplayName("skips separator channel creation when config is blank")
-    void initializeGuild_skipsSeparatorWhenBlank() {
-        config.setSeperatorChannel("");
-
+    @DisplayName("skips separator channel creation when separator name is blank")
+    void initialise_skipsSeparatorWhenBlank() {
         Category outings = mock(Category.class);
         when(outings.getName()).thenReturn("outings");
         Category archive = mock(Category.class);
         when(archive.getName()).thenReturn("outings-archive");
 
-        when(discordChannelService.getOrCreateCategory(guild, "outings")).thenReturn(outings);
-        when(discordChannelService.getOrCreateCategory(guild, "outings-archive"))
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
 
-        service.initializeGuild();
+        service.initialise(jdaGuild, makeRow(""));
 
         verify(outings, never()).createTextChannel(anyString());
     }
 
     @Test
-    @DisplayName("throws when guild is not found")
-    void initializeGuild_guildNotFound() {
-        when(jda.getGuildById(123L)).thenReturn(null);
+    @DisplayName("ensures contracts category when guild is the contracts guild")
+    void initialise_ensuresContractsCategoryForContractsGuild() {
+        Category outings = mock(Category.class);
+        when(outings.getName()).thenReturn("outings");
+        Category archive = mock(Category.class);
+        Category contracts = mock(Category.class);
 
-        assertThrows(IllegalStateException.class, () -> service.initializeGuild());
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
+                .thenReturn(archive);
+        when(discordChannelService.getOrCreateCategory(jdaGuild, contractConfig.getCategoryName()))
+                .thenReturn(contracts);
+        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(true);
+        when(outings.getTextChannels()).thenReturn(Collections.emptyList());
+        mockTextChannelCreation(outings);
+
+        service.initialise(jdaGuild, makeRow("organising"));
+
+        verify(discordChannelService).getOrCreateCategory(jdaGuild, contractConfig.getCategoryName());
     }
 }

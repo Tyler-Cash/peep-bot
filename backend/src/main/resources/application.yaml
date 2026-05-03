@@ -3,8 +3,6 @@ spring.application.name: peep-bot
 dev.tylercash:
   discord:
     timeout: 60
-    seperator-channel: organising
-    admin-role: event-admin
   feature-toggles:
     remove-plus-ones-on-decline: true
   immich:

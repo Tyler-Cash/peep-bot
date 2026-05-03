@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import dev.tylercash.event.discord.listener.ButtonInteractionListener;
+import dev.tylercash.event.discord.listener.GuildLifecycleListener;
 import dev.tylercash.event.discord.listener.MessageReceivedListener;
 import dev.tylercash.event.discord.listener.ModalInteractionListener;
 import dev.tylercash.event.discord.listener.SlashCommandListener;
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 @AllArgsConstructor
 public class ClientConfiguration {
     private final ButtonInteractionListener buttonInteractionListener;
+    private final GuildLifecycleListener guildLifecycleListener;
     private final ModalInteractionListener modalInteractionListener;
     private final SlashCommandListener slashCommandListener;
     private final MessageReceivedListener messageReceivedListener;
@@ -30,6 +32,7 @@ public class ClientConfiguration {
     public JDA jda() throws InterruptedException {
         JDA jda = JDABuilder.createDefault(discordConfiguration.getToken())
                 .addEventListeners(buttonInteractionListener)
+                .addEventListeners(guildLifecycleListener)
                 .addEventListeners(modalInteractionListener)
                 .addEventListeners(slashCommandListener)
                 .addEventListeners(messageReceivedListener)
@@ -37,8 +40,7 @@ public class ClientConfiguration {
                 .build()
                 .awaitReady();
 
-        jda.getGuildById(discordConfiguration.getGuildId())
-                .updateCommands()
+        jda.updateCommands()
                 .addCommands(
                         Commands.slash("balance", "Check your peep coin balance"),
                         Commands.slash("contract", "Prediction contract commands")

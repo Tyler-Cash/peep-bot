@@ -15,13 +15,13 @@ import org.springframework.stereotype.Service;
 public class EmbedService {
     private final FrontendConfiguration frontendConfiguration;
     private final ImmichService immichService;
-    private final DiscordConfiguration discordConfiguration;
+    private final GuildEmojiResolver guildEmojiResolver;
 
     public Collection<MessageEmbed> getMessage(Event event, Clock clock) {
         String albumUrl =
                 event.getImmichShareKey() != null ? immichService.getShareUrl(event.getImmichShareKey()) : null;
-        return List.of(new EmbedRenderer(
-                        event, clock, frontendConfiguration.getUrl(), albumUrl, discordConfiguration.getEmoji())
+        GuildEmojiResolver.ResolvedEmoji emoji = guildEmojiResolver.forGuild(event.getServerId());
+        return List.of(new EmbedRenderer(event, clock, frontendConfiguration.getUrl(), albumUrl, emoji)
                 .getEmbedBuilder()
                 .build());
     }

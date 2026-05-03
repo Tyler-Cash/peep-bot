@@ -4,8 +4,8 @@ import { getActiveGuildId } from "@/lib/hooks";
 import type { Guild } from "@/lib/types";
 
 const guilds = [
-  { id: "g1", name: "First", channel: "outings" } as Guild,
-  { id: "g2", name: "Second", channel: "outings" } as Guild,
+  { id: "g1", name: "First" } as Guild,
+  { id: "g2", name: "Second" } as Guild,
 ];
 
 describe("getActiveGuildId", () => {

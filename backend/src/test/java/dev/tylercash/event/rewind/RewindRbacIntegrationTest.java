@@ -50,7 +50,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.security.oauth2.client.registration.discord.client-id=test",
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
-            "dev.tylercash.discord.guild-id=0"
+            "dev.tylercash.discord.guild-id=0",
+            "dev.tylercash.contract.guild-id=1"
         })
 @Testcontainers
 @ActiveProfiles("local")
@@ -114,8 +115,13 @@ class RewindRbacIntegrationTest {
         jdbc.execute("DELETE FROM event");
         jdbc.execute("DELETE FROM discord_user_guild");
         jdbc.execute("DELETE FROM discord_user_cache");
+        jdbc.execute("DELETE FROM guild");
         var rewindCache = cacheManager.getCache("rewind");
         if (rewindCache != null) rewindCache.clear();
+
+        // Seed guild rows with rewind_enabled=true so the feature gate passes.
+        seedGuild(GUILD_1);
+        seedGuild(GUILD_2);
 
         // userA, userB, userC are members of guild1.
         discordUserCacheService.registerIfMissing(USER_A, "Alice", "alice", GUILD_1);
@@ -196,6 +202,15 @@ class RewindRbacIntegrationTest {
                 .containsExactlyInAnyOrder(USER_A, USER_B, USER_C);
         // userD must not appear in guild1's graph.
         assertThat(stats.socialGraph().nodes()).extracting("snowflake").doesNotContain(USER_D);
+    }
+
+    private void seedGuild(long guildId) {
+        jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled, rewind_enabled)"
+                + " VALUES ("
+                + guildId
+                + ", 'events', 'event-organiser', '✅', '❌', '❓', NOW(), true, false, false, true)"
+                + " ON CONFLICT (guild_id) DO UPDATE SET rewind_enabled = true");
     }
 
     private UUID createEvent(long guildId, String name, String creator) {

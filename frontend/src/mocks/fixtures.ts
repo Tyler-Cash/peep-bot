@@ -86,6 +86,8 @@ export const currentUser: UserInfo = {
   username: "otis",
   displayName: "Otis",
   discordId: "1002",
+  organiserGuildIds: ["mockguild-1"],
+  ownedGuildIds: ["mockguild-1"],
   admin: true,
   avatarUrl: null,
 };
@@ -99,7 +101,6 @@ export const guild = {
   initials: "PP",
   iconUrl: null,
   color: "#7BC24F",
-  channel: "outings",
   members: 27,
   active: true,
   primaryLocationLat: null as number | null,
@@ -111,6 +112,12 @@ export const guildSettings = {
   primaryLocationName: null as string | null,
   primaryLocationLat: null as number | null,
   primaryLocationLng: null as number | null,
+  eventsRole: "events",
+  adminRole: "event-admin",
+  separatorChannel: null as string | null,
+  emojiAccepted: "✅",
+  emojiDeclined: "❌",
+  emojiMaybe: "❓",
 };
 
 // In-memory store — mutated by handlers so RSVPs + create-event persist across navigations.

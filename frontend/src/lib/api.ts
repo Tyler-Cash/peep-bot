@@ -1,3 +1,4 @@
+import type { ZodType } from "zod";
 import { clearSwrCache } from "./swrCache";
 import { noteAuthFailure, noteAuthSuccess } from "./authLoopGuard";
 
@@ -25,6 +26,18 @@ export class ApiError extends Error {
     message: string,
   ) {
     super(message);
+  }
+}
+
+export class ResponseShapeError extends Error {
+  constructor(
+    public readonly path: string,
+    public readonly issues: unknown,
+    public readonly received: unknown,
+  ) {
+    super(
+      `${path}: response shape did not match the expected schema. ${JSON.stringify(issues)}`,
+    );
   }
 }
 
@@ -72,14 +85,16 @@ async function getCsrf(attempt = 0): Promise<string> {
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
+  schema?: ZodType<T>,
 ): Promise<T> {
-  return apiFetchInner<T>(path, init, 0);
+  return apiFetchInner<T>(path, init, 0, schema);
 }
 
 async function apiFetchInner<T>(
   path: string,
   init: RequestInit,
   retries: number,
+  schema?: ZodType<T>,
 ): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
@@ -140,7 +155,7 @@ async function apiFetchInner<T>(
     }
     const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
     await new Promise((r) => setTimeout(r, retry));
-    return apiFetchInner<T>(path, init, retries + 1);
+    return apiFetchInner<T>(path, init, retries + 1, schema);
   }
   if (!res.ok) {
     const body = await readErrorBody(res);
@@ -151,7 +166,15 @@ async function apiFetchInner<T>(
     );
   }
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  const data = await res.json();
+  if (schema) {
+    const parsed = schema.safeParse(data);
+    if (!parsed.success) {
+      throw new ResponseShapeError(path, parsed.error.issues, data);
+    }
+    return parsed.data;
+  }
+  return data as T;
 }
 
 export const api = {

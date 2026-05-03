@@ -1,8 +1,10 @@
 "use client";
 
 import useSWR, { mutate as globalMutate } from "swr";
+import { z } from "zod";
 import { apiFetch, api } from "./api";
 import { clearSwrCache } from "./swrCache";
+import { zGuildDto, zGuildSettingsDto, zUserInfoDto } from "./api/generated/zod.gen";
 import type {
   EventDetailDto,
   EventDto,
@@ -15,15 +17,18 @@ import type {
 } from "./types";
 
 const fetcher = <T>(path: string) => apiFetch<T>(path);
+const guildListSchema = z.array(zGuildDto);
 
 const ACTIVE_GUILD_KEY = "peepbot.activeGuild";
 
 export function useCurrentUser() {
-  return useSWR<UserInfo>("/auth/is-logged-in", fetcher);
+  return useSWR<UserInfo>("/auth/is-logged-in", (path) =>
+    apiFetch(path, {}, zUserInfoDto),
+  );
 }
 
 export function useGuilds() {
-  return useSWR<Guild[]>("/guild", fetcher);
+  return useSWR<Guild[]>("/guild", (path) => apiFetch(path, {}, guildListSchema));
 }
 
 export function getActiveGuildId(guilds: Guild[] | undefined): string | null {
@@ -228,10 +233,57 @@ export async function updateEvent(
   ]);
 }
 
+export type InstallPermission = { name: string; reason: string };
+
+export function useInstallUrl() {
+  return useSWR<{ url: string; permissions: InstallPermission[] }>("/install-url", fetcher);
+}
+
+export type GuildFeatures = {
+  immichEnabled: boolean;
+  googleAutocompleteEnabled: boolean;
+  rewindEnabled: boolean;
+};
+
+export function useGuildFeatures(guildId: string | null | undefined) {
+  return useSWR<GuildFeatures>(
+    guildId ? `/guild/${guildId}/features` : null,
+    fetcher,
+  );
+}
+
+export type AdminGuild = {
+  guildId: string;
+  name: string | null;
+  active: boolean;
+  immichEnabled: boolean;
+  googleAutocompleteEnabled: boolean;
+  rewindEnabled: boolean;
+};
+
+export function useAdminGuilds() {
+  return useSWR<AdminGuild[]>("/admin/guilds", fetcher);
+}
+
+export async function updateGuildFeatures(
+  guildId: string,
+  body: Partial<{
+    immichEnabled: boolean;
+    googleAutocompleteEnabled: boolean;
+    rewindEnabled: boolean;
+  }>,
+) {
+  await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  await globalMutate("/admin/guilds", undefined, { revalidate: true });
+}
+
 export function useGuildSettings(guildId: string | null) {
   return useSWR<GuildSettingsDto>(
     guildId ? `/guild/${guildId}/settings` : null,
-    fetcher,
+    (path) => apiFetch(path, {}, zGuildSettingsDto),
   );
 }
 

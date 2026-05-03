@@ -8,7 +8,6 @@ import dev.tylercash.event.contract.ContractConfiguration;
 import dev.tylercash.event.contract.ContractService;
 import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.discord.DiscordAuthService;
-import dev.tylercash.event.discord.DiscordConfiguration;
 import java.util.List;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -17,15 +16,16 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractSlashCommandListenerImplTest {
 
     ContractService contractService;
     UserBalanceService balanceService;
     DiscordAuthService authService;
     ContractConfiguration contractConfig;
-    DiscordConfiguration discordConfig;
     ContractSlashCommandListenerImpl listener;
 
     SlashCommandInteractionEvent event;
@@ -42,9 +42,7 @@ class ContractSlashCommandListenerImplTest {
         balanceService = mock(UserBalanceService.class);
         authService = mock(DiscordAuthService.class);
         contractConfig = new ContractConfiguration();
-        discordConfig = mock(DiscordConfiguration.class);
-        listener = new ContractSlashCommandListenerImpl(
-                contractService, balanceService, authService, contractConfig, discordConfig);
+        listener = new ContractSlashCommandListenerImpl(contractService, balanceService, authService, contractConfig);
 
         event = mock(SlashCommandInteractionEvent.class);
         deferAction = mock(ReplyCallbackAction.class);

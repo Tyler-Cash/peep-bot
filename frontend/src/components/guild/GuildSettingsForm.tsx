@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
 import { Slab } from "@/components/ui/Slab";
@@ -31,6 +31,13 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const [primaryLocationPlaceId, setPrimaryLocationPlaceId] = useState<string | null>(null);
   const [primaryLocationLat, setPrimaryLocationLat] = useState<number | null>(null);
   const [primaryLocationLng, setPrimaryLocationLng] = useState<number | null>(null);
+  const [eventsRole, setEventsRole] = useState("events");
+  const [organiserRole, setOrganiserRole] = useState("event-organiser");
+  const [separatorChannel, setSeparatorChannel] = useState("");
+  const [emojiAccepted, setEmojiAccepted] = useState("✅");
+  const [emojiDeclined, setEmojiDeclined] = useState("❌");
+  const [emojiMaybe, setEmojiMaybe] = useState("❓");
+  const initialOrganiserRole = useRef<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,14 +48,21 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       setPrimaryLocationPlaceId(settings.primaryLocationPlaceId ?? null);
       setPrimaryLocationLat(settings.primaryLocationLat ?? null);
       setPrimaryLocationLng(settings.primaryLocationLng ?? null);
+      setEventsRole(settings.eventsRole ?? "events");
+      setOrganiserRole(settings.organiserRole ?? "event-organiser");
+      setSeparatorChannel(settings.separatorChannel ?? "");
+      setEmojiAccepted(settings.emojiAccepted ?? "✅");
+      setEmojiDeclined(settings.emojiDeclined ?? "❌");
+      setEmojiMaybe(settings.emojiMaybe ?? "❓");
+      initialOrganiserRole.current = settings.organiserRole ?? "event-organiser";
       setInitialized(true);
     }
   }, [settings, initialized]);
 
   // Redirect non-admins
   useEffect(() => {
-    if (user && !user.admin) router.push("/");
-  }, [user, router]);
+    if (user && !user.ownedGuildIds?.includes(guildId)) router.push("/");
+  }, [user, router, guildId]);
 
   const handleLocationChange = (value: string) => {
     setPrimaryLocation(value);
@@ -98,6 +112,12 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (organiserRole !== initialOrganiserRole.current) {
+      const ok = window.confirm(
+        `After this change, only members with the role "${organiserRole}" will be able to organise events (cancel, recategorize, create private channels). Continue?`
+      );
+      if (!ok) return;
+    }
     setSubmitting(true);
     try {
       await updateGuildSettings(guildId, {
@@ -105,6 +125,12 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
         primaryLocationName: primaryLocation.trim() || null,
         primaryLocationLat,
         primaryLocationLng,
+        eventsRole,
+        organiserRole,
+        separatorChannel: separatorChannel.trim() || null,
+        emojiAccepted,
+        emojiDeclined,
+        emojiMaybe,
       });
       router.push("/");
     } finally {
@@ -155,6 +181,61 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
             <p className="text-[11.5px] text-mute font-semibold mt-1">
               Used to bias venue search results towards your group&apos;s area.
             </p>
+          </Field>
+        </Slab>
+
+        <Slab className="p-5 flex flex-col gap-4">
+          <Field label="events role">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={eventsRole}
+              onChange={(e) => setEventsRole(e.target.value)}
+            />
+            <p className="text-[11.5px] text-mute font-semibold mt-1">
+              Role pinged when new events are created.
+            </p>
+          </Field>
+          <Field label="event organiser role">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={organiserRole}
+              onChange={(e) => setOrganiserRole(e.target.value)}
+            />
+            <p className="text-[11.5px] text-mute font-semibold mt-1">
+              Members with this role can cancel events, recategorize, remove attendees, and create private channels.
+            </p>
+          </Field>
+          <Field label="separator channel">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={separatorChannel}
+              onChange={(e) => setSeparatorChannel(e.target.value)}
+              placeholder="(none)"
+            />
+          </Field>
+          <Field label="accepted emoji">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={emojiAccepted}
+              onChange={(e) => setEmojiAccepted(e.target.value)}
+            />
+            <p className="text-[11.5px] text-mute font-semibold mt-1">
+              Unicode emoji or the name of a custom emoji in this guild.
+            </p>
+          </Field>
+          <Field label="declined emoji">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={emojiDeclined}
+              onChange={(e) => setEmojiDeclined(e.target.value)}
+            />
+          </Field>
+          <Field label="maybe emoji">
+            <input
+              className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
+              value={emojiMaybe}
+              onChange={(e) => setEmojiMaybe(e.target.value)}
+            />
           </Field>
         </Slab>
 
