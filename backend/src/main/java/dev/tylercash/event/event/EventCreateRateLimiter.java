@@ -39,6 +39,10 @@ public class EventCreateRateLimiter {
                 .build();
     }
 
+    public void invalidate(long guildId) {
+        guildBuckets.invalidate(guildId);
+    }
+
     public AcquireResult tryAcquire(long guildId) {
         Bucket bucket = guildBuckets.get(guildId, k -> Bucket.builder()
                 .addLimit(Bandwidth.builder()
