@@ -3,8 +3,8 @@ package dev.tylercash.event.discord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.db.repository.GuildMemberRepository;
+import dev.tylercash.event.discord.model.GuildMember;
 import java.time.Instant;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
@@ -23,7 +23,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 class AvatarControllerTest {
 
     @Mock
-    private DiscordUserCacheRepository repo;
+    private GuildMemberRepository memberRepository;
 
     @Mock
     private ObjectProvider<DiscordService> discordServiceProvider;
@@ -38,16 +38,16 @@ class AvatarControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AvatarController(repo, discordServiceProvider, cacheService);
+        controller = new AvatarController(memberRepository, discordServiceProvider, cacheService);
     }
 
     @Test
     void getAvatar_returns200WithBytes_whenAvatarStored() {
         byte[] bytes = new byte[] {1, 2, 3};
-        DiscordUserCache cached = new DiscordUserCache(
-                "123", "User", "username", Instant.now(), bytes, "image/webp", java.util.Set.of(456L));
-        when(repo.findById("123")).thenReturn(Optional.of(cached));
-        when(repo.haveSharedGuild("789", "123")).thenReturn(true);
+        GuildMember member = new GuildMember(456L, "123", "Display", bytes, "image/webp", Instant.now());
+        when(memberRepository.haveSharedGuild("789", "123")).thenReturn(true);
+        when(memberRepository.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
+        when(memberRepository.findByGuildIdAndSnowflake(456L, "123")).thenReturn(Optional.of(member));
 
         OAuth2User principal = mock(OAuth2User.class);
         when(principal.getAttribute("id")).thenReturn("789");
@@ -58,13 +58,14 @@ class AvatarControllerTest {
         assertThat(response.getBody()).isEqualTo(bytes);
         assertThat(response.getHeaders().getContentType()).hasToString("image/webp");
         assertThat(response.getHeaders().getCacheControl()).contains("max-age=86400");
+        assertThat(response.getHeaders().getCacheControl()).contains("private");
     }
 
     @Test
     void getAvatar_returns302_whenAvatarMissingInCacheButFoundInJDA() {
-        when(repo.findById("123")).thenReturn(Optional.empty());
-        when(repo.haveSharedGuild("789", "123")).thenReturn(true);
-        when(repo.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
+        when(memberRepository.haveSharedGuild("789", "123")).thenReturn(true);
+        when(memberRepository.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
+        when(memberRepository.findByGuildIdAndSnowflake(456L, "123")).thenReturn(Optional.empty());
         when(discordServiceProvider.getIfAvailable()).thenReturn(discordService);
 
         Member member = mock(Member.class);
@@ -90,9 +91,9 @@ class AvatarControllerTest {
 
     @Test
     void getAvatar_returns404_whenUserNotCachedAndNotFoundInJDA() {
-        when(repo.findById("999")).thenReturn(Optional.empty());
-        when(repo.haveSharedGuild("789", "999")).thenReturn(true);
-        when(repo.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
+        when(memberRepository.haveSharedGuild("789", "999")).thenReturn(true);
+        when(memberRepository.findGuildIdsBySnowflake("789")).thenReturn(java.util.List.of(456L));
+        when(memberRepository.findByGuildIdAndSnowflake(456L, "999")).thenReturn(Optional.empty());
         when(discordServiceProvider.getIfAvailable()).thenReturn(discordService);
         when(discordService.getMemberFromServer(456L, 999L)).thenReturn(null);
 

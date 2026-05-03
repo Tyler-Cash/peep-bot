@@ -980,6 +980,62 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: move per-guild member fields to guild_member table
+      author: claude
+      comment: >
+        Display names and avatars are inherently per-guild on Discord. Move
+        these fields out of discord_user_cache (global) into the existing
+        discord_user_guild join table, renamed to guild_member. Existing
+        per-user values are seeded into each of that user's guild membership
+        rows; subsequent JDA refreshes overwrite per-guild values with the
+        true guild nickname/avatar. discord_user_cache keeps only the global
+        username/snowflake.
+      changes:
+        - renameTable:
+            oldTableName: discord_user_guild
+            newTableName: guild_member
+        - addColumn:
+            tableName: guild_member
+            columns:
+              - column:
+                  name: display_name
+                  type: text
+              - column:
+                  name: avatar_bytes
+                  type: bytea
+              - column:
+                  name: avatar_content_type
+                  type: text
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - sql:
+            sql: >
+              UPDATE guild_member gm
+              SET display_name = duc.display_name,
+                  avatar_bytes = duc.avatar_bytes,
+                  avatar_content_type = duc.avatar_content_type,
+                  updated_at = duc.updated_at
+              FROM discord_user_cache duc
+              WHERE gm.snowflake = duc.snowflake
+        - sql:
+            sql: >
+              UPDATE guild_member SET updated_at = NOW() WHERE updated_at IS NULL
+        - addNotNullConstraint:
+            tableName: guild_member
+            columnName: updated_at
+            columnDataType: TIMESTAMP WITH TIME ZONE
+        - dropColumn:
+            tableName: discord_user_cache
+            columns:
+              - column:
+                  name: display_name
+              - column:
+                  name: avatar_bytes
+              - column:
+                  name: avatar_content_type
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

@@ -39,10 +39,11 @@ class AvatarControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         fixtures.registerMember(TARGET, GUILD_1, "Target", "target");
 
         jdbc.update(
-                "UPDATE discord_user_cache SET avatar_bytes = ?, avatar_content_type = ? WHERE snowflake = ?",
+                "UPDATE guild_member SET avatar_bytes = ?, avatar_content_type = ? WHERE snowflake = ? AND guild_id = ?",
                 new byte[] {1, 2, 3},
                 "image/webp",
-                TARGET);
+                TARGET,
+                GUILD_1);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/avatar/{snowflake}", TARGET)
                         .with(authedAs(VIEWER)))

@@ -5,8 +5,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.db.repository.GuildMemberRepository;
 import dev.tylercash.event.discord.AvatarDownloadService.AvatarBytes;
 import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.discord.model.GuildMember;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,6 +30,7 @@ public class DiscordUserCacheService {
     private static final long STALE_MINUTES = 30;
 
     private final DiscordUserCacheRepository cacheRepository;
+    private final GuildMemberRepository memberRepository;
     private final AttendanceRepository attendanceRepository;
     private final EventRepository eventRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
@@ -36,12 +39,14 @@ public class DiscordUserCacheService {
 
     public DiscordUserCacheService(
             DiscordUserCacheRepository cacheRepository,
+            GuildMemberRepository memberRepository,
             AttendanceRepository attendanceRepository,
             EventRepository eventRepository,
             ObjectProvider<DiscordService> discordServiceProvider,
             GuildRepository guildRepository,
             AvatarDownloadService avatarDownloadService) {
         this.cacheRepository = cacheRepository;
+        this.memberRepository = memberRepository;
         this.attendanceRepository = attendanceRepository;
         this.eventRepository = eventRepository;
         this.discordServiceProvider = discordServiceProvider;
@@ -49,7 +54,10 @@ public class DiscordUserCacheService {
         this.avatarDownloadService = avatarDownloadService;
     }
 
+    /** Upsert global user info (username) and per-guild info (displayName, avatar). */
     public void upsertUser(String snowflake, String displayName, String username, String avatarUrl, long guildId) {
+        upsertGlobal(snowflake, username);
+
         byte[] avatarBytes = null;
         String avatarContentType = null;
         if (avatarUrl != null && !avatarUrl.isBlank()) {
@@ -60,75 +68,99 @@ public class DiscordUserCacheService {
             }
         }
 
-        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
-        DiscordUserCache user = existing.orElse(new DiscordUserCache(
-                snowflake, displayName, username, Instant.now(), avatarBytes, avatarContentType, new HashSet<>()));
+        GuildMember member = memberRepository
+                .findByGuildIdAndSnowflake(guildId, snowflake)
+                .orElseGet(() -> new GuildMember(guildId, snowflake, null, null, null, Instant.now()));
+        member.setDisplayName(displayName);
+        if (avatarBytes != null) {
+            member.setAvatarBytes(avatarBytes);
+            member.setAvatarContentType(avatarContentType);
+        }
+        member.setUpdatedAt(Instant.now());
+        memberRepository.save(member);
+    }
 
-        user.setDisplayName(displayName);
-        user.setUsername(username);
+    /** Register a guild membership without overwriting an existing displayName/avatar. */
+    public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
+        upsertGlobal(snowflake, username);
+
+        if (memberRepository.findByGuildIdAndSnowflake(guildId, snowflake).isEmpty()) {
+            memberRepository.save(new GuildMember(guildId, snowflake, displayName, null, null, Instant.now()));
+        }
+    }
+
+    private void upsertGlobal(String snowflake, String username) {
+        DiscordUserCache user =
+                cacheRepository.findById(snowflake).orElseGet(() -> new DiscordUserCache(snowflake, null, null));
+        if (username != null && !username.equals(user.getUsername())) {
+            user.setUsername(username);
+        }
         user.setUpdatedAt(Instant.now());
-        user.setAvatarBytes(avatarBytes);
-        user.setAvatarContentType(avatarContentType);
-        user.getGuildIds().add(guildId);
-
         cacheRepository.save(user);
     }
 
-    public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
-        Optional<DiscordUserCache> existing = cacheRepository.findById(snowflake);
-        if (existing.isEmpty()) {
-            DiscordUserCache newUser =
-                    new DiscordUserCache(snowflake, displayName, username, Instant.now(), null, null, new HashSet<>());
-            newUser.getGuildIds().add(guildId);
-            cacheRepository.save(newUser);
-        } else {
-            DiscordUserCache user = existing.get();
-            boolean changed = user.getGuildIds().add(guildId);
-            if (username != null && !username.equals(user.getUsername())) {
-                user.setUsername(username);
-                changed = true;
-            }
-            if (changed) {
-                user.setUpdatedAt(Instant.now());
-                cacheRepository.save(user);
-            }
-        }
-    }
-
-    public String getDisplayName(String snowflake) {
+    /** Lookup a per-guild display name, falling back to the global username then "Unknown User (#…)". */
+    public String getDisplayName(long guildId, String snowflake) {
         if (snowflake == null || snowflake.isBlank()) {
             return "Unknown User";
         }
-        return cacheRepository
-                .findById(snowflake)
-                .map(DiscordUserCache::getDisplayName)
-                .orElse("Unknown User (#" + snowflake.substring(Math.max(0, snowflake.length() - 4)) + ")");
+        return memberRepository
+                .findByGuildIdAndSnowflake(guildId, snowflake)
+                .map(GuildMember::getDisplayName)
+                .filter(s -> s != null && !s.isBlank())
+                .orElseGet(() -> cacheRepository
+                        .findById(snowflake)
+                        .map(DiscordUserCache::getUsername)
+                        .filter(s -> s != null && !s.isBlank())
+                        .orElse("Unknown User (#" + snowflake.substring(Math.max(0, snowflake.length() - 4)) + ")"));
     }
 
-    public Map<String, String> getDisplayNames(Collection<String> snowflakes) {
-        if (snowflakes == null || snowflakes.isEmpty()) {
-            return Map.of();
-        }
-        Set<String> unique =
-                snowflakes.stream().filter(s -> s != null && !s.isBlank()).collect(Collectors.toSet());
+    public Map<String, String> getDisplayNames(long guildId, Collection<String> snowflakes) {
+        Set<String> unique = uniqueSnowflakes(snowflakes);
         if (unique.isEmpty()) {
             return Map.of();
         }
-        return cacheRepository.findAllBySnowflakeIn(unique).stream()
-                .collect(Collectors.toMap(DiscordUserCache::getSnowflake, DiscordUserCache::getDisplayName));
+        Map<String, String> result = memberRepository.findAllByGuildIdAndSnowflakeIn(guildId, unique).stream()
+                .filter(m -> m.getDisplayName() != null && !m.getDisplayName().isBlank())
+                .collect(Collectors.toMap(GuildMember::getSnowflake, GuildMember::getDisplayName));
+        Set<String> missing = new HashSet<>(unique);
+        missing.removeAll(result.keySet());
+        if (!missing.isEmpty()) {
+            cacheRepository.findAllBySnowflakeIn(missing).stream()
+                    .filter(u -> u.getUsername() != null && !u.getUsername().isBlank())
+                    .forEach(u -> result.put(u.getSnowflake(), u.getUsername()));
+        }
+        return result;
     }
 
-    public Map<String, DiscordUserCache> getUsers(Collection<String> snowflakes) {
-        if (snowflakes == null || snowflakes.isEmpty()) {
-            return Map.of();
-        }
-        Set<String> unique =
-                snowflakes.stream().filter(s -> s != null && !s.isBlank()).collect(Collectors.toSet());
+    /** Per-guild members keyed by snowflake. */
+    public Map<String, GuildMember> getGuildMembers(long guildId, Collection<String> snowflakes) {
+        Set<String> unique = uniqueSnowflakes(snowflakes);
         if (unique.isEmpty()) {
             return Map.of();
         }
-        return cacheRepository.findAllBySnowflakeIn(unique).stream()
-                .collect(Collectors.toMap(DiscordUserCache::getSnowflake, Function.identity()));
+        return memberRepository.findAllByGuildIdAndSnowflakeIn(guildId, unique).stream()
+                .collect(Collectors.toMap(GuildMember::getSnowflake, Function.identity()));
+    }
+
+    /** Global usernames keyed by snowflake (no per-guild context). */
+    public Map<String, String> getUsernames(Collection<String> snowflakes) {
+        Set<String> unique = uniqueSnowflakes(snowflakes);
+        if (unique.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> result = new HashMap<>();
+        cacheRepository.findAllBySnowflakeIn(unique).stream()
+                .filter(u -> u.getUsername() != null)
+                .forEach(u -> result.put(u.getSnowflake(), u.getUsername()));
+        return result;
+    }
+
+    private static Set<String> uniqueSnowflakes(Collection<String> snowflakes) {
+        if (snowflakes == null || snowflakes.isEmpty()) {
+            return Set.of();
+        }
+        return snowflakes.stream().filter(s -> s != null && !s.isBlank()).collect(Collectors.toSet());
     }
 
     @Observed(name = "discord.refresh-user-cache")
@@ -141,23 +173,23 @@ public class DiscordUserCacheService {
             return;
         }
 
-        Map<String, DiscordUserCache> cached = cacheRepository.findAllBySnowflakeIn(activeSnowflakes).stream()
-                .collect(Collectors.toMap(DiscordUserCache::getSnowflake, Function.identity()));
-
-        List<String> toRefresh = activeSnowflakes.stream()
-                .filter(s -> {
-                    DiscordUserCache entry = cached.get(s);
-                    return entry == null || entry.getUpdatedAt().isBefore(staleCutoff);
-                })
-                .limit(REFRESH_BATCH_SIZE)
-                .toList();
-
         List<Long> activeGuilds = guildRepository.findAllByActiveTrue().stream()
                 .map(Guild::getGuildId)
                 .toList();
 
-        for (String snowflake : toRefresh) {
+        int refreshed = 0;
+        for (String snowflake : activeSnowflakes) {
+            if (refreshed >= REFRESH_BATCH_SIZE) {
+                break;
+            }
             for (long guildId : activeGuilds) {
+                if (refreshed >= REFRESH_BATCH_SIZE) {
+                    break;
+                }
+                Optional<GuildMember> entry = memberRepository.findByGuildIdAndSnowflake(guildId, snowflake);
+                if (entry.isPresent() && entry.get().getUpdatedAt().isAfter(staleCutoff)) {
+                    continue;
+                }
                 try {
                     Member member =
                             discordServiceProvider.getObject().getMemberFromServer(guildId, Long.parseLong(snowflake));
@@ -166,11 +198,11 @@ public class DiscordUserCacheService {
                         String username = member.getUser().getName();
                         String avatarUrl = member.getEffectiveAvatar().getUrl(256);
                         upsertUser(snowflake, displayName, username, avatarUrl, guildId);
-                        break;
+                        refreshed++;
                     }
                 } catch (Exception e) {
                     log.debug(
-                            "Failed to refresh cache for snowflake {} via guild {}: {}",
+                            "Failed to refresh cache for snowflake {} in guild {}: {}",
                             snowflake,
                             guildId,
                             e.getMessage());
@@ -178,8 +210,8 @@ public class DiscordUserCacheService {
             }
         }
 
-        if (!toRefresh.isEmpty()) {
-            log.debug("Refreshed {} user cache entries", toRefresh.size());
+        if (refreshed > 0) {
+            log.debug("Refreshed {} user cache entries", refreshed);
         }
     }
 }

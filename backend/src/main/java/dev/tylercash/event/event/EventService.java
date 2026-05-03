@@ -195,11 +195,12 @@ public class EventService {
             allSnowflakes.add(event.getCreator());
         }
 
-        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(allSnowflakes);
+        long guildId = event.getServerId();
+        Map<String, String> nameMap = discordUserCacheService.getDisplayNames(guildId, allSnowflakes);
 
-        event.setAccepted(toAttendeeSet(summary.accepted(), nameMap));
-        event.setDeclined(toAttendeeSet(summary.declined(), nameMap));
-        event.setMaybe(toAttendeeSet(summary.maybe(), nameMap));
+        event.setAccepted(toAttendeeSet(summary.accepted(), nameMap, guildId));
+        event.setDeclined(toAttendeeSet(summary.declined(), nameMap, guildId));
+        event.setMaybe(toAttendeeSet(summary.maybe(), nameMap, guildId));
 
         String creatorName = nameMap.get(event.getCreator());
         event.setCreatorDisplayName(creatorName != null ? creatorName : event.getCreator());
@@ -214,13 +215,13 @@ public class EventService {
         embeddingService.classifyEvent(event);
     }
 
-    private Set<Attendee> toAttendeeSet(List<AttendanceRecord> records, Map<String, String> nameMap) {
+    private Set<Attendee> toAttendeeSet(List<AttendanceRecord> records, Map<String, String> nameMap, long guildId) {
         Set<Attendee> attendees = new LinkedHashSet<>();
         for (AttendanceRecord record : records) {
             String displayName;
             if (record.getSnowflake() != null) {
                 displayName = nameMap.getOrDefault(
-                        record.getSnowflake(), discordUserCacheService.getDisplayName(record.getSnowflake()));
+                        record.getSnowflake(), discordUserCacheService.getDisplayName(guildId, record.getSnowflake()));
             } else {
                 displayName = record.getName();
             }

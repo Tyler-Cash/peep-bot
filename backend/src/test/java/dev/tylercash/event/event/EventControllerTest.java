@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.GuildMembershipService;
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.discord.model.GuildMember;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
@@ -372,19 +372,20 @@ class EventControllerTest {
         UUID eventId = UUID.randomUUID();
         Event event = buildFullEvent(eventId, DISCORD_ID);
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        DiscordUserCache hostUser =
-                new DiscordUserCache(DISCORD_ID, "Host Name", "host_user", Instant.now(), null, null, Set.of(GUILD_ID));
+        GuildMember hostMember = new GuildMember(GUILD_ID, DISCORD_ID, "Host Name", null, null, Instant.now());
 
         when(ctx.eventService.getEvent(eventId)).thenReturn(event);
         when(ctx.eventService.isCompleted(event)).thenReturn(false);
         when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
-        when(ctx.discordUserCacheService.getUsers(any())).thenReturn(Map.of(DISCORD_ID, hostUser));
+        when(ctx.discordUserCacheService.getGuildMembers(eq(GUILD_ID), any()))
+                .thenReturn(Map.of(DISCORD_ID, hostMember));
+        when(ctx.discordUserCacheService.getUsernames(any())).thenReturn(Map.of(DISCORD_ID, "host_user"));
 
         ctx.controller.getEvent(eventId, ctx.principal);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Set<String>> snowflakesCaptor = ArgumentCaptor.forClass(Set.class);
-        verify(ctx.discordUserCacheService).getUsers(snowflakesCaptor.capture());
+        verify(ctx.discordUserCacheService).getGuildMembers(eq(GUILD_ID), snowflakesCaptor.capture());
         assertThat(snowflakesCaptor.getValue()).contains(DISCORD_ID);
     }
 
@@ -394,13 +395,14 @@ class EventControllerTest {
         UUID eventId = UUID.randomUUID();
         Event event = buildFullEvent(eventId, DISCORD_ID);
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        DiscordUserCache hostUser =
-                new DiscordUserCache(DISCORD_ID, "Host Name", "host_user", Instant.now(), null, null, Set.of(GUILD_ID));
+        GuildMember hostMember = new GuildMember(GUILD_ID, DISCORD_ID, "Host Name", null, null, Instant.now());
 
         when(ctx.eventService.getEvent(eventId)).thenReturn(event);
         when(ctx.eventService.isCompleted(event)).thenReturn(false);
         when(ctx.attendanceService.getCurrentAttendance(eventId)).thenReturn(summary);
-        when(ctx.discordUserCacheService.getUsers(any())).thenReturn(Map.of(DISCORD_ID, hostUser));
+        when(ctx.discordUserCacheService.getGuildMembers(eq(GUILD_ID), any()))
+                .thenReturn(Map.of(DISCORD_ID, hostMember));
+        when(ctx.discordUserCacheService.getUsernames(any())).thenReturn(Map.of(DISCORD_ID, "host_user"));
 
         EventDetailDto result = ctx.controller.getEvent(eventId, ctx.principal);
 
@@ -449,9 +451,10 @@ class EventControllerTest {
 
         Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
         when(ctx.eventService.getActiveEvents(any(), eq(GUILD_ID))).thenReturn(eventPage);
-        DiscordUserCache user = new DiscordUserCache(
-                DISCORD_ID, "Resolved Name", "username", Instant.now(), null, null, Set.of(GUILD_ID));
-        when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of(DISCORD_ID, user));
+        GuildMember member = new GuildMember(GUILD_ID, DISCORD_ID, "Resolved Name", null, null, Instant.now());
+        when(ctx.discordUserCacheService.getGuildMembers(GUILD_ID, Set.of(DISCORD_ID)))
+                .thenReturn(Map.of(DISCORD_ID, member));
+        when(ctx.discordUserCacheService.getUsernames(Set.of(DISCORD_ID))).thenReturn(Map.of(DISCORD_ID, "username"));
 
         Page<EventDto> result = ctx.controller.getEvents(GUILD_ID_STR, PageRequest.of(0, 10), ctx.principal);
 
@@ -476,7 +479,9 @@ class EventControllerTest {
 
         Page<Event> eventPage = new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1);
         when(ctx.eventService.getActiveEvents(any(), eq(GUILD_ID))).thenReturn(eventPage);
-        when(ctx.discordUserCacheService.getUsers(Set.of(DISCORD_ID))).thenReturn(Map.of());
+        when(ctx.discordUserCacheService.getGuildMembers(GUILD_ID, Set.of(DISCORD_ID)))
+                .thenReturn(Map.of());
+        when(ctx.discordUserCacheService.getUsernames(Set.of(DISCORD_ID))).thenReturn(Map.of());
 
         Page<EventDto> result = ctx.controller.getEvents(GUILD_ID_STR, PageRequest.of(0, 10), ctx.principal);
 

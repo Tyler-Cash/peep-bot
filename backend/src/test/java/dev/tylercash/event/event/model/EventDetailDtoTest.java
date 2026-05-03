@@ -2,22 +2,23 @@ package dev.tylercash.event.event.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.discord.model.GuildMember;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class EventDetailDtoTest {
 
+    private static final long GUILD_ID = 0L;
+
     private static Event buildEvent() {
-        return new Event(0L, 0L, 0L, "Test Event", "creator", ZonedDateTime.now(), "description");
+        return new Event(0L, GUILD_ID, 0L, "Test Event", "creator", ZonedDateTime.now(), "description");
     }
 
-    private static DiscordUserCache buildCache(String snowflake, String displayName, String username) {
-        return new DiscordUserCache(snowflake, displayName, username, Instant.now(), null, null, new HashSet<>());
+    private static GuildMember buildMember(String snowflake, String displayName) {
+        return new GuildMember(GUILD_ID, snowflake, displayName, null, null, Instant.now());
     }
 
     @Test
@@ -51,7 +52,6 @@ class EventDetailDtoTest {
         Attendee first = Attendee.createDiscordAttendee("aaa", "First");
         Thread.sleep(5);
         Attendee second = Attendee.createDiscordAttendee("bbb", "Second");
-        // Add in reverse order to ensure sorting is applied
         event.getAccepted().add(second);
         event.getAccepted().add(first);
 
@@ -121,17 +121,32 @@ class EventDetailDtoTest {
     }
 
     @Test
-    void fourArgConstructor_hostResolvedFromNameMap() {
+    void fourArgConstructor_hostResolvedFromMemberMap() {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, DiscordUserCache> nameMap =
-                Map.of("creator-snowflake", buildCache("creator-snowflake", "Host Display Name", "host_username"));
+        Map<String, GuildMember> memberMap =
+                Map.of("creator-snowflake", buildMember("creator-snowflake", "Host Display Name"));
+        Map<String, String> usernameMap = Map.of("creator-snowflake", "host_username");
 
-        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+        EventDetailDto dto = new EventDetailDto(event, false, summary, memberMap, usernameMap);
 
         assertThat(dto.getHost()).isEqualTo("Host Display Name");
         assertThat(dto.getHostUsername()).isEqualTo("host_username");
+    }
+
+    @Test
+    void fourArgConstructor_hostFallsBackToGlobalUsername_whenMemberMissing() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        Map<String, GuildMember> memberMap = Map.of();
+        Map<String, String> usernameMap = Map.of("creator-snowflake", "host_global");
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, memberMap, usernameMap);
+
+        assertThat(dto.getHost()).isEqualTo("host_global");
+        assertThat(dto.getHostUsername()).isEqualTo("host_global");
     }
 
     @Test
@@ -139,10 +154,11 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, DiscordUserCache> nameMap =
-                Map.of("creator-snowflake", buildCache("creator-snowflake", "Host Display Name", "host_username"));
+        Map<String, GuildMember> memberMap =
+                Map.of("creator-snowflake", buildMember("creator-snowflake", "Host Display Name"));
+        Map<String, String> usernameMap = Map.of("creator-snowflake", "host_username");
 
-        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+        EventDetailDto dto = new EventDetailDto(event, false, summary, memberMap, usernameMap);
 
         assertThat(dto.getHostAvatarUrl()).isEqualTo("/api/avatar/creator-snowflake");
     }
@@ -152,9 +168,8 @@ class EventDetailDtoTest {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
         AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
-        Map<String, DiscordUserCache> nameMap = Map.of();
 
-        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+        EventDetailDto dto = new EventDetailDto(event, false, summary, Map.of(), Map.of());
 
         assertThat(dto.getHost()).isEqualTo("creator-snowflake");
         assertThat(dto.getHostAvatarUrl()).isEqualTo("/api/avatar/creator-snowflake");
@@ -168,13 +183,18 @@ class EventDetailDtoTest {
         AttendanceRecord declined = buildRecord("user-2", "Bob");
         AttendanceRecord maybe = buildRecord("user-3", "Charlie");
         AttendanceSummary summary = new AttendanceSummary(List.of(accepted), List.of(declined), List.of(maybe));
-        Map<String, DiscordUserCache> nameMap = Map.of(
-                "creator-snowflake", buildCache("creator-snowflake", "Host", "host_user"),
-                "user-1", buildCache("user-1", "Alice Resolved", "alice_user"),
-                "user-2", buildCache("user-2", "Bob Resolved", "bob_user"),
-                "user-3", buildCache("user-3", "Charlie Resolved", "charlie_user"));
+        Map<String, GuildMember> memberMap = Map.of(
+                "creator-snowflake", buildMember("creator-snowflake", "Host"),
+                "user-1", buildMember("user-1", "Alice Resolved"),
+                "user-2", buildMember("user-2", "Bob Resolved"),
+                "user-3", buildMember("user-3", "Charlie Resolved"));
+        Map<String, String> usernameMap = Map.of(
+                "creator-snowflake", "host_user",
+                "user-1", "alice_user",
+                "user-2", "bob_user",
+                "user-3", "charlie_user");
 
-        EventDetailDto dto = new EventDetailDto(event, false, summary, nameMap);
+        EventDetailDto dto = new EventDetailDto(event, false, summary, memberMap, usernameMap);
 
         assertThat(dto.getAccepted()).hasSize(1);
         assertThat(dto.getAccepted().get(0).getName()).isEqualTo("Alice Resolved");

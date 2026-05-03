@@ -110,7 +110,7 @@ class SessionContinuityIntegrationTest {
         jdbc.execute("DELETE FROM attendance");
         jdbc.execute("DELETE FROM event_category");
         jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM discord_user_guild");
+        jdbc.execute("DELETE FROM guild_member");
         jdbc.execute("DELETE FROM discord_user_cache");
         jdbc.execute("DELETE FROM SPRING_SESSION_ATTRIBUTES");
         jdbc.execute("DELETE FROM SPRING_SESSION");

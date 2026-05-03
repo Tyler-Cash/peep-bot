@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.tylercash.event.discord.GuildDto;
 import dev.tylercash.event.discord.GuildSettingsDto;
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.discord.model.GuildMember;
 import dev.tylercash.event.event.model.AttendanceRecord;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
@@ -70,7 +70,7 @@ class ResponseSerializationTest {
             "sessionid",
             "csrftoken",
             "sharekey", // GalleryAlbumDto must not leak the per-user Immich share key
-            "avatarbytes" // DiscordUserCache.avatarBytes must never escape via a JSON DTO
+            "avatarbytes" // GuildMember.avatarBytes must never escape via a JSON DTO
             );
 
     private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -100,15 +100,9 @@ class ResponseSerializationTest {
         rec.setStatus(AttendanceStatus.ACCEPTED);
         rec.setRecordedAt(Instant.parse("2099-01-01T00:00:00Z"));
         AttendanceSummary summary = new AttendanceSummary(List.of(rec), List.of(), List.of());
-        DiscordUserCache user = new DiscordUserCache(
-                "111",
-                "Alice",
-                "alice",
-                Instant.parse("2099-01-01T00:00:00Z"),
-                new byte[] {1, 2, 3},
-                "image/webp",
-                new HashSet<>(Set.of(311L)));
-        out.add(new EventDetailDto(event, true, summary, Map.of("111", user), "social"));
+        GuildMember member = new GuildMember(
+                311L, "111", "Alice", new byte[] {1, 2, 3}, "image/webp", Instant.parse("2099-01-01T00:00:00Z"));
+        out.add(new EventDetailDto(event, true, summary, Map.of("111", member), Map.of("111", "alice"), "social"));
 
         out.add(new AttendeeDto(a));
 
@@ -169,7 +163,7 @@ class ResponseSerializationTest {
      * {@code ResponseEntity<byte[]>}, not a JSON DTO — that's exempt.)
      */
     @Test
-    void discordUserCache_avatarBytes_doNotSerialize_via_anyDtoFixture() throws Exception {
+    void guildMember_avatarBytes_doNotSerialize_via_anyDtoFixture() throws Exception {
         for (Object dto : populatedControllerDtos()) {
             String json = MAPPER.writeValueAsString(dto);
             assertThat(json)

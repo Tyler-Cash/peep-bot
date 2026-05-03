@@ -103,7 +103,7 @@ class ConcurrencyIntegrationTest {
         jdbc.execute("DELETE FROM attendance");
         jdbc.execute("DELETE FROM event_category");
         jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM discord_user_guild");
+        jdbc.execute("DELETE FROM guild_member");
         jdbc.execute("DELETE FROM discord_user_cache");
         jdbc.execute("DELETE FROM user_balance");
     }

@@ -1,7 +1,7 @@
 package dev.tylercash.event.discord;
 
-import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.db.repository.GuildMemberRepository;
+import dev.tylercash.event.discord.model.GuildMember;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AvatarController {
 
-    private final DiscordUserCacheRepository cacheRepository;
+    private final GuildMemberRepository memberRepository;
     private final ObjectProvider<DiscordService> discordServiceProvider;
     private final DiscordUserCacheService cacheService;
 
@@ -37,34 +37,37 @@ public class AvatarController {
         }
 
         String viewerSnowflake = principal.getAttribute("id");
-        if (viewerSnowflake == null || !cacheRepository.haveSharedGuild(viewerSnowflake, snowflake)) {
+        if (viewerSnowflake == null || !memberRepository.haveSharedGuild(viewerSnowflake, snowflake)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Optional<DiscordUserCache> cached = cacheRepository.findById(snowflake);
-        if (cached.isPresent() && cached.get().getAvatarBytes() != null) {
-            DiscordUserCache entry = cached.get();
-            String ct = entry.getAvatarContentType();
-            MediaType mediaType;
-            try {
-                mediaType = (ct != null && !ct.isBlank())
-                        ? MediaType.parseMediaType(ct)
-                        : MediaType.parseMediaType("image/webp");
-            } catch (Exception e) {
-                mediaType = MediaType.parseMediaType("image/webp");
+        // Prefer cached avatar bytes from any guild the viewer shares with the target.
+        List<Long> viewerGuilds = memberRepository.findGuildIdsBySnowflake(viewerSnowflake);
+        for (Long guildId : viewerGuilds) {
+            Optional<GuildMember> member = memberRepository.findByGuildIdAndSnowflake(guildId, snowflake);
+            if (member.isPresent() && member.get().getAvatarBytes() != null) {
+                GuildMember entry = member.get();
+                String ct = entry.getAvatarContentType();
+                MediaType mediaType;
+                try {
+                    mediaType = (ct != null && !ct.isBlank())
+                            ? MediaType.parseMediaType(ct)
+                            : MediaType.parseMediaType("image/webp");
+                } catch (Exception e) {
+                    mediaType = MediaType.parseMediaType("image/webp");
+                }
+                return ResponseEntity.ok()
+                        .contentType(mediaType)
+                        .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePrivate())
+                        .body(entry.getAvatarBytes());
             }
-            return ResponseEntity.ok()
-                    .contentType(mediaType)
-                    .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
-                    .body(entry.getAvatarBytes());
         }
 
-        // Fallback: try each guild the viewer shares with the bot, pick the first that knows the target
-        List<Long> sharedGuilds = cacheRepository.findGuildIdsBySnowflake(viewerSnowflake);
+        // Fallback: fetch from JDA via any shared guild and cache the result.
         try {
             DiscordService discordService = discordServiceProvider.getIfAvailable();
             if (discordService != null) {
-                for (Long guildId : sharedGuilds) {
+                for (Long guildId : viewerGuilds) {
                     Member member = discordService.getMemberFromServer(guildId, Long.parseLong(snowflake));
                     if (member != null) {
                         String avatarUrl = member.getEffectiveAvatar().getUrl(256);

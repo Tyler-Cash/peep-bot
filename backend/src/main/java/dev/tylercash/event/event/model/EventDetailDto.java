@@ -1,6 +1,6 @@
 package dev.tylercash.event.event.model;
 
-import dev.tylercash.event.discord.model.DiscordUserCache;
+import dev.tylercash.event.discord.model.GuildMember;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -27,30 +27,49 @@ public class EventDetailDto extends EventDto {
     }
 
     public EventDetailDto(
-            Event event, boolean completed, AttendanceSummary summary, Map<String, DiscordUserCache> userMap) {
-        this(event, completed, summary, userMap, "unknown");
+            Event event,
+            boolean completed,
+            AttendanceSummary summary,
+            Map<String, GuildMember> memberMap,
+            Map<String, String> usernameMap) {
+        this(event, completed, summary, memberMap, usernameMap, "unknown");
     }
 
     public EventDetailDto(
             Event event,
             boolean completed,
             AttendanceSummary summary,
-            Map<String, DiscordUserCache> userMap,
+            Map<String, GuildMember> memberMap,
+            Map<String, String> usernameMap,
             String category) {
         super(event);
         this.setCategory(category == null || category.isBlank() ? "unknown" : category);
         String creator = event.getCreator();
         if (creator != null && !creator.isBlank()) {
-            DiscordUserCache user = userMap.get(creator);
-            this.setHost(user != null ? user.getDisplayName() : creator);
-            this.setHostUsername(user != null ? user.getUsername() : null);
+            this.setHost(resolveDisplayName(creator, memberMap, usernameMap));
+            this.setHostUsername(usernameMap.get(creator));
             this.setHostAvatarUrl("/api/avatar/" + creator);
         }
-        this.accepted = toSortedRecordList(summary.accepted(), userMap);
-        this.declined = toSortedRecordList(summary.declined(), userMap);
-        this.maybe = toSortedRecordList(summary.maybe(), userMap);
+        this.accepted = toSortedRecordList(summary.accepted(), memberMap, usernameMap);
+        this.declined = toSortedRecordList(summary.declined(), memberMap, usernameMap);
+        this.maybe = toSortedRecordList(summary.maybe(), memberMap, usernameMap);
         this.completed = completed;
         this.hasPrivateChannel = event.getPrivateChannelId() != null;
+    }
+
+    private static String resolveDisplayName(
+            String snowflake, Map<String, GuildMember> memberMap, Map<String, String> usernameMap) {
+        GuildMember member = memberMap.get(snowflake);
+        if (member != null
+                && member.getDisplayName() != null
+                && !member.getDisplayName().isBlank()) {
+            return member.getDisplayName();
+        }
+        String username = usernameMap.get(snowflake);
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        return snowflake;
     }
 
     private static List<AttendeeDto> toSortedList(Set<Attendee> attendees) {
@@ -61,15 +80,14 @@ public class EventDetailDto extends EventDto {
     }
 
     private static List<AttendeeDto> toSortedRecordList(
-            List<AttendanceRecord> records, Map<String, DiscordUserCache> userMap) {
+            List<AttendanceRecord> records, Map<String, GuildMember> memberMap, Map<String, String> usernameMap) {
         return records.stream()
                 .map(r -> {
                     String displayName;
                     String username = null;
                     if (r.getSnowflake() != null) {
-                        DiscordUserCache user = userMap.get(r.getSnowflake());
-                        displayName = user != null ? user.getDisplayName() : r.getSnowflake();
-                        username = user != null ? user.getUsername() : null;
+                        displayName = resolveDisplayName(r.getSnowflake(), memberMap, usernameMap);
+                        username = usernameMap.get(r.getSnowflake());
                     } else {
                         displayName = r.getName();
                     }

@@ -22,7 +22,7 @@ public class HttpIntegrationFixtures {
 
     private final AtomicLong messageIdCounter = new AtomicLong(20_000);
 
-    /** Register a user as a member of a guild (populates discord_user_cache + discord_user_guild). */
+    /** Register a user as a member of a guild (populates discord_user_cache + guild_member). */
     public void registerMember(String snowflake, long guildId, String displayName, String username) {
         discordUserCacheService.registerIfMissing(snowflake, displayName, username, guildId);
     }

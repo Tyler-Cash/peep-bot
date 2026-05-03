@@ -61,7 +61,7 @@ class EventServiceTest {
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
         when(attendanceService.getCurrentAttendance(id))
                 .thenReturn(new AttendanceSummary(List.of(), List.of(), List.of()));
-        when(cacheService.getDisplayNames(any())).thenReturn(Map.of());
+        when(cacheService.getDisplayNames(anyLong(), any())).thenReturn(Map.of());
 
         service.removeAttendee(id, "12345", null);
 
@@ -82,7 +82,7 @@ class EventServiceTest {
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
         when(attendanceService.getCurrentAttendance(id))
                 .thenReturn(new AttendanceSummary(List.of(), List.of(), List.of()));
-        when(cacheService.getDisplayNames(any())).thenReturn(Map.of());
+        when(cacheService.getDisplayNames(anyLong(), any())).thenReturn(Map.of());
 
         service.removeAttendee(id, null, "[+1] Dave");
 
