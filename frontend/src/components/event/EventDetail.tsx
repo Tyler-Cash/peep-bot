@@ -11,6 +11,7 @@ import { CountdownChip } from "@/components/ui/CountdownChip";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { DateTile } from "@/components/ui/DateTile";
 import { RsvpGroup } from "./RsvpGroup";
+import { ActivityLog, type ActivityEvent } from "./ActivityLog";
 import { categoryMeta } from "@/lib/categories";
 import { dateStamp, seededTilt, timeLabel } from "@/lib/format";
 import {
@@ -26,6 +27,65 @@ import {
 import type { Attendee, RsvpStatus } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { PencilIcon } from "@/components/icons/PencilIcon";
+
+// Discord snowflakes encode their creation time in the high bits, with epoch
+// 2015-01-01. We use that to derive the host post's "posted at" timestamp
+// without needing a separate field on the event DTO.
+const DISCORD_EPOCH_MS = 1420070400000;
+
+function snowflakeToIso(snowflake: string | undefined): string | null {
+  if (!snowflake) return null;
+  try {
+    const ms = Number(BigInt(snowflake) >> BigInt(22)) + DISCORD_EPOCH_MS;
+    if (!Number.isFinite(ms)) return null;
+    return new Date(ms).toISOString();
+  } catch {
+    return null;
+  }
+}
+
+function buildActivityEvents(input: {
+  accepted: Attendee[];
+  maybe: Attendee[];
+  declined: Attendee[];
+  host?: string;
+  hostAvatarUrl?: string;
+  messageId?: string;
+  dateTime: string;
+}): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+
+  if (input.host) {
+    const at =
+      snowflakeToIso(input.messageId) ?? input.dateTime;
+    events.push({
+      id: input.messageId ? `host:${input.messageId}` : "host",
+      who: input.host,
+      avatarUrl: input.hostAvatarUrl ?? null,
+      kind: "host",
+      at,
+    });
+  }
+
+  const push = (list: Attendee[], kind: "going" | "maybe" | "declined") => {
+    for (const a of list) {
+      if (!a.instant) continue;
+      events.push({
+        id: `${kind}:${a.snowflake ?? a.name}:${a.instant}`,
+        who: a.name,
+        avatarUrl: a.avatarUrl ?? null,
+        hue: a.hue,
+        kind,
+        at: a.instant,
+      });
+    }
+  };
+  push(input.accepted, "going");
+  push(input.maybe, "maybe");
+  push(input.declined, "declined");
+
+  return events;
+}
 
 export function EventDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -85,6 +145,16 @@ export function EventDetail({ id }: { id: string }) {
   const accepted = (data.accepted ?? []) as Attendee[];
   const maybe = (data.maybe ?? []) as Attendee[];
   const declined = (data.declined ?? []) as Attendee[];
+
+  const activityEvents = buildActivityEvents({
+    accepted,
+    maybe,
+    declined,
+    host: data.host,
+    hostAvatarUrl: data.hostAvatarUrl,
+    messageId: data.messageId,
+    dateTime: data.dateTime,
+  });
 
   const meStatus: RsvpStatus | null =
     accepted.some((a) => a.snowflake === me?.discordId)
@@ -389,6 +459,11 @@ export function EventDetail({ id }: { id: string }) {
                 </Chunky>
               </div>
             )}
+
+            <ActivityLog
+              events={activityEvents}
+              channelName={guild?.name ?? "discord"}
+            />
           </aside>
         </div>
 
