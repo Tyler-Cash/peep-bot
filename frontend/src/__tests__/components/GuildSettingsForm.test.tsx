@@ -63,6 +63,9 @@ beforeEach(() => {
   mockUpdateGuildSettings.mockReset();
   mockUseCurrentUser.mockReset();
   mockUseGuildSettings.mockReset();
+  if (typeof window !== "undefined") {
+    window.history.replaceState(null, "", window.location.pathname);
+  }
 });
 
 afterEach(() => {
@@ -109,6 +112,8 @@ describe("GuildSettingsForm", () => {
         emojiAccepted: "✅",
         emojiDeclined: "❌",
         emojiMaybe: "❓",
+        eventCreateRateLimitPerHour: null,
+        defaultEventCreateRateLimitPerHour: 5,
       },
       isLoading: false,
     });
@@ -117,9 +122,10 @@ describe("GuildSettingsForm", () => {
     const user = userEvent.setup();
     render(<GuildSettingsForm guildId="g1" />);
 
+    // Primary location lives in the "Defaults & limits" tab now.
+    await user.click(screen.getByRole("tab", { name: /defaults & limits/i }));
     const loc = screen.getByTestId("location") as HTMLInputElement;
     await waitFor(() => expect(loc.value).toBe("Old Town"));
-    // Editing the location field clears the resolved place id/coords.
     await user.clear(loc);
     await user.type(loc, "New Place");
 
@@ -141,8 +147,120 @@ describe("GuildSettingsForm", () => {
       emojiAccepted: "✅",
       emojiDeclined: "❌",
       emojiMaybe: "❓",
+      eventCreateRateLimitPerHour: null,
     });
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/"));
+  });
+
+  it("preserves edits when switching tabs", async () => {
+    mockUseCurrentUser.mockReturnValue({ data: { ownedGuildIds: ["g1"] } });
+    mockUseGuildSettings.mockReturnValue({
+      data: {
+        primaryLocationName: null,
+        primaryLocationPlaceId: null,
+        primaryLocationLat: null,
+        primaryLocationLng: null,
+        eventsRole: "events",
+        organiserRole: "event-organiser",
+        separatorChannel: null,
+        emojiAccepted: "✅",
+        emojiDeclined: "❌",
+        emojiMaybe: "❓",
+        eventCreateRateLimitPerHour: null,
+        defaultEventCreateRateLimitPerHour: 5,
+      },
+      isLoading: false,
+    });
+
+    const user = userEvent.setup();
+    render(<GuildSettingsForm guildId="g1" />);
+
+    const eventsRoleInput = (await screen.findByDisplayValue("events")) as HTMLInputElement;
+    await user.clear(eventsRoleInput);
+    await user.type(eventsRoleInput, "events-edit");
+
+    await user.click(screen.getByRole("tab", { name: /rsvp emoji/i }));
+    expect(screen.queryByDisplayValue("events-edit")).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: /roles & channels/i }));
+    expect(screen.getByDisplayValue("events-edit")).toBeTruthy();
+  });
+
+  it("rate-limit field defaults to 'use server default' (null) and toggles to override", async () => {
+    mockUseCurrentUser.mockReturnValue({ data: { ownedGuildIds: ["g1"] } });
+    mockUseGuildSettings.mockReturnValue({
+      data: {
+        primaryLocationName: null,
+        primaryLocationPlaceId: null,
+        primaryLocationLat: null,
+        primaryLocationLng: null,
+        eventsRole: "events",
+        organiserRole: "event-organiser",
+        separatorChannel: null,
+        emojiAccepted: "✅",
+        emojiDeclined: "❌",
+        emojiMaybe: "❓",
+        eventCreateRateLimitPerHour: null,
+        defaultEventCreateRateLimitPerHour: 5,
+      },
+      isLoading: false,
+    });
+    mockUpdateGuildSettings.mockResolvedValueOnce(undefined);
+
+    const user = userEvent.setup();
+    render(<GuildSettingsForm guildId="g1" />);
+
+    await user.click(screen.getByRole("tab", { name: /defaults & limits/i }));
+    const checkbox = screen.getByRole("checkbox", { name: /use server default/i });
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+
+    await user.click(checkbox);
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+    await user.click(screen.getByRole("button", { name: "7 / hour" }));
+
+    await user.click(screen.getByRole("button", { name: /save settings/i }));
+    await waitFor(() =>
+      expect(mockUpdateGuildSettings).toHaveBeenCalledTimes(1),
+    );
+    expect(mockUpdateGuildSettings.mock.calls[0][1].eventCreateRateLimitPerHour).toBe(7);
+  });
+
+  it("rate-limit field re-checking 'use default' submits null", async () => {
+    mockUseCurrentUser.mockReturnValue({ data: { ownedGuildIds: ["g1"] } });
+    mockUseGuildSettings.mockReturnValue({
+      data: {
+        primaryLocationName: null,
+        primaryLocationPlaceId: null,
+        primaryLocationLat: null,
+        primaryLocationLng: null,
+        eventsRole: "events",
+        organiserRole: "event-organiser",
+        separatorChannel: null,
+        emojiAccepted: "✅",
+        emojiDeclined: "❌",
+        emojiMaybe: "❓",
+        eventCreateRateLimitPerHour: 7,
+        defaultEventCreateRateLimitPerHour: 5,
+      },
+      isLoading: false,
+    });
+    mockUpdateGuildSettings.mockResolvedValueOnce(undefined);
+
+    const user = userEvent.setup();
+    render(<GuildSettingsForm guildId="g1" />);
+
+    await user.click(screen.getByRole("tab", { name: /defaults & limits/i }));
+    const checkbox = screen.getByRole("checkbox", { name: /use server default/i });
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+
+    await user.click(checkbox);
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: /save settings/i }));
+    await waitFor(() =>
+      expect(mockUpdateGuildSettings).toHaveBeenCalledTimes(1),
+    );
+    expect(mockUpdateGuildSettings.mock.calls[0][1].eventCreateRateLimitPerHour).toBeNull();
   });
 
   it("shows the loading state and does not submit while settings are loading", async () => {

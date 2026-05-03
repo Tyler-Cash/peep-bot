@@ -19,8 +19,8 @@ describe("GuildSettingsForm (render harness)", () => {
     try {
       renderWithProviders(<GuildSettingsForm guildId="mockguild-1" />);
 
-      // GuildSettingsForm renders <Field label="primary location"> once settings load
-      await screen.findByText(/primary location/i, undefined, { timeout: 3000 });
+      // The default active tab ("Roles & channels") shows the events role field once settings load.
+      await screen.findByText(/events role/i, undefined, { timeout: 3000 });
     } finally {
       restore();
     }
