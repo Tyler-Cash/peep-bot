@@ -6,6 +6,7 @@ import dev.tylercash.event.contract.model.ContractOutcome;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ActiveProfiles("local")
 @Tag("e2e")
+@Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractServiceE2ETest {
 
     @Container

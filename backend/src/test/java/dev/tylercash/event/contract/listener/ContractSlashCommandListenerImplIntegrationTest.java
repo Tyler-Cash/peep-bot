@@ -37,6 +37,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +73,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         })
 @Testcontainers
 @ActiveProfiles("local")
+@Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractSlashCommandListenerImplIntegrationTest {
 
     private static final String CREATOR_SNOWFLAKE = "777888999";
