@@ -5,6 +5,8 @@ import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_CATEGORY;
 
 import dev.tylercash.event.contract.ContractConfiguration;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
@@ -23,6 +25,7 @@ public class DiscordInitializationService {
     private final DiscordUserCacheService discordUserCacheService;
     private final ContractGuildResolver contractGuildResolver;
     private final GuildRegistrationService guildRegistrationService;
+    private final GuildRepository guildRepository;
 
     public DiscordInitializationService(
             JDA jda,
@@ -30,19 +33,33 @@ public class DiscordInitializationService {
             ContractConfiguration contractConfig,
             DiscordUserCacheService discordUserCacheService,
             ContractGuildResolver contractGuildResolver,
-            @Lazy GuildRegistrationService guildRegistrationService) {
+            @Lazy GuildRegistrationService guildRegistrationService,
+            GuildRepository guildRepository) {
         this.jda = jda;
         this.discordChannelService = discordChannelService;
         this.contractConfig = contractConfig;
         this.discordUserCacheService = discordUserCacheService;
         this.contractGuildResolver = contractGuildResolver;
         this.guildRegistrationService = guildRegistrationService;
+        this.guildRepository = guildRepository;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info("Onboarding {} guilds on startup", jda.getGuilds().size());
-        jda.getGuilds().forEach(guildRegistrationService::onboard);
+        List<net.dv8tion.jda.api.entities.Guild> liveGuilds = jda.getGuilds();
+        log.info("Onboarding {} guilds on startup", liveGuilds.size());
+        liveGuilds.forEach(guildRegistrationService::onboard);
+
+        Set<Long> liveGuildIds = liveGuilds.stream()
+                .map(net.dv8tion.jda.api.entities.Guild::getIdLong)
+                .collect(Collectors.toSet());
+        guildRepository.findAllByActiveTrue().stream()
+                .map(Guild::getGuildId)
+                .filter(id -> !liveGuildIds.contains(id))
+                .forEach(id -> {
+                    log.info("Guild {} is active in DB but bot is no longer a member; deactivating", id);
+                    guildRegistrationService.deactivate(id);
+                });
     }
 
     /** Per-guild init invoked by GuildRegistrationService. Idempotent. */
@@ -68,7 +85,15 @@ public class DiscordInitializationService {
                                 DiscordUtil.getUserDisplayName(member),
                                 member.getUser().getName(),
                                 guild.getIdLong()));
-                        log.info("Synced {} members for guild '{}'", members.size(), guild.getName());
+                        Set<String> liveSnowflakes = members.stream()
+                                .map(net.dv8tion.jda.api.entities.Member::getId)
+                                .collect(Collectors.toSet());
+                        int removed = discordUserCacheService.pruneMembersNotIn(guild.getIdLong(), liveSnowflakes);
+                        log.info(
+                                "Synced {} members for guild '{}' (pruned {} stale rows)",
+                                members.size(),
+                                guild.getName(),
+                                removed);
                     })
                     .get();
         } catch (Exception e) {

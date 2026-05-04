@@ -80,6 +80,25 @@ public class DiscordUserCacheService {
         memberRepository.save(member);
     }
 
+    /** Remove a single member's row for a guild (e.g. on GuildMemberRemoveEvent). */
+    public void removeMember(long guildId, String snowflake) {
+        if (snowflake == null || snowflake.isBlank()) {
+            return;
+        }
+        memberRepository.deleteById(new GuildMember.PK(guildId, snowflake));
+    }
+
+    /**
+     * Delete guild_member rows for {@code guildId} whose snowflake isn't in {@code liveSnowflakes}.
+     * No-op if the live set is empty (avoids wiping a guild when a load returns nothing).
+     */
+    public int pruneMembersNotIn(long guildId, Set<String> liveSnowflakes) {
+        if (liveSnowflakes == null || liveSnowflakes.isEmpty()) {
+            return 0;
+        }
+        return memberRepository.deleteByGuildIdAndSnowflakeNotIn(guildId, liveSnowflakes);
+    }
+
     /** Register a guild membership without overwriting an existing displayName/avatar. */
     public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
         upsertGlobal(snowflake, username);

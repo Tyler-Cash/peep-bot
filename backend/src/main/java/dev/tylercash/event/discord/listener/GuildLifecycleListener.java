@@ -1,10 +1,12 @@
 package dev.tylercash.event.discord.listener;
 
+import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.GuildRegistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GuildLifecycleListener extends ListenerAdapter {
     private final GuildRegistrationService guildRegistrationService;
+    private final DiscordUserCacheService discordUserCacheService;
 
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
@@ -24,6 +27,18 @@ public class GuildLifecycleListener extends ListenerAdapter {
             guildRegistrationService.onboard(event.getGuild());
         } catch (Exception e) {
             log.error("Onboarding failed for guild {}: {}", event.getGuild().getIdLong(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
+        long guildId = event.getGuild().getIdLong();
+        String snowflake = event.getUser().getId();
+        log.info("Member {} removed from guild {}; evicting guild_member row", snowflake, guildId);
+        try {
+            discordUserCacheService.removeMember(guildId, snowflake);
+        } catch (Exception e) {
+            log.error("Failed to remove member {} from guild {}: {}", snowflake, guildId, e.getMessage(), e);
         }
     }
 

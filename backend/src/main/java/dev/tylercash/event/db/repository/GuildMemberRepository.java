@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,4 +40,13 @@ public interface GuildMemberRepository extends JpaRepository<GuildMember, GuildM
 
     @Query("SELECT gm.guildId FROM GuildMember gm WHERE gm.snowflake = :snowflake")
     List<Long> findGuildIdsBySnowflake(@Param("snowflake") String snowflake);
+
+    @Modifying
+    @Query(
+            """
+            DELETE FROM GuildMember gm
+            WHERE gm.guildId = :guildId AND gm.snowflake NOT IN :snowflakes
+            """)
+    int deleteByGuildIdAndSnowflakeNotIn(
+            @Param("guildId") long guildId, @Param("snowflakes") Collection<String> snowflakes);
 }
