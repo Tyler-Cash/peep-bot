@@ -1174,6 +1174,14 @@ databaseChangeLog:
             constraintName: fk_event_tick_log_event
             onDelete: CASCADE
 
+  - changeSet:
+      id: collapse post_album states into post_completed
+      author: tyler
+      changes:
+        - sql:
+            sql: |
+              UPDATE event SET state = 'POST_COMPLETED' WHERE state IN ('POST_ALBUM_READY', 'POST_ALBUM_SHARED');
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 
