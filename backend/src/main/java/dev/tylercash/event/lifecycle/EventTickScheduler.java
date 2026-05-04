@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class EventTickScheduler {
 
     @Scheduled(cron = "0 * * * * *")
     @SchedulerLock(name = "EventTickScheduler", lockAtMostFor = "PT5M")
+    @Transactional
     public void emit() {
         ZonedDateTime now = ZonedDateTime.now(clock);
 

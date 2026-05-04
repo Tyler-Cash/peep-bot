@@ -89,9 +89,6 @@ class EventLifecycleSagaIntegrationTest {
     EventTickScheduler eventTickScheduler;
 
     @Autowired
-    DurableListenerRetryPoller retryPoller;
-
-    @Autowired
     JdbcTemplate jdbc;
 
     private static final AtomicLong idCounter = new AtomicLong(70_000);
@@ -184,14 +181,13 @@ class EventLifecycleSagaIntegrationTest {
     }
 
     /**
-     * Emit a tick and immediately kick the retry poller so any PENDING outbox rows written by the
-     * tick are dispatched. EventTickScheduler runs outside a transaction, so the
-     * {@code @TransactionalEventListener(AFTER_COMMIT)} in PostCommitDispatcher never fires for
-     * tick-originated events; the retry poller is the normal delivery mechanism for those rows.
+     * Emit a tick. {@code EventTickScheduler.emit()} is {@code @Transactional}, so the
+     * {@code @TransactionalEventListener(AFTER_COMMIT)} in PostCommitDispatcher fires on commit
+     * and the listener chain proceeds. The {@link DurableListenerRetryPoller} is a safety net for
+     * crashed dispatch attempts and is not required to drive the happy path.
      */
     private void emitTick() {
         eventTickScheduler.emit();
-        retryPoller.retry();
     }
 
     // ------------------------------------------------------------------
