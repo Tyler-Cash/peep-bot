@@ -3,6 +3,7 @@ package dev.tylercash.event.db.repository;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -332,6 +334,10 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
             """)
     List<dev.tylercash.event.rewind.model.EventSummaryDto> findFirstEventGuildWide(
             long guildId, Integer year, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.dateTime BETWEEN :from AND :to AND e.state = :state")
+    List<Event> findInDateWindow(
+            @Param("from") ZonedDateTime from, @Param("to") ZonedDateTime to, @Param("state") EventState state);
 
     @Query(
             """
