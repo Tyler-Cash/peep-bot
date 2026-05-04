@@ -5,8 +5,6 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
-import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
-import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import dev.tylercash.event.lifecycle.EventLifecycleEvent;
 import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
 import dev.tylercash.event.rewind.EmbeddingService;
@@ -37,7 +35,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class EventService {
     private final DiscordService discordService;
     private final EventRepository eventRepository;
-    private final EventStateMachineService stateMachineService;
     private final Clock clock;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
@@ -143,10 +140,7 @@ public class EventService {
         if (isArchived(event)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is archived");
         }
-        boolean transitioned = stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL);
-        if (!transitioned) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cancel event");
-        }
+        lifecyclePublisher.publish(new EventLifecycleEvent.EventCancelRequested(event.getId()));
     }
 
     @Caching(

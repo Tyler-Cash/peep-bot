@@ -10,8 +10,7 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
-import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
-import dev.tylercash.event.event.statemachine.EventStateMachineService;
+import dev.tylercash.event.lifecycle.EventLifecycleEvent;
 import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
 import dev.tylercash.event.rewind.EmbeddingService;
 import java.time.Clock;
@@ -40,7 +39,6 @@ class EventServiceTest {
         return new EventService(
                 discordService,
                 eventRepository,
-                mock(EventStateMachineService.class),
                 Clock.systemDefaultZone(),
                 attendanceService,
                 discordUserCacheService,
@@ -116,18 +114,17 @@ class EventServiceTest {
     void cancelEvent_throwsBadRequest_whenEventArchived() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
+        EventLifecyclePublisher lifecyclePublisher = mock(EventLifecyclePublisher.class);
         EventService service = new EventService(
                 discordService,
                 eventRepository,
-                stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
                 mock(CoverImageService.class),
-                mock(EventLifecyclePublisher.class));
+                lifecyclePublisher);
 
         Event event = buildEvent();
         event.setState(EventState.ARCHIVED);
@@ -138,63 +135,33 @@ class EventServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("archived");
 
-        verifyNoInteractions(stateMachineService);
+        verifyNoInteractions(lifecyclePublisher);
     }
 
     @Test
-    void cancelEvent_callsAttemptTransition_withCancelEvent() {
+    void cancelEvent_publishesEventCancelRequested() {
         EventRepository eventRepository = mock(EventRepository.class);
         DiscordService discordService = mock(DiscordService.class);
-        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
+        EventLifecyclePublisher lifecyclePublisher = mock(EventLifecyclePublisher.class);
         EventService service = new EventService(
                 discordService,
                 eventRepository,
-                stateMachineService,
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
                 mock(CoverImageService.class),
-                mock(EventLifecyclePublisher.class));
+                lifecyclePublisher);
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
+        event.setId(id);
         when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL))
-                .thenReturn(true);
 
         service.cancelEvent(id);
 
-        verify(stateMachineService).attemptTransition(event, EventStateMachineEvent.CANCEL);
-    }
-
-    @Test
-    void cancelEvent_throwsInternalServerError_whenTransitionFails() {
-        EventRepository eventRepository = mock(EventRepository.class);
-        DiscordService discordService = mock(DiscordService.class);
-        EventStateMachineService stateMachineService = mock(EventStateMachineService.class);
-        EventService service = new EventService(
-                discordService,
-                eventRepository,
-                stateMachineService,
-                Clock.systemDefaultZone(),
-                mock(AttendanceService.class),
-                mock(DiscordUserCacheService.class),
-                mock(EmbeddingService.class),
-                mock(EventCategoryRepository.class),
-                mock(CoverImageService.class),
-                mock(EventLifecyclePublisher.class));
-
-        Event event = buildEvent();
-        UUID id = UUID.randomUUID();
-        when(eventRepository.findById(id)).thenReturn(Optional.of(event));
-        when(stateMachineService.attemptTransition(event, EventStateMachineEvent.CANCEL))
-                .thenReturn(false);
-
-        assertThatThrownBy(() -> service.cancelEvent(id))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Failed to cancel event");
+        verify(lifecyclePublisher).publish(new EventLifecycleEvent.EventCancelRequested(id));
     }
 
     @Test
@@ -204,7 +171,6 @@ class EventServiceTest {
         EventService service = new EventService(
                 mock(DiscordService.class),
                 eventRepository,
-                mock(EventStateMachineService.class),
                 Clock.systemDefaultZone(),
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
