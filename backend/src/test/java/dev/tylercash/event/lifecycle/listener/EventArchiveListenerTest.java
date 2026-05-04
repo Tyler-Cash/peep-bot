@@ -48,6 +48,7 @@ class EventArchiveListenerTest {
         // event.dateTime = 2026-05-04T12:00Z
         event = new Event();
         event.setId(eventId);
+        event.setName("Test Event");
         event.setDateTime(ZonedDateTime.of(2026, 5, 4, 12, 0, 0, 0, ZoneOffset.UTC));
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
     }

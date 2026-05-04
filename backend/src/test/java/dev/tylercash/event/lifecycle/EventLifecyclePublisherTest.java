@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 
 class EventLifecyclePublisherTest {
@@ -24,8 +25,10 @@ class EventLifecyclePublisherTest {
         DurableEventListener<EventLifecycleEvent.EventArchived> nonMatching =
                 stubListener("Other Listener", EventLifecycleEvent.EventArchived.class);
 
-        var publisher =
-                new EventLifecyclePublisher(spring, repo, List.of(matching, nonMatching), new SimpleMeterRegistry());
+        @SuppressWarnings("unchecked")
+        ObjectProvider<List<DurableEventListener<?>>> listenersProvider = mock(ObjectProvider.class);
+        when(listenersProvider.getObject()).thenReturn(List.of(matching, nonMatching));
+        var publisher = new EventLifecyclePublisher(spring, repo, listenersProvider, new SimpleMeterRegistry());
 
         UUID id = UUID.randomUUID();
         publisher.publish(new EventLifecycleEvent.EventCreated(id));

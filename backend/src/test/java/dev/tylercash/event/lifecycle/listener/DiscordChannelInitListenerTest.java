@@ -37,6 +37,7 @@ class DiscordChannelInitListenerTest {
     @Test
     void fullInit_setsChannelMessageServerIdAndState() throws Exception {
         Event event = new Event();
+        event.setId(eventId);
         event.setChannelId(0);
         event.setMessageId(0);
 
@@ -66,6 +67,7 @@ class DiscordChannelInitListenerTest {
     @Test
     void idempotent_skipsCreateAndPostWhenAlreadyInitialized() throws Exception {
         Event event = new Event();
+        event.setId(eventId);
         event.setChannelId(42);
         event.setMessageId(88);
 

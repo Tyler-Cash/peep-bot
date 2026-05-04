@@ -3,6 +3,7 @@ package dev.tylercash.event.lifecycle;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
@@ -11,17 +12,17 @@ import org.springframework.stereotype.Component;
 public class EventLifecyclePublisher {
     private final ApplicationEventPublisher springPublisher;
     private final ListenerInvocationRepository invocations;
-    private final List<DurableEventListener<?>> listeners;
+    private final ObjectProvider<List<DurableEventListener<?>>> listenersProvider;
     private final MeterRegistry meterRegistry;
 
     public EventLifecyclePublisher(
             ApplicationEventPublisher springPublisher,
             ListenerInvocationRepository invocations,
-            List<DurableEventListener<?>> listeners,
+            ObjectProvider<List<DurableEventListener<?>>> listenersProvider,
             MeterRegistry meterRegistry) {
         this.springPublisher = springPublisher;
         this.invocations = invocations;
-        this.listeners = listeners;
+        this.listenersProvider = listenersProvider;
         this.meterRegistry = meterRegistry;
     }
 
@@ -30,6 +31,7 @@ public class EventLifecyclePublisher {
         log.debug("Publishing lifecycle event {} for event {}", type, event.eventId());
         meterRegistry.counter("event.lifecycle.published", "type", type).increment();
 
+        List<DurableEventListener<?>> listeners = listenersProvider.getObject();
         for (DurableEventListener<?> listener : listeners) {
             if (!listener.eventType().isInstance(event)) continue;
             ListenerInvocation row = new ListenerInvocation();

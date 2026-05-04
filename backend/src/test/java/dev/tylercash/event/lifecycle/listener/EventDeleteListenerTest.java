@@ -34,6 +34,8 @@ class EventDeleteListenerTest {
         event = new Event();
         event.setId(eventId);
         event.setChannelId(123456789L);
+        event.setDateTime(java.time.ZonedDateTime.of(2026, 1, 1, 12, 0, 0, 0, java.time.ZoneOffset.UTC));
+        event.setName("Test Event");
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
     }
 
