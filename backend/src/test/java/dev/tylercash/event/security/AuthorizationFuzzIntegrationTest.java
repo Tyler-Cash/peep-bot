@@ -452,6 +452,40 @@ class AuthorizationFuzzIntegrationTest {
                                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                                 .content("{}"),
                         false,
+                        true),
+                new EndpointCase(
+                        "GET",
+                        "/admin/event-creation",
+                        () -> MockMvcRequestBuilders.get("/admin/event-creation"),
+                        false,
+                        true),
+                new EndpointCase(
+                        "POST",
+                        "/admin/event-creation/enable",
+                        () -> MockMvcRequestBuilders.post("/admin/event-creation/enable"),
+                        false,
+                        true),
+                new EndpointCase(
+                        "POST",
+                        "/admin/event-creation/disable",
+                        () -> MockMvcRequestBuilders.post("/admin/event-creation/disable"),
+                        false,
+                        true),
+
+                // ListenerInvocationAdminController
+                new EndpointCase(
+                        "POST",
+                        "/admin/listener-invocations/{eventId}/{type}/{listenerName}/retry-now",
+                        () -> MockMvcRequestBuilders.post("/admin/listener-invocations/" + java.util.UUID.randomUUID()
+                                + "/EventCreated/TestListener/retry-now"),
+                        false,
+                        true),
+                new EndpointCase(
+                        "DELETE",
+                        "/admin/listener-invocations/{eventId}/{type}/{listenerName}",
+                        () -> MockMvcRequestBuilders.delete("/admin/listener-invocations/" + java.util.UUID.randomUUID()
+                                + "/EventCreated/TestListener"),
+                        false,
                         true));
     }
 
