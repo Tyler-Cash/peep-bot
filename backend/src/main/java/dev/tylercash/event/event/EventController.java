@@ -6,6 +6,7 @@ import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.discord.GuildMembershipService;
 import dev.tylercash.event.discord.model.GuildMember;
 import dev.tylercash.event.event.model.*;
+import dev.tylercash.event.global.EventCreationToggle;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -42,6 +43,7 @@ public class EventController {
     private DiscordUserCacheService discordUserCacheService;
     private GuildMembershipService guildMembershipService;
     private EventCreateRateLimiter eventCreateRateLimiter;
+    private EventCreationToggle eventCreationToggle;
 
     @Operation(summary = "Create a new event", description = "Creates an event and its associated Discord channel")
     @ApiResponses({
@@ -52,6 +54,10 @@ public class EventController {
     @PutMapping
     public Map<String, String> createEvent(
             @RequestBody @Valid EventDto event, @AuthenticationPrincipal OAuth2User principal) {
+        if (!eventCreationToggle.isEnabled()) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "Event creation temporarily disabled for maintenance");
+        }
         String discordId = principal.getAttribute("id");
         long guildId = Long.parseLong(event.getGuildId());
         log.info("User {} creating event '{}' in guild {}", discordId, event.getName(), guildId);

@@ -16,6 +16,7 @@ import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventDetailDto;
 import dev.tylercash.event.event.model.EventDto;
+import dev.tylercash.event.global.EventCreationToggle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -75,7 +76,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                allowingCreateLimiter());
+                allowingCreateLimiter(),
+                new EventCreationToggle(true));
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -130,7 +132,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                limiter);
+                limiter,
+                new EventCreationToggle(true));
 
         assertThatThrownBy(() -> controller.createEvent(buildEventDto(), principal))
                 .isInstanceOf(ResponseStatusException.class)
@@ -258,7 +261,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                allowingCreateLimiter());
+                allowingCreateLimiter(),
+                new EventCreationToggle(true));
         EventDto eventDto = buildEventDto();
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
@@ -285,7 +289,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                allowingCreateLimiter());
+                allowingCreateLimiter(),
+                new EventCreationToggle(true));
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -395,7 +400,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                allowingCreateLimiter());
+                allowingCreateLimiter(),
+                new EventCreationToggle(true));
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -484,7 +490,8 @@ class EventControllerTest {
                 attendanceService,
                 discordUserCacheService,
                 guildMembershipService,
-                allowingCreateLimiter());
+                allowingCreateLimiter(),
+                new EventCreationToggle(true));
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -583,6 +590,39 @@ class EventControllerTest {
                 .satisfies(e -> assertThat(
                                 ((ResponseStatusException) e).getStatusCode().value())
                         .isEqualTo(403));
+    }
+
+    @Test
+    void createEvent_toggleEnabled_proceedsNormally() {
+        EventControllerTestContext ctx = setupContext();
+        Map<String, String> result = ctx.controller.createEvent(buildEventDto(), ctx.principal);
+        assertThat(result).containsEntry("message", "Created event for Test Event");
+    }
+
+    @Test
+    void createEvent_toggleDisabled_returns503() {
+        EventService eventService = mock(EventService.class);
+        DiscordService discordService = mock(DiscordService.class);
+        AttendanceService attendanceService = mock(AttendanceService.class);
+        DiscordUserCacheService discordUserCacheService = mock(DiscordUserCacheService.class);
+        GuildMembershipService guildMembershipService = mock(GuildMembershipService.class);
+        OAuth2User principal = mock(OAuth2User.class);
+
+        EventController controller = new EventController(
+                eventService,
+                discordService,
+                attendanceService,
+                discordUserCacheService,
+                guildMembershipService,
+                allowingCreateLimiter(),
+                new EventCreationToggle(false));
+
+        assertThatThrownBy(() -> controller.createEvent(buildEventDto(), principal))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE))
+                .hasMessageContaining("Event creation temporarily disabled for maintenance");
+        verify(eventService, never()).createEvent(any());
     }
 
     private record EventControllerTestContext(
