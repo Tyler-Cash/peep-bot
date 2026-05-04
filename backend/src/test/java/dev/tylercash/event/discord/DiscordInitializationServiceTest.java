@@ -23,6 +23,7 @@ class DiscordInitializationServiceTest {
     private DiscordUserCacheService discordUserCacheService;
     private ContractGuildResolver contractGuildResolver;
     private GuildRegistrationService guildRegistrationService;
+    private GuildRepository guildRepository;
     private DiscordInitializationService service;
 
     @BeforeEach
@@ -37,6 +38,7 @@ class DiscordInitializationServiceTest {
         contractConfig = new ContractConfiguration();
         contractGuildResolver = mock(ContractGuildResolver.class);
         guildRegistrationService = mock(GuildRegistrationService.class);
+        guildRepository = mock(GuildRepository.class);
 
         service = new DiscordInitializationService(
                 jda,
@@ -44,7 +46,8 @@ class DiscordInitializationServiceTest {
                 contractConfig,
                 discordUserCacheService,
                 contractGuildResolver,
-                guildRegistrationService);
+                guildRegistrationService,
+                guildRepository);
     }
 
     @SuppressWarnings("unchecked")
