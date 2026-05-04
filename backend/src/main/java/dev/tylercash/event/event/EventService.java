@@ -7,6 +7,8 @@ import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
+import dev.tylercash.event.lifecycle.EventLifecycleEvent;
+import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
 import dev.tylercash.event.rewind.EmbeddingService;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.transaction.Transactional;
@@ -42,6 +44,7 @@ public class EventService {
     private final EmbeddingService embeddingService;
     private final EventCategoryRepository eventCategoryRepository;
     private final CoverImageService coverImageService;
+    private final EventLifecyclePublisher lifecyclePublisher;
 
     @Observed(name = "event.create")
     @CacheEvict(value = "activeEvents", allEntries = true)
@@ -51,11 +54,7 @@ public class EventService {
         coverImageService.refreshIfNeeded(event);
         eventRepository.save(event);
         MDC.put("eventId", event.getId().toString());
-        try {
-            stateMachineService.attemptTransition(event, EventStateMachineEvent.INIT_CHANNEL);
-        } catch (Exception e) {
-            log.warn("Initial setup failed for event '{}', poller will retry", event.getName(), e);
-        }
+        lifecyclePublisher.publish(new EventLifecycleEvent.EventCreated(event.getId()));
         log.info("Created event '{}' with id={}", event.getName(), event.getId());
         return "Created event for " + event.getName();
     }

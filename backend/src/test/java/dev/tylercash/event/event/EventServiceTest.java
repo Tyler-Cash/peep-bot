@@ -12,6 +12,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
 import dev.tylercash.event.event.statemachine.EventStateMachineService;
+import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
 import dev.tylercash.event.rewind.EmbeddingService;
 import java.time.Clock;
 import java.time.ZonedDateTime;
@@ -45,7 +46,8 @@ class EventServiceTest {
                 discordUserCacheService,
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
-                mock(CoverImageService.class));
+                mock(CoverImageService.class),
+                mock(EventLifecyclePublisher.class));
     }
 
     @Test
@@ -124,7 +126,8 @@ class EventServiceTest {
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
-                mock(CoverImageService.class));
+                mock(CoverImageService.class),
+                mock(EventLifecyclePublisher.class));
 
         Event event = buildEvent();
         event.setState(EventState.ARCHIVED);
@@ -152,7 +155,8 @@ class EventServiceTest {
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
-                mock(CoverImageService.class));
+                mock(CoverImageService.class),
+                mock(EventLifecyclePublisher.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -179,7 +183,8 @@ class EventServiceTest {
                 mock(DiscordUserCacheService.class),
                 mock(EmbeddingService.class),
                 mock(EventCategoryRepository.class),
-                mock(CoverImageService.class));
+                mock(CoverImageService.class),
+                mock(EventLifecyclePublisher.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
@@ -205,7 +210,8 @@ class EventServiceTest {
                 mock(DiscordUserCacheService.class),
                 embeddingService,
                 mock(EventCategoryRepository.class),
-                mock(CoverImageService.class));
+                mock(CoverImageService.class),
+                mock(EventLifecyclePublisher.class));
 
         Event event = buildEvent();
         UUID id = UUID.randomUUID();
