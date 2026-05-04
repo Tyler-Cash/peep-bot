@@ -8,13 +8,17 @@ export async function GET(
 ) {
   const { snowflake } = await params;
 
+  if (!/^[0-9]{17,20}$/.test(snowflake)) {
+    return new Response(null, { status: 400 });
+  }
+
   const cookieStore = await cookies();
   const sessionValue = cookieStore.get("SESSION")?.value;
   if (!sessionValue) {
     return new Response(null, { status: 401 });
   }
 
-  const upstream = await fetch(`${BACKEND_BASE}/avatar/${snowflake}`, {
+  const upstream = await fetch(`${BACKEND_BASE}/avatar/${encodeURIComponent(snowflake)}`, {
     headers: { cookie: `SESSION=${sessionValue}` },
   });
 
