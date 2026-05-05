@@ -4,6 +4,7 @@ plugins {
     id 'com.diffplug.spotless' version '8.4.0'
     id 'org.springframework.boot' version '3.5.14'
     id 'org.cyclonedx.bom' version '2.4.1'
+    id 'org.owasp.dependencycheck' version '12.2.1'
 }
 
 apply plugin: 'application'
@@ -16,6 +17,11 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+ext {
+    set('springCloudVersion', "2025.1.1")
+    set('springDataBomVersion', "2025.0.10")
 }
 
 application {
@@ -35,6 +41,11 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:1.1.5'
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.springframework.data:spring-data-bom:${springDataBomVersion}"
+    }
+    generatedPomCustomization {
+        enabled = false
     }
 }
 
