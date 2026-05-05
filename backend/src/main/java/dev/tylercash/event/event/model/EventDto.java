@@ -81,7 +81,7 @@ public class EventDto {
         return switch (state) {
             case CREATED, INIT_CHANNEL, INIT_ROLES, CLASSIFY -> "creating";
             case PLANNED, PRE_NOTIFIED -> "planned";
-            case POST_ALBUM_READY, POST_ALBUM_SHARED, POST_COMPLETED, ARCHIVED -> "archived";
+            case POST_COMPLETED, ARCHIVED -> "archived";
             case CANCELLED -> "cancelled";
             case DELETED -> "deleted";
         };

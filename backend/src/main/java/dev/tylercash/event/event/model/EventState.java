@@ -7,8 +7,6 @@ public enum EventState {
     CLASSIFY,
     PLANNED,
     PRE_NOTIFIED,
-    POST_ALBUM_READY,
-    POST_ALBUM_SHARED,
     POST_COMPLETED,
     CANCELLED,
     ARCHIVED,

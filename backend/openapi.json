@@ -726,6 +726,82 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/admin/event-creation" : {
+      "get" : {
+        "operationId" : "getEventCreationState",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "boolean"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/event-creation/disable" : {
+      "post" : {
+        "operationId" : "disableEventCreation",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/event-creation/enable" : {
+      "post" : {
+        "operationId" : "enableEventCreation",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
     "/admin/guilds" : {
       "get" : {
         "operationId" : "listGuilds",
@@ -803,6 +879,96 @@
           }
         },
         "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/listener-invocations/{eventId}/{type}/{listenerName}" : {
+      "delete" : {
+        "operationId" : "abandon",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "eventId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "type",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "listenerName",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Listener invocations" ]
+      }
+    },
+    "/admin/listener-invocations/{eventId}/{type}/{listenerName}/retry-now" : {
+      "post" : {
+        "operationId" : "retryNow",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "eventId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "type",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "listenerName",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Listener invocations" ]
       }
     },
     "/auth/is-logged-in" : {
@@ -1943,6 +2109,9 @@
   }, {
     "description" : "Authentication status operations",
     "name" : "Authentication"
+  }, {
+    "description" : "Operator endpoints for the lifecycle outbox",
+    "name" : "Listener invocations"
   }, {
     "description" : "Event management operations",
     "name" : "Events"

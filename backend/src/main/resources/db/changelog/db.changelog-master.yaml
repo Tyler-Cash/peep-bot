@@ -1064,6 +1064,124 @@ databaseChangeLog:
                   name: event_create_rate_limit_per_hour
                   type: int
 
+  - changeSet:
+      id: add listener_invocation table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: listener_invocation
+            columns:
+              - column:
+                  name: event_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lifecycle_event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: listener_name
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_attempt_at
+                  type: timestamptz
+              - column:
+                  name: next_retry_at
+                  type: timestamptz
+              - column:
+                  name: last_error
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: listener_invocation
+            columnNames: event_id, lifecycle_event_type, listener_name
+            constraintName: pk_listener_invocation
+        - addForeignKeyConstraint:
+            baseTableName: listener_invocation
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: id
+            constraintName: fk_listener_invocation_event
+            onDelete: CASCADE
+        - createIndex:
+            tableName: listener_invocation
+            indexName: idx_listener_invocation_due
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: next_retry_at
+            where: "status IN ('PENDING','FAILED')"
+
+  - changeSet:
+      id: add event_tick_log table
+      author: tyler
+      changes:
+        - createTable:
+            tableName: event_tick_log
+            columns:
+              - column:
+                  name: event_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tick_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fired_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: event_tick_log
+            columnNames: event_id, tick_type
+            constraintName: pk_event_tick_log
+        - addForeignKeyConstraint:
+            baseTableName: event_tick_log
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: id
+            constraintName: fk_event_tick_log_event
+            onDelete: CASCADE
+
+  - changeSet:
+      id: collapse post_album states into post_completed
+      author: tyler
+      changes:
+        - sql:
+            sql: |
+              UPDATE event SET state = 'POST_COMPLETED' WHERE state IN ('POST_ALBUM_READY', 'POST_ALBUM_SHARED');
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
 

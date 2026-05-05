@@ -9,8 +9,6 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.event.statemachine.EventStateMachineEvent;
-import dev.tylercash.event.event.statemachine.EventStateMachineService;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,9 +56,6 @@ class EventServiceCachingTest {
 
     @MockitoBean
     DiscordInitializationService discordInitializationService;
-
-    @MockitoBean
-    EventStateMachineService stateMachineService;
 
     @Container
     public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
@@ -190,9 +185,6 @@ class EventServiceCachingTest {
         // Populate both caches
         eventService.getEvent(id);
         eventService.getActiveEvents(pageable, 0L);
-
-        when(stateMachineService.attemptTransition(any(), eq(EventStateMachineEvent.CANCEL)))
-                .thenReturn(true);
 
         eventService.cancelEvent(id);
 

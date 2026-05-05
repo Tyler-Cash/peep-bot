@@ -9,7 +9,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -302,8 +301,12 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Event cancelled"));
 
-        assertThat(eventRepository.findById(eventId)).isPresent().hasValueSatisfying(e -> assertThat(e.getState())
-                .isEqualTo(EventState.CANCELLED));
+        // Cancel is now async via the event bus. Verify the outbox row was created for the
+        // EventCancelListener, which will asynchronously transition the event to CANCELLED.
+        assertThat(jdbc.queryForList(
+                        "SELECT 1 FROM listener_invocation WHERE event_id = ? AND lifecycle_event_type = 'EventCancelRequested'",
+                        eventId))
+                .isNotEmpty();
     }
 
     // ---------------------------------------------------------------------------
