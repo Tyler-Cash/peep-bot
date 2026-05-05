@@ -245,6 +245,85 @@ export type UserInfoDto = {
     username?: string;
 };
 
+export type GetEventCreationStateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/event-creation';
+};
+
+export type GetEventCreationStateErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetEventCreationStateError = GetEventCreationStateErrors[keyof GetEventCreationStateErrors];
+
+export type GetEventCreationStateResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: boolean;
+    };
+};
+
+export type GetEventCreationStateResponse = GetEventCreationStateResponses[keyof GetEventCreationStateResponses];
+
+export type DisableEventCreationData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/event-creation/disable';
+};
+
+export type DisableEventCreationErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type DisableEventCreationError = DisableEventCreationErrors[keyof DisableEventCreationErrors];
+
+export type DisableEventCreationResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type EnableEventCreationData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/event-creation/enable';
+};
+
+export type EnableEventCreationErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type EnableEventCreationError = EnableEventCreationErrors[keyof EnableEventCreationErrors];
+
+export type EnableEventCreationResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type ListGuildsData = {
     body?: never;
     path?: never;
@@ -300,6 +379,64 @@ export type UpdateFeaturesResponses = {
 };
 
 export type UpdateFeaturesResponse = UpdateFeaturesResponses[keyof UpdateFeaturesResponses];
+
+export type AbandonData = {
+    body?: never;
+    path: {
+        eventId: string;
+        type: string;
+        listenerName: string;
+    };
+    query?: never;
+    url: '/admin/listener-invocations/{eventId}/{type}/{listenerName}';
+};
+
+export type AbandonErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type AbandonError = AbandonErrors[keyof AbandonErrors];
+
+export type AbandonResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type RetryNowData = {
+    body?: never;
+    path: {
+        eventId: string;
+        type: string;
+        listenerName: string;
+    };
+    query?: never;
+    url: '/admin/listener-invocations/{eventId}/{type}/{listenerName}/retry-now';
+};
+
+export type RetryNowErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type RetryNowError = RetryNowErrors[keyof RetryNowErrors];
+
+export type RetryNowResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type IsLoggedInData = {
     body?: never;

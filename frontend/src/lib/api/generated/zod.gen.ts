@@ -242,6 +242,11 @@ export const zUserInfoDto = z.object({
 /**
  * OK
  */
+export const zGetEventCreationStateResponse = z.record(z.string(), z.boolean());
+
+/**
+ * OK
+ */
 export const zListGuildsResponse = z.array(zAdminGuildDto);
 
 export const zUpdateFeaturesBody = zAdminFeaturesRequest;
@@ -254,6 +259,18 @@ export const zUpdateFeaturesPath = z.object({
  * OK
  */
 export const zUpdateFeaturesResponse = zAdminGuildDto;
+
+export const zAbandonPath = z.object({
+    eventId: z.uuid(),
+    type: z.string(),
+    listenerName: z.string()
+});
+
+export const zRetryNowPath = z.object({
+    eventId: z.uuid(),
+    type: z.string(),
+    listenerName: z.string()
+});
 
 /**
  * User is authenticated
