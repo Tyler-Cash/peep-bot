@@ -103,6 +103,11 @@ tasks.named('test') {
         showStackTraces = true
     }
     maxParallelForks = 1
+    // Disable OTLP exporters in tests — there is no collector listening, so each
+    // scheduled push spams the log with ConnectException stack traces.
+    systemProperty 'management.otlp.metrics.export.enabled', 'false'
+    systemProperty 'management.otlp.tracing.export.enabled', 'false'
+    systemProperty 'management.otlp.logging.export.enabled', 'false'
     finalizedBy jacocoTestReport
 }
 
