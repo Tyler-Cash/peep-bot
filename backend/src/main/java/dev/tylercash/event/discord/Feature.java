@@ -4,4 +4,5 @@ public enum Feature {
     IMMICH,
     GOOGLE_AUTOCOMPLETE,
     REWIND,
+    CONTRACTS,
 }

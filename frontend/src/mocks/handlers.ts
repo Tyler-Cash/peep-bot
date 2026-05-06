@@ -27,6 +27,7 @@ const adminGuilds: AdminGuild[] = [
     immichEnabled: true,
     googleAutocompleteEnabled: true,
     rewindEnabled: true,
+    contractsEnabled: false,
   },
 ];
 
@@ -298,6 +299,7 @@ export const handlers = [
         immichEnabled: true,
         googleAutocompleteEnabled: true,
         rewindEnabled: true,
+        contractsEnabled: false,
       }),
     ),
   ),

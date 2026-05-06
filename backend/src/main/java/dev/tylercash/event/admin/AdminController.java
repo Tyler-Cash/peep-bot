@@ -42,7 +42,8 @@ public class AdminController {
                             g.isActive(),
                             g.isImmichEnabled(),
                             g.isGoogleAutocompleteEnabled(),
-                            g.isRewindEnabled());
+                            g.isRewindEnabled(),
+                            g.isContractsEnabled());
                 })
                 .toList();
     }
@@ -60,10 +61,12 @@ public class AdminController {
         boolean oldImmich = row.isImmichEnabled();
         boolean oldGoogle = row.isGoogleAutocompleteEnabled();
         boolean oldRewind = row.isRewindEnabled();
+        boolean oldContracts = row.isContractsEnabled();
         if (request.immichEnabled() != null) row.setImmichEnabled(request.immichEnabled());
         if (request.googleAutocompleteEnabled() != null)
             row.setGoogleAutocompleteEnabled(request.googleAutocompleteEnabled());
         if (request.rewindEnabled() != null) row.setRewindEnabled(request.rewindEnabled());
+        if (request.contractsEnabled() != null) row.setContractsEnabled(request.contractsEnabled());
         guildRepository.save(row);
         String snowflake = principal.getAttribute("id");
         if (request.immichEnabled() != null && oldImmich != row.isImmichEnabled()) {
@@ -90,6 +93,14 @@ public class AdminController {
                     oldRewind,
                     row.isRewindEnabled());
         }
+        if (request.contractsEnabled() != null && oldContracts != row.isContractsEnabled()) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} CONTRACTS {} -> {}",
+                    snowflake,
+                    id,
+                    oldContracts,
+                    row.isContractsEnabled());
+        }
         var jdaGuild = jda.getGuildById(id);
         return new AdminGuildDto(
                 String.valueOf(id),
@@ -97,7 +108,8 @@ public class AdminController {
                 row.isActive(),
                 row.isImmichEnabled(),
                 row.isGoogleAutocompleteEnabled(),
-                row.isRewindEnabled());
+                row.isRewindEnabled(),
+                row.isContractsEnabled());
     }
 
     @GetMapping("/event-creation")

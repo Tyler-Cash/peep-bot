@@ -23,7 +23,7 @@ public class DiscordInitializationService {
     private final DiscordChannelService discordChannelService;
     private final ContractConfiguration contractConfig;
     private final DiscordUserCacheService discordUserCacheService;
-    private final ContractGuildResolver contractGuildResolver;
+    private final FeatureFlagService featureFlagService;
     private final GuildRegistrationService guildRegistrationService;
     private final GuildRepository guildRepository;
 
@@ -32,14 +32,14 @@ public class DiscordInitializationService {
             DiscordChannelService discordChannelService,
             ContractConfiguration contractConfig,
             DiscordUserCacheService discordUserCacheService,
-            ContractGuildResolver contractGuildResolver,
+            FeatureFlagService featureFlagService,
             @Lazy GuildRegistrationService guildRegistrationService,
             GuildRepository guildRepository) {
         this.jda = jda;
         this.discordChannelService = discordChannelService;
         this.contractConfig = contractConfig;
         this.discordUserCacheService = discordUserCacheService;
-        this.contractGuildResolver = contractGuildResolver;
+        this.featureFlagService = featureFlagService;
         this.guildRegistrationService = guildRegistrationService;
         this.guildRepository = guildRepository;
     }
@@ -69,7 +69,7 @@ public class DiscordInitializationService {
 
         Category outings = ensureCategory(jdaGuild, EVENT_CATEGORY);
         ensureCategory(jdaGuild, EVENT_ARCHIVE_CATEGORY);
-        if (contractGuildResolver.isContractsGuild(jdaGuild.getIdLong())) {
+        if (featureFlagService.isEnabled(jdaGuild.getIdLong(), Feature.CONTRACTS)) {
             ensureCategory(jdaGuild, contractConfig.getCategoryName());
         }
         ensureSeparatorChannel(outings, row.getSeparatorChannel());

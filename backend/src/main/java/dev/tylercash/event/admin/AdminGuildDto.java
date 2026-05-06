@@ -6,4 +6,5 @@ public record AdminGuildDto(
         boolean active,
         boolean immichEnabled,
         boolean googleAutocompleteEnabled,
-        boolean rewindEnabled) {}
+        boolean rewindEnabled,
+        boolean contractsEnabled) {}

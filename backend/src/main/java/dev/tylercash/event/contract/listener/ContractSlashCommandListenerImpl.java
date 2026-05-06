@@ -6,6 +6,8 @@ import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.contract.model.Contract;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.discord.DiscordAuthService;
+import dev.tylercash.event.discord.Feature;
+import dev.tylercash.event.discord.FeatureFlagService;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -26,9 +28,18 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
     private final UserBalanceService balanceService;
     private final DiscordAuthService authService;
     private final ContractConfiguration contractConfig;
+    private final FeatureFlagService featureFlagService;
 
     @Override
     public void handleSlashCommand(SlashCommandInteractionEvent event) {
+        if (event.getGuild() == null
+                || !featureFlagService.isEnabled(event.getGuild().getIdLong(), Feature.CONTRACTS)) {
+            event.reply("Prediction contracts are not enabled in this server.")
+                    .setEphemeral(true)
+                    .queue();
+            return;
+        }
+
         String name = event.getName();
         String sub = event.getSubcommandName();
 
@@ -74,7 +85,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             }
 
             String userId = event.getUser().getId();
-            contractService.createContract(userId, title, null, outcomeLabels);
+            long guildId = event.getGuild().getIdLong();
+            contractService.createContract(guildId, userId, title, null, outcomeLabels);
 
             String emoji = contractConfig.getEmoji().getSuccess();
             event.getHook().sendMessage(emoji + " Prediction contract created!").queue();
@@ -96,7 +108,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
         event.deferReply(true).queue();
         try {
-            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            Contract contract =
+                    contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
             UUID outcomeId = contract.getOutcomes().stream()
                     .filter(o -> o.getLabel().equalsIgnoreCase(outcomeIdStr))
                     .map(ContractOutcome::getId)
@@ -139,7 +152,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
         event.deferReply(true).queue();
         try {
-            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            Contract contract =
+                    contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
             UUID outcomeId = contract.getOutcomes().stream()
                     .filter(o -> o.getLabel().equalsIgnoreCase(outcomeIdStr))
                     .map(ContractOutcome::getId)
@@ -175,7 +189,8 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
         event.deferReply(true).queue();
         try {
-            Contract contract = contractService.findOpenContractByTitle(contractIdStr);
+            Contract contract =
+                    contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
             contractService.cancelContract(contract.getId(), event.getUser().getId());
             event.getHook()
                     .sendMessage("\u274C Contract cancelled. All trades refunded.")
@@ -189,7 +204,7 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
-        List<Contract> open = contractService.listOpenContracts();
+        List<Contract> open = contractService.listOpenContracts(event.getGuild().getIdLong());
         if (open.isEmpty()) {
             event.reply("No open prediction contracts.").setEphemeral(true).queue();
             return;
@@ -214,11 +229,17 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
 
     @Override
     public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        if (event.getGuild() == null
+                || !featureFlagService.isEnabled(event.getGuild().getIdLong(), Feature.CONTRACTS)) {
+            event.replyChoices(List.of()).queue();
+            return;
+        }
+        long guildId = event.getGuild().getIdLong();
         AutoCompleteQuery focused = event.getFocusedOption();
         String typed = focused.getValue().toLowerCase();
 
         if ("contract".equals(focused.getName())) {
-            List<Choice> choices = contractService.searchOpenContractNames(typed).stream()
+            List<Choice> choices = contractService.searchOpenContractNames(guildId, typed).stream()
                     .limit(25)
                     .map(s -> new Choice(s.title(), s.title()))
                     .toList();
@@ -232,10 +253,11 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                 return;
             }
             try {
-                List<Choice> choices = contractService.findOpenContractByTitle(contractTitle).getOutcomes().stream()
-                        .filter(o -> o.getLabel().toLowerCase().contains(typed))
-                        .map(o -> new Choice(o.getLabel(), o.getLabel()))
-                        .toList();
+                List<Choice> choices =
+                        contractService.findOpenContractByTitle(guildId, contractTitle).getOutcomes().stream()
+                                .filter(o -> o.getLabel().toLowerCase().contains(typed))
+                                .map(o -> new Choice(o.getLabel(), o.getLabel()))
+                                .toList();
                 event.replyChoices(choices).queue();
             } catch (Exception e) {
                 event.replyChoices(List.of()).queue();

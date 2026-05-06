@@ -21,7 +21,7 @@ export function AdminPanel() {
 
   async function toggleFeature(
     guildId: string,
-    feature: "immichEnabled" | "googleAutocompleteEnabled" | "rewindEnabled",
+    feature: "immichEnabled" | "googleAutocompleteEnabled" | "rewindEnabled" | "contractsEnabled",
     value: boolean,
   ) {
     await updateGuildFeatures(guildId, { [feature]: value });
@@ -39,6 +39,7 @@ export function AdminPanel() {
               <th className="px-4 py-3 text-center font-extrabold">Immich</th>
               <th className="px-4 py-3 text-center font-extrabold">Google Places</th>
               <th className="px-4 py-3 text-center font-extrabold">Rewind</th>
+              <th className="px-4 py-3 text-center font-extrabold">Contracts</th>
             </tr>
           </thead>
           <tbody>
@@ -62,11 +63,15 @@ export function AdminPanel() {
                   value={g.rewindEnabled}
                   onChange={(v) => toggleFeature(g.guildId, "rewindEnabled", v)}
                 />
+                <FeatureCell
+                  value={g.contractsEnabled}
+                  onChange={(v) => toggleFeature(g.guildId, "contractsEnabled", v)}
+                />
               </tr>
             ))}
             {guilds?.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-mute">
+                <td colSpan={5} className="px-4 py-6 text-center text-mute">
                   No guilds yet
                 </td>
               </tr>

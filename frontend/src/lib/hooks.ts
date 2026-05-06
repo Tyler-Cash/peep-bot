@@ -270,6 +270,7 @@ export type GuildFeatures = {
   immichEnabled: boolean;
   googleAutocompleteEnabled: boolean;
   rewindEnabled: boolean;
+  contractsEnabled: boolean;
 };
 
 export function useGuildFeatures(guildId: string | null | undefined) {
@@ -286,6 +287,7 @@ export type AdminGuild = {
   immichEnabled: boolean;
   googleAutocompleteEnabled: boolean;
   rewindEnabled: boolean;
+  contractsEnabled: boolean;
 };
 
 export function useAdminGuilds() {
@@ -298,6 +300,7 @@ export async function updateGuildFeatures(
     immichEnabled: boolean;
     googleAutocompleteEnabled: boolean;
     rewindEnabled: boolean;
+    contractsEnabled: boolean;
   }>,
 ) {
   await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {

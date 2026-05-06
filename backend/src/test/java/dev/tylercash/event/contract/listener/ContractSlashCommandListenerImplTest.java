@@ -8,6 +8,8 @@ import dev.tylercash.event.contract.ContractConfiguration;
 import dev.tylercash.event.contract.ContractService;
 import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.discord.DiscordAuthService;
+import dev.tylercash.event.discord.Feature;
+import dev.tylercash.event.discord.FeatureFlagService;
 import java.util.List;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -26,6 +28,7 @@ class ContractSlashCommandListenerImplTest {
     UserBalanceService balanceService;
     DiscordAuthService authService;
     ContractConfiguration contractConfig;
+    FeatureFlagService featureFlagService;
     ContractSlashCommandListenerImpl listener;
 
     SlashCommandInteractionEvent event;
@@ -42,7 +45,10 @@ class ContractSlashCommandListenerImplTest {
         balanceService = mock(UserBalanceService.class);
         authService = mock(DiscordAuthService.class);
         contractConfig = new ContractConfiguration();
-        listener = new ContractSlashCommandListenerImpl(contractService, balanceService, authService, contractConfig);
+        featureFlagService = mock(FeatureFlagService.class);
+        when(featureFlagService.isEnabled(anyLong(), eq(Feature.CONTRACTS))).thenReturn(true);
+        listener = new ContractSlashCommandListenerImpl(
+                contractService, balanceService, authService, contractConfig, featureFlagService);
 
         event = mock(SlashCommandInteractionEvent.class);
         deferAction = mock(ReplyCallbackAction.class);
@@ -58,6 +64,10 @@ class ContractSlashCommandListenerImplTest {
         User user = mock(User.class);
         when(user.getId()).thenReturn("user-123");
         when(event.getUser()).thenReturn(user);
+
+        net.dv8tion.jda.api.entities.Guild guild = mock(net.dv8tion.jda.api.entities.Guild.class);
+        when(guild.getIdLong()).thenReturn(99L);
+        when(event.getGuild()).thenReturn(guild);
     }
 
     private OptionMapping stringOption(String value) {
@@ -82,7 +92,7 @@ class ContractSlashCommandListenerImplTest {
         listener.handleSlashCommand(event);
 
         verify(contractService)
-                .createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO", "MAYBE"));
+                .createContract(99L, "user-123", "Will we hit 100 members?", null, List.of("YES", "NO", "MAYBE"));
         verify(hook).sendMessage(contains("created"));
     }
 
@@ -98,7 +108,7 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract("user-123", "Will we hit 100 members?", null, List.of("YES", "NO"));
+        verify(contractService).createContract(99L, "user-123", "Will we hit 100 members?", null, List.of("YES", "NO"));
     }
 
     @Test
@@ -114,6 +124,6 @@ class ContractSlashCommandListenerImplTest {
 
         listener.handleSlashCommand(event);
 
-        verify(contractService).createContract("user-123", "Will we win?", null, List.of("WIN", "NO"));
+        verify(contractService).createContract(99L, "user-123", "Will we win?", null, List.of("WIN", "NO"));
     }
 }

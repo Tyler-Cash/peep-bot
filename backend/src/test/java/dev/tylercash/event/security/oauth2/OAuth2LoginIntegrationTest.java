@@ -50,7 +50,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
             "spring.security.oauth2.client.registration.discord.client-secret=test-secret",
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=42",
-            "dev.tylercash.contract.guild-id=1",
             "dev.tylercash.frontend.protocol=https",
             "dev.tylercash.frontend.hostname=event.test.local",
             "dev.tylercash.frontend.path=/",
