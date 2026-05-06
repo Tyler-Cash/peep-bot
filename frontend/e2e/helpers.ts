@@ -8,9 +8,18 @@ import { expect, type Page } from "@playwright/test";
  */
 export async function login(page: Page): Promise<void> {
   await page.goto("/login");
-  // Wait for MSW to have started — the LoginHero polls useCurrentUser, and once
-  // the worker is up we either see the hero or get auto-redirected to "/".
-  await page.getByRole("button", { name: /continue with discord/i }).click();
+  // The mock auth defaults to "logged in" — a fresh browser context has no
+  // `mock-auth-logged-out` flag, so the LoginHero `useCurrentUser` effect can
+  // auto-redirect to "/" before Playwright's click lands. Race the button
+  // click against an already-completed redirect so the helper is robust.
+  const button = page.getByRole("button", { name: /continue with discord/i });
+  await Promise.race([
+    page.waitForURL(/\/$/, { timeout: 15_000 }),
+    button.click({ timeout: 15_000 }).catch(() => {
+      // The button can detach mid-click when the auto-redirect wins. Falling
+      // through is fine — `toHaveURL` below will still verify we got to "/".
+    }),
+  ]);
   await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
 }
 
