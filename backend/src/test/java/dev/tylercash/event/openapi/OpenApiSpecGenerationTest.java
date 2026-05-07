@@ -36,7 +36,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
             "dev.tylercash.frontend.hostname=test.local",
-            "dev.tylercash.contract.guild-id=1",
         })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")

@@ -31,6 +31,8 @@ public class GuildFeaturesController {
                 "googleAutocompleteEnabled",
                 featureFlagService.isEnabled(guildIdLong, Feature.GOOGLE_AUTOCOMPLETE),
                 "rewindEnabled",
-                featureFlagService.isEnabled(guildIdLong, Feature.REWIND));
+                featureFlagService.isEnabled(guildIdLong, Feature.REWIND),
+                "contractsEnabled",
+                featureFlagService.isEnabled(guildIdLong, Feature.CONTRACTS));
     }
 }

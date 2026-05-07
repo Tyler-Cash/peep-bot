@@ -65,6 +65,9 @@ public class Guild {
     @Column(name = "rewind_enabled", nullable = false)
     private boolean rewindEnabled;
 
+    @Column(name = "contracts_enabled", nullable = false)
+    private boolean contractsEnabled;
+
     @Column(name = "event_create_rate_limit_per_hour")
     private Integer eventCreateRateLimitPerHour;
 
@@ -81,6 +84,7 @@ public class Guild {
         g.setImmichEnabled(false);
         g.setGoogleAutocompleteEnabled(false);
         g.setRewindEnabled(false);
+        g.setContractsEnabled(false);
         return g;
     }
 }

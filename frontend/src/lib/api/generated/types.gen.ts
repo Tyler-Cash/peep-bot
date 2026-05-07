@@ -5,6 +5,7 @@ export type ClientOptions = {
 };
 
 export type AdminFeaturesRequest = {
+    contractsEnabled?: boolean;
     googleAutocompleteEnabled?: boolean;
     immichEnabled?: boolean;
     rewindEnabled?: boolean;
@@ -12,6 +13,7 @@ export type AdminFeaturesRequest = {
 
 export type AdminGuildDto = {
     active?: boolean;
+    contractsEnabled?: boolean;
     googleAutocompleteEnabled?: boolean;
     guildId?: string;
     immichEnabled?: boolean;

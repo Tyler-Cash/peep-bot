@@ -43,7 +43,7 @@ public class ContractService {
     @CacheEvict(value = "openContracts", allEntries = true)
     @Transactional
     public Contract createContract(
-            String creatorSnowflake, String title, String description, List<String> outcomeLabels) {
+            long serverId, String creatorSnowflake, String title, String description, List<String> outcomeLabels) {
 
         if (outcomeLabels.size() < 2) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least 2 outcomes required");
@@ -58,7 +58,7 @@ public class ContractService {
         contract.setSeedAmount(0L);
         contract.setBParameter(LmsrService.computeB(houseShares, outcomeLabels.size()));
         contract.setState(ContractState.CREATED);
-        contract.setServerId(config.getGuildId());
+        contract.setServerId(serverId);
         contract.setCreatedAt(clock.instant());
         contract = contractRepo.save(contract);
 
@@ -79,7 +79,7 @@ public class ContractService {
 
     private void initChannel(Contract contract) {
         Category category =
-                channelService.getOrCreateCategory(jda.getGuildById(config.getGuildId()), config.getCategoryName());
+                channelService.getOrCreateCategory(jda.getGuildById(contract.getServerId()), config.getCategoryName());
         String channelName = slugify(contract.getTitle());
         TextChannel channel = channelService.createTextChannel(category, channelName);
         contract.setChannelId(channel.getIdLong());
@@ -257,19 +257,20 @@ public class ContractService {
         messageService.sendMessage(channel, "\u274C **Prediction contract cancelled.** All trades refunded.");
     }
 
-    @Cacheable("openContracts")
-    public List<Contract> listOpenContracts() {
-        return contractRepo.findByStateIn(List.of(ContractState.OPEN));
+    @Cacheable(value = "openContracts", key = "#serverId")
+    public List<Contract> listOpenContracts(long serverId) {
+        return contractRepo.findByServerIdAndStateIn(serverId, List.of(ContractState.OPEN));
     }
 
-    public Contract findOpenContractByTitle(String title) {
+    public Contract findOpenContractByTitle(long serverId, String title) {
         return contractRepo
-                .findFirstByStateInAndTitleIgnoreCase(List.of(ContractState.OPEN), title)
+                .findFirstByServerIdAndStateInAndTitleIgnoreCase(serverId, List.of(ContractState.OPEN), title)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contract not found: " + title));
     }
 
-    public List<ContractSummary> searchOpenContractNames(String query) {
-        return contractRepo.searchSummariesByStateInAndTitleContaining(List.of(ContractState.OPEN), query);
+    public List<ContractSummary> searchOpenContractNames(long serverId, String query) {
+        return contractRepo.searchSummariesByServerIdAndStateInAndTitleContaining(
+                serverId, List.of(ContractState.OPEN), query);
     }
 
     public List<ContractOutcome> getOpenContractOutcomes(UUID contractId) {

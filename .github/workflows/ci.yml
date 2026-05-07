@@ -396,8 +396,25 @@ jobs:
         run: npx playwright install-deps chromium
         working-directory: ./frontend
 
-      - name: Run Playwright smoke suite
+      - name: Build frontend (mock mode for chromium e2e)
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_MODE: mock
+
+      - name: Build frontend (live mode for live e2e)
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_MODE: live
+          NEXT_DIST_DIR: .next-live
+
+      - name: Run Playwright smoke suite (chromium against prod build)
         run: npm run test:e2e
+        working-directory: ./frontend
+
+      - name: Run Playwright smoke suite (live)
+        run: npm run test:e2e:live
         working-directory: ./frontend
 
       - name: Upload Playwright report
@@ -686,7 +703,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-push, frontend-ci, frontend-sbom]
+    needs: [backend-push, frontend-ci, frontend-e2e, frontend-sbom]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

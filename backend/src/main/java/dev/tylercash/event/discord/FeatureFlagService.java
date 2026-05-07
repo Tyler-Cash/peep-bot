@@ -15,6 +15,7 @@ public class FeatureFlagService {
                     case IMMICH -> g.isImmichEnabled();
                     case GOOGLE_AUTOCOMPLETE -> g.isGoogleAutocompleteEnabled();
                     case REWIND -> g.isRewindEnabled();
+                    case CONTRACTS -> g.isContractsEnabled();
                 })
                 .orElse(false);
     }

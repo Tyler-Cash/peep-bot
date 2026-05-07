@@ -21,6 +21,20 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 const LIVE_PORT = Number(process.env.LIVE_PORT ?? 3101);
 const LIVE_BASE_URL = `http://localhost:${LIVE_PORT}`;
 const ALL_BROWSERS = process.env.ALL_BROWSERS === "1";
+const IS_CI = !!process.env.CI;
+// CI runs against a pre-built production server (npm run build) — far less CPU
+// than `next dev` doing on-demand compilation, which was hanging tests on slow
+// runners. Locally we keep `next dev` so hot reload still works.
+const MOCK_COMMAND = IS_CI
+  ? `npm run start -- -p ${PORT}`
+  : `npm run dev -- -p ${PORT}`;
+const LIVE_COMMAND = IS_CI
+  ? `npm run start -- -p ${LIVE_PORT}`
+  : `npm run dev -- -p ${LIVE_PORT}`;
+// The live webServer is only needed for tests under e2e/live/*. Avoid starting
+// it during chromium-only runs so the two dev/prod servers don't compete for
+// CPU on small CI runners. `npm run test:e2e:live` opts in.
+const E2E_LIVE = process.env.E2E_LIVE === "1";
 
 const projects: NonNullable<Parameters<typeof defineConfig>[0]["projects"]> = [
   {
@@ -68,25 +82,29 @@ export default defineConfig({
     ? undefined
     : [
         {
-          command: `npm run dev -- -p ${PORT}`,
+          command: MOCK_COMMAND,
           url: BASE_URL,
           timeout: 120_000,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: !IS_CI,
           env: {
             NEXT_PUBLIC_API_MODE: "mock",
             NEXT_TELEMETRY_DISABLED: "1",
           },
         },
-        {
-          command: `npm run dev -- -p ${LIVE_PORT}`,
-          url: LIVE_BASE_URL,
-          timeout: 120_000,
-          reuseExistingServer: !process.env.CI,
-          env: {
-            NEXT_PUBLIC_API_MODE: "live",
-            NEXT_TELEMETRY_DISABLED: "1",
-            NEXT_DIST_DIR: ".next-live",
-          },
-        },
+        ...(E2E_LIVE || !IS_CI
+          ? [
+              {
+                command: LIVE_COMMAND,
+                url: LIVE_BASE_URL,
+                timeout: 120_000,
+                reuseExistingServer: !IS_CI,
+                env: {
+                  NEXT_PUBLIC_API_MODE: "live",
+                  NEXT_TELEMETRY_DISABLED: "1",
+                  NEXT_DIST_DIR: ".next-live",
+                },
+              },
+            ]
+          : []),
       ],
 });

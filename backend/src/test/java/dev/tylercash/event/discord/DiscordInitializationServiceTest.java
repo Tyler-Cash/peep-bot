@@ -21,7 +21,7 @@ class DiscordInitializationServiceTest {
     private DiscordChannelService discordChannelService;
     private ContractConfiguration contractConfig;
     private DiscordUserCacheService discordUserCacheService;
-    private ContractGuildResolver contractGuildResolver;
+    private FeatureFlagService featureFlagService;
     private GuildRegistrationService guildRegistrationService;
     private GuildRepository guildRepository;
     private DiscordInitializationService service;
@@ -36,7 +36,7 @@ class DiscordInitializationServiceTest {
         discordChannelService = mock(DiscordChannelService.class);
         discordUserCacheService = mock(DiscordUserCacheService.class);
         contractConfig = new ContractConfiguration();
-        contractGuildResolver = mock(ContractGuildResolver.class);
+        featureFlagService = mock(FeatureFlagService.class);
         guildRegistrationService = mock(GuildRegistrationService.class);
         guildRepository = mock(GuildRepository.class);
 
@@ -45,7 +45,7 @@ class DiscordInitializationServiceTest {
                 discordChannelService,
                 contractConfig,
                 discordUserCacheService,
-                contractGuildResolver,
+                featureFlagService,
                 guildRegistrationService,
                 guildRepository);
     }
@@ -75,7 +75,7 @@ class DiscordInitializationServiceTest {
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(false);
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 
@@ -97,7 +97,7 @@ class DiscordInitializationServiceTest {
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(false);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
@@ -119,7 +119,7 @@ class DiscordInitializationServiceTest {
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(false);
 
         TextChannel separatorChannel = mock(TextChannel.class);
         when(separatorChannel.getName()).thenReturn("organising");
@@ -142,7 +142,7 @@ class DiscordInitializationServiceTest {
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(false);
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 
@@ -162,7 +162,7 @@ class DiscordInitializationServiceTest {
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings")).thenReturn(outings);
         when(discordChannelService.getOrCreateCategory(jdaGuild, "outings-archive"))
                 .thenReturn(archive);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(false);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(false);
 
         service.initialise(jdaGuild, makeRow(""));
 
@@ -182,7 +182,7 @@ class DiscordInitializationServiceTest {
                 .thenReturn(archive);
         when(discordChannelService.getOrCreateCategory(jdaGuild, contractConfig.getCategoryName()))
                 .thenReturn(contracts);
-        when(contractGuildResolver.isContractsGuild(123L)).thenReturn(true);
+        when(featureFlagService.isEnabled(123L, Feature.CONTRACTS)).thenReturn(true);
         when(outings.getTextChannels()).thenReturn(Collections.emptyList());
         mockTextChannelCreation(outings);
 

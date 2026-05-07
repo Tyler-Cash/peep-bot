@@ -35,8 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "spring.security.oauth2.client.registration.discord.client-id=test",
             "spring.security.oauth2.client.registration.discord.client-secret=test",
             "dev.tylercash.discord.token=dummy",
-            "dev.tylercash.discord.guild-id=0",
-            "dev.tylercash.contract.guild-id=1"
+            "dev.tylercash.discord.guild-id=0"
         })
 @Testcontainers
 @ActiveProfiles("local")

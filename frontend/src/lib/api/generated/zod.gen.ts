@@ -3,6 +3,7 @@
 import * as z from 'zod';
 
 export const zAdminFeaturesRequest = z.object({
+    contractsEnabled: z.boolean().nullable().optional(),
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
     immichEnabled: z.boolean().nullable().optional(),
     rewindEnabled: z.boolean().nullable().optional()
@@ -10,6 +11,7 @@ export const zAdminFeaturesRequest = z.object({
 
 export const zAdminGuildDto = z.object({
     active: z.boolean().nullable().optional(),
+    contractsEnabled: z.boolean().nullable().optional(),
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
     guildId: z.string().nullable().optional(),
     immichEnabled: z.boolean().nullable().optional(),

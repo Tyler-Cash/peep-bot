@@ -3,6 +3,9 @@
     "schemas" : {
       "AdminFeaturesRequest" : {
         "properties" : {
+          "contractsEnabled" : {
+            "type" : "boolean"
+          },
           "googleAutocompleteEnabled" : {
             "type" : "boolean"
           },
@@ -18,6 +21,9 @@
       "AdminGuildDto" : {
         "properties" : {
           "active" : {
+            "type" : "boolean"
+          },
+          "contractsEnabled" : {
             "type" : "boolean"
           },
           "googleAutocompleteEnabled" : {

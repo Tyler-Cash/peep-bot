@@ -66,7 +66,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0",
             "dev.tylercash.frontend.hostname=test.local",
-            "dev.tylercash.contract.guild-id=1",
             // Defaults are 60 read / 5 write per minute — way too small for a
             // parameterized test that fans out across every endpoint from a
             // single client IP. Crank them up so RateLimitFilter doesn't mask
