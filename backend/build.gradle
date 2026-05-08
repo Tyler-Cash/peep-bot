@@ -161,22 +161,22 @@ spotless {
 }
 
 def modelDir = file("src/main/resources/models")
+def tokenizerFile = file("src/main/resources/models/tokenizer.json")
+def modelFile = file("src/main/resources/models/model.onnx")
 def tokenizerUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
 def modelUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
 
 tasks.register("downloadModel") {
     description = "Downloads all-MiniLM-L6-v2 ONNX model files into src/main/resources/models/ for classpath bundling."
     group = "build"
-    outputs.files(file("${modelDir}/tokenizer.json"), file("${modelDir}/model.onnx"))
-    onlyIf { !file("${modelDir}/model.onnx").exists() || !file("${modelDir}/tokenizer.json").exists() }
+    outputs.files(tokenizerFile, modelFile)
+    onlyIf { !modelFile.exists() || !tokenizerFile.exists() }
     doLast {
         modelDir.mkdirs()
-        def tokenizerFile = file("${modelDir}/tokenizer.json")
         if (!tokenizerFile.exists()) {
             logger.lifecycle("Downloading tokenizer.json (~0.5MB)...")
             new URL(tokenizerUrl).withInputStream { ins -> tokenizerFile.bytes = ins.bytes }
         }
-        def modelFile = file("${modelDir}/model.onnx")
         if (!modelFile.exists()) {
             logger.lifecycle("Downloading model.onnx (~23MB)...")
             new URL(modelUrl).withInputStream { ins -> modelFile.bytes = ins.bytes }
