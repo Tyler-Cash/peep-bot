@@ -102,7 +102,7 @@ tasks.named('test') {
         exceptionFormat = 'full'
         showStackTraces = true
     }
-    maxParallelForks = 1
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     // Disable OTLP exporters in tests — there is no collector listening, so each
     // scheduled push spams the log with ConnectException stack traces.
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
