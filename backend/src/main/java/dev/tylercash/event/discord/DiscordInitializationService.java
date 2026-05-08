@@ -26,6 +26,7 @@ public class DiscordInitializationService {
     private final FeatureFlagService featureFlagService;
     private final GuildRegistrationService guildRegistrationService;
     private final GuildRepository guildRepository;
+    private final GuildCommandSyncService guildCommandSyncService;
 
     public DiscordInitializationService(
             JDA jda,
@@ -34,7 +35,8 @@ public class DiscordInitializationService {
             DiscordUserCacheService discordUserCacheService,
             FeatureFlagService featureFlagService,
             @Lazy GuildRegistrationService guildRegistrationService,
-            GuildRepository guildRepository) {
+            GuildRepository guildRepository,
+            GuildCommandSyncService guildCommandSyncService) {
         this.jda = jda;
         this.discordChannelService = discordChannelService;
         this.contractConfig = contractConfig;
@@ -42,10 +44,12 @@ public class DiscordInitializationService {
         this.featureFlagService = featureFlagService;
         this.guildRegistrationService = guildRegistrationService;
         this.guildRepository = guildRepository;
+        this.guildCommandSyncService = guildCommandSyncService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+        guildCommandSyncService.clearGlobalCommands(jda);
         List<net.dv8tion.jda.api.entities.Guild> liveGuilds = jda.getGuilds();
         log.info("Onboarding {} guilds on startup", liveGuilds.size());
         liveGuilds.forEach(guildRegistrationService::onboard);
@@ -73,6 +77,7 @@ public class DiscordInitializationService {
             ensureCategory(jdaGuild, contractConfig.getCategoryName());
         }
         ensureSeparatorChannel(outings, row.getSeparatorChannel());
+        guildCommandSyncService.syncCommands(jdaGuild);
     }
 
     private void syncGuildMembers(net.dv8tion.jda.api.entities.Guild guild) {

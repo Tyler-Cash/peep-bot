@@ -24,6 +24,7 @@ class DiscordInitializationServiceTest {
     private FeatureFlagService featureFlagService;
     private GuildRegistrationService guildRegistrationService;
     private GuildRepository guildRepository;
+    private GuildCommandSyncService guildCommandSyncService;
     private DiscordInitializationService service;
 
     @BeforeEach
@@ -39,6 +40,7 @@ class DiscordInitializationServiceTest {
         featureFlagService = mock(FeatureFlagService.class);
         guildRegistrationService = mock(GuildRegistrationService.class);
         guildRepository = mock(GuildRepository.class);
+        guildCommandSyncService = mock(GuildCommandSyncService.class);
 
         service = new DiscordInitializationService(
                 jda,
@@ -47,7 +49,8 @@ class DiscordInitializationServiceTest {
                 discordUserCacheService,
                 featureFlagService,
                 guildRegistrationService,
-                guildRepository);
+                guildRepository,
+                guildCommandSyncService);
     }
 
     @SuppressWarnings("unchecked")

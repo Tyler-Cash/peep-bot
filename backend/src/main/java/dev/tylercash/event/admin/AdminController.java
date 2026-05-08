@@ -1,6 +1,7 @@
 package dev.tylercash.event.admin;
 
 import dev.tylercash.event.discord.Guild;
+import dev.tylercash.event.discord.GuildCommandSyncService;
 import dev.tylercash.event.discord.GuildRepository;
 import dev.tylercash.event.global.EventCreationToggle;
 import dev.tylercash.event.security.BotAdminService;
@@ -28,6 +29,7 @@ public class AdminController {
     private final GuildRepository guildRepository;
     private final JDA jda;
     private final EventCreationToggle eventCreationToggle;
+    private final GuildCommandSyncService guildCommandSyncService;
 
     @GetMapping("/guilds")
     public List<AdminGuildDto> listGuilds(@AuthenticationPrincipal OAuth2User principal) {
@@ -102,6 +104,9 @@ public class AdminController {
                     row.isContractsEnabled());
         }
         var jdaGuild = jda.getGuildById(id);
+        if (request.contractsEnabled() != null && oldContracts != row.isContractsEnabled() && jdaGuild != null) {
+            guildCommandSyncService.syncCommands(jdaGuild);
+        }
         return new AdminGuildDto(
                 String.valueOf(id),
                 jdaGuild != null ? jdaGuild.getName() : null,
