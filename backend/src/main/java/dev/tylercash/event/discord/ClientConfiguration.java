@@ -38,9 +38,7 @@ public class ClientConfiguration {
                 .addEventListeners(slashCommandListener)
                 .addEventListeners(messageReceivedListener)
                 .enableIntents(EnumSet.of(
-                        GatewayIntent.GUILD_MEMBERS,
-                        GatewayIntent.GUILD_MESSAGES,
-                        GatewayIntent.MESSAGE_CONTENT))
+                        GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
                 .build()
                 .awaitReady();
     }
