@@ -106,9 +106,7 @@ class AuthorizationFuzzIntegrationTest {
             "GET /actuator/health",
             "GET /actuator/prometheus",
             // Bot install URL — public so the empty-state CTA works for anonymous users.
-            "GET /install-url",
-            // Event cover image — fetched by Discord (no session) when rendering embed.
-            "GET /events/{id}/cover");
+            "GET /install-url");
 
     @MockitoBean
     JDA jda;
@@ -219,6 +217,25 @@ class AuthorizationFuzzIntegrationTest {
                 .andExpect(result -> assertThat(result.getResponse().getStatus())
                         .as("Endpoint %s should reject non-admin", ec)
                         .isEqualTo(403));
+    }
+
+    /**
+     * F-005 happy path: an in-tenant member can fetch the event cover image (200).
+     * Anonymous (401) and cross-tenant (403) are exercised by the parameterized
+     * suites above.
+     */
+    @Test
+    void eventCover_inTenantMember_isOk() throws Exception {
+        Event event = eventRepository.findById(guild1EventId).orElseThrow();
+        event.setCoverImageBytes(new byte[] {1, 2, 3, 4});
+        event.setCoverImageContentType("image/png");
+        eventRepository.save(event);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/events/" + guild1EventId + "/cover")
+                        .with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
+                .andExpect(result -> assertThat(result.getResponse().getStatus())
+                        .as("In-tenant member should be able to fetch event cover")
+                        .isEqualTo(200));
     }
 
     private static MockHttpServletRequestBuilder withCsrfIfMutating(EndpointCase ec) {
@@ -399,6 +416,14 @@ class AuthorizationFuzzIntegrationTest {
                         () -> MockMvcRequestBuilders.post("/event/" + guild1EventId + "/recategorize"),
                         true,
                         true),
+
+                // EventCoverController — F-005: now requires auth + guild membership.
+                new EndpointCase(
+                        "GET",
+                        "/events/{id}/cover",
+                        () -> MockMvcRequestBuilders.get("/events/" + guild1EventId + "/cover"),
+                        true,
+                        false),
 
                 // GalleryController
                 new EndpointCase(
