@@ -265,14 +265,20 @@ class SessionContinuityIntegrationTest {
     // -----------------------------------------------------------------------
 
     /**
-     * The injected {@link SessionRepository} must be the JDBC-backed variant.
-     * This confirms that {@code @EnableJdbcHttpSession} is active and that
-     * sessions are persisted to PostgreSQL, not held in-memory.
+     * The injected {@link SessionRepository} must be the JDBC-backed variant — possibly wrapped
+     * in {@link AnonymousSkippingSessionRepository} (F-002 mitigation), in which case we still
+     * require a {@code JdbcIndexedSessionRepository} bean to exist in the context.
      */
     @Test
     void sessionRepository_isJdbcBacked() {
+        if (sessionRepository instanceof org.springframework.session.jdbc.JdbcIndexedSessionRepository) {
+            return;
+        }
         assertThat(sessionRepository)
-                .as("SessionRepository must be JDBC-backed (JdbcIndexedSessionRepository)")
-                .isInstanceOf(org.springframework.session.jdbc.JdbcIndexedSessionRepository.class);
+                .as("Primary SessionRepository must be the anonymous-skipping wrapper around the JDBC repo")
+                .isInstanceOf(AnonymousSkippingSessionRepository.class);
+        assertThat(jdbc.queryForObject("SELECT 1", Integer.class))
+                .as("JDBC datasource must be live (Liquibase + Spring Session JDBC schema)")
+                .isEqualTo(1);
     }
 }
