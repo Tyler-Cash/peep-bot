@@ -218,11 +218,12 @@ export async function recategorizeEvent(guildId: string, eventId: number | strin
 }
 
 export async function logout() {
-  const base = api.base;
-  await fetch(`${base}/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
+  try {
+    await apiFetch("/auth/logout", { method: "POST" });
+  } catch {
+    // Logout is best-effort: ignore network/CSRF/401 errors and proceed
+    // to clear local state and redirect.
+  }
   clearSwrCache();
   api.invalidateCsrf();
   window.location.href = "/login";
