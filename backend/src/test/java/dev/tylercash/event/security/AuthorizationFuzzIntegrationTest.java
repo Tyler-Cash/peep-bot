@@ -485,6 +485,30 @@ class AuthorizationFuzzIntegrationTest {
                         () -> MockMvcRequestBuilders.delete("/admin/listener-invocations/" + java.util.UUID.randomUUID()
                                 + "/EventCreated/TestListener"),
                         false,
+                        true),
+
+                // AdminMonitorController
+                new EndpointCase(
+                        "GET", "/admin/health", () -> MockMvcRequestBuilders.get("/admin/health"), false, true),
+                new EndpointCase("GET", "/admin/jobs", () -> MockMvcRequestBuilders.get("/admin/jobs"), false, true),
+                new EndpointCase(
+                        "GET", "/admin/activity", () -> MockMvcRequestBuilders.get("/admin/activity"), false, true),
+
+                // AdminLifecycleController
+                new EndpointCase(
+                        "GET",
+                        "/admin/events",
+                        () -> MockMvcRequestBuilders.get("/admin/events?guildId=" + GUILD_1),
+                        false,
+                        true),
+                new EndpointCase(
+                        "POST",
+                        "/admin/replay",
+                        () -> MockMvcRequestBuilders.post("/admin/replay")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content("{\"eventId\":\"" + java.util.UUID.randomUUID()
+                                        + "\",\"lifecycleEventType\":\"EventCreated\"}"),
+                        false,
                         true));
     }
 
