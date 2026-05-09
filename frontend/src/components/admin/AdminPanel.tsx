@@ -1,13 +1,52 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useAdminGuilds, useCurrentUser, updateGuildFeatures } from "@/lib/hooks";
+import { useAdminGuilds, useCurrentUser, type AdminEvent, type AdminGuild } from "@/lib/hooks";
+import { AdminSubNav, type AdminSection } from "./AdminSubNav";
+import { OverviewSection } from "./OverviewSection";
+import { EventsSection } from "./EventsSection";
+import { TogglesSection } from "./TogglesSection";
+import { JobsSection } from "./JobsSection";
+import { GuildsSection } from "./GuildsSection";
+import { ReplayModal } from "./ReplayModal";
+import type { LifecycleStage } from "./lifecycle";
 
+const ACTIVE_GUILD_KEY = "peepbot.activeGuild";
+
+/**
+ * Service-admin only multi-section panel. The user.admin flag is set by the backend's
+ * BotAdminService — a static allowlist of Discord snowflakes; this is NOT the per-guild
+ * "event-organiser" role. Non-admins are bounced to /. The redirect is client-side only,
+ * matching the rest of the app's auth pattern.
+ */
 export function AdminPanel() {
   const { data: user } = useCurrentUser();
-  const { data: guilds, mutate } = useAdminGuilds();
+  const { data: guilds } = useAdminGuilds();
   const router = useRouter();
+
+  const [section, setSection] = useState<AdminSection>("overview");
+  const [activeGuildId, setActiveGuildIdState] = useState<string | null>(null);
+  const [replay, setReplay] = useState<{
+    open: boolean;
+    event: AdminEvent | null;
+    stage: LifecycleStage | null;
+  }>({ open: false, event: null, stage: null });
+
+  // Hydrate active guild from localStorage (shared with the public /events tab) → fall back to
+  // the first admin guild → otherwise null. Re-runs whenever the admin-guilds list arrives.
+  useEffect(() => {
+    if (!guilds || guilds.length === 0) return;
+    const stored =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(ACTIVE_GUILD_KEY)
+        : null;
+    if (stored && guilds.some((g) => g.guildId === stored)) {
+      setActiveGuildIdState(stored);
+    } else {
+      setActiveGuildIdState(guilds[0].guildId);
+    }
+  }, [guilds]);
 
   useEffect(() => {
     if (user && !user.admin) {
@@ -15,89 +54,112 @@ export function AdminPanel() {
     }
   }, [user, router]);
 
-  if (!user?.admin) {
-    return null;
-  }
+  const activeGuild: AdminGuild | null = useMemo(() => {
+    if (!guilds || !activeGuildId) return null;
+    return guilds.find((g) => g.guildId === activeGuildId) ?? null;
+  }, [guilds, activeGuildId]);
 
-  async function toggleFeature(
-    guildId: string,
-    feature: "immichEnabled" | "googleAutocompleteEnabled" | "rewindEnabled" | "contractsEnabled",
-    value: boolean,
-  ) {
-    await updateGuildFeatures(guildId, { [feature]: value });
-    await mutate();
-  }
+  if (!user?.admin) return null;
+
+  const setActiveGuild = (id: string) => {
+    setActiveGuildIdState(id);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(ACTIVE_GUILD_KEY, id);
+      window.dispatchEvent(new Event("peepbot:active-guild-changed"));
+    }
+  };
+
+  const openReplay = (event: AdminEvent | null, stage: LifecycleStage | null) =>
+    setReplay({ open: true, event, stage });
+  const closeReplay = () => setReplay((r) => ({ ...r, open: false }));
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-extrabold tracking-tight mb-6">Bot Admin</h1>
-      <div className="overflow-x-auto rounded-card border-[1.5px] border-ink shadow-rest">
-        <table className="w-full text-sm">
-          <thead className="bg-paper2 border-b-[1.5px] border-ink">
-            <tr>
-              <th className="px-4 py-3 text-left font-extrabold">Guild</th>
-              <th className="px-4 py-3 text-center font-extrabold">Immich</th>
-              <th className="px-4 py-3 text-center font-extrabold">Google Places</th>
-              <th className="px-4 py-3 text-center font-extrabold">Rewind</th>
-              <th className="px-4 py-3 text-center font-extrabold">Contracts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(guilds ?? []).map((g) => (
-              <tr key={g.guildId} className="border-b border-ink/10 last:border-b-0 hover:bg-paper2">
-                <td className="px-4 py-3 font-semibold">
-                  {g.name ?? g.guildId}
-                  {!g.active && (
-                    <span className="ml-2 text-xs text-mute">(inactive)</span>
-                  )}
-                </td>
-                <FeatureCell
-                  value={g.immichEnabled}
-                  onChange={(v) => toggleFeature(g.guildId, "immichEnabled", v)}
-                />
-                <FeatureCell
-                  value={g.googleAutocompleteEnabled}
-                  onChange={(v) => toggleFeature(g.guildId, "googleAutocompleteEnabled", v)}
-                />
-                <FeatureCell
-                  value={g.rewindEnabled}
-                  onChange={(v) => toggleFeature(g.guildId, "rewindEnabled", v)}
-                />
-                <FeatureCell
-                  value={g.contractsEnabled}
-                  onChange={(v) => toggleFeature(g.guildId, "contractsEnabled", v)}
-                />
-              </tr>
-            ))}
-            {guilds?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-mute">
-                  No guilds yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </main>
+    <div className="min-h-screen bg-paper">
+      <AdminSubNav
+        section={section}
+        onSelect={setSection}
+        onReplay={() => openReplay(null, null)}
+      />
+      <AdminGuildPicker
+        guilds={guilds ?? []}
+        activeGuildId={activeGuildId}
+        onSelect={setActiveGuild}
+      />
+
+      {section === "overview" && (
+        <OverviewSection
+          activeGuild={activeGuild}
+          onJumpEvents={() => setSection("events")}
+          onOpenReplay={() => openReplay(null, null)}
+        />
+      )}
+      {section === "events" && (
+        <EventsSection activeGuild={activeGuild} onOpenReplay={openReplay} />
+      )}
+      {section === "toggles" && <TogglesSection activeGuild={activeGuild} />}
+      {section === "jobs" && (
+        <JobsSection onOpenReplay={() => openReplay(null, null)} />
+      )}
+      {section === "guilds" && (
+        <GuildsSection
+          onSelectGuild={(g) => {
+            setActiveGuild(g.guildId);
+            setSection("overview");
+          }}
+        />
+      )}
+
+      <ReplayModal
+        open={replay.open}
+        onClose={closeReplay}
+        prefillEvent={replay.event}
+        prefillStage={replay.stage}
+        activeGuild={activeGuild}
+      />
+    </div>
   );
 }
 
-function FeatureCell({
-  value,
-  onChange,
+/**
+ * Compact picker shown above each admin section. Lives separate from the public-site
+ * GuildSwitcher because admins routinely jump between guilds for cross-guild ops, so the dropdown
+ * is open by default and always at the page edge — no need to chase it.
+ */
+function AdminGuildPicker({
+  guilds,
+  activeGuildId,
+  onSelect,
 }: {
-  value: boolean;
-  onChange: (v: boolean) => void;
+  guilds: AdminGuild[];
+  activeGuildId: string | null;
+  onSelect: (id: string) => void;
 }) {
+  if (guilds.length === 0) return null;
   return (
-    <td className="px-4 py-3 text-center">
-      <input
-        type="checkbox"
-        checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 cursor-pointer accent-ink"
-      />
-    </td>
+    <div className="border-b border-ink/10 bg-paper2/40">
+      <div className="max-w-[1280px] mx-auto px-5 py-2 flex items-center gap-2 overflow-x-auto">
+        <span className="eyebrow text-[10.5px] tracking-[0.16em] text-mute mr-1">
+          guild scope
+        </span>
+        {guilds.map((g) => {
+          const active = g.guildId === activeGuildId;
+          return (
+            <button
+              key={g.guildId}
+              type="button"
+              onClick={() => onSelect(g.guildId)}
+              className={
+                "h-8 px-3 rounded-chip border-[1.5px] text-[13px] font-extrabold tracking-[-0.01em] whitespace-nowrap " +
+                (active
+                  ? "border-ink bg-ink text-paper shadow-rest"
+                  : "border-transparent bg-transparent text-ink hover:bg-paper2")
+              }
+            >
+              {g.name ?? g.guildId}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

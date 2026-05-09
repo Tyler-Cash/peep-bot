@@ -17,8 +17,19 @@ import {
   setRsvp,
   store,
 } from "./fixtures";
+import {
+  adminActivityStore,
+  adminEventsByGuild,
+  adminGuildsStore,
+  adminHealthStore,
+  adminJobsStore,
+  getEventCreationEnabled,
+  setEventCreationEnabledMock,
+} from "./adminFixtures";
 
-// In-memory admin guild store
+// In-memory admin guild store. The first row mirrors the public-site `guild` fixture so the
+// PATCH /admin/guilds/{guildId}/features handler stays consistent with what useAdminGuilds shows.
+// Additional rows come from adminGuildsStore so the Guilds table is more than a single row.
 const adminGuilds: AdminGuild[] = [
   {
     guildId: guild.id,
@@ -28,7 +39,14 @@ const adminGuilds: AdminGuild[] = [
     googleAutocompleteEnabled: true,
     rewindEnabled: true,
     contractsEnabled: false,
+    memberCount: 24,
+    channelName: "#outings",
+    locationName: "Melbourne, VIC",
+    upcomingEventCount: 5,
+    totalEventCount: 18,
+    failingInvocations: 1,
   },
+  ...adminGuildsStore.filter((g) => g.guildId !== guild.id),
 ];
 
 const API = (path: string) => new RegExp(`(^|/api)${path}$`);
@@ -316,6 +334,102 @@ export const handlers = [
       if (!row) return new HttpResponse(null, { status: 404 });
       Object.assign(row, body);
       return HttpResponse.json(row);
+    }),
+  ),
+
+  // Admin monitor endpoints — read-only dashboard data
+  http.get(
+    API("/admin/health"),
+    requireAuth(() =>
+      HttpResponse.json({
+        ...adminHealthStore,
+        syncedAt: new Date().toISOString(),
+      }),
+    ),
+  ),
+
+  http.get(API("/admin/jobs"), requireAuth(() => HttpResponse.json(adminJobsStore))),
+
+  http.get(
+    API("/admin/activity"),
+    requireAuth(({ request }) => {
+      const guildId = new URL(request.url).searchParams.get("guildId");
+      const filtered = guildId
+        ? adminActivityStore.filter((a) => a.guildId === guildId)
+        : adminActivityStore;
+      return HttpResponse.json(filtered);
+    }),
+  ),
+
+  // Admin lifecycle — events with their lifecycle history + replay
+  http.get(
+    API("/admin/events"),
+    requireAuth(({ request }) => {
+      const guildId = new URL(request.url).searchParams.get("guildId");
+      if (!guildId) return new HttpResponse(null, { status: 400 });
+      return HttpResponse.json(adminEventsByGuild[guildId] ?? []);
+    }),
+  ),
+
+  http.post(
+    API("/admin/replay"),
+    requireAuth(async ({ request }) => {
+      const body = (await request.json()) as {
+        eventId: string;
+        lifecycleEventType: string;
+        skipSideEffects?: boolean;
+      };
+      // Find the event in any guild's roster — the modal scopes to active guild but the
+      // replay endpoint itself is global.
+      let found = false;
+      for (const list of Object.values(adminEventsByGuild)) {
+        if (list.some((e) => e.id === body.eventId)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) return new HttpResponse(null, { status: 404 });
+      // Pretend the dispatcher noted these listeners — the count varies by trigger but the UI
+      // just renders whatever we send back, so a lightweight stub is fine.
+      const listenerByTrigger: Record<string, string[]> = {
+        EventCreated: ["DiscordChannelInitListener"],
+        EventChannelReady: ["DiscordRolesInitListener"],
+        EventRolesReady: ["EventClassifyListener"],
+        EventClassified: ["EventInitCompleteListener"],
+        EventPlanned: [],
+        EventPreNotifyDue: ["PreEventNotificationListener"],
+        EventPreNotified: ["ImmichAlbumPrepListener"],
+        EventCompletionDue: ["EventCompleteListener"],
+        EventCompleted: ["ImmichAlbumPostListener"],
+        EventArchivalDue: ["EventArchiveListener"],
+        EventCancelRequested: ["EventCancelListener"],
+        EventDeleteRequested: ["EventDeleteListener"],
+      };
+      const listeners = listenerByTrigger[body.lifecycleEventType] ?? [];
+      return HttpResponse.json({
+        message: `queued · ${listeners.length} listener(s) will re-dispatch on commit`,
+        listeners,
+      });
+    }),
+  ),
+
+  // Global event-creation toggle (a maintenance flag, not per-guild)
+  http.get(
+    API("/admin/event-creation"),
+    requireAuth(() => HttpResponse.json({ enabled: getEventCreationEnabled() })),
+  ),
+  http.post(
+    API("/admin/event-creation/enable"),
+    requireAuth(() => {
+      setEventCreationEnabledMock(true);
+      return new HttpResponse(null, { status: 204 });
+    }),
+  ),
+  http.post(
+    API("/admin/event-creation/disable"),
+    requireAuth(() => {
+      setEventCreationEnabledMock(false);
+      return new HttpResponse(null, { status: 204 });
     }),
   ),
 ];

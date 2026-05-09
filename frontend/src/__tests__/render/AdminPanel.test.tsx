@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SWRConfig } from "swr";
 
@@ -19,21 +19,69 @@ function renderWithSWR(ui: React.ReactElement) {
 }
 
 describe("AdminPanel", () => {
-  it("shows the guild table when user is bot admin", async () => {
+  afterEach(() => cleanup());
+
+  it("renders the overview section by default for a bot admin", async () => {
     renderWithSWR(<AdminPanel />);
 
-    // The MSW mock server returns admin: true for currentUser and one guild
+    // The overview hero copy is unique to the new layout
     await waitFor(
       () => {
-        expect(screen.getByRole("table")).toBeInTheDocument();
+        expect(
+          screen.getByText(/everything's mostly fine/i),
+        ).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
 
-    // The guild row should be present
-    expect(screen.getByRole("table")).toBeInTheDocument();
-    // Three feature checkboxes per row (Immich, Google Places, Rewind)
-    const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes.length).toBeGreaterThanOrEqual(3);
+    // Health row labels show up once /admin/health resolves
+    await waitFor(
+      () => {
+        expect(screen.getByText("bot")).toBeInTheDocument();
+        expect(screen.getByText("discord")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("switches sections when sub-nav tabs are clicked", async () => {
+    renderWithSWR(<AdminPanel />);
+
+    await waitFor(
+      () => expect(screen.getByText(/everything's mostly fine/i)).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "toggles" }));
+    await waitFor(() =>
+      expect(screen.getByText(/what peepbot does here/i)).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "jobs" }));
+    await waitFor(() =>
+      expect(screen.getByText(/the schedule/i)).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "guilds" }));
+    await waitFor(() =>
+      expect(screen.getByText(/every server, at a glance/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("opens the replay modal from the sub-nav", async () => {
+    renderWithSWR(<AdminPanel />);
+
+    await waitFor(
+      () => expect(screen.getByText(/everything's mostly fine/i)).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^↻ replay…$/ }));
+    await waitFor(() => {
+      expect(screen.getByText(/rerun a lifecycle stage/i)).toBeInTheDocument();
+    });
+    // The modal renders the lifecycle stage picker — verify a couple of stage labels show up.
+    expect(screen.getAllByText(/init channel/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/classify/i).length).toBeGreaterThan(0);
   });
 });

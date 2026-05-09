@@ -288,6 +288,13 @@ export type AdminGuild = {
   googleAutocompleteEnabled: boolean;
   rewindEnabled: boolean;
   contractsEnabled: boolean;
+  // Extended fields populated by the admin panel — nullable so older mocks/tests still type-check.
+  memberCount?: number | null;
+  channelName?: string | null;
+  locationName?: string | null;
+  upcomingEventCount?: number;
+  totalEventCount?: number;
+  failingInvocations?: number;
 };
 
 export function useAdminGuilds() {
@@ -308,6 +315,138 @@ export async function updateGuildFeatures(
     body: JSON.stringify(body),
   });
   await globalMutate("/admin/guilds", undefined, { revalidate: true });
+}
+
+// ---------- admin monitor & lifecycle hooks ----------------------------------
+
+export type AdminHealthComponent = { status: string; detail: string };
+export type AdminHealth = {
+  components: Record<string, AdminHealthComponent>;
+  uptimeSeconds: number;
+  syncedAt: string;
+};
+
+export function useAdminHealth() {
+  return useSWR<AdminHealth>("/admin/health", fetcher, {
+    refreshInterval: 30_000,
+  });
+}
+
+export type AdminJob = {
+  id: string;
+  label: string;
+  cron: string;
+  emits: string;
+  lastRun: string | null;
+  nextRun: string | null;
+  lastDuration: string | null;
+  lastStatus: string;
+};
+
+export function useAdminJobs() {
+  return useSWR<AdminJob[]>("/admin/jobs", fetcher, {
+    refreshInterval: 60_000,
+  });
+}
+
+export type AdminActivity = {
+  ts: string;
+  kind: "ok" | "warn" | "fail" | string;
+  text: string;
+  detail: string | null;
+  eventId: string | null;
+  guildId: string | null;
+  lifecycleEventType: string | null;
+  listenerName: string | null;
+  attempts: number;
+};
+
+export function useAdminActivity(guildId: string | null | undefined) {
+  const path = guildId
+    ? `/admin/activity?guildId=${encodeURIComponent(guildId)}`
+    : "/admin/activity";
+  return useSWR<AdminActivity[]>(path, fetcher, {
+    refreshInterval: 30_000,
+  });
+}
+
+export type AdminEventHistoryEntry = {
+  stage: string;
+  lifecycleEventType: string;
+  listenerName: string;
+  ts: string;
+  ok: boolean;
+  attempts: number;
+  detail: string | null;
+};
+
+export type AdminEvent = {
+  id: string;
+  guildId: string;
+  name: string;
+  category: string;
+  state: string;
+  when: string | null;
+  location: string | null;
+  creator: string | null;
+  going: number;
+  maybe: number;
+  declined: number;
+  createdAt: string | null;
+  history: AdminEventHistoryEntry[];
+};
+
+export function useAdminGuildEvents(guildId: string | null | undefined) {
+  const key = guildId
+    ? (["admin-events", guildId] as const)
+    : null;
+  return useSWR<AdminEvent[]>(key, () =>
+    fetcher<AdminEvent[]>(`/admin/events?guildId=${encodeURIComponent(guildId!)}`),
+  );
+}
+
+export async function replayLifecycleEvent(payload: {
+  eventId: string;
+  lifecycleEventType: string;
+  skipSideEffects?: boolean;
+}) {
+  const result = await apiFetch<{ message: string; listeners: string[] }>(
+    "/admin/replay",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  // Refresh admin-events lists (so the replayed event's history reflects the queued listener
+  // invocations) and the activity firehose. Listener-completion is async on the backend so the
+  // first refetch may not yet show SUCCESS — SWR's polling on these hooks will catch up.
+  await Promise.all([
+    globalMutate(
+      (k) => Array.isArray(k) && k[0] === "admin-events",
+      undefined,
+      { revalidate: true },
+    ),
+    globalMutate(
+      (k) => typeof k === "string" && k.startsWith("/admin/activity"),
+      undefined,
+      { revalidate: true },
+    ),
+  ]);
+  return result;
+}
+
+export type EventCreationState = { enabled: boolean };
+
+export function useEventCreationState() {
+  return useSWR<EventCreationState>("/admin/event-creation", fetcher);
+}
+
+export async function setEventCreationEnabled(enabled: boolean) {
+  await apiFetch(
+    `/admin/event-creation/${enabled ? "enable" : "disable"}`,
+    { method: "POST" },
+  );
+  await globalMutate("/admin/event-creation", undefined, { revalidate: true });
 }
 
 export function useGuildSettings(guildId: string | null) {

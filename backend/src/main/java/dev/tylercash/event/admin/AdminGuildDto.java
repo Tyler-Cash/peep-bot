@@ -7,4 +7,10 @@ public record AdminGuildDto(
         boolean immichEnabled,
         boolean googleAutocompleteEnabled,
         boolean rewindEnabled,
-        boolean contractsEnabled) {}
+        boolean contractsEnabled,
+        Integer memberCount,
+        String channelName,
+        String locationName,
+        int upcomingEventCount,
+        int totalEventCount,
+        int failingInvocations) {}

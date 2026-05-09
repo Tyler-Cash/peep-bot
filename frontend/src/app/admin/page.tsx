@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/AppShell";
-import { AdminPanel } from "@/components/admin/AdminPanel";
+import { AdminGate } from "@/components/admin/AdminGate";
 
 export default function AdminPage() {
   return (
     <AppShell>
-      <AdminPanel />
+      <AdminGate />
     </AppShell>
   );
 }

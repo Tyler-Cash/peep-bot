@@ -1,11 +1,16 @@
 package dev.tylercash.event.admin;
 
+import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.Guild;
 import dev.tylercash.event.discord.GuildCommandSyncService;
 import dev.tylercash.event.discord.GuildRepository;
+import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.global.EventCreationToggle;
+import dev.tylercash.event.lifecycle.ListenerInvocationRepository;
 import dev.tylercash.event.security.BotAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +30,13 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Bot admin", description = "Operator endpoints for managing per-guild features")
 public class AdminController {
 
+    private static final List<EventState> TERMINAL_STATES =
+            List.of(EventState.POST_COMPLETED, EventState.ARCHIVED, EventState.CANCELLED, EventState.DELETED);
+
     private final BotAdminService botAdminService;
     private final GuildRepository guildRepository;
+    private final EventRepository eventRepository;
+    private final ListenerInvocationRepository listenerInvocations;
     private final JDA jda;
     private final EventCreationToggle eventCreationToggle;
     private final GuildCommandSyncService guildCommandSyncService;
@@ -34,20 +44,32 @@ public class AdminController {
     @GetMapping("/guilds")
     public List<AdminGuildDto> listGuilds(@AuthenticationPrincipal OAuth2User principal) {
         requireBotAdmin(principal);
-        return guildRepository.findAll().stream()
-                .map(g -> {
-                    var jdaGuild = jda.getGuildById(g.getGuildId());
-                    String name = jdaGuild != null ? jdaGuild.getName() : null;
-                    return new AdminGuildDto(
-                            String.valueOf(g.getGuildId()),
-                            name,
-                            g.isActive(),
-                            g.isImmichEnabled(),
-                            g.isGoogleAutocompleteEnabled(),
-                            g.isRewindEnabled(),
-                            g.isContractsEnabled());
-                })
-                .toList();
+        Instant since24h = Instant.now().minus(24, ChronoUnit.HOURS);
+        return guildRepository.findAll().stream().map(g -> toDto(g, since24h)).toList();
+    }
+
+    private AdminGuildDto toDto(Guild row, Instant failuresSince) {
+        long id = row.getGuildId();
+        var jdaGuild = jda.getGuildById(id);
+        String name = jdaGuild != null ? jdaGuild.getName() : null;
+        Integer memberCount = jdaGuild != null ? jdaGuild.getMemberCount() : null;
+        int total = eventRepository.countByServerId(id);
+        int upcoming = eventRepository.countByServerIdAndStateNotIn(id, TERMINAL_STATES);
+        int failing = (int) listenerInvocations.countFailedForGuildSince(id, failuresSince);
+        return new AdminGuildDto(
+                String.valueOf(id),
+                name,
+                row.isActive(),
+                row.isImmichEnabled(),
+                row.isGoogleAutocompleteEnabled(),
+                row.isRewindEnabled(),
+                row.isContractsEnabled(),
+                memberCount,
+                row.getSeparatorChannel(),
+                row.getPrimaryLocationName(),
+                upcoming,
+                total,
+                failing);
     }
 
     @PatchMapping("/guilds/{guildId}/features")
@@ -107,14 +129,7 @@ public class AdminController {
         if (request.contractsEnabled() != null && oldContracts != row.isContractsEnabled() && jdaGuild != null) {
             guildCommandSyncService.syncCommands(jdaGuild);
         }
-        return new AdminGuildDto(
-                String.valueOf(id),
-                jdaGuild != null ? jdaGuild.getName() : null,
-                row.isActive(),
-                row.isImmichEnabled(),
-                row.isGoogleAutocompleteEnabled(),
-                row.isRewindEnabled(),
-                row.isContractsEnabled());
+        return toDto(row, Instant.now().minus(24, ChronoUnit.HOURS));
     }
 
     @GetMapping("/event-creation")
