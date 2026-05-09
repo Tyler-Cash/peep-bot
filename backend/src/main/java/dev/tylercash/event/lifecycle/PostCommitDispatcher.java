@@ -18,6 +18,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class PostCommitDispatcher {
 
     static final long INVOCATION_TIMEOUT_SECONDS = 60;
+    private static final int OUTBOX_SAVE_MAX_ATTEMPTS = 3;
+    private static final long OUTBOX_SAVE_RETRY_DELAY_MS = 250;
 
     private final ListenerInvocationRepository invocations;
     private final AsyncTaskExecutor executor;
@@ -114,7 +116,7 @@ public class PostCommitDispatcher {
         row.setStatus(ListenerInvocationStatus.SUCCESS);
         row.setLastAttemptAt(Instant.now());
         row.setLastError(null);
-        invocations.save(row);
+        saveOutboxRow(row, "markSuccess");
     }
 
     private void markFailed(ListenerInvocation row, String error) {
@@ -123,8 +125,49 @@ public class PostCommitDispatcher {
         row.setLastAttemptAt(Instant.now());
         row.setNextRetryAt(backoff.nextRetryAt(row.getAttempts()));
         row.setLastError(error);
-        invocations.save(row);
+        saveOutboxRow(row, "markFailed");
         log.warn("Listener '{}' failed for event {}: {}", row.getListenerName(), row.getEventId(), error);
+    }
+
+    /**
+     * Persist the outbox row with bounded retry. Without this, a transient save failure
+     * (e.g., a Hikari connection blip under heavy contention) silently leaves the row in
+     * its current status — only recovered by the 60s retry poller, which is too slow to
+     * keep tests deterministic.
+     */
+    private void saveOutboxRow(ListenerInvocation row, String op) {
+        RuntimeException last = null;
+        for (int attempt = 1; attempt <= OUTBOX_SAVE_MAX_ATTEMPTS; attempt++) {
+            try {
+                invocations.save(row);
+                return;
+            } catch (RuntimeException e) {
+                last = e;
+                log.warn(
+                        "Outbox {} failed (attempt {}/{}) for {}/{}: {}",
+                        op,
+                        attempt,
+                        OUTBOX_SAVE_MAX_ATTEMPTS,
+                        row.getEventId(),
+                        row.getListenerName(),
+                        e.toString());
+                if (attempt < OUTBOX_SAVE_MAX_ATTEMPTS) {
+                    try {
+                        Thread.sleep(OUTBOX_SAVE_RETRY_DELAY_MS * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted during outbox save retry", ie);
+                    }
+                }
+            }
+        }
+        log.error(
+                "Outbox {} permanently failed for {}/{} after {} attempts — row will be picked up by retry poller",
+                op,
+                row.getEventId(),
+                row.getListenerName(),
+                OUTBOX_SAVE_MAX_ATTEMPTS,
+                last);
     }
 
     private static String rootCauseMessage(Throwable t) {

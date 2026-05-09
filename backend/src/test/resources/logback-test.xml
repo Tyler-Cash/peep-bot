@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="dev.tylercash.event" level="INFO"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="net.dv8tion.jda" level="WARN"/>
+
+    <!--
+      JUnit runs @SpringBootTest classes in parallel (junit-platform.properties).
+      Each class has its own @Container static Postgres that shuts down after the
+      class, but the Spring context stays in the TestContext cache. Its scheduled
+      tasks (DurableListenerRetryPoller, EventTickScheduler, ShedLock heartbeat,
+      JdbcIndexedSessionRepository cleanup) keep firing every minute and hit the
+      now-dead pool, producing 30s connection timeouts and full stack traces.
+      None of that is actionable inside a test run, so silence the noisiest paths.
+    -->
+    <logger name="com.zaxxer.hikari.HikariDataSource" level="WARN"/>
+    <logger name="com.zaxxer.hikari.pool.HikariPool" level="WARN"/>
+    <logger name="com.zaxxer.hikari.pool.PoolBase" level="ERROR"/>
+    <logger name="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" level="WARN"/>
+    <logger name="org.springframework.scheduling.support.TaskUtils" level="OFF"/>
+    <logger name="org.hibernate.engine.jdbc.spi.SqlExceptionHelper" level="OFF"/>
+</configuration>
