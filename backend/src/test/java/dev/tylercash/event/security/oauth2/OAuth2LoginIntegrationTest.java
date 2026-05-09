@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import jakarta.servlet.http.Cookie;
@@ -28,8 +29,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.containers.PostgreSQLContainer;
-
 /**
  * Full OAuth2 login round-trip test: Discord authorize redirect → WireMock token
  * exchange → success handler redirect to frontend → SESSION cookie → /auth/is-logged-in.
@@ -66,27 +65,21 @@ import org.testcontainers.containers.PostgreSQLContainer;
 class OAuth2LoginIntegrationTest {
 
     private static final WireMockServer WIREMOCK = new WireMockServer(0);
-    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     private static final String SNOWFLAKE = "1234567890";
 
     @BeforeAll
     static void startInfra() {
-        POSTGRES.start();
         WIREMOCK.start();
     }
 
     @AfterAll
     static void stopInfra() {
         WIREMOCK.stop();
-        POSTGRES.stop();
     }
 
     @DynamicPropertySource
     static void dynamicProps(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        r.add("spring.datasource.username", POSTGRES::getUsername);
-        r.add("spring.datasource.password", POSTGRES::getPassword);
+        SharedPostgres.registerProperties(r);
         r.add(
                 "spring.security.oauth2.client.provider.discord.authorization-uri",
                 () -> WIREMOCK.baseUrl() + "/oauth2/authorize");

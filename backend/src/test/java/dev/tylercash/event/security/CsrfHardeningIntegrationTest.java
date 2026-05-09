@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -29,10 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Hardens the CSRF + session story. Session-cookie attributes are read from
  * the bound {@code ServerProperties}; absent CSRF tokens are exercised against
@@ -51,7 +48,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
 @AutoConfigureMockMvc
-@Testcontainers
 @ActiveProfiles("local")
 class CsrfHardeningIntegrationTest {
 
@@ -67,9 +63,6 @@ class CsrfHardeningIntegrationTest {
     @MockitoBean
     DiscordInitializationService discordInitializationService;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -84,9 +77,7 @@ class CsrfHardeningIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

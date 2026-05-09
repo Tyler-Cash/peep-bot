@@ -3,6 +3,7 @@ package dev.tylercash.event.concurrency;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.EventRepository;
@@ -33,10 +34,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Integration tests exercising concurrent access to shared mutable state.
  * All tests use a {@link CountDownLatch} start gate so threads fire simultaneously,
@@ -53,7 +50,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.read-capacity=100000",
             "dev.tylercash.rate-limit.write-capacity=100000"
         })
-@Testcontainers
 @ActiveProfiles("local")
 class ConcurrencyIntegrationTest {
 
@@ -68,9 +64,6 @@ class ConcurrencyIntegrationTest {
 
     @MockitoBean
     DiscordInitializationService discordInitializationService;
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @Autowired
     private AttendanceService attendanceService;
@@ -92,9 +85,7 @@ class ConcurrencyIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

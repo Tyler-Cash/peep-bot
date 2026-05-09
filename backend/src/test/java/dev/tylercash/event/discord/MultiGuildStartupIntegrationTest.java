@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,10 +18,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -31,7 +28,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.discord.guild-id=0",
             "dev.tylercash.frontend.hostname=test.local"
         })
-@Testcontainers
 @ActiveProfiles("local")
 class MultiGuildStartupIntegrationTest {
 
@@ -41,9 +37,6 @@ class MultiGuildStartupIntegrationTest {
     @MockitoBean
     DiscordInitializationService discordInitializationService;
 
-    @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     private GuildRepository guildRepository;
 
@@ -52,9 +45,7 @@ class MultiGuildStartupIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

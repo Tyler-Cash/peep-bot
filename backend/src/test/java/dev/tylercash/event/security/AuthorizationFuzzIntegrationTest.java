@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -45,10 +46,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Authorization fuzz suite — for every controller endpoint that requires auth,
  * assert anonymous → 401, wrong-guild → 403 (when the endpoint is guild-scoped),
@@ -74,7 +71,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
 @AutoConfigureMockMvc
-@Testcontainers
 @ActiveProfiles("local")
 class AuthorizationFuzzIntegrationTest {
 
@@ -117,9 +113,6 @@ class AuthorizationFuzzIntegrationTest {
     @MockitoBean
     DiscordInitializationService discordInitializationService;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -147,9 +140,7 @@ class AuthorizationFuzzIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

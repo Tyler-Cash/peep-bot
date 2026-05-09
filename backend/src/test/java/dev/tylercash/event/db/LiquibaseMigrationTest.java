@@ -1,5 +1,7 @@
 package dev.tylercash.event.db;
 
+import dev.tylercash.event.test.SharedPostgres;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -18,28 +20,20 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.Resource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-@Testcontainers
 class LiquibaseMigrationTest {
 
     // 16 changesets run before the data migration (through "create attendance table")
     // Changesets 17-20: migrate creator, seed cache, migrate attendees, drop old columns
     private static final int CHANGESETS_BEFORE_DATA_MIGRATION = 16;
 
-    @Container
-    private static final PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     private Connection createIsolatedConnection() throws Exception {
         String dbName = "test_" + UUID.randomUUID().toString().replace("-", "");
-        try (Connection admin = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+        try (Connection admin = DriverManager.getConnection(SharedPostgres.CONTAINER.getJdbcUrl(), SharedPostgres.CONTAINER.getUsername(), SharedPostgres.CONTAINER.getPassword());
                 Statement stmt = admin.createStatement()) {
             stmt.execute("CREATE DATABASE " + dbName);
         }
-        String url = pg.getJdbcUrl().replaceFirst("/[^/]*$", "/" + dbName);
-        return DriverManager.getConnection(url, pg.getUsername(), pg.getPassword());
+        String url = SharedPostgres.CONTAINER.getJdbcUrl().replaceFirst("/[^/]*$", "/" + dbName);
+        return DriverManager.getConnection(url, SharedPostgres.CONTAINER.getUsername(), SharedPostgres.CONTAINER.getPassword());
     }
 
     private Liquibase createLiquibase(Connection connection) throws Exception {

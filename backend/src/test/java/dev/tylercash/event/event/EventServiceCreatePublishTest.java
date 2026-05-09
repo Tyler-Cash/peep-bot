@@ -3,6 +3,7 @@ package dev.tylercash.event.event;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
@@ -25,10 +26,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -38,12 +35,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0"
         })
-@Testcontainers
 @ActiveProfiles("local")
 class EventServiceCreatePublishTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @MockitoBean
     JDA jda;
@@ -72,9 +65,7 @@ class EventServiceCreatePublishTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

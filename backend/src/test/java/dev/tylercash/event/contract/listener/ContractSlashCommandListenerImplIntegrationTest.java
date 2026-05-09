@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.ContractGraphService;
 import dev.tylercash.event.contract.ContractPinnedMessageService;
 import dev.tylercash.event.contract.UserBalanceService;
@@ -47,10 +48,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Integration tests for {@link ContractSlashCommandListenerImpl}.
  *
@@ -70,7 +67,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.read-capacity=10000",
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
-@Testcontainers
 @ActiveProfiles("local")
 @Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractSlashCommandListenerImplIntegrationTest {
@@ -104,9 +100,6 @@ class ContractSlashCommandListenerImplIntegrationTest {
     @MockitoBean
     DiscordAuthService discordAuthService;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     ContractSlashCommandListenerImpl listener;
 
@@ -121,9 +114,7 @@ class ContractSlashCommandListenerImplIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     // Shared Discord stub objects — created once, reused across @BeforeEach setups

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
@@ -33,10 +34,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.server.ResponseStatusException;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Verifies that the rewind feature scopes data by Discord guild membership: a
  * user who only belongs to guild2 cannot read rewind data for guild1, and the
@@ -52,7 +49,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.discord.token=dummy",
             "dev.tylercash.discord.guild-id=0"
         })
-@Testcontainers
 @ActiveProfiles("local")
 class RewindRbacIntegrationTest {
 
@@ -75,9 +71,6 @@ class RewindRbacIntegrationTest {
     @MockitoBean
     DiscordInitializationService discordInitializationService;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     private RewindController rewindController;
 
@@ -98,9 +91,7 @@ class RewindRbacIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     private static final AtomicLong messageIdCounter = new AtomicLong(10_000);

@@ -1,6 +1,7 @@
 package dev.tylercash.event.contract;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.model.Contract;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import java.util.List;
@@ -14,10 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * End-to-end tests for the prediction contract flow against real Discord and PostgreSQL.
  * Requires a valid application-local.yaml with Discord credentials.
@@ -25,14 +22,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Run explicitly with: ./gradlew e2eTest
  */
 @SpringBootTest(classes = PeepBotApplication.class)
-@Testcontainers
 @ActiveProfiles("local")
 @Tag("e2e")
 @Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractServiceE2ETest {
-
-    @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @Autowired
     private ContractService contractService;
@@ -45,9 +38,7 @@ class ContractServiceE2ETest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @Test

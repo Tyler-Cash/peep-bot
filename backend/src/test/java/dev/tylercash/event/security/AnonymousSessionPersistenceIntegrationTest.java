@@ -3,6 +3,7 @@ package dev.tylercash.event.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import net.dv8tion.jda.api.JDA;
@@ -18,10 +19,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * Pentest finding F-002: anonymous calls used to provision a fresh
  * {@code SPRING_SESSION} row per request, with the global multi-day TTL.
@@ -41,7 +38,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
 @AutoConfigureMockMvc
-@Testcontainers
 @ActiveProfiles("local")
 class AnonymousSessionPersistenceIntegrationTest {
 
@@ -54,9 +50,6 @@ class AnonymousSessionPersistenceIntegrationTest {
     @MockitoBean
     DiscordInitializationService discordInitializationService;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -65,9 +58,7 @@ class AnonymousSessionPersistenceIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @BeforeEach

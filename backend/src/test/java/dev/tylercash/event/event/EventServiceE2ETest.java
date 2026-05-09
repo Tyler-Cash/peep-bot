@@ -1,6 +1,7 @@
 package dev.tylercash.event.event;
 
 import dev.tylercash.event.PeepBotApplication;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import java.time.ZonedDateTime;
@@ -11,10 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 /**
  * End-to-end tests that require real external services (Discord bot, PostgreSQL).
  * Requires DISCORD_TOKEN, DISCORD_GUILD_ID, and OAuth2 credentials to be set
@@ -24,13 +21,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Run explicitly with: ./gradlew e2eTest
  */
 @SpringBootTest(classes = PeepBotApplication.class)
-@Testcontainers
 @ActiveProfiles({"local", "docker"})
 @Tag("e2e")
 class EventServiceE2ETest {
-
-    @Container
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
 
     @Autowired
     private EventService eventService;
@@ -40,9 +33,7 @@ class EventServiceE2ETest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        SharedPostgres.registerProperties(registry);
     }
 
     @Test

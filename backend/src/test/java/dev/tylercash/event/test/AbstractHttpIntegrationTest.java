@@ -8,8 +8,6 @@ import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.immich.ImmichService;
 import net.dv8tion.jda.api.JDA;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,7 +21,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
  * Shared boilerplate for HTTP-level integration tests. Each subclass implicitly gets:
@@ -31,15 +28,19 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *   <li>A SpringBootTest context with the full bean graph (no Discord token needed — JDA +
  *       DiscordService + DiscordInitializationService are Mockito-bean'd so the bot never
  *       starts).</li>
- *   <li>A Testcontainers Postgres database that Liquibase populates on startup.</li>
- *   <li>A clean slate for the most-mutated tables in {@code @BeforeEach}.</li>
+ *   <li>A shared Postgres container ({@link SharedPostgres}). Liquibase populates the schema
+ *       on first context startup; subsequent classes reuse it.</li>
  *   <li>{@code MockMvc}, {@code ObjectMapper}, {@code JdbcTemplate}, and the {@link
  *       HttpIntegrationFixtures} helper auto-wired for direct use.</li>
  *   <li>Helper {@link #authedAs(String)} for the very common case of "post a request as a
  *       Discord user with this snowflake".</li>
  * </ul>
+ *
+ * <p><b>Test isolation:</b> there is no global truncate. Each test must own the data it
+ * touches — use unique guild IDs / event names / snowflakes per test, and assert on those
+ * specific rows (never "find all" or "size == 1"). Tests sharing a database is what lets the
+ * suite run in parallel.
  */
-@ResourceLock("http-integration-test-db")
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -58,20 +59,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @Import(HttpIntegrationFixtures.class)
 public abstract class AbstractHttpIntegrationTest {
 
-    // Started once for the entire JVM session; not annotated @Container so Testcontainers never
-    // stops it between test classes.  Ryuk/shutdown-hook cleans it up at JVM exit.
-    protected static final PostgreSQLContainer<?> POSTGRES;
-
-    static {
-        POSTGRES = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
-        POSTGRES.start();
-    }
-
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        r.add("spring.datasource.username", POSTGRES::getUsername);
-        r.add("spring.datasource.password", POSTGRES::getPassword);
+        SharedPostgres.registerProperties(r);
     }
 
     @MockitoBean
@@ -106,17 +96,6 @@ public abstract class AbstractHttpIntegrationTest {
 
     @Autowired
     protected HttpIntegrationFixtures fixtures;
-
-    @BeforeEach
-    void truncate() {
-        jdbc.execute("DELETE FROM attendance");
-        jdbc.execute("DELETE FROM event_category");
-        jdbc.execute("DELETE FROM event_classification_attempt");
-        jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM guild_member");
-        jdbc.execute("DELETE FROM discord_user_cache");
-        jdbc.execute("DELETE FROM guild");
-    }
 
     /** Authenticate the request as the given Discord snowflake. */
     protected RequestPostProcessor authedAs(String snowflake) {
