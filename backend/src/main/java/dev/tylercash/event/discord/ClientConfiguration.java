@@ -27,13 +27,15 @@ public class ClientConfiguration {
 
     @Bean
     public JDA jda() throws InterruptedException {
+        // GUILD_MEMBERS: GuildLifecycleListener#onGuildMemberRemove; GUILD_MESSAGES: MessageReceivedListener (Immich
+        // attachment uploads). Interaction listeners (Button/Modal/Slash) require no intents.
         return JDABuilder.createDefault(discordConfiguration.getToken())
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(guildLifecycleListener)
                 .addEventListeners(modalInteractionListener)
                 .addEventListeners(slashCommandListener)
                 .addEventListeners(messageReceivedListener)
-                .enableIntents(EnumSet.allOf(GatewayIntent.class))
+                .enableIntents(EnumSet.of(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES))
                 .build()
                 .awaitReady();
     }
