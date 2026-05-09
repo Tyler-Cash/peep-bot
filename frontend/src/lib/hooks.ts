@@ -319,7 +319,11 @@ export type AdminGuild = {
 };
 
 export function useAdminGuilds() {
-  return useSWR<AdminGuild[]>("/admin/guilds", fetcher);
+  // Only fetch for actual admins. Otherwise the call 403s, and api.ts's
+  // live-mode 401/403 → /login redirect kicks the user into a login loop
+  // (login → / → GuildSwitcher mounts → /admin/guilds 403 → /login → …).
+  const { data: user } = useCurrentUser();
+  return useSWR<AdminGuild[]>(user?.admin ? "/admin/guilds" : null, fetcher);
 }
 
 export async function updateGuildFeatures(
@@ -348,7 +352,8 @@ export type AdminHealth = {
 };
 
 export function useAdminHealth() {
-  return useSWR<AdminHealth>("/admin/health", fetcher, {
+  const { data: user } = useCurrentUser();
+  return useSWR<AdminHealth>(user?.admin ? "/admin/health" : null, fetcher, {
     refreshInterval: 30_000,
   });
 }
@@ -365,7 +370,8 @@ export type AdminJob = {
 };
 
 export function useAdminJobs() {
-  return useSWR<AdminJob[]>("/admin/jobs", fetcher, {
+  const { data: user } = useCurrentUser();
+  return useSWR<AdminJob[]>(user?.admin ? "/admin/jobs" : null, fetcher, {
     refreshInterval: 60_000,
   });
 }
@@ -383,10 +389,11 @@ export type AdminActivity = {
 };
 
 export function useAdminActivity(guildId: string | null | undefined) {
+  const { data: user } = useCurrentUser();
   const path = guildId
     ? `/admin/activity?guildId=${encodeURIComponent(guildId)}`
     : "/admin/activity";
-  return useSWR<AdminActivity[]>(path, fetcher, {
+  return useSWR<AdminActivity[]>(user?.admin ? path : null, fetcher, {
     refreshInterval: 30_000,
   });
 }
@@ -459,7 +466,11 @@ export async function replayLifecycleEvent(payload: {
 export type EventCreationState = { enabled: boolean };
 
 export function useEventCreationState() {
-  return useSWR<EventCreationState>("/admin/event-creation", fetcher);
+  const { data: user } = useCurrentUser();
+  return useSWR<EventCreationState>(
+    user?.admin ? "/admin/event-creation" : null,
+    fetcher,
+  );
 }
 
 export async function setEventCreationEnabled(enabled: boolean) {
