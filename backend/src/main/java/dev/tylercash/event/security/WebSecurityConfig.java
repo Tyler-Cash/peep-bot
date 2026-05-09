@@ -74,8 +74,7 @@ public class WebSecurityConfig {
                         .deleteCookies("SESSION")
                         .invalidateHttpSession(true))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/auth/logout"))
+                        .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
                 .addFilterAfter(rateLimitFilter, AnonymousAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(

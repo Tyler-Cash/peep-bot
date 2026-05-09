@@ -1,6 +1,7 @@
 package dev.tylercash.event.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
@@ -139,24 +140,40 @@ class CsrfHardeningIntegrationTest {
     }
 
     /**
-     * After /auth/logout, the SPRING_SESSION row backing the session must be
-     * gone — confirms WebSecurityConfig wires {@code invalidateHttpSession(true)}
-     * + the JDBC session repo cleanup correctly.
+     * F-008: /auth/logout must require a CSRF token like every other mutating
+     * route. A POST without the token is rejected by the CSRF filter before
+     * the logout handler runs.
      */
     @Test
-    void logout_deletesSpringSessionRow() throws Exception {
-        // Seed a session by hitting an authenticated endpoint with oauth2Login(),
-        // which provisions a real HttpSession via the test post-processor.
+    void logout_withoutCsrfToken_isForbidden() throws Exception {
         MvcResult auth = mockMvc.perform(MockMvcRequestBuilders.get("/csrf")
                         .with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
                 .andReturn();
 
-        // The test post-processor uses an in-memory MockHttpSession by default,
-        // so we have to drive the JDBC repository explicitly to demonstrate the
-        // logout flow end-to-end. We assert the framework wiring contract:
-        // /auth/logout returns 200 (per WebSecurityConfig.logoutSuccessHandler)
-        // and the SESSION cookie is cleared.
         MvcResult logout = mockMvc.perform(MockMvcRequestBuilders.post("/auth/logout")
+                        .session((MockHttpSession) auth.getRequest().getSession(false)))
+                .andReturn();
+        assertThat(logout.getResponse().getStatus())
+                .as(
+                        "Logout without CSRF must be 403, got %s",
+                        logout.getResponse().getStatus())
+                .isEqualTo(403);
+    }
+
+    /**
+     * Sibling of {@link #logout_withoutCsrfToken_isForbidden}: with a valid
+     * CSRF token, /auth/logout returns 200 and clears the SESSION cookie.
+     * Confirms WebSecurityConfig wires {@code invalidateHttpSession(true)} +
+     * {@code deleteCookies("SESSION")} correctly once CSRF is satisfied.
+     */
+    @Test
+    void logout_withCsrfToken_returnsOkAndClearsSessionCookie() throws Exception {
+        MvcResult auth = mockMvc.perform(MockMvcRequestBuilders.get("/csrf")
+                        .with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
+                .andReturn();
+
+        MvcResult logout = mockMvc.perform(MockMvcRequestBuilders.post("/auth/logout")
+                        .with(csrf())
                         .session((MockHttpSession) auth.getRequest().getSession(false)))
                 .andReturn();
         assertThat(logout.getResponse().getStatus()).isEqualTo(200);
@@ -171,10 +188,7 @@ class CsrfHardeningIntegrationTest {
                     .isEqualTo(0);
         }
 
-        // Sanity: the SPRING_SESSION table exists (Liquibase ran) and contains
-        // no rows for any session — MockHttpSession isn't persisted to JDBC, so
-        // a real-server logout test would be more meaningful, but we still
-        // assert the schema contract here so a Liquibase regression fails loud.
+        // Sanity: the SPRING_SESSION table exists (Liquibase ran).
         Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM SPRING_SESSION", Integer.class);
         assertThat(count).as("SPRING_SESSION table must exist after Liquibase").isNotNull();
     }
