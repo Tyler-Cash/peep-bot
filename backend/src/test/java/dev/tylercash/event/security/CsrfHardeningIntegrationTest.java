@@ -172,9 +172,9 @@ class CsrfHardeningIntegrationTest {
                         .with(oauth2Login().attributes(a -> a.put("id", USER_IN_GUILD_1))))
                 .andReturn();
 
-        MvcResult logout = mockMvc.perform(MockMvcRequestBuilders.post("/auth/logout")
-                        .with(csrf())
-                        .session((MockHttpSession) auth.getRequest().getSession(false)))
+        MvcResult logout = mockMvc.perform(
+                        MockMvcRequestBuilders.post("/auth/logout").with(csrf()).session((MockHttpSession)
+                                auth.getRequest().getSession(false)))
                 .andReturn();
         assertThat(logout.getResponse().getStatus()).isEqualTo(200);
 
