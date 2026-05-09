@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -36,31 +37,34 @@ public class WebSecurityConfig {
     @Autowired(required = false)
     private DevAutoLoginFilter devAutoLoginFilter;
 
+    @Value("${dev.tylercash.openapi.public:false}")
+    private boolean openapiPublic;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.sessionManagement(session ->
                         session.sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::newSession))
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling.authenticationEntryPoint(restAuthenticationEntryPoint))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/is-logged-in")
-                        .permitAll()
-                        .requestMatchers("/swagger-ui.html")
-                        .permitAll()
-                        .requestMatchers("/swagger-ui/**")
-                        .permitAll()
-                        .requestMatchers("/v3/api-docs/**")
-                        .permitAll()
-                        .requestMatchers("/actuator/health")
-                        .permitAll()
-                        .requestMatchers("/actuator/prometheus")
-                        .permitAll()
-                        .requestMatchers("/install-url")
-                        .permitAll()
-                        .requestMatchers("/events/*/cover")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated())
+                .authorizeHttpRequests(authorize -> {
+                    authorize.requestMatchers("/auth/is-logged-in").permitAll();
+                    if (openapiPublic) {
+                        authorize.requestMatchers("/swagger-ui.html").permitAll();
+                        authorize.requestMatchers("/swagger-ui/**").permitAll();
+                        authorize.requestMatchers("/v3/api-docs/**").permitAll();
+                    }
+                    authorize
+                            .requestMatchers("/actuator/health")
+                            .permitAll()
+                            .requestMatchers("/actuator/prometheus")
+                            .permitAll()
+                            .requestMatchers("/install-url")
+                            .permitAll()
+                            .requestMatchers("/events/*/cover")
+                            .permitAll()
+                            .anyRequest()
+                            .authenticated();
+                })
                 .logout(logout -> logout.logoutUrl("/auth/logout")
                         .logoutSuccessHandler(
                                 (request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
