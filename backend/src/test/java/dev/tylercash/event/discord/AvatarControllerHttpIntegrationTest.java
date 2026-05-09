@@ -4,6 +4,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.utils.ImageProxy;
@@ -12,11 +13,18 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class AvatarControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
-    private static final String VIEWER = "401";
-    private static final String TARGET = "402";
-    private static final long GUILD_1 = 3001L;
-    private static final long GUILD_2 = 3002L;
+    private String VIEWER;
+    private String TARGET;
+    private long GUILD_1;
+    private long GUILD_2;
 
+    @org.junit.jupiter.api.BeforeEach
+    void allocateTestIds() {
+        VIEWER = TestIds.nextSnowflake();
+        TARGET = TestIds.nextSnowflake();
+        GUILD_1 = TestIds.nextLong();
+        GUILD_2 = TestIds.nextLong();
+    }
     @Test
     void anonymous_returns401() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/avatar/{snowflake}", TARGET))

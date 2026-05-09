@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.immich.ImmichAlbumResponse;
+import dev.tylercash.event.test.TestIds;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
 import java.time.Instant;
 import java.util.Optional;
@@ -16,10 +17,18 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
-    private static final String VIEWER = "501";
-    private static final String OTHER = "502";
-    private static final long GUILD_A = 4001L;
-    private static final long GUILD_B = 4002L;
+    private String VIEWER;
+    private String OTHER;
+    private long GUILD_A;
+    private long GUILD_B;
+
+    @org.junit.jupiter.api.BeforeEach
+    void allocateTestIds() {
+        VIEWER = TestIds.nextSnowflake();
+        OTHER = TestIds.nextSnowflake();
+        GUILD_A = TestIds.nextLong();
+        GUILD_B = TestIds.nextLong();
+    }
     private static final String ALBUM_ID = "album-gallery-1";
 
     @Autowired

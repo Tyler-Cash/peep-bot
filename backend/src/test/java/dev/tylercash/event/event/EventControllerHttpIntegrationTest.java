@@ -9,6 +9,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.test.TestIds;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,10 +27,16 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
-    private static final String USER = "500001";
-    private static final String OTHER_USER = "500002";
-    private static final long GUILD = 5001L;
+    private String USER;
+    private String OTHER_USER;
+    private long GUILD;
 
+    @org.junit.jupiter.api.BeforeEach
+    void allocateTestIds() {
+        USER = TestIds.nextSnowflake();
+        OTHER_USER = TestIds.nextSnowflake();
+        GUILD = TestIds.nextLong();
+    }
     @Autowired
     private EventRepository eventRepository;
 

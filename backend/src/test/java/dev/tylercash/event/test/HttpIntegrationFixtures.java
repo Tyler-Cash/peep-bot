@@ -8,7 +8,6 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
@@ -19,8 +18,6 @@ public class HttpIntegrationFixtures {
     private final DiscordUserCacheService discordUserCacheService;
     private final AttendanceService attendanceService;
     private final EventRepository eventRepository;
-
-    private final AtomicLong messageIdCounter = new AtomicLong(20_000);
 
     /** Register a user as a member of a guild (populates discord_user_cache + guild_member). */
     public void registerMember(String snowflake, long guildId, String displayName, String username) {
@@ -34,7 +31,7 @@ public class HttpIntegrationFixtures {
 
     /** Seed a PLANNED event with an explicit start time. */
     public UUID seedEvent(long guildId, String creatorSnowflake, String name, ZonedDateTime dateTime) {
-        long id = messageIdCounter.incrementAndGet();
+        long id = TestIds.nextLong();
         Event event = new Event(id, guildId, id, name, creatorSnowflake, dateTime, "test event description");
         event.setState(EventState.PLANNED);
         Event saved = eventRepository.save(event);

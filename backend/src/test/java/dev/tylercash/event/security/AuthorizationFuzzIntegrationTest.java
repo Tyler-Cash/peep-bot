@@ -74,11 +74,11 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @ActiveProfiles("local")
 class AuthorizationFuzzIntegrationTest {
 
-    private static final long GUILD_1 = 311L;
-    private static final long GUILD_2 = 322L;
+    private static final long GUILD_1 = dev.tylercash.event.test.TestIds.nextLong();
+    private static final long GUILD_2 = dev.tylercash.event.test.TestIds.nextLong();
     // Snowflake-shaped (numeric) IDs — controllers parse these via Long.parseLong.
-    private static final String USER_IN_GUILD_1 = "311111";
-    private static final String USER_IN_GUILD_2 = "322222";
+    private static final String USER_IN_GUILD_1 = dev.tylercash.event.test.TestIds.nextSnowflake();
+    private static final String USER_IN_GUILD_2 = dev.tylercash.event.test.TestIds.nextSnowflake();
 
     /**
      * Endpoints that are intentionally public — keep this allowlist as small as

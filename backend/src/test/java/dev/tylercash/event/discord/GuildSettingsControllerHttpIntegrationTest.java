@@ -5,17 +5,23 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
-    private static final String USER_ID = "300";
+    private String USER_ID;
+    private long GUILD_1;
+    private long GUILD_2;
 
-    private static final long GUILD_1 = 2001L;
-    private static final long GUILD_2 = 2002L;
-
+    @org.junit.jupiter.api.BeforeEach
+    void allocateTestIds() {
+        USER_ID = TestIds.nextSnowflake();
+        GUILD_1 = TestIds.nextLong();
+        GUILD_2 = TestIds.nextLong();
+    }
     @Test
     void anonymous_get_returns401() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/guild/{guildId}/settings", GUILD_1))

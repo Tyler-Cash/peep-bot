@@ -8,19 +8,32 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-@TestPropertySource(properties = "dev.tylercash.bot-admins[0]=999000001")
 class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
 
-    private static final String BOT_ADMIN = "999000001";
-    private static final String REGULAR_MEMBER = "701";
-    private static final long GUILD_A = 6001L;
+    // Static so @DynamicPropertySource can wire it into bot-admins[0] before the context starts.
+    private static final String BOT_ADMIN = TestIds.nextSnowflake();
 
+    @DynamicPropertySource
+    static void registerBotAdmin(DynamicPropertyRegistry r) {
+        r.add("dev.tylercash.bot-admins[0]", () -> BOT_ADMIN);
+    }
+
+    private String REGULAR_MEMBER;
+    private long GUILD_A;
+
+    @org.junit.jupiter.api.BeforeEach
+    void allocateTestIds() {
+        REGULAR_MEMBER = TestIds.nextSnowflake();
+        GUILD_A = TestIds.nextLong();
+    }
     private void seedGuild(long guildId) {
         jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
                 + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
