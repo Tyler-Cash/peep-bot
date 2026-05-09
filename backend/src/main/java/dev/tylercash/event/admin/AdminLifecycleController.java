@@ -10,7 +10,6 @@ import dev.tylercash.event.lifecycle.ListenerInvocationRepository;
 import dev.tylercash.event.security.BotAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,16 +108,33 @@ public class AdminLifecycleController {
                 "queued · " + matching.size() + " listener(s) will re-dispatch on commit", matching);
     }
 
+    /**
+     * Explicit dispatch over every {@link EventLifecycleEvent} record. Avoids reflection so a future
+     * record with a side-effecting constructor (or a vulnerable nested class arriving via a
+     * dependency) cannot be instantiated through this endpoint. Adding a new record will trigger an
+     * IDE warning for the missing case here — that's the whole point.
+     */
     private static EventLifecycleEvent reconstructEvent(String simpleName, UUID eventId) {
-        try {
-            Class<?> cls = Class.forName(EventLifecycleEvent.class.getName() + "$" + simpleName);
-            Constructor<?> ctor = cls.getConstructor(UUID.class);
-            return (EventLifecycleEvent) ctor.newInstance(eventId);
-        } catch (ReflectiveOperationException e) {
-            throw new ResponseStatusException(
+        return switch (simpleName) {
+            case "EventCreated" -> new EventLifecycleEvent.EventCreated(eventId);
+            case "EventChannelReady" -> new EventLifecycleEvent.EventChannelReady(eventId);
+            case "EventRolesReady" -> new EventLifecycleEvent.EventRolesReady(eventId);
+            case "EventClassified" -> new EventLifecycleEvent.EventClassified(eventId);
+            case "EventPlanned" -> new EventLifecycleEvent.EventPlanned(eventId);
+            case "EventPreNotified" -> new EventLifecycleEvent.EventPreNotified(eventId);
+            case "EventCompleted" -> new EventLifecycleEvent.EventCompleted(eventId);
+            case "EventArchived" -> new EventLifecycleEvent.EventArchived(eventId);
+            case "EventCancelRequested" -> new EventLifecycleEvent.EventCancelRequested(eventId);
+            case "EventCancelled" -> new EventLifecycleEvent.EventCancelled(eventId);
+            case "EventDeleteRequested" -> new EventLifecycleEvent.EventDeleteRequested(eventId);
+            case "EventDeleted" -> new EventLifecycleEvent.EventDeleted(eventId);
+            case "EventPreNotifyDue" -> new EventLifecycleEvent.EventPreNotifyDue(eventId);
+            case "EventCompletionDue" -> new EventLifecycleEvent.EventCompletionDue(eventId);
+            case "EventArchivalDue" -> new EventLifecycleEvent.EventArchivalDue(eventId);
+            default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Unknown lifecycleEventType '" + simpleName + "' — must be a nested record of EventLifecycleEvent");
-        }
+        };
     }
 
     private AdminEventDto toDto(Event ev) {
