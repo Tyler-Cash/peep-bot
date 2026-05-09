@@ -27,15 +27,20 @@ public class ClientConfiguration {
 
     @Bean
     public JDA jda() throws InterruptedException {
-        // GUILD_MEMBERS: GuildLifecycleListener#onGuildMemberRemove; GUILD_MESSAGES: MessageReceivedListener (Immich
-        // attachment uploads). Interaction listeners (Button/Modal/Slash) require no intents.
+        // GUILD_MEMBERS: GuildLifecycleListener#onGuildMemberRemove. GUILD_MESSAGES + MESSAGE_CONTENT:
+        // MessageReceivedListener reads Message#getAttachments() for the Immich auto-upload, gated behind
+        // MESSAGE_CONTENT (privileged — must also be enabled in the Discord developer portal). Interaction
+        // listeners (Button/Modal/Slash) require no intents.
         return JDABuilder.createDefault(discordConfiguration.getToken())
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(guildLifecycleListener)
                 .addEventListeners(modalInteractionListener)
                 .addEventListeners(slashCommandListener)
                 .addEventListeners(messageReceivedListener)
-                .enableIntents(EnumSet.of(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES))
+                .enableIntents(EnumSet.of(
+                        GatewayIntent.GUILD_MEMBERS,
+                        GatewayIntent.GUILD_MESSAGES,
+                        GatewayIntent.MESSAGE_CONTENT))
                 .build()
                 .awaitReady();
     }
