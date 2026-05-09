@@ -432,7 +432,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupGetEventContext();
         UUID eventId = UUID.randomUUID();
         Event event = buildFullEvent(eventId, DISCORD_ID);
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
         GuildMember hostMember = new GuildMember(GUILD_ID, DISCORD_ID, "Host Name", null, null, Instant.now());
 
         when(ctx.eventService.getEvent(eventId)).thenReturn(event);
@@ -455,7 +455,7 @@ class EventControllerTest {
         EventControllerTestContext ctx = setupGetEventContext();
         UUID eventId = UUID.randomUUID();
         Event event = buildFullEvent(eventId, DISCORD_ID);
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
         GuildMember hostMember = new GuildMember(GUILD_ID, DISCORD_ID, "Host Name", null, null, Instant.now());
 
         when(ctx.eventService.getEvent(eventId)).thenReturn(event);

@@ -1,6 +1,7 @@
 package dev.tylercash.event.event.model;
 
 import dev.tylercash.event.discord.model.GuildMember;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,10 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class EventDetailDto extends EventDto {
     private List<AttendeeDto> accepted;
+    // Includes folded `withdrew` records (latest=REMOVED with prior interaction). Folding happens
+    // here at the API boundary so callers see a single decline-shaped list. The underlying
+    // AttendanceSummary still keeps withdrew separate, so populateAttendance / the Discord embed
+    // won't surface them.
     private List<AttendeeDto> declined;
     private List<AttendeeDto> maybe;
     private boolean completed;
@@ -51,7 +56,9 @@ public class EventDetailDto extends EventDto {
             this.setHostAvatarUrl("/api/avatar/" + creator);
         }
         this.accepted = toSortedRecordList(summary.accepted(), memberMap, usernameMap);
-        this.declined = toSortedRecordList(summary.declined(), memberMap, usernameMap);
+        List<AttendanceRecord> mergedDeclined = new ArrayList<>(summary.declined());
+        mergedDeclined.addAll(summary.withdrew());
+        this.declined = toSortedRecordList(mergedDeclined, memberMap, usernameMap);
         this.maybe = toSortedRecordList(summary.maybe(), memberMap, usernameMap);
         this.completed = completed;
         this.hasPrivateChannel = event.getPrivateChannelId() != null;

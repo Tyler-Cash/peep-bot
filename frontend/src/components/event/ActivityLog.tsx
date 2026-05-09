@@ -75,17 +75,14 @@ export function groupEvents(
     (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
   );
   const out: ActivityGroup[] = [];
+  // Bucket key is the displayed relative time ("3h ago", "10d ago", etc). All same-kind
+  // events that share a bucket fold into the most-recent group for that bucket — even if
+  // a different-kind event happened between them — so a busy day reads as "going: A, B, C
+  // — 10d ago" rather than fragmenting into one row per RSVP.
+  const bucketKindToGroup = new Map<string, ActivityGroup>();
   for (const e of sorted) {
     const h = hoursAgo(e.at, now);
-    const prev = out[out.length - 1];
-    const canMerge =
-      !!prev &&
-      prev.kind === e.kind &&
-      prev.hoursAgo === h &&
-      e.kind !== "host";
-    if (canMerge) {
-      prev.people.push({ who: e.who, avatarUrl: e.avatarUrl, hue: e.hue });
-    } else {
+    if (e.kind === "host") {
       out.push({
         kind: e.kind,
         hoursAgo: h,
@@ -93,6 +90,22 @@ export function groupEvents(
         note: e.note,
         people: [{ who: e.who, avatarUrl: e.avatarUrl, hue: e.hue }],
       });
+      continue;
+    }
+    const key = `${relTime(h)}:${e.kind}`;
+    const existing = bucketKindToGroup.get(key);
+    if (existing) {
+      existing.people.push({ who: e.who, avatarUrl: e.avatarUrl, hue: e.hue });
+    } else {
+      const group: ActivityGroup = {
+        kind: e.kind,
+        hoursAgo: h,
+        source: e,
+        note: e.note,
+        people: [{ who: e.who, avatarUrl: e.avatarUrl, hue: e.hue }],
+      };
+      out.push(group);
+      bucketKindToGroup.set(key, group);
     }
   }
   return out;

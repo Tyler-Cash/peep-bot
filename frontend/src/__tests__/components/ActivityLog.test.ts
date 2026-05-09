@@ -76,4 +76,31 @@ describe("groupEvents", () => {
     expect(groups[0].people[0].who).toBe("B");
     expect(groups[1].people[0].who).toBe("A");
   });
+
+  it("merges all same-day same-kind events into one row even when interleaved", () => {
+    // All four are "10d ago" (240..263 hours). Decline in the middle should not split the
+    // four 'going' entries — they all fold into a single group.
+    const events = [
+      ev("1", "A", "going", 240),
+      ev("2", "B", "declined", 250),
+      ev("3", "C", "going", 255),
+      ev("4", "D", "going", 260),
+      ev("5", "E", "going", 263),
+    ];
+    const groups = groupEvents(events, NOW);
+    expect(groups).toHaveLength(2);
+    const going = groups.find((g) => g.kind === "going");
+    const declined = groups.find((g) => g.kind === "declined");
+    expect(going?.people.map((p) => p.who)).toEqual(["A", "C", "D", "E"]);
+    expect(declined?.people.map((p) => p.who)).toEqual(["B"]);
+  });
+
+  it("does not merge across different day buckets", () => {
+    const events = [
+      ev("1", "A", "going", 240), // 10d ago
+      ev("2", "B", "going", 264), // 11d ago
+    ];
+    const groups = groupEvents(events, NOW);
+    expect(groups).toHaveLength(2);
+  });
 });

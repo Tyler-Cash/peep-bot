@@ -48,12 +48,66 @@ class AttendanceServiceTest {
 
             when(attendanceRepository.findLatestPerAttendee(eventId))
                     .thenReturn(List.of(accepted, declined, maybe, removed));
+            when(attendanceRepository.findByEventIdOrderByRecordedAtAsc(eventId))
+                    .thenReturn(List.of());
 
             AttendanceSummary summary = service.getCurrentAttendance(eventId);
 
             assertThat(summary.accepted()).containsExactly(accepted);
             assertThat(summary.declined()).containsExactly(declined);
             assertThat(summary.maybe()).containsExactly(maybe);
+            assertThat(summary.withdrew()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("populates withdrew when latest is REMOVED and prior was ACCEPTED")
+        void withdrew_acceptedThenRemoved() {
+            UUID eventId = UUID.randomUUID();
+            AttendanceRecord accepted = new AttendanceRecord(eventId, "1", null, AttendanceStatus.ACCEPTED, null);
+            AttendanceRecord removed = new AttendanceRecord(eventId, "1", null, AttendanceStatus.REMOVED, null);
+
+            when(attendanceRepository.findLatestPerAttendee(eventId)).thenReturn(List.of(removed));
+            when(attendanceRepository.findByEventIdOrderByRecordedAtAsc(eventId))
+                    .thenReturn(List.of(accepted, removed));
+
+            AttendanceSummary summary = service.getCurrentAttendance(eventId);
+
+            assertThat(summary.withdrew()).containsExactly(removed);
+        }
+
+        @Test
+        @DisplayName("populates withdrew when prior status was DECLINED or MAYBE")
+        void withdrew_declinedOrMaybeThenRemoved() {
+            UUID eventId = UUID.randomUUID();
+            AttendanceRecord declined = new AttendanceRecord(eventId, "1", null, AttendanceStatus.DECLINED, null);
+            AttendanceRecord removed1 = new AttendanceRecord(eventId, "1", null, AttendanceStatus.REMOVED, null);
+            AttendanceRecord maybe = new AttendanceRecord(eventId, "2", null, AttendanceStatus.MAYBE, null);
+            AttendanceRecord removed2 = new AttendanceRecord(eventId, "2", null, AttendanceStatus.REMOVED, null);
+
+            when(attendanceRepository.findLatestPerAttendee(eventId)).thenReturn(List.of(removed1, removed2));
+            when(attendanceRepository.findByEventIdOrderByRecordedAtAsc(eventId))
+                    .thenReturn(List.of(declined, removed1, maybe, removed2));
+
+            AttendanceSummary summary = service.getCurrentAttendance(eventId);
+
+            assertThat(summary.withdrew()).containsExactlyInAnyOrder(removed1, removed2);
+        }
+
+        @Test
+        @DisplayName("does not populate withdrew when attendee re-accepted after removal")
+        void withdrew_acceptedAgainAfterRemovalSkipped() {
+            UUID eventId = UUID.randomUUID();
+            AttendanceRecord accepted1 = new AttendanceRecord(eventId, "1", null, AttendanceStatus.ACCEPTED, null);
+            AttendanceRecord removed = new AttendanceRecord(eventId, "1", null, AttendanceStatus.REMOVED, null);
+            AttendanceRecord accepted2 = new AttendanceRecord(eventId, "1", null, AttendanceStatus.ACCEPTED, null);
+
+            when(attendanceRepository.findLatestPerAttendee(eventId)).thenReturn(List.of(accepted2));
+            when(attendanceRepository.findByEventIdOrderByRecordedAtAsc(eventId))
+                    .thenReturn(List.of(accepted1, removed, accepted2));
+
+            AttendanceSummary summary = service.getCurrentAttendance(eventId);
+
+            assertThat(summary.withdrew()).isEmpty();
         }
     }
 

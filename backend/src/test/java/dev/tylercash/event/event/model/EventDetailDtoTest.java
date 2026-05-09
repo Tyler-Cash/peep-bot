@@ -124,7 +124,7 @@ class EventDetailDtoTest {
     void fourArgConstructor_hostResolvedFromMemberMap() {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
         Map<String, GuildMember> memberMap =
                 Map.of("creator-snowflake", buildMember("creator-snowflake", "Host Display Name"));
         Map<String, String> usernameMap = Map.of("creator-snowflake", "host_username");
@@ -139,7 +139,7 @@ class EventDetailDtoTest {
     void fourArgConstructor_hostFallsBackToGlobalUsername_whenMemberMissing() {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
         Map<String, GuildMember> memberMap = Map.of();
         Map<String, String> usernameMap = Map.of("creator-snowflake", "host_global");
 
@@ -153,7 +153,7 @@ class EventDetailDtoTest {
     void fourArgConstructor_hostAvatarUrlUsesCreatorSnowflake() {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
         Map<String, GuildMember> memberMap =
                 Map.of("creator-snowflake", buildMember("creator-snowflake", "Host Display Name"));
         Map<String, String> usernameMap = Map.of("creator-snowflake", "host_username");
@@ -167,7 +167,7 @@ class EventDetailDtoTest {
     void fourArgConstructor_hostFallsBackToSnowflakeWhenNotInMap() {
         Event event = buildEvent();
         event.setCreator("creator-snowflake");
-        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(), List.of(), List.of());
 
         EventDetailDto dto = new EventDetailDto(event, false, summary, Map.of(), Map.of());
 
@@ -182,7 +182,8 @@ class EventDetailDtoTest {
         AttendanceRecord accepted = buildRecord("user-1", "Alice");
         AttendanceRecord declined = buildRecord("user-2", "Bob");
         AttendanceRecord maybe = buildRecord("user-3", "Charlie");
-        AttendanceSummary summary = new AttendanceSummary(List.of(accepted), List.of(declined), List.of(maybe));
+        AttendanceSummary summary =
+                new AttendanceSummary(List.of(accepted), List.of(declined), List.of(maybe), List.of());
         Map<String, GuildMember> memberMap = Map.of(
                 "creator-snowflake", buildMember("creator-snowflake", "Host"),
                 "user-1", buildMember("user-1", "Alice Resolved"),
@@ -205,5 +206,28 @@ class EventDetailDtoTest {
         assertThat(dto.getMaybe()).hasSize(1);
         assertThat(dto.getMaybe().get(0).getName()).isEqualTo("Charlie Resolved");
         assertThat(dto.getMaybe().get(0).getUsername()).isEqualTo("charlie_user");
+    }
+
+    @Test
+    void fourArgConstructor_foldsWithdrewIntoDeclined() {
+        Event event = buildEvent();
+        event.setCreator("creator-snowflake");
+        AttendanceRecord declined = buildRecord("user-1", "Alice");
+        AttendanceRecord withdrew = buildRecord("user-2", "Bob");
+        AttendanceSummary summary = new AttendanceSummary(List.of(), List.of(declined), List.of(), List.of(withdrew));
+        Map<String, GuildMember> memberMap = Map.of(
+                "creator-snowflake", buildMember("creator-snowflake", "Host"),
+                "user-1", buildMember("user-1", "Alice Resolved"),
+                "user-2", buildMember("user-2", "Bob Resolved"));
+        Map<String, String> usernameMap = Map.of(
+                "creator-snowflake", "host_user",
+                "user-1", "alice_user",
+                "user-2", "bob_user");
+
+        EventDetailDto dto = new EventDetailDto(event, false, summary, memberMap, usernameMap);
+
+        assertThat(dto.getDeclined())
+                .extracting(AttendeeDto::getName)
+                .containsExactlyInAnyOrder("Alice Resolved", "Bob Resolved");
     }
 }

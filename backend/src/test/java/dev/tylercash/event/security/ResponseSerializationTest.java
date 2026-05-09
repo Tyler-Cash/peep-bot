@@ -99,7 +99,7 @@ class ResponseSerializationTest {
         rec.setName("Alice");
         rec.setStatus(AttendanceStatus.ACCEPTED);
         rec.setRecordedAt(Instant.parse("2099-01-01T00:00:00Z"));
-        AttendanceSummary summary = new AttendanceSummary(List.of(rec), List.of(), List.of());
+        AttendanceSummary summary = new AttendanceSummary(List.of(rec), List.of(), List.of(), List.of());
         GuildMember member = new GuildMember(
                 311L, "111", "Alice", new byte[] {1, 2, 3}, "image/webp", Instant.parse("2099-01-01T00:00:00Z"));
         out.add(new EventDetailDto(event, true, summary, Map.of("111", member), Map.of("111", "alice"), "social"));

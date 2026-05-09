@@ -6,7 +6,10 @@ import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
 import io.micrometer.observation.annotation.Observed;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +41,30 @@ public class AttendanceService {
         List<AttendanceRecord> maybe = latest.stream()
                 .filter(r -> r.getStatus() == AttendanceStatus.MAYBE)
                 .toList();
-        return new AttendanceSummary(accepted, declined, maybe);
+        List<AttendanceRecord> withdrew = findWithdrew(eventId);
+        return new AttendanceSummary(accepted, declined, maybe, withdrew);
+    }
+
+    // Surfaces attendees whose latest record is REMOVED and who previously had any interaction
+    // (ACCEPTED/DECLINED/MAYBE). Covers self-toggle-off and admin removeAttendee, so the activity
+    // log can render those transitions as a decline rather than dropping them silently.
+    private List<AttendanceRecord> findWithdrew(UUID eventId) {
+        List<AttendanceRecord> all = attendanceRepository.findByEventIdOrderByRecordedAtAsc(eventId);
+        Map<String, List<AttendanceRecord>> byAttendee = new LinkedHashMap<>();
+        for (AttendanceRecord r : all) {
+            String key = r.getSnowflake() != null ? "s:" + r.getSnowflake() : "n:" + r.getName();
+            byAttendee.computeIfAbsent(key, k -> new ArrayList<>()).add(r);
+        }
+        List<AttendanceRecord> result = new ArrayList<>();
+        for (List<AttendanceRecord> records : byAttendee.values()) {
+            if (records.isEmpty()) continue;
+            AttendanceRecord latest = records.get(records.size() - 1);
+            if (latest.getStatus() != AttendanceStatus.REMOVED) continue;
+            boolean hadPriorInteraction = records.stream().anyMatch(r -> r.getStatus() != AttendanceStatus.REMOVED);
+            if (!hadPriorInteraction) continue;
+            result.add(latest);
+        }
+        return result;
     }
 
     @Observed(name = "attendance.flip")

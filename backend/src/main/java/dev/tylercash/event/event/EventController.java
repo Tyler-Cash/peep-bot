@@ -190,7 +190,10 @@ public class EventController {
         AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
 
         Set<String> allSnowflakes = Stream.of(
-                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                        summary.accepted().stream(),
+                        summary.declined().stream(),
+                        summary.maybe().stream(),
+                        summary.withdrew().stream())
                 .flatMap(s -> s)
                 .map(AttendanceRecord::getSnowflake)
                 .filter(s -> s != null && !s.isBlank())
@@ -248,7 +251,10 @@ public class EventController {
         boolean completed = eventService.isCompleted(event);
         AttendanceSummary summary = attendanceService.getCurrentAttendance(id);
         Set<String> allSnowflakes = Stream.of(
-                        summary.accepted().stream(), summary.declined().stream(), summary.maybe().stream())
+                        summary.accepted().stream(),
+                        summary.declined().stream(),
+                        summary.maybe().stream(),
+                        summary.withdrew().stream())
                 .flatMap(s -> s)
                 .map(AttendanceRecord::getSnowflake)
                 .filter(s -> s != null && !s.isBlank())
