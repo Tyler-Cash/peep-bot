@@ -7,6 +7,10 @@ import { isDevModeActive } from "@/lib/devMode";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 
+function isAutomatedBrowser() {
+  return typeof navigator !== "undefined" && navigator.webdriver === true;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
@@ -35,8 +39,12 @@ export function Providers({ children }: { children: ReactNode }) {
     <SWRConfig
       value={{
         provider: localStorageProvider,
-        revalidateOnFocus: true,
-        revalidateOnReconnect: true,
+        // Playwright sets navigator.webdriver. Background revalidations make
+        // `networkidle` and click-then-navigate races flaky in e2e — disable
+        // them under automation only; real users still get focus/reconnect
+        // refresh.
+        revalidateOnFocus: !isAutomatedBrowser(),
+        revalidateOnReconnect: !isAutomatedBrowser(),
         dedupingInterval: 2000,
       }}
     >

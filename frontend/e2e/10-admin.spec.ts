@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login, waitForApp } from "./helpers";
+import { gotoApp, login, waitForApp } from "./helpers";
 
 // The top-bar GuildSwitcher button has its title attribute set to the active guild
 // name. Use that to find it without depending on which guild happens to be active.
@@ -11,7 +11,7 @@ function topSwitcherButton(page: Page) {
 // rather than clicking the tab to dodge the React-re-render race that otherwise
 // makes Link clicks flaky right after auth resolves.
 async function enterAdmin(page: Page) {
-  await page.goto("/admin");
+  await page.goto("/admin", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/admin\/?$/);
   await expect(page.locator("nav[data-admin-mode]")).toBeVisible();
 }
@@ -105,7 +105,7 @@ test.describe("admin panel access + chrome", () => {
 
     // Leave admin via direct navigation (the in-nav <Link> click occasionally races
     // re-renders triggered by SWR settling on entry to admin mode).
-    await page.goto("/");
+    await gotoApp(page, "/");
     await expect(page).toHaveURL(/^[^?#]*\/$/);
     await expect(
       page.getByRole("button", { name: /porch pigeons/i }).first(),
@@ -117,9 +117,10 @@ test.describe("admin panel access + chrome", () => {
   }) => {
     await login(page);
     await waitForApp(page);
-    // Make sure SWR has finished its initial fetches before we start clicking,
-    // otherwise the dropdown can re-render mid-click and the navigation gets dropped.
-    await page.waitForLoadState("networkidle");
+    // Wait for the switcher to actually render before we click — under SWR
+    // refetches the dropdown can otherwise re-render mid-click and the
+    // navigation gets dropped. Semantic waiter beats `networkidle`.
+    await expect(topSwitcherButton(page)).toBeVisible();
 
     // The user only owns mockguild-1 → the gear icon only appears for porch pigeons.
     await topSwitcherButton(page).click();

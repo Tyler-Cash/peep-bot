@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, waitForApp } from "./helpers";
+import { gotoApp, login, waitForApp } from "./helpers";
 
 test("active guild localStorage state survives navigation", async ({ page }) => {
   await login(page);
@@ -11,12 +11,9 @@ test("active guild localStorage state survives navigation", async ({ page }) => 
   });
 
   // Navigate around — feed → new → back home.
-  await page.goto("/");
-  await waitForApp(page);
-  await page.goto("/events/new");
-  await waitForApp(page);
-  await page.goto("/");
-  await waitForApp(page);
+  await gotoApp(page, "/");
+  await gotoApp(page, "/events/new");
+  await gotoApp(page, "/");
 
   const stored = await page.evaluate(() =>
     window.localStorage.getItem("peepbot.activeGuild"),

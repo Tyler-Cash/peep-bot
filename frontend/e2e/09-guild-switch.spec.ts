@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, waitForApp } from "./helpers";
+import { gotoApp, login, waitForApp } from "./helpers";
 
 test("clicking a guild in the switcher activates it", async ({ page }) => {
   await login(page);
@@ -26,8 +26,7 @@ test("clicking a guild in the switcher activates it", async ({ page }) => {
   expect(stored).toBe("mockguild-2");
 
   // Survives a navigation.
-  await page.goto("/");
-  await waitForApp(page);
+  await gotoApp(page, "/");
   await expect(
     page.getByRole("button", { name: /moonlight bowls/i }).first(),
   ).toBeVisible();

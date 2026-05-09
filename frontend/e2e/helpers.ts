@@ -38,3 +38,14 @@ export async function waitForApp(page: Page): Promise<void> {
     timeout: 15_000,
   });
 }
+
+/**
+ * Navigate to a path and wait for the app shell to render. Uses
+ * `waitUntil: "domcontentloaded"` so the goto doesn't race a client-side
+ * redirect (the default `"load"` waits for every subresource and aborts with
+ * `ERR_ABORTED` when a Next.js layout swaps the route mid-load).
+ */
+export async function gotoApp(page: Page, path: string): Promise<void> {
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  await waitForApp(page);
+}
