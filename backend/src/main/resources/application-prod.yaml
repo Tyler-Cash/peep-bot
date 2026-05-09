@@ -9,3 +9,8 @@ dev.tylercash:
     album-name-prefix: ""
   rewind:
     normalisation-enabled: true
+  oauth2:
+    # TODO(ops): set to the actual public backend URL registered with Discord (e.g.
+    # https://api.event.tylercash.dev/api/login/oauth2/code/discord). Pinning this
+    # so X-Forwarded-Host can't influence the redirect_uri Spring Security generates.
+    redirect-uri: https://event.tylercash.dev/api/login/oauth2/code/discord
