@@ -1,3 +1,5 @@
 dev.tylercash:
   feature-toggles:
     archive-orphaned-channels: true
+  openapi:
+    public: true
