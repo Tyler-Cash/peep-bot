@@ -34,6 +34,12 @@ server:
     remoteip:
       remote-ip-header: x-forwarded-for
       protocol-header: x-forwarded-proto
+      # Only trust forwarded headers from the in-cluster reverse proxy on loopback.
+      # Tomcat's default internal-proxies regex permits all RFC1918 ranges, which means
+      # any caller on the VPN can spoof X-Forwarded-Host/Proto and influence URLs Spring
+      # generates from the request (e.g. OAuth2 redirect_uri). Pinning to loopback closes
+      # this. See pentest finding F-001.
+      internal-proxies: "127\\.0\\.0\\.1|::1"
   servlet:
     session:
       cookie:
