@@ -4,6 +4,34 @@ export type ClientOptions = {
     baseUrl: 'http://localhost' | (string & {});
 };
 
+export type AdminActivityDto = {
+    attempts?: number;
+    detail?: string;
+    eventId?: string;
+    guildId?: string;
+    kind?: string;
+    lifecycleEventType?: string;
+    listenerName?: string;
+    text?: string;
+    ts?: string;
+};
+
+export type AdminEventDto = {
+    category?: string;
+    createdAt?: string;
+    creator?: string;
+    declined?: number;
+    going?: number;
+    guildId?: string;
+    history?: Array<HistoryEntry>;
+    id?: string;
+    location?: string;
+    maybe?: number;
+    name?: string;
+    state?: string;
+    when?: string;
+};
+
 export type AdminFeaturesRequest = {
     contractsEnabled?: boolean;
     googleAutocompleteEnabled?: boolean;
@@ -13,12 +41,48 @@ export type AdminFeaturesRequest = {
 
 export type AdminGuildDto = {
     active?: boolean;
+    channelName?: string;
     contractsEnabled?: boolean;
+    failingInvocations?: number;
     googleAutocompleteEnabled?: boolean;
     guildId?: string;
     immichEnabled?: boolean;
+    locationName?: string;
+    memberCount?: number;
     name?: string;
     rewindEnabled?: boolean;
+    totalEventCount?: number;
+    upcomingEventCount?: number;
+};
+
+export type AdminHealthDto = {
+    components?: {
+        [key: string]: Component;
+    };
+    syncedAt?: string;
+    uptimeSeconds?: number;
+};
+
+export type AdminJobDto = {
+    cron?: string;
+    emits?: string;
+    id?: string;
+    label?: string;
+    lastDuration?: string;
+    lastRun?: string;
+    lastStatus?: string;
+    nextRun?: string;
+};
+
+export type AdminReplayRequest = {
+    eventId?: string;
+    lifecycleEventType?: string;
+    skipSideEffects?: boolean;
+};
+
+export type AdminReplayResponse = {
+    listeners?: Array<string>;
+    message?: string;
 };
 
 export type AttendeeDto = {
@@ -34,6 +98,11 @@ export type AttendeeStatDto = {
     avatarUrl?: string;
     displayName?: string;
     eventCount?: number;
+};
+
+export type Component = {
+    detail?: string;
+    status?: string;
 };
 
 export type CsrfToken = {
@@ -176,6 +245,16 @@ export type GuildSettingsRequest = {
     separatorChannel?: string;
 };
 
+export type HistoryEntry = {
+    attempts?: number;
+    detail?: string;
+    lifecycleEventType?: string;
+    listenerName?: string;
+    ok?: boolean;
+    stage?: string;
+    ts?: string;
+};
+
 export type InstallUrlDto = {
     permissions?: Array<PermissionDto>;
     url?: string;
@@ -246,6 +325,35 @@ export type UserInfoDto = {
     ownedGuildIds?: Array<string>;
     username?: string;
 };
+
+export type ActivityData = {
+    body?: never;
+    path?: never;
+    query?: {
+        guildId?: string;
+    };
+    url: '/admin/activity';
+};
+
+export type ActivityErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type ActivityError = ActivityErrors[keyof ActivityErrors];
+
+export type ActivityResponses = {
+    /**
+     * OK
+     */
+    200: Array<AdminActivityDto>;
+};
+
+export type ActivityResponse = ActivityResponses[keyof ActivityResponses];
 
 export type GetEventCreationStateData = {
     body?: never;
@@ -326,6 +434,35 @@ export type EnableEventCreationResponses = {
     200: unknown;
 };
 
+export type EventsForGuildData = {
+    body?: never;
+    path?: never;
+    query: {
+        guildId: string;
+    };
+    url: '/admin/events';
+};
+
+export type EventsForGuildErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type EventsForGuildError = EventsForGuildErrors[keyof EventsForGuildErrors];
+
+export type EventsForGuildResponses = {
+    /**
+     * OK
+     */
+    200: Array<AdminEventDto>;
+};
+
+export type EventsForGuildResponse = EventsForGuildResponses[keyof EventsForGuildResponses];
+
 export type ListGuildsData = {
     body?: never;
     path?: never;
@@ -381,6 +518,60 @@ export type UpdateFeaturesResponses = {
 };
 
 export type UpdateFeaturesResponse = UpdateFeaturesResponses[keyof UpdateFeaturesResponses];
+
+export type HealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/health';
+};
+
+export type HealthErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type HealthError = HealthErrors[keyof HealthErrors];
+
+export type HealthResponses = {
+    /**
+     * OK
+     */
+    200: AdminHealthDto;
+};
+
+export type HealthResponse = HealthResponses[keyof HealthResponses];
+
+export type JobsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/jobs';
+};
+
+export type JobsErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type JobsError = JobsErrors[keyof JobsErrors];
+
+export type JobsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AdminJobDto>;
+};
+
+export type JobsResponse = JobsResponses[keyof JobsResponses];
 
 export type AbandonData = {
     body?: never;
@@ -439,6 +630,33 @@ export type RetryNowResponses = {
      */
     200: unknown;
 };
+
+export type ReplayData = {
+    body: AdminReplayRequest;
+    path?: never;
+    query?: never;
+    url: '/admin/replay';
+};
+
+export type ReplayErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type ReplayError = ReplayErrors[keyof ReplayErrors];
+
+export type ReplayResponses = {
+    /**
+     * OK
+     */
+    200: AdminReplayResponse;
+};
+
+export type ReplayResponse = ReplayResponses[keyof ReplayResponses];
 
 export type IsLoggedInData = {
     body?: never;

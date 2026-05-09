@@ -1,6 +1,93 @@
 {
   "components" : {
     "schemas" : {
+      "AdminActivityDto" : {
+        "properties" : {
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "eventId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "guildId" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "lifecycleEventType" : {
+            "type" : "string"
+          },
+          "listenerName" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "ts" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminEventDto" : {
+        "properties" : {
+          "category" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "creator" : {
+            "type" : "string"
+          },
+          "declined" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "going" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "guildId" : {
+            "type" : "string"
+          },
+          "history" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HistoryEntry"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "maybe" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "string"
+          },
+          "when" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AdminFeaturesRequest" : {
         "properties" : {
           "contractsEnabled" : {
@@ -23,8 +110,15 @@
           "active" : {
             "type" : "boolean"
           },
+          "channelName" : {
+            "type" : "string"
+          },
           "contractsEnabled" : {
             "type" : "boolean"
+          },
+          "failingInvocations" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "googleAutocompleteEnabled" : {
             "type" : "boolean"
@@ -35,11 +129,104 @@
           "immichEnabled" : {
             "type" : "boolean"
           },
+          "locationName" : {
+            "type" : "string"
+          },
+          "memberCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "name" : {
             "type" : "string"
           },
           "rewindEnabled" : {
             "type" : "boolean"
+          },
+          "totalEventCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "upcomingEventCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminHealthDto" : {
+        "properties" : {
+          "components" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Component"
+            },
+            "type" : "object"
+          },
+          "syncedAt" : {
+            "type" : "string"
+          },
+          "uptimeSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminJobDto" : {
+        "properties" : {
+          "cron" : {
+            "type" : "string"
+          },
+          "emits" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "lastDuration" : {
+            "type" : "string"
+          },
+          "lastRun" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "lastStatus" : {
+            "type" : "string"
+          },
+          "nextRun" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReplayRequest" : {
+        "properties" : {
+          "eventId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "lifecycleEventType" : {
+            "type" : "string"
+          },
+          "skipSideEffects" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminReplayResponse" : {
+        "properties" : {
+          "listeners" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -79,6 +266,17 @@
           "eventCount" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Component" : {
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -512,6 +710,34 @@
         },
         "type" : "object"
       },
+      "HistoryEntry" : {
+        "properties" : {
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "lifecycleEventType" : {
+            "type" : "string"
+          },
+          "listenerName" : {
+            "type" : "string"
+          },
+          "ok" : {
+            "type" : "boolean"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "ts" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "InstallUrlDto" : {
         "properties" : {
           "permissions" : {
@@ -732,6 +958,46 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/admin/activity" : {
+      "get" : {
+        "operationId" : "activity",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AdminActivityDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin · monitor" ]
+      }
+    },
     "/admin/event-creation" : {
       "get" : {
         "operationId" : "getEventCreationState",
@@ -806,6 +1072,46 @@
           }
         },
         "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/events" : {
+      "get" : {
+        "operationId" : "eventsForGuild",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AdminEventDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin · lifecycle" ]
       }
     },
     "/admin/guilds" : {
@@ -885,6 +1191,67 @@
           }
         },
         "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/health" : {
+      "get" : {
+        "operationId" : "health",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminHealthDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin · monitor" ]
+      }
+    },
+    "/admin/jobs" : {
+      "get" : {
+        "operationId" : "jobs",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AdminJobDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin · monitor" ]
       }
     },
     "/admin/listener-invocations/{eventId}/{type}/{listenerName}" : {
@@ -975,6 +1342,45 @@
           }
         },
         "tags" : [ "Listener invocations" ]
+      }
+    },
+    "/admin/replay" : {
+      "post" : {
+        "operationId" : "replay",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminReplayRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminReplayResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin · lifecycle" ]
       }
     },
     "/auth/is-logged-in" : {
@@ -2098,6 +2504,9 @@
     "url" : "http://localhost"
   } ],
   "tags" : [ {
+    "description" : "Read-only dashboard endpoints for the admin panel",
+    "name" : "Bot admin · monitor"
+  }, {
     "description" : "Discord guild info",
     "name" : "Guild"
   }, {
@@ -2121,5 +2530,8 @@
   }, {
     "description" : "Event management operations",
     "name" : "Events"
+  }, {
+    "description" : "Per-event lifecycle history and replay",
+    "name" : "Bot admin · lifecycle"
   } ]
 }

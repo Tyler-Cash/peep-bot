@@ -2,6 +2,18 @@
 
 import * as z from 'zod';
 
+export const zAdminActivityDto = z.object({
+    attempts: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    detail: z.string().nullable().optional(),
+    eventId: z.uuid().nullable().optional(),
+    guildId: z.string().nullable().optional(),
+    kind: z.string().nullable().optional(),
+    lifecycleEventType: z.string().nullable().optional(),
+    listenerName: z.string().nullable().optional(),
+    text: z.string().nullable().optional(),
+    ts: z.iso.datetime().nullable().optional()
+});
+
 export const zAdminFeaturesRequest = z.object({
     contractsEnabled: z.boolean().nullable().optional(),
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
@@ -11,12 +23,40 @@ export const zAdminFeaturesRequest = z.object({
 
 export const zAdminGuildDto = z.object({
     active: z.boolean().nullable().optional(),
+    channelName: z.string().nullable().optional(),
     contractsEnabled: z.boolean().nullable().optional(),
+    failingInvocations: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
     guildId: z.string().nullable().optional(),
     immichEnabled: z.boolean().nullable().optional(),
+    locationName: z.string().nullable().optional(),
+    memberCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     name: z.string().nullable().optional(),
-    rewindEnabled: z.boolean().nullable().optional()
+    rewindEnabled: z.boolean().nullable().optional(),
+    totalEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    upcomingEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
+});
+
+export const zAdminJobDto = z.object({
+    cron: z.string().nullable().optional(),
+    emits: z.string().nullable().optional(),
+    id: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
+    lastDuration: z.string().nullable().optional(),
+    lastRun: z.iso.datetime().nullable().optional(),
+    lastStatus: z.string().nullable().optional(),
+    nextRun: z.iso.datetime().nullable().optional()
+});
+
+export const zAdminReplayRequest = z.object({
+    eventId: z.uuid().nullable().optional(),
+    lifecycleEventType: z.string().nullable().optional(),
+    skipSideEffects: z.boolean().nullable().optional()
+});
+
+export const zAdminReplayResponse = z.object({
+    listeners: z.array(z.string()).nullable().optional(),
+    message: z.string().nullable().optional()
 });
 
 export const zAttendeeDto = z.object({
@@ -32,6 +72,17 @@ export const zAttendeeStatDto = z.object({
     avatarUrl: z.string().nullable().optional(),
     displayName: z.string().nullable().optional(),
     eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
+});
+
+export const zComponent = z.object({
+    detail: z.string().nullable().optional(),
+    status: z.string().nullable().optional()
+});
+
+export const zAdminHealthDto = z.object({
+    components: z.record(z.string(), zComponent).nullable().optional(),
+    syncedAt: z.string().nullable().optional(),
+    uptimeSeconds: z.number().nullable().optional()
 });
 
 export const zCsrfToken = z.object({
@@ -174,6 +225,32 @@ export const zGuildSettingsRequest = z.object({
     separatorChannel: z.string().nullable().optional()
 });
 
+export const zHistoryEntry = z.object({
+    attempts: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    detail: z.string().nullable().optional(),
+    lifecycleEventType: z.string().nullable().optional(),
+    listenerName: z.string().nullable().optional(),
+    ok: z.boolean().nullable().optional(),
+    stage: z.string().nullable().optional(),
+    ts: z.iso.datetime().nullable().optional()
+});
+
+export const zAdminEventDto = z.object({
+    category: z.string().nullable().optional(),
+    createdAt: z.iso.datetime().nullable().optional(),
+    creator: z.string().nullable().optional(),
+    declined: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    going: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    guildId: z.string().nullable().optional(),
+    history: z.array(zHistoryEntry).nullable().optional(),
+    id: z.uuid().nullable().optional(),
+    location: z.string().nullable().optional(),
+    maybe: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    name: z.string().nullable().optional(),
+    state: z.string().nullable().optional(),
+    when: z.string().nullable().optional()
+});
+
 export const zPageMetadata = z.object({
     number: z.number().nullable().optional(),
     size: z.number().nullable().optional(),
@@ -241,10 +318,28 @@ export const zUserInfoDto = z.object({
     username: z.string().nullable().optional()
 });
 
+export const zActivityQuery = z.object({
+    guildId: z.string().nullable().optional()
+});
+
+/**
+ * OK
+ */
+export const zActivityResponse = z.array(zAdminActivityDto);
+
 /**
  * OK
  */
 export const zGetEventCreationStateResponse = z.record(z.string(), z.boolean());
+
+export const zEventsForGuildQuery = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zEventsForGuildResponse = z.array(zAdminEventDto);
 
 /**
  * OK
@@ -262,6 +357,16 @@ export const zUpdateFeaturesPath = z.object({
  */
 export const zUpdateFeaturesResponse = zAdminGuildDto;
 
+/**
+ * OK
+ */
+export const zHealthResponse = zAdminHealthDto;
+
+/**
+ * OK
+ */
+export const zJobsResponse = z.array(zAdminJobDto);
+
 export const zAbandonPath = z.object({
     eventId: z.uuid(),
     type: z.string(),
@@ -273,6 +378,13 @@ export const zRetryNowPath = z.object({
     type: z.string(),
     listenerName: z.string()
 });
+
+export const zReplayBody = zAdminReplayRequest;
+
+/**
+ * OK
+ */
+export const zReplayResponse = zAdminReplayResponse;
 
 /**
  * User is authenticated
