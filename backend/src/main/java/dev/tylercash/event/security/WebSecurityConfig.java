@@ -19,6 +19,8 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
@@ -88,9 +90,23 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    @Primary
     public JdbcIndexedSessionRepository jdbcIndexedSessionRepository() {
         jdbcHttpSessionConfiguration.setMaxInactiveInterval(Duration.ofDays(30));
         return jdbcHttpSessionConfiguration.sessionRepository();
+    }
+
+    /**
+     * Wraps the JDBC repository with {@link AnonymousSkippingSessionRepository} so unauthenticated
+     * requests cannot fill {@code SPRING_SESSION} (pentest finding F-002). The wrapper is the
+     * primary {@code SessionRepository} bean that {@code SessionRepositoryFilter} resolves; the
+     * underlying {@link JdbcIndexedSessionRepository} stays in the context so its scheduled
+     * {@code cleanUpExpiredSessions} cron continues to run.
+     */
+    @Bean
+    @Primary
+    public FindByIndexNameSessionRepository<Session> anonymousSkippingSessionRepository(
+            @org.springframework.beans.factory.annotation.Qualifier("jdbcIndexedSessionRepository")
+                    JdbcIndexedSessionRepository delegate) {
+        return new AnonymousSkippingSessionRepository(delegate);
     }
 }
