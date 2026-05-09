@@ -51,11 +51,17 @@ const adminGuilds: AdminGuild[] = [
 
 const API = (path: string) => new RegExp(`(^|/api)${path}$`);
 
-// Mock auth state — persist to localStorage so it survives page reloads
+// Mock auth state — persist to localStorage so it survives page reloads.
+// `mock-auth-logged-out=true` → /auth/is-logged-in returns 401.
+// `mock-non-admin=true` → still logged in, but with admin: false. Used by Playwright
+// specs that need to exercise the non-admin path without changing the static fixture.
 function getMockLoggedInUser(): UserInfo | null {
   if (typeof window === "undefined") return currentUser;
-  const stored = window.localStorage.getItem("mock-auth-logged-out");
-  return stored === "true" ? null : currentUser;
+  if (window.localStorage.getItem("mock-auth-logged-out") === "true") return null;
+  if (window.localStorage.getItem("mock-non-admin") === "true") {
+    return { ...currentUser, admin: false };
+  }
+  return currentUser;
 }
 
 function setMockLoggedOut(loggedOut: boolean): void {

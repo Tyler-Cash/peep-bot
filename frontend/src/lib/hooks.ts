@@ -77,6 +77,27 @@ export function useActiveGuild(): Guild | null {
   return data[0];
 }
 
+/**
+ * Like useActiveGuild but resolves the stored active id against the admin-guilds
+ * superset (every guild peepbot is in). Used by the admin panel + the GuildSwitcher
+ * when on /admin* so service admins can scope to guilds they aren't a member of.
+ * Falls back to the first admin guild when the stored id is unknown.
+ */
+export function useActiveAdminGuild(): AdminGuild | null {
+  const { data } = useAdminGuilds();
+  const stored = useSyncExternalStore(
+    subscribeActiveGuild,
+    getStoredActiveGuildId,
+    () => null,
+  );
+  if (!data || data.length === 0) return null;
+  if (stored) {
+    const match = data.find((g) => g.guildId === stored);
+    if (match) return match;
+  }
+  return data[0];
+}
+
 type EventsPage = { content: EventDto[]; totalElements: number };
 
 export function useEvents() {

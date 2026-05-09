@@ -24,7 +24,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const seen = new Set<string>();
   // Every page the smoke suite navigates to. Dynamic segments compile once
   // for the whole [id] route, so any concrete id will do.
-  const routes = ["/login", "/", "/events/new", "/events/1", "/events/1/edit"];
+  const routes = [
+    "/login",
+    "/",
+    "/events/new",
+    "/events/1",
+    "/events/1/edit",
+    "/admin",
+    "/guild/mockguild-1/settings",
+  ];
   await Promise.all(
     projects.flatMap((p) => {
       const baseURL = p.use?.baseURL;

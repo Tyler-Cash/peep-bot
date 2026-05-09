@@ -4,15 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import clsx from "@/lib/clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { useCurrentUser } from "@/lib/hooks";
 import { DesktopBar } from "./DesktopBar";
 import { HamburgerIcon } from "./HamburgerIcon";
 import { MobileDrawer, MobileDrawerScrim } from "./MobileDrawer";
+import { isAdminPath } from "./navTabs";
 
 export function Nav() {
   const { data: user } = useCurrentUser();
   const pathname = usePathname();
+  // Gate admin-mode chrome on the admin flag too. Without this, a non-admin who hits
+  // /admin directly would see the inverted bar for one frame before AdminGate's
+  // useEffect-redirect fires.
+  const adminMode = isAdminPath(pathname ?? "") && !!user?.admin;
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Auto-close the drawer whenever the route changes
@@ -23,23 +29,48 @@ export function Nav() {
   return (
     <>
     {menuOpen && <MobileDrawerScrim onClose={() => setMenuOpen(false)} />}
-    <nav className="sticky top-0 z-20 bg-white border-b-[1.5px] border-ink">
+    <nav
+      className={clsx(
+        "sticky top-0 z-20 border-b-[1.5px]",
+        // Admin mode: invert the bar to make the elevated context unmistakable.
+        adminMode
+          ? "bg-ink text-paper border-paper"
+          : "bg-white text-ink border-ink",
+      )}
+      data-admin-mode={adminMode || undefined}
+    >
       <div className="mx-auto flex max-w-[1200px] items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3">
-        <Link href="/" className="flex items-center gap-2.5 min-w-0">
-          <span className="inline-flex items-center justify-center w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] rounded-card bg-leaf border-[1.5px] border-ink shadow-rest shrink-0 overflow-hidden">
+        <Link
+          href={adminMode ? "/admin" : "/"}
+          className={clsx(
+            "flex items-center gap-2.5 min-w-0",
+            adminMode && "text-paper",
+          )}
+        >
+          <span
+            className={clsx(
+              "inline-flex items-center justify-center w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] rounded-card border-[1.5px] shadow-rest shrink-0 overflow-hidden",
+              adminMode ? "bg-paper border-paper" : "bg-leaf border-ink",
+            )}
+          >
             <Image src="/peepos/peepo.png" alt="" aria-hidden width={36} height={36} className="w-[36px] h-[36px] object-contain" priority />
           </span>
           <span className="flex flex-col leading-none min-w-0">
             <span className="text-[16px] sm:text-[17px] font-extrabold tracking-[-0.02em] truncate">
               peepbot
             </span>
-            <span className="hidden sm:inline text-[10.5px] font-extrabold tracking-[0.18em] text-mute mt-0.5">
-              PLANS, SORTED
+            <span
+              className={clsx(
+                "hidden sm:inline text-[10.5px] font-extrabold tracking-[0.18em] mt-0.5",
+                adminMode ? "text-paper/70" : "text-mute",
+              )}
+            >
+              {adminMode ? "ADMIN MODE" : "PLANS, SORTED"}
             </span>
           </span>
         </Link>
 
-        <DesktopBar pathname={pathname} />
+        <DesktopBar pathname={pathname} adminMode={adminMode} />
 
         <div className="md:hidden flex-1" />
 
@@ -55,7 +86,10 @@ export function Nav() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? "close menu" : "open menu"}
             aria-expanded={menuOpen}
-            className="inline-flex items-center justify-center w-[44px] h-[44px] rounded-chip border-[1.5px] border-ink bg-paper shadow-rest active:shadow-press active:translate-x-[1px] active:translate-y-[1px] transition-[box-shadow,transform]"
+            className={clsx(
+              "inline-flex items-center justify-center w-[44px] h-[44px] rounded-chip border-[1.5px] shadow-rest active:shadow-press active:translate-x-[1px] active:translate-y-[1px] transition-[box-shadow,transform]",
+              adminMode ? "border-paper bg-ink text-paper" : "border-ink bg-paper",
+            )}
           >
             <HamburgerIcon open={menuOpen} />
           </button>
@@ -63,7 +97,7 @@ export function Nav() {
       </div>
 
       {menuOpen && (
-        <MobileDrawer pathname={pathname} onClose={() => setMenuOpen(false)} />
+        <MobileDrawer pathname={pathname} adminMode={adminMode} onClose={() => setMenuOpen(false)} />
       )}
     </nav>
     </>
