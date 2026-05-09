@@ -2,6 +2,7 @@ package dev.tylercash.event.discord;
 
 import com.ibm.icu.text.RuleBasedNumberFormat;
 import dev.tylercash.event.event.model.Event;
+import java.time.DateTimeException;
 import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -14,6 +15,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @NoArgsConstructor
 public class DiscordUtil {
@@ -42,11 +44,26 @@ public class DiscordUtil {
                 Optional.ofNullable(member.getNickname()).orElse(member.getEffectiveName()), true);
     }
 
+    /**
+     * Parse a `dd-MMM-...` channel name into a MonthDay for sorting. Returns null when the
+     * channel name doesn't follow the convention — e.g. a manually-created or system channel
+     * sharing the archive category — so callers can sort foreign channels to the end via
+     * {@code Comparator.nullsLast(...)} rather than crashing the whole sort.
+     */
+    @Nullable
     public static MonthDay getMonthDayFromChannelName(TextChannel channel, DateTimeFormatter monthParser) {
         String[] split =
                 channel.getName().replaceAll("(?<=\\d)(st|nd|rd|th)", "").split("-");
-        String day = split[0];
-        int month = monthParser.parse(split[1]).get(ChronoField.MONTH_OF_YEAR);
-        return MonthDay.of(month, Integer.parseInt(day));
+        if (split.length < 2) return null;
+        try {
+            int day = Integer.parseInt(split[0]);
+            int month = monthParser.parse(split[1]).get(ChronoField.MONTH_OF_YEAR);
+            return MonthDay.of(month, day);
+        } catch (NumberFormatException | DateTimeException e) {
+            // DateTimeException covers both DateTimeParseException (bad month) and the
+            // "DAY out of range" path from MonthDay.of when the parts validate individually
+            // but combine into something invalid (e.g. 31-feb-...).
+            return null;
+        }
     }
 }

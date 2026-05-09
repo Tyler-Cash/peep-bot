@@ -79,8 +79,11 @@ public class DiscordChannelService {
                 .toFormatter(locale);
 
         List<TextChannel> channels = new java.util.ArrayList<>(category.getTextChannels());
+        // nullsLast: foreign channels (system channels, manually-created ones, anything that
+        // doesn't match the dd-MMM-name convention) sort to the end instead of crashing the sort.
         channels.sort(java.util.Comparator.comparing(
-                channel -> dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName(channel, monthParser)));
+                channel -> dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName(channel, monthParser),
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
 
         for (int i = 0; i < channels.size(); i++) {
             channels.get(i).getManager().setPosition(i).queue();

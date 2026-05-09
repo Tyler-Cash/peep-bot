@@ -1,10 +1,19 @@
 package dev.tylercash.event.discord;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.tylercash.event.event.model.Event;
 import java.time.LocalDateTime;
+import java.time.MonthDay;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Locale;
 import java.util.stream.Stream;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,5 +50,45 @@ class DiscordUtilTest {
     @MethodSource("nameGenerator")
     void getChannelNameFromEvent(String expectedName, Event event) {
         Assertions.assertEquals(expectedName, DiscordUtil.getChannelNameFromEvent(event));
+    }
+
+    private static DateTimeFormatter monthParser() {
+        return new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern("MMM")
+                .toFormatter(Locale.ENGLISH);
+    }
+
+    private static TextChannel channelNamed(String name) {
+        TextChannel channel = mock(TextChannel.class);
+        when(channel.getName()).thenReturn(name);
+        return channel;
+    }
+
+    @Test
+    void getMonthDayFromChannelName_validName_returnsMonthDay() {
+        MonthDay result = DiscordUtil.getMonthDayFromChannelName(channelNamed("12-may-pub-quiz"), monthParser());
+        Assertions.assertEquals(MonthDay.of(5, 12), result);
+    }
+
+    @Test
+    void getMonthDayFromChannelName_ordinalSuffix_isStripped() {
+        MonthDay result = DiscordUtil.getMonthDayFromChannelName(channelNamed("3rd-jul-bbq"), monthParser());
+        Assertions.assertEquals(MonthDay.of(7, 3), result);
+    }
+
+    @Test
+    void getMonthDayFromChannelName_noHyphen_returnsNull() {
+        Assertions.assertNull(DiscordUtil.getMonthDayFromChannelName(channelNamed("general"), monthParser()));
+    }
+
+    @Test
+    void getMonthDayFromChannelName_nonNumericDay_returnsNull() {
+        Assertions.assertNull(DiscordUtil.getMonthDayFromChannelName(channelNamed("foo-bar-baz"), monthParser()));
+    }
+
+    @Test
+    void getMonthDayFromChannelName_unknownMonth_returnsNull() {
+        Assertions.assertNull(DiscordUtil.getMonthDayFromChannelName(channelNamed("12-zzz-something"), monthParser()));
     }
 }
