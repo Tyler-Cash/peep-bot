@@ -314,7 +314,7 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
               </label>
               {rateLimit !== null && (
                 <div className="flex gap-2 flex-wrap mt-2">
-                  {[3, 5, 7, 10].map((n) => {
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
                     const active = rateLimit === n;
                     return (
                       <button

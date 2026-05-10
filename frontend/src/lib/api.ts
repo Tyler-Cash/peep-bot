@@ -1,6 +1,7 @@
 import type { ZodType } from "zod";
 import { clearSwrCache } from "./swrCache";
 import { noteAuthFailure, noteAuthSuccess } from "./authLoopGuard";
+import { notifyRateLimited } from "./rateLimitNotifier";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
@@ -72,8 +73,9 @@ async function getCsrf(attempt = 0): Promise<string> {
     throw new BackendUnreachable();
   }
   if (res.status === 429 && attempt < 2) {
-    const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
-    await new Promise((r) => setTimeout(r, retry));
+    const retrySec = Number(res.headers.get("Retry-After") ?? "1");
+    notifyRateLimited(retrySec);
+    await new Promise((r) => setTimeout(r, retrySec * 1000));
     return getCsrf(attempt + 1);
   }
   if (!res.ok) throw new Error(`csrf fetch failed: ${res.status}`);
@@ -145,6 +147,8 @@ async function apiFetchInner<T>(
     noteAuthSuccess();
   }
   if (res.status === 429) {
+    const retrySec = Number(res.headers.get("Retry-After") ?? "1");
+    notifyRateLimited(retrySec);
     if (retries >= 2) {
       const body = await readErrorBody(res);
       throw new ApiError(
@@ -153,8 +157,7 @@ async function apiFetchInner<T>(
         messageFromBody(body, "too many requests, please try again shortly"),
       );
     }
-    const retry = Number(res.headers.get("Retry-After") ?? "1") * 1000;
-    await new Promise((r) => setTimeout(r, retry));
+    await new Promise((r) => setTimeout(r, retrySec * 1000));
     return apiFetchInner<T>(path, init, retries + 1, schema);
   }
   if (!res.ok) {

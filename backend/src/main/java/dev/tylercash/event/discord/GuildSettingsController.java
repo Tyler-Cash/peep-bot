@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Guild", description = "Discord guild info")
 public class GuildSettingsController {
 
-    private static final Set<Integer> ALLOWED_RATE_LIMIT_VALUES = Set.of(3, 5, 7, 10);
+    private static final Set<Integer> ALLOWED_RATE_LIMIT_VALUES = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
     private final GuildRepository guildRepository;
     private final GuildMembershipService guildMembershipService;

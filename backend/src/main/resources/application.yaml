@@ -12,9 +12,9 @@ dev.tylercash:
     protocol: https
     path: /
   rate-limit:
-    read-capacity: 60
-    read-refill-seconds: 60
-    write-capacity: 5
+    read-capacity: 300
+    read-refill-seconds: 30
+    write-capacity: 20
     write-refill-seconds: 60
   rewind:
     enabled: true

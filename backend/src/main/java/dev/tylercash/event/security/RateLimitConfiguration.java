@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "dev.tylercash.rate-limit")
 public class RateLimitConfiguration {
-    private int readCapacity = 60;
-    private int readRefillSeconds = 60;
+    private int readCapacity = 300;
+    private int readRefillSeconds = 30;
     private int writeCapacity = 20;
     private int writeRefillSeconds = 60;
 }

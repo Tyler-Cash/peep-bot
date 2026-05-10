@@ -23,6 +23,56 @@ export function Peepo({ size = 28, hue = "#7BC24F", className }: PeepoProps) {
   );
 }
 
+export function PeepoDead({ size = 120, hue = "#7BC24F" }: PeepoProps) {
+  // Belly-up frog: x-eyes, lolling tongue. Used for fatal/rate-limited UI.
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden>
+      <ellipse cx="60" cy="92" rx="34" ry="6" fill="#0E100D" opacity="0.18" />
+      <g transform="translate(60 64) rotate(-8) translate(-60 -64)">
+        <ellipse cx="60" cy="64" rx="42" ry="28" fill={hue} />
+        <ellipse cx="60" cy="74" rx="30" ry="14" fill="#fff" opacity="0.22" />
+        <ellipse cx="42" cy="48" rx="11" ry="9" fill={hue} />
+        <ellipse cx="78" cy="48" rx="11" ry="9" fill={hue} />
+        <path
+          d="M36 44l12 8M48 44l-12 8"
+          stroke="#0E100D"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M72 44l12 8M84 44l-12 8"
+          stroke="#0E100D"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M52 70 q8 10 16 0 q0 8 -3 12 q-5 4 -10 0 q-3 -4 -3 -12 z"
+          fill="#E27E96"
+          stroke="#0E100D"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <circle cx="40" cy="60" r="2.5" fill="#F4A9B6" opacity="0.7" />
+        <circle cx="80" cy="60" r="2.5" fill="#F4A9B6" opacity="0.7" />
+        <path
+          d="M22 70 q-6 -2 -8 -8"
+          stroke="#0E100D"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M98 70 q6 -2 8 -8"
+          stroke="#0E100D"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
 export function PeepoSleep({ size = 80, hue = "#7BC24F" }: PeepoProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 80 80" aria-hidden>

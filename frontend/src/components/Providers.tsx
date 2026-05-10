@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { SWRConfig } from "swr";
 import { localStorageProvider } from "@/lib/swrCache";
 import { isDevModeActive } from "@/lib/devMode";
+import { RateLimitModal } from "@/components/RateLimitModal";
 
 const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 
@@ -49,6 +50,7 @@ export function Providers({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      <RateLimitModal />
     </SWRConfig>
   );
 }
