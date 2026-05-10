@@ -14,6 +14,12 @@ import type {
   LocationLink,
   Hover,
   MarkupContent,
+  SymbolInformation,
+  WorkspaceSymbol,
+  CallHierarchyItem,
+  CallHierarchyIncomingCall,
+  CallHierarchyOutgoingCall,
+  Diagnostic,
 } from "vscode-languageserver-protocol";
 import { REPO_ROOT } from "./core.js";
 
@@ -67,6 +73,7 @@ class LspClient {
   private projectLoaded = false;
   private projectLoadedPromise: Promise<void>;
   private resolveProjectLoaded!: () => void;
+  private diagnostics = new Map<string, Diagnostic[]>();
 
   constructor(private opts: LspClientOptions) {
     this.child = spawn(opts.command, opts.args, { cwd: REPO_ROOT });
@@ -88,6 +95,12 @@ class LspClient {
       if (params?.value?.kind === "end") markReady();
       if (opts.isReadyNotification?.("$/progress", params)) markReady();
     });
+    this.connection.onNotification(
+      "textDocument/publishDiagnostics",
+      (params: { uri: string; diagnostics: Diagnostic[] }) => {
+        this.diagnostics.set(params.uri, params.diagnostics);
+      },
+    );
     this.connection.onUnhandledNotification((n) => {
       if (opts.isReadyNotification?.(n.method, n.params)) markReady();
     });
@@ -111,8 +124,10 @@ class LspClient {
             dynamicRegistration: false,
             contentFormat: ["markdown", "plaintext"],
           },
+          publishDiagnostics: { relatedInformation: true },
+          callHierarchy: { dynamicRegistration: false },
         },
-        workspace: { workspaceFolders: true },
+        workspace: { workspaceFolders: true, symbol: { dynamicRegistration: false } },
         window: { workDoneProgress: true },
         ...(this.opts.extraCapabilities ?? {}),
       },
@@ -143,7 +158,11 @@ class LspClient {
     return uri;
   }
 
-  async references(uri: string, pos: LspPosition): Promise<Location[]> {
+  async references(
+    uri: string,
+    pos: LspPosition,
+    opts: { includeDeclaration?: boolean } = {},
+  ): Promise<Location[]> {
     await this.initPromise;
     await this.projectLoadedPromise;
     const result = await this.connection.sendRequest<Location[] | null>(
@@ -151,10 +170,66 @@ class LspClient {
       {
         textDocument: { uri },
         position: pos,
-        context: { includeDeclaration: true },
+        context: { includeDeclaration: opts.includeDeclaration ?? true },
       },
     );
     return result ?? [];
+  }
+
+  async workspaceSymbol(query: string): Promise<(SymbolInformation | WorkspaceSymbol)[]> {
+    await this.initPromise;
+    await this.projectLoadedPromise;
+    const result = await this.connection.sendRequest<
+      (SymbolInformation | WorkspaceSymbol)[] | null
+    >("workspace/symbol", { query });
+    return result ?? [];
+  }
+
+  async prepareCallHierarchy(
+    uri: string,
+    pos: LspPosition,
+  ): Promise<CallHierarchyItem[]> {
+    await this.initPromise;
+    await this.projectLoadedPromise;
+    const result = await this.connection.sendRequest<CallHierarchyItem[] | null>(
+      "textDocument/prepareCallHierarchy",
+      { textDocument: { uri }, position: pos },
+    );
+    return result ?? [];
+  }
+
+  async incomingCalls(item: CallHierarchyItem): Promise<CallHierarchyIncomingCall[]> {
+    await this.initPromise;
+    await this.projectLoadedPromise;
+    const result = await this.connection.sendRequest<
+      CallHierarchyIncomingCall[] | null
+    >("callHierarchy/incomingCalls", { item });
+    return result ?? [];
+  }
+
+  async outgoingCalls(item: CallHierarchyItem): Promise<CallHierarchyOutgoingCall[]> {
+    await this.initPromise;
+    await this.projectLoadedPromise;
+    const result = await this.connection.sendRequest<
+      CallHierarchyOutgoingCall[] | null
+    >("callHierarchy/outgoingCalls", { item });
+    return result ?? [];
+  }
+
+  /** Latest diagnostics published for a URI. Empty array if none. */
+  diagnosticsFor(uri: string): Diagnostic[] {
+    return this.diagnostics.get(uri) ?? [];
+  }
+
+  /** Iterate all diagnostics by URI. */
+  allDiagnostics(): IterableIterator<[string, Diagnostic[]]> {
+    return this.diagnostics.entries();
+  }
+
+  /** Wait for the server to be considered ready (initialize + project load). */
+  async whenReady(): Promise<void> {
+    await this.initPromise;
+    await this.projectLoadedPromise;
   }
 
   async definition(

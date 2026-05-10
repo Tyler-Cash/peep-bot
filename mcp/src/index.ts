@@ -31,11 +31,20 @@ import { dbSchemaTool } from "./dbSchema.js";
 import { repoOverview } from "./overview.js";
 import {
   getClientForFile,
+  getTsClient,
+  getJavaClient,
+  isJdtlsAvailable,
   isLspSupported,
   langOf,
   uriToRelative,
   hoverToText,
 } from "./lsp.js";
+import type {
+  Diagnostic,
+  CallHierarchyItem,
+  SymbolInformation,
+  WorkspaceSymbol,
+} from "vscode-languageserver-protocol";
 import { readAllReports, formatSummary } from "./junit.js";
 import { testAffinityReport, testMocksReport } from "./testInfra.js";
 import { dbInfo, dbQuery } from "./dbQuery.js";
@@ -192,7 +201,7 @@ server.registerTool(
   "find_references",
   {
     description:
-      "Word-boundary text search for usages of a name. Fast but text-only; pair with find_symbol for the definition site.",
+      "Word-boundary text search for usages of a name. Text-only; matches anywhere the name appears as a word (including comments and docs). For Java/TS/TSX/JS/JSX, prefer lsp_references — it resolves true semantic references across imports and rebinding. This tool is the right fallback for .yaml / .md / .sql / .properties or when you specifically want to find string occurrences (e.g. Spring property names referenced in YAML).",
     inputSchema: {
       name: z.string(),
       glob: z.string().optional(),
@@ -259,6 +268,62 @@ server.registerTool(
     return textResult(truncateLines(lines, 200));
   },
 );
+
+// ---------- LSP helpers ----------
+
+const SYMBOL_KINDS: Record<number, string> = {
+  1: "file", 2: "module", 3: "namespace", 4: "package", 5: "class", 6: "method",
+  7: "property", 8: "field", 9: "constructor", 10: "enum", 11: "interface",
+  12: "function", 13: "variable", 14: "constant", 15: "string", 16: "number",
+  17: "boolean", 18: "array", 19: "object", 20: "key", 21: "null",
+  22: "enum-member", 23: "struct", 24: "event", 25: "operator", 26: "type-param",
+};
+function symbolKindName(k: number | undefined): string {
+  return k !== undefined && SYMBOL_KINDS[k] ? SYMBOL_KINDS[k] : "?";
+}
+
+const SEVERITY_RANK: Record<string, number> = {
+  error: 1, warning: 2, info: 3, hint: 4, all: 5,
+};
+function severityName(s: number | undefined): "error" | "warning" | "info" | "hint" {
+  if (s === 1) return "error";
+  if (s === 2) return "warning";
+  if (s === 3) return "info";
+  return "hint";
+}
+function formatDiagnostics(path: string, diags: Diagnostic[]): string {
+  const lines = [`${path}: ${diags.length} diagnostic${diags.length === 1 ? "" : "s"}`];
+  for (const d of diags) {
+    const sev = severityName(d.severity);
+    const where = `${d.range.start.line + 1}:${d.range.start.character + 1}`;
+    const code = d.code !== undefined ? ` [${d.code}]` : "";
+    const src = d.source ? ` (${d.source})` : "";
+    lines.push(`  ${sev}${code}${src} at ${where}: ${d.message.split("\n")[0].slice(0, 240)}`);
+  }
+  return lines.join("\n");
+}
+function summarizeAllDiags(
+  client: Awaited<ReturnType<typeof getTsClient>>,
+  minSev: number,
+): string[] {
+  const out: string[] = [];
+  for (const [uri, diags] of client.allDiagnostics()) {
+    const filtered = diags.filter((d) => SEVERITY_RANK[severityName(d.severity)] >= minSev);
+    if (filtered.length === 0) continue;
+    out.push(formatDiagnostics(uriToRelative(uri), filtered));
+  }
+  return out;
+}
+
+// Pre-warm LSP servers on first MCP startup so the first user-facing call
+// doesn't pay the cold-start cost. Background, non-blocking.
+function prewarmLsp() {
+  getTsClient().catch(() => {});
+  if (isJdtlsAvailable() && !process.env.PEEP_BOT_DISABLE_JDTLS) {
+    getJavaClient().catch(() => {});
+  }
+}
+prewarmLsp();
 
 // ---------- LSP-backed tools (TypeScript/JavaScript) ----------
 
@@ -346,22 +411,33 @@ const lspInputSchema = {
   lang: z.enum(["ts", "java", "auto"]).optional(),
 };
 
+const lspInputSchemaWithDecl = {
+  ...lspInputSchema,
+  includeDeclaration: z.boolean().optional(),
+};
+
+const lspInputSchemaWithDirection = {
+  ...lspInputSchema,
+  direction: z.enum(["incoming", "outgoing"]).optional(),
+};
+
 server.registerTool(
   "lsp_references",
   {
     description:
-      "True (semantic) references via a language server (typescript-language-server for TS/TSX/JS/JSX, jdtls for Java). Supply either an exact position (path, line, character - 0-indexed) or a symbol name. When given a name, set lang='ts'|'java'|'auto' (default auto: try Java glob first, then TS) or pass an explicit glob. First Java call costs ~30-90s while jdtls indexes the project; subsequent calls are fast.",
-    inputSchema: lspInputSchema,
+      "True (semantic) references via a language server (typescript-language-server for TS/TSX/JS/JSX, jdtls for Java). Supply either an exact position (path, line, character - 0-indexed) or a symbol name. When given a name, set lang='ts'|'java'|'auto' (default auto: try Java glob first, then TS) or pass an explicit glob. Set includeDeclaration=false to exclude the definition site from results. First Java call costs ~18-35s while jdtls indexes the project; subsequent calls are fast.",
+    inputSchema: lspInputSchemaWithDecl,
   },
   async (args) => {
     const pos = await resolvePosition(args);
     if ("error" in pos) return textResult(pos.error);
     const client = await getClientForFile(pos.absPath);
     const uri = await client.ensureOpen(pos.absPath);
-    const refs = await client.references(uri, {
-      line: pos.line,
-      character: pos.character,
-    });
+    const refs = await client.references(
+      uri,
+      { line: pos.line, character: pos.character },
+      { includeDeclaration: args.includeDeclaration ?? true },
+    );
     if (refs.length === 0) return textResult("No references.");
     const lines = refs.map((r) => {
       const file = uriToRelative(r.uri);
@@ -371,6 +447,157 @@ server.registerTool(
     });
     lines.sort();
     return textResult(truncateLines(lines, 300));
+  },
+);
+
+server.registerTool(
+  "lsp_workspace_symbol",
+  {
+    description:
+      "Fuzzy 'find me everything matching <query>' across the project via a language server. Set lang='ts'|'java' to query a single server, or 'auto'/'both' (default) to merge results from both. Returns kind, name, container, and location — much broader than find_symbol's exact-name match. Each server applies its own fuzzy/substring matching.",
+    inputSchema: {
+      query: z.string(),
+      lang: z.enum(["ts", "java", "auto", "both"]).optional(),
+      limit: z.number().int().positive().optional(),
+    },
+  },
+  async ({ query, lang, limit }) => {
+    const which = lang ?? "auto";
+    const max = limit ?? 200;
+    const sources: Promise<{ name: string; result: (SymbolInformation | WorkspaceSymbol)[] }>[] = [];
+    if (which === "ts" || which === "auto" || which === "both") {
+      sources.push(
+        getTsClient().then(async (c) => ({ name: "ts", result: await c.workspaceSymbol(query) })),
+      );
+    }
+    if ((which === "java" || which === "auto" || which === "both") && isJdtlsAvailable()) {
+      sources.push(
+        getJavaClient().then(async (c) => ({ name: "java", result: await c.workspaceSymbol(query) })),
+      );
+    }
+    const all = await Promise.all(sources);
+    const lines: string[] = [];
+    for (const { name, result } of all) {
+      lines.push(`# ${name} (${result.length} hits)`);
+      for (const sym of result.slice(0, max)) {
+        const loc = (sym as { location?: { uri?: string; range?: { start: { line: number; character: number } } } }).location;
+        const uri = loc?.uri;
+        const range = loc?.range;
+        const where = uri
+          ? range
+            ? `${uriToRelative(uri)}:${range.start.line + 1}:${range.start.character + 1}`
+            : uriToRelative(uri)
+          : "(no location)";
+        const container = sym.containerName ? ` [${sym.containerName}]` : "";
+        const kind = symbolKindName(sym.kind);
+        lines.push(`  ${kind} ${sym.name}${container}  ${where}`);
+      }
+      if (result.length > max) lines.push(`  ... ${result.length - max} more`);
+    }
+    if (lines.length === 0) return textResult("No matches.");
+    return textResult(truncateLines(lines, 500));
+  },
+);
+
+server.registerTool(
+  "lsp_call_hierarchy",
+  {
+    description:
+      "Who calls X (incoming) or what does X call (outgoing). Two-step LSP query: prepares a call-hierarchy item at the position, then asks for incoming or outgoing calls. Direction defaults to 'incoming' which is the usual 'find callers' question — strictly more focused than lsp_references because it filters out non-call references like type annotations, imports, or generic args. Same position resolution as lsp_references.",
+    inputSchema: lspInputSchemaWithDirection,
+  },
+  async (args) => {
+    const direction = args.direction ?? "incoming";
+    const pos = await resolvePosition(args);
+    if ("error" in pos) return textResult(pos.error);
+    const client = await getClientForFile(pos.absPath);
+    const uri = await client.ensureOpen(pos.absPath);
+    const items = await client.prepareCallHierarchy(uri, {
+      line: pos.line,
+      character: pos.character,
+    });
+    if (items.length === 0) return textResult("Position is not a call-hierarchy target.");
+    const lines: string[] = [];
+    for (const item of items) {
+      const itemLoc = `${uriToRelative(item.uri)}:${item.range.start.line + 1}:${item.range.start.character + 1}`;
+      lines.push(`${item.name}  (${itemLoc})`);
+      if (direction === "incoming") {
+        const calls = await client.incomingCalls(item);
+        if (calls.length === 0) {
+          lines.push("  (no incoming calls)");
+          continue;
+        }
+        lines.push(`  incoming (${calls.length}):`);
+        for (const ic of calls.slice(0, 100)) {
+          const from = ic.from;
+          const where = `${uriToRelative(from.uri)}:${from.range.start.line + 1}:${from.range.start.character + 1}`;
+          const callSites = ic.fromRanges
+            .slice(0, 3)
+            .map((r) => `${r.start.line + 1}:${r.start.character + 1}`)
+            .join(", ");
+          lines.push(`    ${from.name}${from.detail ? ` ${from.detail}` : ""}  ${where}${callSites ? `  (calls at ${callSites})` : ""}`);
+        }
+        if (calls.length > 100) lines.push(`    ... ${calls.length - 100} more`);
+      } else {
+        const calls = await client.outgoingCalls(item);
+        if (calls.length === 0) {
+          lines.push("  (no outgoing calls)");
+          continue;
+        }
+        lines.push(`  outgoing (${calls.length}):`);
+        for (const oc of calls.slice(0, 100)) {
+          const to = oc.to;
+          const where = `${uriToRelative(to.uri)}:${to.range.start.line + 1}:${to.range.start.character + 1}`;
+          lines.push(`    ${to.name}${to.detail ? ` ${to.detail}` : ""}  ${where}`);
+        }
+        if (calls.length > 100) lines.push(`    ... ${calls.length - 100} more`);
+      }
+    }
+    return textResult(lines.join("\n"));
+  },
+);
+
+server.registerTool(
+  "lsp_diagnostics",
+  {
+    description:
+      "Compile / type / lint diagnostics for a file as the language server currently sees them (TS via tsserver, Java via jdtls). Captures the publishDiagnostics notifications the LSPs already emit. Useful as a cheap 'did my edit break anything?' check before running a full build. Pass either `path` (single file) or omit for a workspace-wide summary of files that currently have any diagnostics. The file must be opened first — calling lsp_hover/references/definition on a file opens it. lang controls which server to consult when no path is given.",
+    inputSchema: {
+      path: z.string().optional(),
+      lang: z.enum(["ts", "java", "both"]).optional(),
+      severity: z.enum(["error", "warning", "info", "hint", "all"]).optional(),
+    },
+  },
+  async ({ path, lang, severity }) => {
+    const sevFilter = severity ?? "all";
+    const minSev = SEVERITY_RANK[sevFilter];
+    if (path) {
+      const abs = resolveInRepo(path);
+      if (!existsSync(abs)) return textResult(`File not found: ${path}`);
+      if (!isLspSupported(abs)) return textResult(`Unsupported file extension: ${path}`);
+      const client = await getClientForFile(abs);
+      const uri = await client.ensureOpen(abs);
+      // Give the server a moment to publish diagnostics for this file.
+      await new Promise((r) => setTimeout(r, 800));
+      const diags = client
+        .diagnosticsFor(uri)
+        .filter((d) => SEVERITY_RANK[severityName(d.severity)] >= minSev);
+      if (diags.length === 0) return textResult(`No ${sevFilter !== "all" ? sevFilter + " " : ""}diagnostics for ${path}.`);
+      return textResult(formatDiagnostics(path, diags));
+    }
+    // Workspace summary across whichever servers are running.
+    const which = lang ?? "both";
+    const out: string[] = [];
+    if (which === "ts" || which === "both") {
+      const ts = await getTsClient();
+      out.push(...summarizeAllDiags(ts, minSev));
+    }
+    if ((which === "java" || which === "both") && isJdtlsAvailable()) {
+      const java = await getJavaClient();
+      out.push(...summarizeAllDiags(java, minSev));
+    }
+    if (out.length === 0) return textResult("No diagnostics outstanding (or no files have been opened yet).");
+    return textResult(truncateLines(out, 300));
   },
 );
 
