@@ -66,6 +66,7 @@ class ListenerInvocationRepositoryTest {
     @BeforeEach
     void setUp() {
         jdbc.execute("DELETE FROM listener_invocation");
+        jdbc.execute("DELETE FROM event_classification_attempt");
         jdbc.execute("DELETE FROM event_category");
         jdbc.execute("DELETE FROM attendance");
         jdbc.execute("DELETE FROM event");

@@ -156,10 +156,12 @@ class EventLifecycleSagaIntegrationTest {
     // ------------------------------------------------------------------
 
     private static final long POLL_INTERVAL_MS = 50;
-    // SyncTaskExecutor drives listeners on the caller's thread, so by the time
-    // emitTick()/createEvent() returns, the chain has already run. 5s is a generous
-    // safety net for any transactional flush.
-    private static final long TIMEOUT_MS = 5_000;
+    // The SyncEventBusConfig override aims to drive listeners on the caller's thread,
+    // but Spring's bean overriding does not always replace the production
+    // `eventBusExecutor` (depends on @Configuration processing order under @SpringBootTest).
+    // Under parallel-test load the async event-bus pool can sit queued for several
+    // seconds; budget enough headroom so the saga doesn't flake when bundled.
+    private static final long TIMEOUT_MS = 30_000;
 
     private void awaitState(UUID eventId, EventState expected) throws InterruptedException {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
