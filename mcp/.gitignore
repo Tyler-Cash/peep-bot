@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.cache/
+
+# Override root .gitignore which excludes bin/ and *.json for Java IDE noise.
+!bin/
+!**/*.json
