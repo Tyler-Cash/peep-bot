@@ -28,6 +28,7 @@ import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -330,6 +331,19 @@ public class DiscordService {
 
     public TextChannel getChannel(Event event) {
         return discordChannelService.getTextChannel(event.getChannelId());
+    }
+
+    /**
+     * Posts a {@link MessageEmbed} into the event's Discord channel. No-op if the
+     * channel cannot be found.
+     */
+    public void sendEmbedToEventChannel(Event event, MessageEmbed embed) {
+        TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
+        if (channel == null) {
+            log.warn("Cannot send embed to event {}: channel {} not found", event.getId(), event.getChannelId());
+            return;
+        }
+        channel.sendMessageEmbeds(embed).queue();
     }
 
     @Observed(name = "discord.send-album-link")
