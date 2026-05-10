@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "haz-1",
+        "displayName": "George St full closure",
+        "description": "Full closure southbound between Hay and Liverpool.",
+        "mainCategory": "roadClosure",
+        "start": "2026-05-17T06:00:00+10:00",
+        "end": "2026-05-17T22:00:00+10:00",
+        "webLinkUrl": "https://livetraffic.com/desktop.html#haz-1",
+        "roads": [{"classOfRoad": "arterial"}]
+      },
+      "geometry": {"type": "Point", "coordinates": [151.2070, -33.8770]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "haz-2",
+        "displayName": "Minor crash",
+        "mainCategory": "incident",
+        "start": "2026-05-17T07:00:00+10:00",
+        "end": "2026-05-17T07:30:00+10:00",
+        "webLinkUrl": "https://livetraffic.com/desktop.html#haz-2"
+      },
+      "geometry": {"type": "Point", "coordinates": [151.2010, -33.8650]}
+    }
+  ]
+}

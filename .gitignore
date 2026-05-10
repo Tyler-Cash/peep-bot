@@ -57,6 +57,7 @@ bin/
 *.json
 !.releaserc.json
 !backend/openapi.json
+!backend/src/test/resources/tfnsw/*.json
 *.csv
 npm_output.log
 ### Worktrees and tooling ###
