@@ -141,3 +141,12 @@ management:
     sampling:
       probability: 1.0 # 100% sampling — appropriate for low-traffic hobby project
 
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      tfnsw:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
