@@ -12,6 +12,15 @@ export const NAV_TABS: NavTab[] = [
   { label: "admin", href: "/admin", requiresAdmin: true },
 ];
 
+// Hand-stuck sticker rotation per tab. Stable so the layout doesn't jitter
+// across renders. Admin tab gets a tiny tilt to match the family.
+export const TAB_TILTS: Record<string, number> = {
+  "/": -1.4,
+  "/gallery": 0.8,
+  "/rewind": -0.5,
+  "/admin": 1.2,
+};
+
 export function isAdminPath(pathname: string) {
   return pathname === "/admin" || pathname.startsWith("/admin/");
 }

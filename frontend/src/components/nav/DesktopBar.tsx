@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Chunky } from "@/components/ui/Chunky";
 import { logout, useActiveGuild, useCurrentUser, useGuildFeatures, useGuilds } from "@/lib/hooks";
 import { GuildSwitcher } from "./GuildSwitcher";
-import { NAV_TABS, filterNavTabs, isTabActive } from "./navTabs";
+import { NAV_TABS, TAB_TILTS, filterNavTabs, isTabActive } from "./navTabs";
 
 export function DesktopBar({ pathname, adminMode }: { pathname: string; adminMode: boolean }) {
   const { data: user } = useCurrentUser();
@@ -22,22 +22,34 @@ export function DesktopBar({ pathname, adminMode }: { pathname: string; adminMod
 
   return (
     <>
-      <div className="hidden md:flex ml-4 items-center gap-2">
+      <div className="hidden md:flex ml-1.5 items-center gap-2.5">
         {showChrome && visibleTabs.map((t) => {
           const active = isTabActive(pathname, t.href);
+          const tilt = TAB_TILTS[t.href] ?? 0;
+          // Press shadow palette swaps with the bar background so the chunky
+          // shadow stays visible against ink in admin mode.
+          const pressShadow = adminMode
+            ? "active:shadow-[1px_1px_0_#F5F1E8]"
+            : "active:shadow-[1px_1px_0_#0E100D]";
+          const restShadow = adminMode
+            ? "shadow-[2px_2px_0_#F5F1E8]"
+            : "shadow-[2px_2px_0_#0E100D]";
           return (
             <Link
               key={t.href}
               href={t.href}
+              style={{ transform: `rotate(${tilt}deg)` }}
               className={clsx(
-                "flex items-center justify-center h-[46px] rounded-chip px-5 text-[14.5px] font-extrabold tracking-[-0.01em] border-[1.5px]",
-                active
-                  ? adminMode
+                "inline-flex items-center justify-center h-[42px] rounded-[11px] px-[18px] text-[14px] font-extrabold tracking-[-0.01em] border-[1.5px] lowercase gap-2",
+                "transition-[box-shadow]",
+                pressShadow,
+                adminMode
+                  ? active
                     ? "bg-paper text-ink border-paper shadow-rest"
-                    : "bg-ink text-paper border-ink shadow-rest"
-                  : adminMode
-                    ? "bg-transparent text-paper border-transparent hover:bg-paper/10"
-                    : "bg-transparent text-ink border-transparent hover:bg-paper2",
+                    : clsx("bg-ink text-paper border-paper hover:bg-ink2", restShadow)
+                  : active
+                    ? "bg-leaf text-ink border-ink shadow-rest"
+                    : clsx("bg-white text-ink border-ink hover:bg-paper", restShadow),
               )}
             >
               {t.label}
@@ -54,7 +66,7 @@ export function DesktopBar({ pathname, adminMode }: { pathname: string; adminMod
             <GuildSwitcher />
             {!adminMode && hasGuilds && (
               <Link href="/events/new">
-                <Chunky variant="leaf" className="h-[46px] px-5 text-[14.5px]">
+                <Chunky variant="leaf" className="h-[42px] px-4 text-[14px]">
                   + new event
                 </Chunky>
               </Link>
@@ -65,7 +77,7 @@ export function DesktopBar({ pathname, adminMode }: { pathname: string; adminMod
           <>
             <Avatar
               who={{ name: user.displayName, avatarUrl: user.avatarUrl }}
-              size={46}
+              size={42}
             />
             <button
               onClick={() => logout()}

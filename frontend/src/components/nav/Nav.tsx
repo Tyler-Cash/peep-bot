@@ -43,17 +43,22 @@ export function Nav() {
         <Link
           href={adminMode ? "/admin" : "/"}
           className={clsx(
-            "flex items-center gap-2.5 min-w-0",
-            adminMode && "text-paper",
+            "inline-flex items-center gap-2.5 min-w-0 rounded-[12px] border-[1.5px] py-[5px] pl-[5px] pr-3.5 sm:pr-4 transition-[box-shadow]",
+            adminMode
+              ? "bg-paper border-paper text-ink shadow-[2px_2px_0_#7BC24F] active:shadow-[1px_1px_0_#7BC24F]"
+              : "bg-ink border-ink text-paper shadow-[2px_2px_0_#4E8A2C] active:shadow-[1px_1px_0_#4E8A2C]",
           )}
         >
-          <span
-            className={clsx(
-              "inline-flex items-center justify-center w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] rounded-card border-[1.5px] shadow-rest shrink-0 overflow-hidden",
-              adminMode ? "bg-paper border-paper" : "bg-leaf border-ink",
-            )}
-          >
-            <Image src="/peepos/peepo.png" alt="" aria-hidden width={36} height={36} className="w-[36px] h-[36px] object-contain" priority />
+          <span className="inline-flex items-center justify-center w-[38px] h-[38px] shrink-0 overflow-visible">
+            <Image
+              src="/peepos/peepo.png"
+              alt=""
+              aria-hidden
+              width={36}
+              height={36}
+              className="w-[36px] h-[36px] object-contain"
+              priority
+            />
           </span>
           <span className="flex flex-col leading-none min-w-0">
             <span className="text-[16px] sm:text-[17px] font-extrabold tracking-[-0.02em] truncate">
@@ -61,8 +66,8 @@ export function Nav() {
             </span>
             <span
               className={clsx(
-                "hidden sm:inline text-[10.5px] font-extrabold tracking-[0.18em] mt-0.5",
-                adminMode ? "text-paper/70" : "text-mute",
+                "hidden sm:inline text-[10.5px] font-extrabold tracking-[0.18em] mt-[3px]",
+                adminMode ? "text-mute" : "text-muteDk",
               )}
             >
               {adminMode ? "ADMIN MODE" : "PLANS, SORTED"}
