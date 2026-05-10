@@ -18,7 +18,7 @@
     "@ast-grep/cli": "^0.32.3",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@vscode/ripgrep": "^1.18.0",
-    "fast-xml-parser": "^4.5.0",
+    "fast-xml-parser": "^5.7.0",
     "pg": "^8.13.1",
     "typescript-language-server": "^5.0.0",
     "vscode-jsonrpc": "^8.2.1",
