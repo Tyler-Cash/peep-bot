@@ -32,6 +32,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
@@ -51,7 +58,23 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
         })
 @ActiveProfiles("local")
 @DirtiesContext(classMode = ClassMode.AFTER_CLASS)
+@Import(EventLifecycleSagaIntegrationTest.SyncEventBusConfig.class)
 class EventLifecycleSagaIntegrationTest {
+
+    /**
+     * Run dispatcher tasks on the caller's thread instead of the {@code event-bus-N} pool. The
+     * listener chain (EventCreated → EventChannelReady → … → Immich Album Post) becomes a deep
+     * synchronous recursion driven by Spring's AFTER_COMMIT handler, which lets each
+     * {@code awaitOutboxSuccess} resolve in milliseconds instead of polling for seconds.
+     */
+    @TestConfiguration
+    static class SyncEventBusConfig {
+        @Bean
+        @Primary
+        AsyncTaskExecutor eventBusExecutor() {
+            return new TaskExecutorAdapter(new SyncTaskExecutor());
+        }
+    }
 
     @MockitoBean
     JDA jda;
@@ -132,10 +155,11 @@ class EventLifecycleSagaIntegrationTest {
     // Polling helpers (hand-rolled — Awaitility is not on classpath)
     // ------------------------------------------------------------------
 
-    private static final long POLL_INTERVAL_MS = 100;
-    // 60s per await: CI runners are noticeably slower than local for the async outbox
-    // chain. The whole saga's @Timeout(120s) caps total runtime.
-    private static final long TIMEOUT_MS = 60_000;
+    private static final long POLL_INTERVAL_MS = 50;
+    // SyncTaskExecutor drives listeners on the caller's thread, so by the time
+    // emitTick()/createEvent() returns, the chain has already run. 5s is a generous
+    // safety net for any transactional flush.
+    private static final long TIMEOUT_MS = 5_000;
 
     private void awaitState(UUID eventId, EventState expected) throws InterruptedException {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
@@ -181,7 +205,7 @@ class EventLifecycleSagaIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-    @Timeout(value = 300, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     void fullSaga_createsEventAndDrivesItThroughLifecycleToDeleted() throws InterruptedException {
         // ── Step 1: create the event ──────────────────────────────────────────────
         // Clock is at 2026-05-04T10:00Z. Schedule the event for 2026-05-04T17:00Z so
