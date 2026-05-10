@@ -17,7 +17,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -95,6 +98,10 @@ public class ContractService {
         contractRepo.save(contract);
     }
 
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public long trade(UUID contractId, UUID outcomeId, String snowflake, long coinAmount) {
         Contract contract = getOpenContract(contractId);
@@ -163,6 +170,10 @@ public class ContractService {
     }
 
     @CacheEvict(value = "openContracts", allEntries = true)
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public void resolveContract(UUID contractId, UUID winningOutcomeId, String resolverSnowflake) {
         Contract contract = getOpenContract(contractId);
@@ -240,6 +251,10 @@ public class ContractService {
     }
 
     @CacheEvict(value = "openContracts", allEntries = true)
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public void cancelContract(UUID contractId, String resolverSnowflake) {
         Contract contract = getOpenContract(contractId);

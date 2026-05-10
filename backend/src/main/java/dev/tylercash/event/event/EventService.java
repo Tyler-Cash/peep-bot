@@ -23,9 +23,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -71,6 +74,10 @@ public class EventService {
                 @CacheEvict(value = "eventDetail", key = "#event.id")
             })
     @Observed(name = "event.update")
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public Event updateEvent(Event event) {
         MDC.put("eventId", event.getId().toString());
@@ -149,6 +156,10 @@ public class EventService {
                 @CacheEvict(value = "eventDetail", key = "#id")
             })
     @Observed(name = "event.remove-attendee")
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public void removeAttendee(UUID id, String snowflake, String name) {
         MDC.put("eventId", id.toString());
@@ -168,6 +179,10 @@ public class EventService {
                 @CacheEvict(value = "eventDetail", key = "#id")
             })
     @Observed(name = "event.create-private-channel")
+    @Retryable(
+            retryFor = ObjectOptimisticLockingFailureException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
     @Transactional
     public void createPrivateChannel(UUID id) {
         MDC.put("eventId", id.toString());
