@@ -51,8 +51,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @ActiveProfiles("local")
 class CsrfHardeningIntegrationTest {
 
-    private static final long GUILD_1 = 411L;
-    private static final String USER_IN_GUILD_1 = "411111";
+    private static final long GUILD_1 = dev.tylercash.event.test.TestIds.nextLong();
+    private static final String USER_IN_GUILD_1 = dev.tylercash.event.test.TestIds.nextSnowflake();
 
     @MockitoBean
     JDA jda;
@@ -81,10 +81,7 @@ class CsrfHardeningIntegrationTest {
     }
 
     @BeforeEach
-    void seed() {
-        jdbc.execute("DELETE FROM guild_member");
-        jdbc.execute("DELETE FROM discord_user_cache");
-        discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Csrf A", "csrfa", GUILD_1);
+    void seed() {        discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Csrf A", "csrfa", GUILD_1);
     }
 
     /** Mutating endpoints that hit the CSRF filter — we don't need every one,

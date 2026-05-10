@@ -120,13 +120,6 @@ class EventLifecycleSagaIntegrationTest {
         when(immichService.getShareUrl(any())).thenReturn("https://share/stub");
 
         // EmbeddingService.classifyEvent is void — Mockito default (no-op) is fine
-
-        // Clean DB in dependency order
-        jdbc.execute("DELETE FROM event_tick_log");
-        jdbc.execute("DELETE FROM listener_invocation");
-        jdbc.execute("DELETE FROM event_category");
-        jdbc.execute("DELETE FROM attendance");
-        jdbc.execute("DELETE FROM event");
     }
 
     // ------------------------------------------------------------------

@@ -79,14 +79,7 @@ class EventTickSchedulerTest {
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(FIXED_NOW.toInstant());
-        when(clock.getZone()).thenReturn(FIXED_NOW.getZone());
-
-        jdbc.execute("DELETE FROM event_tick_log");
-        jdbc.execute("DELETE FROM listener_invocation");
-        jdbc.execute("DELETE FROM event_category");
-        jdbc.execute("DELETE FROM attendance");
-        jdbc.execute("DELETE FROM event");
-    }
+        when(clock.getZone()).thenReturn(FIXED_NOW.getZone());    }
 
     private Event saveEvent(ZonedDateTime dateTime, EventState state) {
         long id = messageIdCounter.incrementAndGet();

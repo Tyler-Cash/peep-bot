@@ -52,8 +52,8 @@ import org.springframework.web.server.ResponseStatusException;
 @ActiveProfiles("local")
 class RewindRbacIntegrationTest {
 
-    private static final long GUILD_1 = 111L;
-    private static final long GUILD_2 = 222L;
+    private static final long GUILD_1 = dev.tylercash.event.test.TestIds.nextLong();
+    private static final long GUILD_2 = dev.tylercash.event.test.TestIds.nextLong();
     private static final String GUILD_1_STR = String.valueOf(GUILD_1);
     private static final String GUILD_2_STR = String.valueOf(GUILD_2);
 
@@ -98,14 +98,6 @@ class RewindRbacIntegrationTest {
 
     @BeforeEach
     void seed() {
-        // Reset across methods: tests share the Testcontainers DB and the
-        // rewind cache, so without this both compound between methods.
-        jdbc.execute("DELETE FROM attendance");
-        jdbc.execute("DELETE FROM event_category");
-        jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM guild_member");
-        jdbc.execute("DELETE FROM discord_user_cache");
-        jdbc.execute("DELETE FROM guild");
         var rewindCache = cacheManager.getCache("rewind");
         if (rewindCache != null) rewindCache.clear();
 
