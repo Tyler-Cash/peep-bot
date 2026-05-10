@@ -43,24 +43,27 @@ public class ImmichAlbumPrepListener implements DurableEventListener<EventLifecy
             log.debug("Album already prepared for event '{}', skipping", event.getName());
             return;
         }
-        if (event.getImmichAlbumId() == null) {
-            immichService.createAlbum(event.getName(), event.getDescription()).ifPresent(event::setImmichAlbumId);
+        String albumId = event.getImmichAlbumId();
+        String shareKey = event.getImmichShareKey();
+        if (albumId == null) {
+            albumId = immichService
+                    .createAlbum(event.getName(), event.getDescription())
+                    .orElse(null);
         }
-        if (event.getImmichAlbumId() != null && event.getImmichShareKey() == null) {
-            immichService.createSharedLink(event.getImmichAlbumId()).ifPresent(event::setImmichShareKey);
+        if (albumId != null && shareKey == null) {
+            shareKey = immichService.createSharedLink(albumId).orElse(null);
         }
-        eventRepository.save(event);
-        if (event.getImmichAlbumId() != null && event.getImmichShareKey() != null) {
-            log.info(
-                    "Album prepared for event '{}': albumId={}, shareKey={}",
-                    event.getName(),
-                    event.getImmichAlbumId(),
-                    event.getImmichShareKey());
+        // Targeted update: only the two Immich columns this listener owns.
+        // Avoids clobbering name/description/state/etc. that an HTTP handler
+        // may have mutated while the Immich API calls above were in flight.
+        eventRepository.updateImmichAlbumDetails(event.getId(), albumId, shareKey);
+        if (albumId != null && shareKey != null) {
+            log.info("Album prepared for event '{}': albumId={}, shareKey={}", event.getName(), albumId, shareKey);
         } else {
             // Throw to signal failure — the dispatcher will record FAILED + retry.
             throw new IllegalStateException("Album preparation incomplete for event " + event.getId()
-                    + ": albumId=" + event.getImmichAlbumId()
-                    + ", shareKey=" + event.getImmichShareKey());
+                    + ": albumId=" + albumId
+                    + ", shareKey=" + shareKey);
         }
     }
 }

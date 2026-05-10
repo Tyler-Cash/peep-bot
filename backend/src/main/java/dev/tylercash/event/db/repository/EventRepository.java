@@ -10,9 +10,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, UUID> {
@@ -106,6 +108,33 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
                 .stream()
                 .findFirst();
     }
+
+    // ---------------------------------------------------------------------------------------
+    // Narrow column-level updates. Async lifecycle listeners that load an Event,
+    // make a slow external call (Ollama / Immich / Discord), and then save can
+    // silently overwrite fields touched concurrently by HTTP handlers. Use these
+    // to write *only* the columns the listener owns, leaving everything else
+    // untouched. Each method bumps `version` so any concurrent `save()` of a
+    // stale snapshot still surfaces as OptimisticLockException.
+    // ---------------------------------------------------------------------------------------
+
+    @Transactional
+    @Modifying
+    @Query("update Event e set e.state = :state, e.version = e.version + 1 where e.id = :id")
+    int updateState(@Param("id") UUID id, @Param("state") EventState state);
+
+    @Transactional
+    @Modifying
+    @Query(
+            "update Event e set e.immichAlbumId = :albumId, e.immichShareKey = :shareKey,"
+                    + " e.version = e.version + 1 where e.id = :id")
+    int updateImmichAlbumDetails(
+            @Param("id") UUID id, @Param("albumId") String albumId, @Param("shareKey") String shareKey);
+
+    @Transactional
+    @Modifying
+    @Query("update Event e set e.immichAlbumId = :albumId, e.version = e.version + 1 where e.id = :id")
+    int updateImmichAlbumId(@Param("id") UUID id, @Param("albumId") String albumId);
 
     // ---------------------------------------------------------------------------------------
     // Rewind aggregations. All queries optionally filter by year via

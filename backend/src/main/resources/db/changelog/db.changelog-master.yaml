@@ -1200,6 +1200,41 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: add version column to event for optimistic locking
+      author: tyler
+      comment: >
+        Adds a JPA @Version column to event so concurrent load-mutate-save
+        races (e.g. async lifecycle listeners vs. HTTP handlers) surface as
+        OptimisticLockException instead of silent last-write-wins data loss.
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
   - include:
       file: db/changelog/contract/db.changelog-contract.yaml
+
+  - changeSet:
+      id: add version column to contract for optimistic locking
+      author: tyler
+      comment: >
+        Mirrors the event @Version addition. Sequenced after the contract
+        changelog include because the table is created there.
+      changes:
+        - addColumn:
+            tableName: contract
+            columns:
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
 

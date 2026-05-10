@@ -40,21 +40,24 @@ class EventClassifyListenerTest {
         listener.handle(new EventLifecycleEvent.EventRolesReady(eventId));
 
         verify(embeddingService).classifyEvent(event);
-        assertThat(event.getState()).isEqualTo(EventState.CLASSIFY);
-        verify(eventRepository).save(event);
+        // Listener writes state via a narrow column update — never a full-row
+        // save() — so a slow embedding call can't clobber concurrent edits.
+        verify(eventRepository).updateState(event.getId(), EventState.CLASSIFY);
+        verify(eventRepository, never()).save(any(Event.class));
         verify(publisher).publish(new EventLifecycleEvent.EventClassified(event.getId()));
+        assertThat(event.getState()).isNotEqualTo(EventState.CLASSIFY);
     }
 
     @Test
-    void classificationException_isSwallowed_stateSetSaveAndPublishStillCalled() throws Exception {
+    void classificationException_isSwallowed_stateUpdatedAndPublishStillCalled() throws Exception {
         doThrow(new RuntimeException("embedding service unavailable"))
                 .when(embeddingService)
                 .classifyEvent(event);
 
         listener.handle(new EventLifecycleEvent.EventRolesReady(eventId));
 
-        assertThat(event.getState()).isEqualTo(EventState.CLASSIFY);
-        verify(eventRepository).save(event);
+        verify(eventRepository).updateState(event.getId(), EventState.CLASSIFY);
+        verify(eventRepository, never()).save(any(Event.class));
         verify(publisher).publish(new EventLifecycleEvent.EventClassified(event.getId()));
     }
 }

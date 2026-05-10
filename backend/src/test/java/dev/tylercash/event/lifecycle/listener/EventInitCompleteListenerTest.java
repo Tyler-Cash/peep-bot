@@ -61,13 +61,14 @@ class EventInitCompleteListenerTest {
 
         verify(immichService).createAlbum(any(), any());
         verify(immichService).createSharedLink("album-123");
-        assertThat(event.getImmichAlbumId()).isEqualTo("album-123");
-        assertThat(event.getImmichShareKey()).isEqualTo("share-key");
 
         verify(eventService).populateAttendance(event);
         verify(discordService).updateEventMessage(event);
-        assertThat(event.getState()).isEqualTo(EventState.PLANNED);
-        verify(eventRepository).save(event);
+        // Listener writes via narrow column updates so a slow Immich/Discord
+        // call can't clobber concurrent edits to other Event fields.
+        verify(eventRepository).updateImmichAlbumDetails(event.getId(), "album-123", "share-key");
+        verify(eventRepository).updateState(event.getId(), EventState.PLANNED);
+        verify(eventRepository, never()).save(any(Event.class));
         verify(publisher).publish(new EventLifecycleEvent.EventPlanned(event.getId()));
     }
 
@@ -83,8 +84,9 @@ class EventInitCompleteListenerTest {
 
         verify(eventService).populateAttendance(event);
         verify(discordService).updateEventMessage(event);
-        assertThat(event.getState()).isEqualTo(EventState.PLANNED);
-        verify(eventRepository).save(event);
+        verify(eventRepository).updateImmichAlbumDetails(event.getId(), "existing-album", "existing-key");
+        verify(eventRepository).updateState(event.getId(), EventState.PLANNED);
+        verify(eventRepository, never()).save(any(Event.class));
         verify(publisher).publish(new EventLifecycleEvent.EventPlanned(event.getId()));
     }
 
@@ -94,8 +96,8 @@ class EventInitCompleteListenerTest {
 
         listener.handle(new EventLifecycleEvent.EventClassified(eventId));
 
-        assertThat(event.getState()).isEqualTo(EventState.PLANNED);
-        verify(eventRepository).save(event);
+        verify(eventRepository).updateState(event.getId(), EventState.PLANNED);
+        verify(eventRepository, never()).save(any(Event.class));
         verify(publisher).publish(new EventLifecycleEvent.EventPlanned(event.getId()));
     }
 }

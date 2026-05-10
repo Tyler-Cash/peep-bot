@@ -26,6 +26,10 @@ public class Event {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;
 
+    @Version
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Long version;
+
     @NotNull
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private long messageId;

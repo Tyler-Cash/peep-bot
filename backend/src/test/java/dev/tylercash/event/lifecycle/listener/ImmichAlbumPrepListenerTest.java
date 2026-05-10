@@ -51,9 +51,10 @@ class ImmichAlbumPrepListenerTest {
 
         listener.handle(new EventLifecycleEvent.EventPreNotified(eventId));
 
-        assertThat(event.getImmichAlbumId()).isEqualTo("a");
-        assertThat(event.getImmichShareKey()).isEqualTo("k");
-        verify(eventRepository).save(event);
+        // Listener writes via a narrow column update so a slow Immich call
+        // can't clobber concurrent edits to other Event fields.
+        verify(eventRepository).updateImmichAlbumDetails(event.getId(), "a", "k");
+        verify(eventRepository, never()).save(any(Event.class));
     }
 
     @Test

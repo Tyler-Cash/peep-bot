@@ -89,10 +89,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Gallery Event");
 
         // Attach an Immich album ID to the event via the repository
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         ImmichAlbumResponse album = new ImmichAlbumResponse(ALBUM_ID, "Gallery Event", "asset-thumb-1", 5);
         when(immichService.getAlbumDetails(ALBUM_ID)).thenReturn(Optional.of(album));
@@ -112,10 +109,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         seedGuild(GUILD_A, true);
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Gallery Event Outage");
 
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         // getAlbumDetails returning empty simulates Immich being unreachable
         when(immichService.getAlbumDetails(ALBUM_ID)).thenReturn(Optional.empty());
@@ -141,10 +135,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
         // Seed event and record attendance so findGalleryEventByAlbumIdForUser returns a result
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Thumbnail Event");
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         String assetId = "asset-thumb-1";
         ImmichAlbumResponse album = new ImmichAlbumResponse(ALBUM_ID, "Gallery Event", assetId, 3);
@@ -170,10 +161,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         fixtures.registerMember(OTHER, GUILD_A, "Other", "other");
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Non-Attendee Thumbnail Event");
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/gallery/thumbnail/{albumId}", ALBUM_ID)
                         .with(authedAs(OTHER)))
@@ -218,10 +206,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Open Album Event");
 
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         ImmichAlbumResponse album = new ImmichAlbumResponse(ALBUM_ID, "Open Album Event", "asset-1", 4);
         when(immichService.getAlbumDetails(ALBUM_ID)).thenReturn(Optional.of(album));
@@ -244,10 +229,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         fixtures.registerMember(VIEWER, GUILD_A, "Viewer", "viewer");
         UUID eventId = fixtures.seedEvent(GUILD_A, VIEWER, "Private Album Event");
 
-        eventRepository.findById(eventId).ifPresent(event -> {
-            event.setImmichAlbumId(ALBUM_ID);
-            eventRepository.save(event);
-        });
+        eventRepository.updateImmichAlbumId(eventId, ALBUM_ID);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/gallery/{albumId}/open", ALBUM_ID)
                         .with(authedAs(OTHER)))

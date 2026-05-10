@@ -57,8 +57,13 @@ public class EventInitCompleteListener implements DurableEventListener<EventLife
 
         eventServiceProvider.getObject().populateAttendance(event);
         discordService.updateEventMessage(event);
-        event.setState(EventState.PLANNED);
-        eventRepository.save(event);
+        // Targeted updates: this listener owns immichAlbumId, immichShareKey, and
+        // state. Other fields (name, description, location, …) may have been
+        // mutated by an HTTP handler while the Immich + Discord calls above were
+        // in flight; a blind save() would overwrite them with the snapshot we
+        // loaded at the top of this method.
+        eventRepository.updateImmichAlbumDetails(event.getId(), event.getImmichAlbumId(), event.getImmichShareKey());
+        eventRepository.updateState(event.getId(), EventState.PLANNED);
         publisher.publish(new EventLifecycleEvent.EventPlanned(event.getId()));
     }
 }

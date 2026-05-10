@@ -44,8 +44,11 @@ public class EventClassifyListener implements DurableEventListener<EventLifecycl
             log.warn("Classification failed for event '{}', continuing", event.getName(), ex);
         }
 
-        event.setState(EventState.CLASSIFY);
-        eventRepository.save(event);
+        // Targeted update: this listener only owns `state`. A blind save() would
+        // also write back name/description/immichAlbumId/etc. from the snapshot
+        // we loaded before the slow embedding call, clobbering anything an HTTP
+        // handler changed in the meantime.
+        eventRepository.updateState(event.getId(), EventState.CLASSIFY);
         publisher.publish(new EventLifecycleEvent.EventClassified(event.getId()));
     }
 }
