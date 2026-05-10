@@ -29,7 +29,7 @@ configurations {
     all {
         // gtfs-realtime-bindings 0.0.8 was compiled against protobuf 3.x internal API.
         // Force the runtime to stay on 3.x so FeedMessage.<init> can call makeExtensionsImmutable().
-        resolutionStrategy.force 'com.google.protobuf:protobuf-java:3.25.9'
+        resolutionStrategy.force 'com.google.protobuf:protobuf-java:4.34.1'
     }
 }
 
