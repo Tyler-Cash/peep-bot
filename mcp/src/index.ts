@@ -49,6 +49,9 @@ import type {
 import { readAllReports, formatSummary } from "./junit.js";
 import { testAffinityReport, testMocksReport } from "./testInfra.js";
 import { dbInfo, dbQuery } from "./dbQuery.js";
+import { migrationLint } from "./migrationLint.js";
+import { lifecycleRegistry, discordInteractionMap, mswSpringDiff } from "./domainScans.js";
+import { springPropertyResolve, springPropertyList } from "./springProps.js";
 
 const server = new McpServer({ name: "peep-bot-mcp", version: "0.2.0" });
 
@@ -845,6 +848,74 @@ server.registerTool(
   },
   async ({ sql, database, allowWrite, maxRows }) =>
     textResult(await dbQuery({ sql, database, allowWrite, maxRows })),
+);
+
+// ---------- project synthesizers ----------
+
+server.registerTool(
+  "lifecycle_registry",
+  {
+    description:
+      "Derived registry of event-lifecycle bus listeners under backend/.../lifecycle/. Lists each listener with its eventType, retry/resilience annotations, component annotations, and constructor dependencies — grouped by event type. Replaces the hand-maintained docs/event-state-machine.md table.",
+    inputSchema: {},
+  },
+  async () => textResult(await lifecycleRegistry()),
+);
+
+server.registerTool(
+  "discord_interaction_map",
+  {
+    description:
+      "Inventory of Discord interaction surfaces in the backend: slash commands, subcommands, button IDs, modal IDs, and listener handler overrides (onButton/Modal/SlashCommandInteraction). Sourced by scanning JDA usage under discord/ and contract/. Useful for 'where is this button id handled?' or 'what slash commands does this bot expose?' questions.",
+    inputSchema: {},
+  },
+  async () => textResult(await discordInteractionMap()),
+);
+
+server.registerTool(
+  "msw_spring_diff",
+  {
+    description:
+      "Diff frontend MSW mock handlers against real Spring endpoints. Reports paths present in MSW but not in Spring (stale mocks; will 404 in live mode) and vice versa (frontend code calling these in mock mode will fail unless a passthrough is configured). Path params are normalized so {id} matches :id matches a literal placeholder.",
+    inputSchema: {},
+  },
+  async () => textResult(await mswSpringDiff()),
+);
+
+server.registerTool(
+  "migration_lint",
+  {
+    description:
+      "Lint Liquibase changesets for risky patterns: addColumn with NOT NULL and no default (fails on non-empty tables), foreign keys without indexes, drops without rollback, raw-SQL CREATE INDEX without CONCURRENTLY. Walks the master changelog and follows include/includeAll directives.",
+    inputSchema: {},
+  },
+  async () => textResult(await migrationLint()),
+);
+
+server.registerTool(
+  "spring_property",
+  {
+    description:
+      "Resolve a Spring property under an explicit profile list, walking application.yaml + application-{profile}.yaml in Spring's merge order (later profiles override earlier). Returns the value, the source file, and any matching @ConfigurationProperties bindings. If the key is a prefix, lists every property under it. Approximation: doesn't follow env vars, CLI args, @PropertySource, or programmatic property sources.",
+    inputSchema: {
+      key: z.string().describe("Property key (e.g. 'dev.tylercash.cors.allowed-origins') or a prefix."),
+      profiles: z.string().optional().describe("Comma-separated profile list, e.g. 'local,nonprod'."),
+    },
+  },
+  async ({ key, profiles }) => textResult(await springPropertyResolve({ key, profiles })),
+);
+
+server.registerTool(
+  "spring_properties_list",
+  {
+    description:
+      "List all resolved Spring properties under the given profiles, optionally filtered by prefix. Useful as a 'show me everything under spring.session.* in local,nonprod' tool.",
+    inputSchema: {
+      profiles: z.string().optional(),
+      prefix: z.string().optional(),
+    },
+  },
+  async ({ profiles, prefix }) => textResult(await springPropertyList({ profiles, prefix })),
 );
 
 // ---------- resources ----------
