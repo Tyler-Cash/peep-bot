@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.test.TestIds;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +27,13 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
+
+    // Dedicated context so the @MockitoBean discordService isn't polluted by sibling HTTP
+    // tests that share the parent context.
+    @org.springframework.test.context.DynamicPropertySource
+    static void datasourceOverride(org.springframework.test.context.DynamicPropertyRegistry r) {
+        SharedPostgres.registerIsolatedDatabase(r, EventControllerHttpIntegrationTest.class);
+    }
 
     private String USER;
     private String OTHER_USER;

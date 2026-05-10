@@ -103,6 +103,9 @@ tasks.named('test') {
         showStackTraces = true
     }
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    // 2GB heap so multiple cached Spring contexts (each holding ~45MB of HuggingFace ONNX
+    // embedding weights) don't OOM the test JVM. Default gradle test heap is 512MB.
+    maxHeapSize = '2g'
     // Disable OTLP exporters in tests — there is no collector listening, so each
     // scheduled push spams the log with ConnectException stack traces.
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
