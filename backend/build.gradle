@@ -26,6 +26,11 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    all {
+        // gtfs-realtime-bindings 0.0.8 was compiled against protobuf 3.x internal API.
+        // Force the runtime to stay on 3.x so FeedMessage.<init> can call makeExtensionsImmutable().
+        resolutionStrategy.force 'com.google.protobuf:protobuf-java:3.25.9'
+    }
 }
 
 repositories {
@@ -56,6 +61,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'io.github.resilience4j:resilience4j-annotations:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
     implementation 'org.springframework.security:spring-security-oauth2-client'
