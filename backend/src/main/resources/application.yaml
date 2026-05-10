@@ -21,6 +21,13 @@ dev.tylercash:
     cluster-similarity-threshold: 0.72
     backfill-batch-size: 20
     normalisation-enabled: false
+  tfnsw:
+    api-key: "${TFNSW_API_KEY:}"
+    alerts-base-url: "https://api.transport.nsw.gov.au"
+    live-traffic-base-url: "https://api.transport.nsw.gov.au"
+    nearest-station-radius-km: 1.5
+    major-event-radius-km: 5.0
+    closure-radius-km: 2.0
   cors:
     allowed-origins: https://event.tylercash.dev,https://event-staging.tylercash.dev
 
