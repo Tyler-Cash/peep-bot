@@ -13,7 +13,8 @@ type FeatureKey =
   | "immichEnabled"
   | "googleAutocompleteEnabled"
   | "rewindEnabled"
-  | "contractsEnabled";
+  | "contractsEnabled"
+  | "tfnswEnabled";
 
 type FeatureDef = {
   key: FeatureKey;
@@ -22,7 +23,7 @@ type FeatureDef = {
   group: "content" | "channels" | "rsvp";
 };
 
-const FEATURES: FeatureDef[] = [
+export const FEATURES: FeatureDef[] = [
   {
     key: "rewindEnabled",
     label: "rewind",
@@ -33,6 +34,12 @@ const FEATURES: FeatureDef[] = [
     key: "immichEnabled",
     label: "gallery",
     desc: "photo albums per event, posted to the channel after completion",
+    group: "content",
+  },
+  {
+    key: "tfnswEnabled",
+    label: "tfnsw transport notices",
+    desc: "posts noteworthy Sydney transport + traffic disruptions in event channels",
     group: "content",
   },
   {

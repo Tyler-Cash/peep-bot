@@ -18,7 +18,8 @@ export const zAdminFeaturesRequest = z.object({
     contractsEnabled: z.boolean().nullable().optional(),
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
     immichEnabled: z.boolean().nullable().optional(),
-    rewindEnabled: z.boolean().nullable().optional()
+    rewindEnabled: z.boolean().nullable().optional(),
+    tfnswEnabled: z.boolean().nullable().optional()
 });
 
 export const zAdminGuildDto = z.object({
@@ -33,6 +34,7 @@ export const zAdminGuildDto = z.object({
     memberCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     name: z.string().nullable().optional(),
     rewindEnabled: z.boolean().nullable().optional(),
+    tfnswEnabled: z.boolean().nullable().optional(),
     totalEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     upcomingEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
 });

@@ -310,6 +310,7 @@ export type AdminGuild = {
   googleAutocompleteEnabled: boolean;
   rewindEnabled: boolean;
   contractsEnabled: boolean;
+  tfnswEnabled: boolean;
   // Extended fields populated by the admin panel — nullable so older mocks/tests still type-check.
   memberCount?: number | null;
   channelName?: string | null;
@@ -334,6 +335,7 @@ export async function updateGuildFeatures(
     googleAutocompleteEnabled: boolean;
     rewindEnabled: boolean;
     contractsEnabled: boolean;
+    tfnswEnabled: boolean;
   }>,
 ) {
   await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {

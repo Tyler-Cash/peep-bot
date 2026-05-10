@@ -37,6 +37,7 @@ export type AdminFeaturesRequest = {
     googleAutocompleteEnabled?: boolean;
     immichEnabled?: boolean;
     rewindEnabled?: boolean;
+    tfnswEnabled?: boolean;
 };
 
 export type AdminGuildDto = {
@@ -51,6 +52,7 @@ export type AdminGuildDto = {
     memberCount?: number;
     name?: string;
     rewindEnabled?: boolean;
+    tfnswEnabled?: boolean;
     totalEventCount?: number;
     upcomingEventCount?: number;
 };

@@ -101,6 +101,9 @@
           },
           "rewindEnabled" : {
             "type" : "boolean"
+          },
+          "tfnswEnabled" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -140,6 +143,9 @@
             "type" : "string"
           },
           "rewindEnabled" : {
+            "type" : "boolean"
+          },
+          "tfnswEnabled" : {
             "type" : "boolean"
           },
           "totalEventCount" : {
