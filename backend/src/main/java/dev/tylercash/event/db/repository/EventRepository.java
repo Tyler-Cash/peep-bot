@@ -125,9 +125,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Transactional
     @Modifying
-    @Query(
-            "update Event e set e.immichAlbumId = :albumId, e.immichShareKey = :shareKey,"
-                    + " e.version = e.version + 1 where e.id = :id")
+    @Query("update Event e set e.immichAlbumId = :albumId, e.immichShareKey = :shareKey,"
+            + " e.version = e.version + 1 where e.id = :id")
     int updateImmichAlbumDetails(
             @Param("id") UUID id, @Param("albumId") String albumId, @Param("shareKey") String shareKey);
 
