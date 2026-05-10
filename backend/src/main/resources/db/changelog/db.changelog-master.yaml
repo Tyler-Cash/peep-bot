@@ -1256,3 +1256,21 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: add event location coords
+      author: tyler
+      comment: >
+        Cached lat/lng for an event's place_id. Resolved lazily by the TfNSW
+        listener via Places Details when first needed; persisted to avoid
+        repeat lookups on the week-before recheck.
+      changes:
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: location_lat
+                  type: double precision
+              - column:
+                  name: location_lng
+                  type: double precision
+
