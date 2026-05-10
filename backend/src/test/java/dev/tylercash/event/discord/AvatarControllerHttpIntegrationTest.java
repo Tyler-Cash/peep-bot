@@ -4,14 +4,24 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.test.TestIds;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class AvatarControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
+
+    // Dedicated context (different datasource URL) so the @MockitoBean discordService
+    // can't be polluted by sibling HTTP test classes sharing the parent context.
+    @DynamicPropertySource
+    static void datasourceOverride(DynamicPropertyRegistry r) {
+        SharedPostgres.registerIsolatedDatabase(r, AvatarControllerHttpIntegrationTest.class);
+    }
 
     private String VIEWER;
     private String TARGET;

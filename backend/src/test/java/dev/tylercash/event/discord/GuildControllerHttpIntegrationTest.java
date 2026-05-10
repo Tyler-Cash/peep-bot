@@ -5,12 +5,22 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.test.TestIds;
 import net.dv8tion.jda.api.entities.Guild;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class GuildControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
+
+    // Dedicated context (different datasource URL) so the @MockitoBean jda + DB rows
+    // can't be polluted by sibling HTTP test classes sharing the parent context.
+    @DynamicPropertySource
+    static void datasourceOverride(DynamicPropertyRegistry r) {
+        SharedPostgres.registerIsolatedDatabase(r, GuildControllerHttpIntegrationTest.class);
+    }
 
     @Test
     void anonymous_returns401() throws Exception {
