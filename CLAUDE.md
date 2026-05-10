@@ -143,7 +143,7 @@ Navigate to `http://localhost:3000/login` and click "Log in with Discord". The O
 # Run with local profile
 ./gradlew bootRun "--args=--spring.profiles.active=local,nonprod ..."
 
-# Run tests (uses H2 + Testcontainers)
+# Run tests (uses Testcontainers; one shared Postgres per JVM via SharedPostgres)
 ./gradlew test
 ./gradlew e2eTest
 
@@ -166,7 +166,7 @@ npm run start     # Run the production build
 npm run lint      # Run ESLint (next lint)
 npm run typecheck # TypeScript --noEmit
 npm run test      # Vitest (unit + API route tests)
-npm run test:e2e  # Playwright smoke suite (against MSW mock backend)
+npm run test:e2e  # Playwright smoke suite (MSW mock backend; requires `npm run build` first under CI=1)
 ```
 
 ## Code Quality Requirements
@@ -177,6 +177,17 @@ All code changes **must** pass linting and formatting checks before committing. 
 
 - **Spotless** — Java formatter using Palantir style. Run `./gradlew spotlessCheck` to verify, `./gradlew spotlessApply`
   to auto-fix.
+
+### Test infrastructure (backend)
+
+- **One Postgres testcontainer per JVM** via `SharedPostgres` (in `backend/src/test/java/.../test/`), not one per
+  class. Tests own their data: no global `@BeforeEach` truncate. Use `TestIds.nextLong() / nextSnowflake()` to
+  generate unique IDs per test method, and scope assertions to those IDs (never "find all + size N").
+- HTTP integration tests extend `AbstractHttpIntegrationTest`. Use `fixtures.registerMember(...)` /
+  `fixtures.seedEvent(...)` to seed.
+- For tests that scan global DB state (schedulers, retry pollers, the saga, `SPRING_SESSION` assertions), use
+  `SharedPostgres.registerIsolatedDatabase(registry, ThisClass.class)` for a per-class database within the
+  shared container.
 
 ### Frontend
 
@@ -197,12 +208,23 @@ All code changes **must** pass linting and formatting checks before committing. 
 - **CORS** — Configured via `dev.tylercash.cors.allowed-origins` property (production: `https://event.tylercash.dev`)
 - **CSRF** — `CookieCsrfTokenRepository` with `XorCsrfTokenRequestAttributeHandler`; frontend reads the `XSRF-TOKEN`
   cookie and sends `X-XSRF-TOKEN` header on mutations
-- **Swagger UI** — Available at `http://localhost:8080/api/swagger-ui.html` (no auth required)
+- **Swagger UI / OpenAPI** — `http://localhost:8080/api/swagger-ui.html`. Gated behind
+  `dev.tylercash.openapi.public` (true in `application-nonprod.yaml`, false by default in prod). The
+  `OpenApiSpecGenerationTest` writes `backend/openapi.json` on every backend test run; the frontend codegen
+  consumes that file.
 - **Metrics** — Prometheus endpoint at `/api/actuator/prometheus`
 
 ### Multi-guild support
 
 Per-guild configuration (events role, admin role, separator channel, emoji overrides, primary location, feature flags) lives in the `guild` table — one row per guild the bot is in. Rows are upserted automatically on `GuildJoinEvent`. Login is unconditional: any Discord user can authenticate; the frontend renders an "Add Peep Bot to your server" CTA when `GET /guild` returns `[]`. Prediction contracts are gated per-guild by the `contracts_enabled` flag (toggled via the bot-admin panel).
+
+**Authorization choke-point:** every guild-scoped endpoint must call
+`GuildMembershipService.assertMember(snowflake, guildId)` after resolving the guild. This is the IDOR boundary
+— when adding a new endpoint that takes any guild-scoped resource, route through it.
+
+**Anonymous session persistence (F-002):** `AnonymousSkippingSessionRepository` wraps the JDBC session repository
+as the `@Primary` `SessionRepository` bean and drops `save()` for purely-anonymous sessions. This prevents a
+DB-fill DoS on `GET /api/csrf`. Don't unwrap it.
 
 ### Frontend
 
@@ -224,6 +246,10 @@ Per-guild configuration (events role, admin role, separator channel, emoji overr
 | `dev.tylercash.discord.token`          | *(required)*                  | Discord bot token — in `application-local.yaml`        |
 | `spring.datasource.url`                | *(not set in default yaml)*   | Must be provided via local config or CLI               |
 | `server.servlet.session.cookie.secure` | `true`                        | Set to `false` locally to avoid HTTPS redirect         |
+| `dev.tylercash.bot-admins[]`           | *(empty)*                     | Snowflakes allowed to hit `/admin/*` endpoints         |
+| `dev.tylercash.openapi.public`         | `false`                       | Set `true` in nonprod to expose `/v3/api-docs`         |
+| `dev.tylercash.oauth2.redirect-uri`    | `{baseUrl}/login/oauth2/code/discord` | Pin to literal URL in prod so `X-Forwarded-Host` can't poison the OAuth callback |
+| `server.tomcat.remoteip.internal-proxies` | docker-bridge + loopback   | Trusted proxy CIDRs for `X-Forwarded-*` (F-001)        |
 
 ## Commit Conventions
 
