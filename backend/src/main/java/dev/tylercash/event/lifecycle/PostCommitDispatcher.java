@@ -26,16 +26,19 @@ public class PostCommitDispatcher {
     private final BackoffPolicy backoff;
     private final Map<String, DurableEventListener<?>> byName;
     private final List<DurableEventListener<?>> listeners;
+    private final DurableListenerInvoker invoker;
 
     public PostCommitDispatcher(
             List<DurableEventListener<?>> listeners,
             ListenerInvocationRepository invocations,
             AsyncTaskExecutor eventBusExecutor,
-            BackoffPolicy backoff) {
+            BackoffPolicy backoff,
+            DurableListenerInvoker invoker) {
         this.listeners = listeners;
         this.invocations = invocations;
         this.executor = eventBusExecutor;
         this.backoff = backoff;
+        this.invoker = invoker;
         Map<String, DurableEventListener<?>> map = new HashMap<>();
         for (DurableEventListener<?> l : listeners) map.put(l.name(), l);
         this.byName = Map.copyOf(map);
@@ -76,7 +79,7 @@ public class PostCommitDispatcher {
         CompletableFuture.runAsync(
                         () -> {
                             try {
-                                listener.handle(event);
+                                invoker.invoke(listener, event);
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }

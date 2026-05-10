@@ -41,7 +41,9 @@ class PostCommitDispatcherTest {
         matchingListener = mock(DurableEventListener.class);
         when(matchingListener.name()).thenReturn("Test Listener");
         when(matchingListener.eventType()).thenReturn(EventLifecycleEvent.EventCreated.class);
-        dispatcher = new PostCommitDispatcher(List.of(matchingListener), repo, SYNC_EXECUTOR, backoff);
+        // Pass-through invoker — no Spring context needed for unit tests
+        DurableListenerInvoker invoker = new DurableListenerInvoker();
+        dispatcher = new PostCommitDispatcher(List.of(matchingListener), repo, SYNC_EXECUTOR, backoff, invoker);
     }
 
     @Test
