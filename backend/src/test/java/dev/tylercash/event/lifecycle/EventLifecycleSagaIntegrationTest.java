@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
@@ -86,14 +85,12 @@ class EventLifecycleSagaIntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
 
-    private static final AtomicLong idCounter = new AtomicLong(70_000);
-
     /** Mutable clock — advance with {@link #advanceTo(Instant)}. */
     private final AtomicReference<Instant> nowHolder = new AtomicReference<>(Instant.parse("2026-05-04T10:00:00Z"));
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        SharedPostgres.registerIsolatedDatabase(registry, EventLifecycleSagaIntegrationTest.class);
     }
 
     @BeforeEach
@@ -188,7 +185,7 @@ class EventLifecycleSagaIntegrationTest {
         // it falls in the pre-notify window when clock advances to 17:30Z (i.e. now < eventTime,
         // eventTime < now+2h).
         advanceTo(Instant.parse("2026-05-04T10:00:00Z"));
-        long uniqueId = idCounter.incrementAndGet();
+        long uniqueId = dev.tylercash.event.test.TestIds.nextLong();
         ZonedDateTime eventDateTime = ZonedDateTime.of(2026, 5, 4, 17, 0, 0, 0, ZoneOffset.UTC);
         Event event =
                 new Event(uniqueId, 111L, uniqueId, "Saga Test Event", "creator-snowflake", eventDateTime, "desc");

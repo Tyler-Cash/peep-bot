@@ -63,7 +63,7 @@ class EventServiceCachingTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        SharedPostgres.registerIsolatedDatabase(registry, EventServiceCachingTest.class);
     }
 
     @SuppressWarnings("unchecked")

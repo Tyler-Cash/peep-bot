@@ -16,7 +16,6 @@ import dev.tylercash.event.event.model.EventState;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.concurrent.atomic.AtomicLong;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,14 +65,12 @@ class EventTickSchedulerTest {
     @Autowired
     JdbcTemplate jdbc;
 
-    private static final AtomicLong messageIdCounter = new AtomicLong(50_000);
-
     // Fixed "now" for all tests: 2026-05-04T18:00:00Z
     private static final ZonedDateTime FIXED_NOW = ZonedDateTime.of(2026, 5, 4, 18, 0, 0, 0, ZoneOffset.UTC);
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        SharedPostgres.registerIsolatedDatabase(registry, EventTickSchedulerTest.class);
     }
 
     @BeforeEach
@@ -82,7 +79,7 @@ class EventTickSchedulerTest {
         when(clock.getZone()).thenReturn(FIXED_NOW.getZone());    }
 
     private Event saveEvent(ZonedDateTime dateTime, EventState state) {
-        long id = messageIdCounter.incrementAndGet();
+        long id = dev.tylercash.event.test.TestIds.nextLong();
         Event e = new Event(id, 111L, id, "Test Event", "creator", dateTime, "desc");
         e.setState(state);
         return eventRepository.save(e);

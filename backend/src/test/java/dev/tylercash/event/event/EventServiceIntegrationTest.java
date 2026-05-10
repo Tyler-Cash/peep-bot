@@ -72,7 +72,7 @@ class EventServiceIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        SharedPostgres.registerIsolatedDatabase(registry, EventServiceIntegrationTest.class);
     }
 
     @BeforeEach

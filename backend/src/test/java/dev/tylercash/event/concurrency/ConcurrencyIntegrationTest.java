@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,8 +53,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ConcurrencyIntegrationTest {
 
     private static final long GUILD_ID = 500L;
-    private static final AtomicLong messageIdCounter = new AtomicLong(50_000);
-
     @MockitoBean
     JDA jda;
 
@@ -85,7 +82,7 @@ class ConcurrencyIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        SharedPostgres.registerIsolatedDatabase(registry, ConcurrencyIntegrationTest.class);
     }
 
     @BeforeEach
@@ -301,7 +298,7 @@ class ConcurrencyIntegrationTest {
                             Thread.currentThread().interrupt();
                             return;
                         }
-                        long id = messageIdCounter.incrementAndGet() + idx * 1000L;
+                        long id = dev.tylercash.event.test.TestIds.nextLong() + idx * 1000L;
                         Event event = new Event(
                                 id,
                                 GUILD_ID,
@@ -334,7 +331,7 @@ class ConcurrencyIntegrationTest {
     // -----------------------------------------------------------------------
 
     private UUID seedEvent(String name) {
-        long id = messageIdCounter.incrementAndGet();
+        long id = dev.tylercash.event.test.TestIds.nextLong();
         Event event =
                 new Event(id, GUILD_ID, id, name, "seeder", ZonedDateTime.now().plusDays(1), "seeded");
         event.setState(EventState.PLANNED);

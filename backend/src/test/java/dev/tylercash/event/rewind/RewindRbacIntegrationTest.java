@@ -18,7 +18,6 @@ import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.rewind.model.RewindStatsDto;
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,15 +51,16 @@ import org.springframework.web.server.ResponseStatusException;
 @ActiveProfiles("local")
 class RewindRbacIntegrationTest {
 
-    private static final long GUILD_1 = dev.tylercash.event.test.TestIds.nextLong();
-    private static final long GUILD_2 = dev.tylercash.event.test.TestIds.nextLong();
-    private static final String GUILD_1_STR = String.valueOf(GUILD_1);
-    private static final String GUILD_2_STR = String.valueOf(GUILD_2);
-
-    private static final String USER_A = "userA";
-    private static final String USER_B = "userB";
-    private static final String USER_C = "userC";
-    private static final String USER_D = "userD";
+    // Per-test tenants and users so the suite can share a database without each test's @BeforeEach
+    // accumulating data into the same guilds. Each test sees only the rows its own seed created.
+    private long GUILD_1;
+    private long GUILD_2;
+    private String GUILD_1_STR;
+    private String GUILD_2_STR;
+    private String USER_A;
+    private String USER_B;
+    private String USER_C;
+    private String USER_D;
 
     @MockitoBean
     JDA jda;
@@ -94,10 +94,19 @@ class RewindRbacIntegrationTest {
         SharedPostgres.registerProperties(registry);
     }
 
-    private static final AtomicLong messageIdCounter = new AtomicLong(10_000);
-
     @BeforeEach
     void seed() {
+        // Allocate fresh tenants and snowflakes so this test's data is isolated from
+        // any other test's rows in the shared DB.
+        GUILD_1 = dev.tylercash.event.test.TestIds.nextLong();
+        GUILD_2 = dev.tylercash.event.test.TestIds.nextLong();
+        GUILD_1_STR = String.valueOf(GUILD_1);
+        GUILD_2_STR = String.valueOf(GUILD_2);
+        USER_A = dev.tylercash.event.test.TestIds.nextSnowflake();
+        USER_B = dev.tylercash.event.test.TestIds.nextSnowflake();
+        USER_C = dev.tylercash.event.test.TestIds.nextSnowflake();
+        USER_D = dev.tylercash.event.test.TestIds.nextSnowflake();
+
         var rewindCache = cacheManager.getCache("rewind");
         if (rewindCache != null) rewindCache.clear();
 
@@ -196,7 +205,7 @@ class RewindRbacIntegrationTest {
     }
 
     private UUID createEvent(long guildId, String name, String creator) {
-        long id = messageIdCounter.incrementAndGet();
+        long id = dev.tylercash.event.test.TestIds.nextLong();
         Event event =
                 new Event(id, guildId, id, name, creator, ZonedDateTime.now().plusDays(1), "desc");
         event.setState(EventState.PLANNED);

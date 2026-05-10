@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
@@ -136,8 +135,6 @@ class AuthorizationFuzzIntegrationTest {
 
     private static UUID guild1EventId;
 
-    private static final AtomicLong messageIdCounter = new AtomicLong(20_000);
-
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         SharedPostgres.registerProperties(registry);
@@ -148,7 +145,7 @@ class AuthorizationFuzzIntegrationTest {
         discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Fuzzy A", "fuzzya", GUILD_1);
         discordUserCacheService.registerIfMissing(USER_IN_GUILD_2, "Fuzzy B", "fuzzyb", GUILD_2);
 
-        long id = messageIdCounter.incrementAndGet();
+        long id = dev.tylercash.event.test.TestIds.nextLong();
         Event event = new Event(
                 id,
                 GUILD_1,
