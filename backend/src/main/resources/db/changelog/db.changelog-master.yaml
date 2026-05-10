@@ -1274,3 +1274,43 @@ databaseChangeLog:
                   name: location_lng
                   type: double precision
 
+  - changeSet:
+      id: create tfnsw_event_snapshot table
+      author: tyler
+      comment: >
+        Stores hash of last-posted noteworthy alert IDs per event so the
+        week-before recheck only posts when there's a material change.
+        last_posted_at is null when the check ran but nothing was noteworthy.
+      changes:
+        - createTable:
+            tableName: tfnsw_event_snapshot
+            columns:
+              - column:
+                  name: event_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_tfnsw_snapshot_event
+                    references: event(id)
+              - column:
+                  name: alert_ids_hash
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_posted_at
+                  type: timestamp with time zone
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
