@@ -21,12 +21,6 @@
       "automergeType": "pr"
     },
     {
-      "description": "Low/neutral merge confidence: hold 14 days then fail open",
-      "matchConfidence": ["low", "neutral"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "14 days"
-    },
-    {
       "description": "Majors require human review",
       "matchUpdateTypes": ["major"],
       "automerge": false,
