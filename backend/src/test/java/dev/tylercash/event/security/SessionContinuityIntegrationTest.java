@@ -97,13 +97,6 @@ class SessionContinuityIntegrationTest {
 
     @BeforeEach
     void seed() {
-        jdbc.execute("DELETE FROM attendance");
-        jdbc.execute("DELETE FROM event_category");
-        jdbc.execute("DELETE FROM event");
-        jdbc.execute("DELETE FROM guild_member");
-        jdbc.execute("DELETE FROM discord_user_cache");
-        jdbc.execute("DELETE FROM SPRING_SESSION_ATTRIBUTES");
-        jdbc.execute("DELETE FROM SPRING_SESSION");
         discordUserCacheService.registerIfMissing(USER_A, "Session User A", "usera", GUILD_1);
         discordUserCacheService.registerIfMissing(USER_B, "Session User B", "userb", GUILD_1);
     }

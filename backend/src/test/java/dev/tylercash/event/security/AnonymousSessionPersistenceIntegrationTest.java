@@ -61,24 +61,21 @@ class AnonymousSessionPersistenceIntegrationTest {
         SharedPostgres.registerProperties(registry);
     }
 
-    @BeforeEach
-    void truncateSpringSession() {
-        jdbc.execute("DELETE FROM SPRING_SESSION_ATTRIBUTES");
-        jdbc.execute("DELETE FROM SPRING_SESSION");
-    }
-
     @Test
     void anonymousCsrfCalls_doNotPersistSpringSessionRows() throws Exception {
-        // Five unauthenticated probes — the CSRF filter still runs and may set the XSRF-TOKEN
-        // cookie, but the SESSION row backing each request must not be flushed to the DB.
+        // Baseline-delta check rather than absolute count: other test classes share the DB
+        // and may have authenticated sessions in flight. The F-002 invariant is "anonymous
+        // probes don't create new rows", not "the table is globally empty".
+        Integer before = jdbc.queryForObject("SELECT COUNT(*) FROM SPRING_SESSION", Integer.class);
+
         for (int i = 0; i < 5; i++) {
             // No oauth2Login / no with(csrf()) — purely unauthenticated probes, exactly as
             // the F-002 PoC issued from outside any Discord session.
             mockMvc.perform(MockMvcRequestBuilders.get("/csrf"));
         }
 
-        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM SPRING_SESSION", Integer.class);
-        assertThat(count)
+        Integer after = jdbc.queryForObject("SELECT COUNT(*) FROM SPRING_SESSION", Integer.class);
+        assertThat(after - before)
                 .as("Anonymous /csrf calls must not persist any SPRING_SESSION rows (F-002)")
                 .isZero();
     }
