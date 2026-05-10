@@ -8,8 +8,6 @@ import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.immich.ImmichService;
 import net.dv8tion.jda.api.JDA;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -59,12 +57,6 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
 @Import(HttpIntegrationFixtures.class)
-// Subclasses share a single Spring context (cached on the @MockitoBean set), which means they
-// also share one Mockito mock instance per bean. @MockitoBean resets those mocks before each
-// test method — running two of these classes in parallel within a JVM lets one class's reset
-// wipe another's `when(...)` stubs mid-test. Pin to SAME_THREAD to serialize them while still
-// allowing JVM-level (maxParallelForks) parallelism.
-@Execution(ExecutionMode.SAME_THREAD)
 public abstract class AbstractHttpIntegrationTest {
 
     @DynamicPropertySource
