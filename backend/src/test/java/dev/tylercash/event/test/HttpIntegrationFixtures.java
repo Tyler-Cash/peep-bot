@@ -8,6 +8,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
@@ -31,11 +32,21 @@ public class HttpIntegrationFixtures {
 
     /** Seed a PLANNED event with an explicit start time. */
     public UUID seedEvent(long guildId, String creatorSnowflake, String name, ZonedDateTime dateTime) {
+        return seedEvent(guildId, creatorSnowflake, name, dateTime, e -> {}).getId();
+    }
+
+    /**
+     * Seed a PLANNED event with an explicit start time and a customizer callback applied before
+     * saving. Returns the full saved {@link Event} so callers can inspect any generated fields.
+     */
+    public Event seedEvent(
+            long guildId, String creatorSnowflake, String name, ZonedDateTime dateTime, Consumer<Event> customizer) {
         long id = TestIds.nextLong();
         Event event = new Event(id, guildId, id, name, creatorSnowflake, dateTime, "test event description");
         event.setState(EventState.PLANNED);
+        customizer.accept(event);
         Event saved = eventRepository.save(event);
         attendanceService.recordAttendance(saved.getId(), creatorSnowflake, null, AttendanceStatus.ACCEPTED, null);
-        return saved.getId();
+        return saved;
     }
 }

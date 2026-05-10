@@ -51,6 +51,13 @@ public class Event {
     private String description = "";
     private String location = "";
     private String locationPlaceId;
+
+    @Column(name = "location_lat")
+    private Double locationLat;
+
+    @Column(name = "location_lng")
+    private Double locationLng;
+
     private Integer capacity = 0;
     private Integer cost = 0;
 
