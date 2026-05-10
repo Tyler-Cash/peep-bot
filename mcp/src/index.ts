@@ -36,6 +36,9 @@ import {
   uriToRelative,
   hoverToText,
 } from "./lsp.js";
+import { readAllReports, formatSummary } from "./junit.js";
+import { testAffinityReport, testMocksReport } from "./testInfra.js";
+import { dbInfo, dbQuery } from "./dbQuery.js";
 
 const server = new McpServer({ name: "peep-bot-mcp", version: "0.2.0" });
 
@@ -493,16 +496,93 @@ server.registerTool(
       cwd = resolve(REPO_ROOT, "backend");
     } else {
       cmd = "npm";
-      args = ["run", "test", "--silent"];
-      if (pattern) args.push("--", pattern);
+      args = [
+        "run",
+        "test",
+        "--silent",
+        "--",
+        "--reporter=junit",
+        "--outputFile=test-results/junit/vitest.xml",
+      ];
+      if (pattern) args.push(pattern);
       cwd = resolve(REPO_ROOT, "frontend");
     }
     if (!existsSync(cwd)) return textResult(`Working directory does not exist: ${cwd}`);
+    const startMs = Date.now();
     const { stdout, stderr, code } = await run(cmd, args, { cwd, timeoutMs: tmo });
-    const combined = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).split("\n");
-    const tail = combined.slice(-400).join("\n");
-    return textResult(`exit=${code}\n${tail}`);
+    const summary = readAllReports(startMs);
+    const formatted = formatSummary(summary);
+    const tail = (stdout + (stderr ? `\n[stderr]\n${stderr}` : ""))
+      .split("\n")
+      .slice(-80)
+      .join("\n");
+    const head = `exit=${code}\n${formatted}`;
+    if (summary.total === 0) {
+      // No JUnit reports parsed (e.g. compile failure before tests ran). Fall back to tail.
+      return textResult(`${head}\n\n[no JUnit reports found — falling back to tail]\n${tail}`);
+    }
+    return textResult(`${head}\n\n[last 80 lines of stdout/stderr]\n${tail}`);
   },
+);
+
+// ---------- test infrastructure (backend) ----------
+
+server.registerTool(
+  "test_affinity",
+  {
+    description:
+      "Approximate Spring @SpringBootTest context-cache groups across the backend test suite. Hashes class-level Spring test annotations (with one-level inheritance from a base class in the same suite) plus the @MockBean/@MockitoBean field set, and groups classes that share a hash. Members of the same group probably reuse a cached ApplicationContext at runtime, so cross-class mock pollution and 'who shares a context with me' questions resolve directly. Approximation: doesn't follow @ContextConfiguration initializers or @DynamicPropertySource bodies.",
+    inputSchema: {
+      groupsOnly: z
+        .boolean()
+        .optional()
+        .describe("If true, list only group hashes and class names (compact)."),
+    },
+  },
+  async ({ groupsOnly }) => textResult(await testAffinityReport({ groupsOnly })),
+);
+
+server.registerTool(
+  "test_mocks",
+  {
+    description:
+      "@MockBean / @MockitoBean / @SpyBean topology across the backend test suite. With no args: all mocked types ranked by how many test classes mock them (cross-class pollution risk). With type='<fqn or simpleName>': just the test classes that mock that type. Inheritance from a same-suite base class is resolved one level.",
+    inputSchema: {
+      type: z
+        .string()
+        .optional()
+        .describe("Mocked type to focus on (simple name or fully-qualified name)."),
+    },
+  },
+  async ({ type }) => textResult(await testMocksReport({ type })),
+);
+
+// ---------- live DB query ----------
+
+server.registerTool(
+  "db_info",
+  {
+    description:
+      "Discover the running Postgres instance for this repo: prefers a Testcontainers-managed pgvector container (the SharedPostgres used by the backend test suite), falls back to the docker-compose dev DB. Returns host/port/user/database. Override with PEEP_BOT_DB_URL if you need a different target.",
+    inputSchema: {},
+  },
+  async () => textResult(await dbInfo()),
+);
+
+server.registerTool(
+  "db_query",
+  {
+    description:
+      "Run a SQL query against the discovered Postgres (Testcontainer first, then docker-compose; PEEP_BOT_DB_URL overrides). Read-only by default — wraps the query in BEGIN READ ONLY / ROLLBACK and refuses anything containing write keywords (INSERT/UPDATE/DELETE/TRUNCATE/DROP/ALTER/etc). Set allowWrite=true to bypass. Use database='test_<classname>' to target a per-class isolated DB created by SharedPostgres.registerIsolatedDatabase. Statement timeout 10s.",
+    inputSchema: {
+      sql: z.string(),
+      database: z.string().optional(),
+      allowWrite: z.boolean().optional(),
+      maxRows: z.number().int().positive().optional(),
+    },
+  },
+  async ({ sql, database, allowWrite, maxRows }) =>
+    textResult(await dbQuery({ sql, database, allowWrite, maxRows })),
 );
 
 // ---------- resources ----------

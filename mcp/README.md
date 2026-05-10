@@ -35,7 +35,11 @@ dependencies — no system installs beyond Node 20+.
 | `repo_overview()` | Structured summary: CLAUDE.md excerpt, file counts by stack, depth-2 layout. Good first call. |
 | `list_endpoints(side?)` | All HTTP endpoints. Backend: Spring annotations with class-level base path applied. Frontend: filesystem-derived Next.js page/route paths. |
 | `db_schema()` | Reduces the Liquibase changelog (following includes) into the current logical schema. |
-| `run_test(side, pattern?, timeoutMs?)` | Run backend (`./gradlew test --tests`) or frontend (`npm run test`) tests. Output captured and tail-truncated. |
+| `run_test(side, pattern?, timeoutMs?)` | Run backend (`./gradlew test --tests`) or frontend (`npm run test`) tests. Returns a structured summary parsed from JUnit XML (failed tests with class, name, message, stack head) plus the last 80 lines of stdout. |
+| `test_affinity(groupsOnly?)` | Approximate Spring `@SpringBootTest` context-cache groups. Hashes class-level Spring test annotations + `@MockBean` field set with one-level base-class inheritance and groups classes that share a hash. Members of a group probably reuse a cached `ApplicationContext` at runtime — gold for cross-class mock pollution / "who shares my context?" questions. |
+| `test_mocks(type?)` | `@MockBean` / `@MockitoBean` / `@SpyBean` topology. With no args: all mocked types ranked by # of test classes mocking them. With `type='<fqn or simpleName>'`: just the test classes that mock that type. |
+| `db_info()` | Discover the active Postgres: prefers a Testcontainers-managed pgvector container (the `SharedPostgres` used by the backend test suite), falls back to the docker-compose dev DB. Override with `PEEP_BOT_DB_URL`. |
+| `db_query(sql, database?, allowWrite?, maxRows?)` | Run SQL against the discovered Postgres. Read-only by default (wraps in `BEGIN READ ONLY` / `ROLLBACK`, refuses write keywords). Use `database='test_<classname>'` to target a per-class isolated DB created by `SharedPostgres.registerIsolatedDatabase`. Statement timeout 10s. |
 
 ### Resources
 
