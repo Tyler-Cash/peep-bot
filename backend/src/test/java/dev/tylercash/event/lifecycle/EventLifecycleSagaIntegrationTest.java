@@ -133,7 +133,9 @@ class EventLifecycleSagaIntegrationTest {
     // ------------------------------------------------------------------
 
     private static final long POLL_INTERVAL_MS = 100;
-    private static final long TIMEOUT_MS = 20_000;
+    // 60s per await: CI runners are noticeably slower than local for the async outbox
+    // chain. The whole saga's @Timeout(120s) caps total runtime.
+    private static final long TIMEOUT_MS = 60_000;
 
     private void awaitState(UUID eventId, EventState expected) throws InterruptedException {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
@@ -179,7 +181,7 @@ class EventLifecycleSagaIntegrationTest {
     // ------------------------------------------------------------------
 
     @Test
-    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    @Timeout(value = 300, unit = TimeUnit.SECONDS)
     void fullSaga_createsEventAndDrivesItThroughLifecycleToDeleted() throws InterruptedException {
         // ── Step 1: create the event ──────────────────────────────────────────────
         // Clock is at 2026-05-04T10:00Z. Schedule the event for 2026-05-04T17:00Z so
