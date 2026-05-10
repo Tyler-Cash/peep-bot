@@ -105,6 +105,14 @@ protobuf {
     }
 }
 
+// The protobuf-gradle-plugin resolves protoc through a separate configuration that
+// holds platform-specific native binaries (e.g. protoc-*-linux-x86_64.exe), not jars.
+// CycloneDX scans every resolvable configuration by default and tries to read each
+// artifact's POM as a zip — which throws ZipException on the native binary. Skip it.
+cyclonedxBom {
+    skipConfigs = ['protobufToolsLocator_protoc']
+}
+
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'e2e'
