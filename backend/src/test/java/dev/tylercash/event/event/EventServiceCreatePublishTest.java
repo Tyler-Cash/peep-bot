@@ -95,15 +95,16 @@ class EventServiceCreatePublishTest {
         UUID eventId = event.getId();
         assertThat(eventId).isNotNull();
 
-        List<ListenerInvocation> rows = listenerInvocationRepository.findAll();
+        List<ListenerInvocation> rows = listenerInvocationRepository.findAll().stream()
+                .filter(r -> r.getEventId().equals(eventId))
+                .toList();
 
-        // Only DiscordChannelInitListener subscribes to EventCreated
-        assertThat(rows).hasSize(1);
-
-        ListenerInvocation row = rows.get(0);
-        assertThat(row.getEventId()).isEqualTo(eventId);
-        assertThat(row.getLifecycleEventType()).isEqualTo("EventCreated");
-        assertThat(row.getListenerName()).isEqualTo("Discord Channel Init");
-        assertThat(row.getStatus()).isEqualTo(ListenerInvocationStatus.PENDING);
+        assertThat(rows)
+                .extracting(ListenerInvocation::getListenerName)
+                .containsExactlyInAnyOrder("Discord Channel Init", "TfNSW Event Created");
+        assertThat(rows).allSatisfy(row -> {
+            assertThat(row.getLifecycleEventType()).isEqualTo("EventCreated");
+            assertThat(row.getStatus()).isEqualTo(ListenerInvocationStatus.PENDING);
+        });
     }
 }
