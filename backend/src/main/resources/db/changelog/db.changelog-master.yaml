@@ -1238,3 +1238,21 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: add tfnsw_enabled to guild
+      author: tyler
+      comment: >
+        Per-guild opt-in for TfNSW (Sydney transport + traffic) disruption
+        posts. Default false so existing guilds get nothing until a bot admin
+        enables it.
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: tfnsw_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
