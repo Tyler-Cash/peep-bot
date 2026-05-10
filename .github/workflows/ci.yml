@@ -293,7 +293,7 @@ jobs:
           echo "Path correction complete."
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
         if: always()
         with:
           sarif_file: backend/grype-backend.sarif
@@ -707,7 +707,7 @@ jobs:
           fail-build: true
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
         if: always()
         with:
           sarif_file: frontend/grype-frontend.sarif
