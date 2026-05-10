@@ -89,7 +89,7 @@ The 7-day-before re-check posts only if the new hash differs **and** there's at 
 - `location_lat double precision` (nullable)
 - `location_lng double precision` (nullable)
 
-Resolved via Google Places Details on first need (using existing `locationPlaceId`), then cached on the row. Fallback to `guild.primary_location_lat/lng` when no place_id.
+Resolved via Google Places Details on first need (using existing `locationPlaceId`), then cached on the row. If the event has no `locationPlaceId`, TfNSW is skipped for that event — guild primary location is **not** used as a fallback (it would produce misleading "near venue" claims for events that aren't actually at the guild's primary spot).
 
 **New column on `guild`** (Liquibase): `tfnsw_enabled boolean not null default false`.
 
@@ -116,10 +116,9 @@ Resolved via Google Places Details on first need (using existing `locationPlaceI
 Event created  ──► TfnswEventCreatedListener
                     ├─ guild.tfnswEnabled? no → return
                     ├─ resolve event coords:
-                    │    if event.locationLat/Lng null and event.locationPlaceId set →
-                    │       Places Details → persist on Event
-                    │    else if no place_id → use guild.primary_location_*
-                    │    else if no fallback → log + return (can't filter geo)
+                    │    if event.locationLat/Lng already set → use
+                    │    else if event.locationPlaceId set → Places Details → persist on Event
+                    │    else → log + return (no coords, can't filter geo)
                     ├─ fetch in parallel:
                     │    TfnswAlertsClient.fetchRailAndMetro()
                     │    TfnswAlertsClient.fetchTripReplacements()
