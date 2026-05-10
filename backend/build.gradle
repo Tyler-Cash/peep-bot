@@ -4,6 +4,7 @@ plugins {
     id 'com.diffplug.spotless' version '8.4.0'
     id 'org.springframework.boot' version '3.5.14'
     id 'org.cyclonedx.bom' version '2.4.1'
+    id 'com.google.protobuf' version '0.9.5'
 }
 
 apply plugin: 'application'
@@ -26,11 +27,6 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-    all {
-        // gtfs-realtime-bindings 0.0.8 was compiled against protobuf 3.x internal API.
-        // Force the runtime to stay on 3.x so FeedMessage.<init> can call makeExtensionsImmutable().
-        resolutionStrategy.force 'com.google.protobuf:protobuf-java:3.25.9'
-    }
 }
 
 repositories {
@@ -46,7 +42,7 @@ dependencyManagement {
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'org.mobilitydata:gtfs-realtime-bindings:0.0.8'
+    implementation 'com.google.protobuf:protobuf-java:4.28.3'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.3.Final'
@@ -101,6 +97,12 @@ dependencies {
     testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:4.28.3'
+    }
 }
 
 tasks.named('test') {
