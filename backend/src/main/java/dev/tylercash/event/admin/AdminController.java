@@ -64,6 +64,7 @@ public class AdminController {
                 row.isGoogleAutocompleteEnabled(),
                 row.isRewindEnabled(),
                 row.isContractsEnabled(),
+                row.isTfnswEnabled(),
                 memberCount,
                 row.getSeparatorChannel(),
                 row.getPrimaryLocationName(),
@@ -86,11 +87,13 @@ public class AdminController {
         boolean oldGoogle = row.isGoogleAutocompleteEnabled();
         boolean oldRewind = row.isRewindEnabled();
         boolean oldContracts = row.isContractsEnabled();
+        boolean oldTfnsw = row.isTfnswEnabled();
         if (request.immichEnabled() != null) row.setImmichEnabled(request.immichEnabled());
         if (request.googleAutocompleteEnabled() != null)
             row.setGoogleAutocompleteEnabled(request.googleAutocompleteEnabled());
         if (request.rewindEnabled() != null) row.setRewindEnabled(request.rewindEnabled());
         if (request.contractsEnabled() != null) row.setContractsEnabled(request.contractsEnabled());
+        if (request.tfnswEnabled() != null) row.setTfnswEnabled(request.tfnswEnabled());
         guildRepository.save(row);
         String snowflake = principal.getAttribute("id");
         if (request.immichEnabled() != null && oldImmich != row.isImmichEnabled()) {
@@ -124,6 +127,14 @@ public class AdminController {
                     id,
                     oldContracts,
                     row.isContractsEnabled());
+        }
+        if (request.tfnswEnabled() != null && oldTfnsw != row.isTfnswEnabled()) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} TFNSW {} -> {}",
+                    snowflake,
+                    id,
+                    oldTfnsw,
+                    row.isTfnswEnabled());
         }
         var jdaGuild = jda.getGuildById(id);
         if (request.contractsEnabled() != null && oldContracts != row.isContractsEnabled() && jdaGuild != null) {

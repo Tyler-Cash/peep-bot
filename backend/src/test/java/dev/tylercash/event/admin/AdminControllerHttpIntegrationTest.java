@@ -128,4 +128,19 @@ class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                         .with(csrf()))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void botAdmin_updateFeatures_flipsTfnswFlag() throws Exception {
+        fixtures.registerMember(BOT_ADMIN, GUILD_A, "BotAdmin", "botadmin");
+        seedGuild(GUILD_A);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/admin/guilds/{guildId}/features", GUILD_A)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tfnswEnabled\":true}")
+                        .with(authedAs(BOT_ADMIN))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tfnswEnabled").value(true))
+                .andExpect(jsonPath("$.immichEnabled").value(false));
+    }
 }

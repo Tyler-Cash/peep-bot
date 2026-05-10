@@ -8,6 +8,7 @@ public record AdminGuildDto(
         boolean googleAutocompleteEnabled,
         boolean rewindEnabled,
         boolean contractsEnabled,
+        boolean tfnswEnabled,
         Integer memberCount,
         String channelName,
         String locationName,
