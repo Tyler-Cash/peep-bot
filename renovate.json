@@ -4,7 +4,6 @@
     "config:recommended",
     "helpers:pinGitHubActionDigests",
     "mergeConfidence:all-badges",
-    ":separatePatchReleases",
     ":separateMultipleMajorReleases"
   ],
   "dependencyDashboard": true,
@@ -12,64 +11,205 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "platformAutomerge": true,
+  "rebaseWhen": "behind-base-branch",
+  "labels": ["dependencies"],
   "packageRules": [
     {
+      "description": "Auto-merge non-major updates by default",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "pr"
     },
     {
+      "description": "Majors require human review",
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "labels": ["major"]
+      "labels": ["dependencies", "major"]
+    },
+
+    {
+      "description": "All GitHub Actions in one weekly group (digest + minor + patch)",
+      "groupName": "github-actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "schedule": ["before 6am on monday"],
+      "automerge": true
     },
     {
-      "groupName": "vite major",
+      "description": "GitHub Actions major bumps still get their own PR but grouped per action",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["major"],
-      "matchPackageNames": ["vite", "@vitejs/plugin-react", "vitest", "@vitest/coverage-v8"]
+      "labels": ["dependencies", "major", "ci"]
+    },
+
+    {
+      "description": "Next.js ecosystem",
+      "groupName": "next",
+      "matchPackageNames": [
+        "next",
+        "eslint-config-next",
+        "@next/{/,}**"
+      ]
     },
     {
+      "description": "React ecosystem (runtime + types)",
+      "groupName": "react",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ]
+    },
+    {
+      "description": "Testing Library",
+      "groupName": "testing-library",
+      "matchPackageNames": ["@testing-library/{/,}**"]
+    },
+    {
+      "description": "Vercel platform packages",
+      "groupName": "vercel",
+      "matchPackageNames": ["@vercel/{/,}**"]
+    },
+    {
+      "description": "OpenTelemetry (frontend + backend)",
+      "groupName": "opentelemetry",
+      "matchPackageNames": [
+        "@opentelemetry/{/,}**",
+        "io.opentelemetry{/,}**",
+        "io.micrometer:micrometer-tracing-bridge-otel",
+        "io.micrometer:micrometer-registry-otlp"
+      ]
+    },
+    {
+      "description": "Playwright",
+      "groupName": "playwright",
+      "matchPackageNames": ["playwright", "@playwright/test"]
+    },
+    {
+      "description": "Vite + Vitest (was already grouped, kept)",
       "groupName": "vite",
+      "matchPackageNames": [
+        "vite",
+        "vitest",
+        "@vitejs/plugin-react",
+        "@vitest/coverage-v8"
+      ]
+    },
+    {
+      "description": "ESLint ecosystem (non-major)",
+      "groupName": "eslint",
       "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": ["vite", "@vitejs/plugin-react"]
-    },
-    {
-      "groupName": "moment",
-      "matchPackageNames": ["moment", "moment-timezone"]
-    },
-    {
-      "groupName": "redux",
-      "matchPackageNames": ["@reduxjs/toolkit", "react-redux", "redux-thunk"]
-    },
-    {
-      "groupName": "prop-types",
-      "matchPackageNames": ["prop-types", "@types/prop-types"]
-    },
-    {
-      "groupName": "eslint major",
-      "matchUpdateTypes": ["major"],
       "matchPackageNames": [
         "eslint",
-        "@eslint/js",
-        "eslint-plugin-react",
-        "eslint-plugin-react-hooks",
+        "@eslint/{/,}**",
+        "eslint-plugin-{/,}**",
         "eslint-config-prettier"
       ]
     },
     {
-      "groupName": "spring-boot major",
+      "description": "ESLint major (held separately, manual review)",
+      "groupName": "eslint major",
       "matchUpdateTypes": ["major"],
       "matchPackageNames": [
-        "org.springframework.boot",
-        "org.springframework.cloud:spring-cloud-dependencies",
-        "org.springdoc:springdoc-openapi-starter-webmvc-ui"
+        "eslint",
+        "@eslint/{/,}**",
+        "eslint-plugin-{/,}**",
+        "eslint-config-prettier"
       ]
     },
     {
+      "description": "MSW + jsdom (test infra)",
+      "groupName": "test-infra",
+      "matchPackageNames": ["msw", "jsdom"]
+    },
+    {
+      "description": "OpenAPI codegen tooling",
+      "groupName": "openapi-codegen",
+      "matchPackageNames": ["@hey-api/{/,}**"]
+    },
+
+    {
+      "description": "Spring Boot starters and core (minor/patch grouped)",
+      "groupName": "spring-boot",
+      "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
-        "org.springframework.cloud:spring-cloud-dependencies"
-      ],
+        "org.springframework.boot{/,}**",
+        "org.springframework.security{/,}**",
+        "org.springframework.session{/,}**",
+        "org.springframework:{/,}**"
+      ]
+    },
+    {
+      "description": "Spring Boot major (held; cross-cutting)",
+      "groupName": "spring-boot major",
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": [
+        "org.springframework.boot{/,}**",
+        "org.springframework.cloud:spring-cloud-dependencies",
+        "org.springdoc:springdoc-openapi-starter-webmvc-ui",
+        "org.springframework.security{/,}**",
+        "org.springframework.session{/,}**"
+      ]
+    },
+    {
+      "description": "Spring AI",
+      "groupName": "spring-ai",
+      "matchPackageNames": ["org.springframework.ai{/,}**"]
+    },
+    {
+      "matchPackageNames": ["org.springframework.cloud:spring-cloud-dependencies"],
       "automerge": false
+    },
+
+    {
+      "description": "Testcontainers",
+      "groupName": "testcontainers",
+      "matchPackageNames": ["org.testcontainers{/,}**"]
+    },
+    {
+      "description": "Resilience4j",
+      "groupName": "resilience4j",
+      "matchPackageNames": ["io.github.resilience4j{/,}**"]
+    },
+    {
+      "description": "ShedLock",
+      "groupName": "shedlock",
+      "matchPackageNames": ["net.javacrumbs.shedlock{/,}**"]
+    },
+    {
+      "description": "Jackson",
+      "groupName": "jackson",
+      "matchPackageNames": ["com.fasterxml.jackson{/,}**"]
+    },
+    {
+      "description": "Hibernate",
+      "groupName": "hibernate",
+      "matchPackageNames": [
+        "org.hibernate{/,}**",
+        "io.hypersistence{/,}**"
+      ]
+    },
+    {
+      "description": "Lombok (runtime + annotation processor + test)",
+      "groupName": "lombok",
+      "matchPackageNames": ["org.projectlombok:lombok"]
+    },
+    {
+      "description": "JUnit",
+      "groupName": "junit",
+      "matchPackageNames": [
+        "org.junit{/,}**",
+        "org.junit.platform:junit-platform-launcher"
+      ]
+    },
+    {
+      "description": "Logback / logging",
+      "groupName": "logback",
+      "matchPackageNames": [
+        "ch.qos.logback{/,}**",
+        "net.logstash.logback{/,}**"
+      ]
     }
   ]
 }
