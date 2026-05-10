@@ -21,6 +21,12 @@
       "automergeType": "pr"
     },
     {
+      "description": "Low/neutral merge confidence: hold 14 days then fail open",
+      "matchConfidence": ["low", "neutral"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
       "description": "Majors require human review",
       "matchUpdateTypes": ["major"],
       "automerge": false,
@@ -141,15 +147,30 @@
       ]
     },
     {
-      "description": "Spring Boot major (held; cross-cutting)",
+      "description": "Spring Boot major (held; cross-cutting — extra soak time)",
       "groupName": "spring-boot major",
       "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days",
       "matchPackageNames": [
         "org.springframework.boot{/,}**",
         "org.springframework.cloud:spring-cloud-dependencies",
         "org.springdoc:springdoc-openapi-starter-webmvc-ui",
         "org.springframework.security{/,}**",
         "org.springframework.session{/,}**"
+      ]
+    },
+    {
+      "description": "Platform / runtime majors — wait a month before opening PR",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days",
+      "matchPackageNames": [
+        "node",
+        "npm",
+        "@types/node",
+        "java",
+        "eclipse-temurin",
+        "gradle",
+        "org.gradle{/,}**"
       ]
     },
     {
