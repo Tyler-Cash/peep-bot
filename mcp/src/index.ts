@@ -17,6 +17,7 @@ import {
   relativeToRepo,
   run,
   astGrepRun,
+  astGrepRewrite,
   astGrepScan,
   buildRule,
   fmtMatch,
@@ -649,6 +650,40 @@ server.registerTool(
     const text = hoverToText(hover).trim();
     if (!text) return textResult("(no hover info)");
     return textResult(text);
+  },
+);
+
+// ---------- ast_rewrite (codemod) ----------
+
+server.registerTool(
+  "ast_rewrite",
+  {
+    description:
+      "AST-aware bulk rewrite via ast-grep. Pattern/rewrite use $VAR for single nodes and $$$ for variadics — same syntax as ast_search. Java patterns generally need full modifiers (e.g. 'public class $N { $$$ }'). By default returns a preview diff (apply=false). Pass apply=true to write changes in place. Far safer than regex codemods for things like 'rename a static final to an instance field allocated in @BeforeEach' or 'turn this method call chain into a builder'.",
+    inputSchema: {
+      pattern: z.string(),
+      rewrite: z.string(),
+      lang: z.enum(["java", "ts", "tsx", "js", "jsx"]),
+      glob: z.string().optional(),
+      apply: z.boolean().optional(),
+    },
+  },
+  async ({ pattern, rewrite, lang, glob, apply }) => {
+    const { stdout, stderr, code } = await astGrepRewrite({
+      pattern,
+      rewrite,
+      lang,
+      apply: apply ?? false,
+      globs: glob ? [glob] : undefined,
+    });
+    if (code !== 0 && !stdout) {
+      return textResult(`ast-grep failed (code ${code}):\n${stderr.slice(0, 1000)}`);
+    }
+    const header = apply
+      ? "[applied — files modified in place]"
+      : "[preview — no files modified; pass apply=true to write]";
+    if (!stdout.trim()) return textResult(`${header}\n(no matches)`);
+    return textResult(`${header}\n${truncateLines(stdout.split("\n"), 600)}`);
   },
 );
 

@@ -161,6 +161,29 @@ export async function astGrepRun(args: {
   return parseStream(stdout);
 }
 
+export async function astGrepRewrite(args: {
+  pattern: string;
+  rewrite: string;
+  lang: LangKey;
+  globs?: string[];
+  paths?: string[];
+  apply: boolean;
+}): Promise<{ stdout: string; stderr: string; code: number }> {
+  const cliArgs = [
+    "run",
+    "--pattern",
+    args.pattern,
+    "--rewrite",
+    args.rewrite,
+    "--lang",
+    args.lang,
+  ];
+  if (args.apply) cliArgs.push("--update-all");
+  for (const g of args.globs ?? []) cliArgs.push("--globs", g);
+  for (const p of args.paths ?? []) cliArgs.push(p);
+  return await run(AST_GREP_BIN, cliArgs);
+}
+
 export const KIND_TABLE: Record<
   LangKey,
   Record<Exclude<SymbolKind, "any">, string[]>
