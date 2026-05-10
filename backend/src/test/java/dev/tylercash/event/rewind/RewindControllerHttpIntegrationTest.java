@@ -5,8 +5,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.rewind.model.RewindStatsDto;
-import dev.tylercash.event.test.TestIds;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
@@ -26,6 +26,7 @@ class RewindControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         GUILD_A = TestIds.nextLong();
         GUILD_B = TestIds.nextLong();
     }
+
     private void seedGuild(long guildId, boolean rewindEnabled) {
         jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
                 + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"

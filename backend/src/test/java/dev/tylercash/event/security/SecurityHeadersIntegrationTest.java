@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.test.SharedPostgres;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +18,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
 /**
  * Asserts the F-004 security headers (Content-Security-Policy, Referrer-Policy,
  * Permissions-Policy) are emitted on backend responses by the configured

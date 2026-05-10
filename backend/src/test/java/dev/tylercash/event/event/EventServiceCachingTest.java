@@ -5,11 +5,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {

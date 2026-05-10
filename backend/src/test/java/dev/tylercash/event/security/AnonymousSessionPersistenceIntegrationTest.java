@@ -3,9 +3,9 @@ package dev.tylercash.event.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.test.SharedPostgres;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,8 +18,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
 /**
  * Pentest finding F-002: anonymous calls used to provision a fresh
  * {@code SPRING_SESSION} row per request, with the global multi-day TTL.

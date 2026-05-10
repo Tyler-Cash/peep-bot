@@ -5,10 +5,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.test.SharedPostgres;
 import jakarta.servlet.http.Cookie;
 import java.util.stream.Stream;
 import net.dv8tion.jda.api.JDA;
@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
 /**
  * Hardens the CSRF + session story. Session-cookie attributes are read from
  * the bound {@code ServerProperties}; absent CSRF tokens are exercised against
@@ -81,7 +82,8 @@ class CsrfHardeningIntegrationTest {
     }
 
     @BeforeEach
-    void seed() {        discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Csrf A", "csrfa", GUILD_1);
+    void seed() {
+        discordUserCacheService.registerIfMissing(USER_IN_GUILD_1, "Csrf A", "csrfa", GUILD_1);
     }
 
     /** Mutating endpoints that hit the CSRF filter — we don't need every one,

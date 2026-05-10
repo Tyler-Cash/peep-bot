@@ -35,6 +35,7 @@ class AvatarControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         GUILD_1 = TestIds.nextLong();
         GUILD_2 = TestIds.nextLong();
     }
+
     @Test
     void anonymous_returns401() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/avatar/{snowflake}", TARGET))

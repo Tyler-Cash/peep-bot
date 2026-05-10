@@ -1,9 +1,9 @@
 package dev.tylercash.event.contract;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.model.Contract;
 import dev.tylercash.event.contract.model.ContractOutcome;
+import dev.tylercash.event.test.SharedPostgres;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+
 /**
  * End-to-end tests for the prediction contract flow against real Discord and PostgreSQL.
  * Requires a valid application-local.yaml with Discord credentials.

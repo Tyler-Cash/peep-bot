@@ -3,12 +3,12 @@ package dev.tylercash.event.lifecycle;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {

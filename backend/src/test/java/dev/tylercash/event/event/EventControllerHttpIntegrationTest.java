@@ -9,8 +9,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
-import dev.tylercash.event.test.TestIds;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -37,6 +37,7 @@ class EventControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         OTHER_USER = TestIds.nextSnowflake();
         GUILD = TestIds.nextLong();
     }
+
     @Autowired
     private EventRepository eventRepository;
 

@@ -7,12 +7,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -26,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -76,7 +77,8 @@ class EventTickSchedulerTest {
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(FIXED_NOW.toInstant());
-        when(clock.getZone()).thenReturn(FIXED_NOW.getZone());    }
+        when(clock.getZone()).thenReturn(FIXED_NOW.getZone());
+    }
 
     private Event saveEvent(ZonedDateTime dateTime, EventState state) {
         long id = dev.tylercash.event.test.TestIds.nextLong();

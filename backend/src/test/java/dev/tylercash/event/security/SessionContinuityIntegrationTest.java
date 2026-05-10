@@ -5,10 +5,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
+import dev.tylercash.event.test.SharedPostgres;
 import jakarta.servlet.http.Cookie;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
 /**
  * Asserts that Spring Session JDBC maintains auth state across requests.
  *

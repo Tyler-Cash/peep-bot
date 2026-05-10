@@ -34,6 +34,7 @@ class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         REGULAR_MEMBER = TestIds.nextSnowflake();
         GUILD_A = TestIds.nextLong();
     }
+
     private void seedGuild(long guildId) {
         jdbc.execute("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
                 + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"

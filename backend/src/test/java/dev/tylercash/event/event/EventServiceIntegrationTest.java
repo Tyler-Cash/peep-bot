@@ -6,13 +6,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.event.model.*;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {

@@ -10,9 +10,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.test.SharedPostgres;
 import jakarta.servlet.http.Cookie;
 import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.AfterAll;
@@ -29,6 +29,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
 /**
  * Full OAuth2 login round-trip test: Discord authorize redirect → WireMock token
  * exchange → success handler redirect to frontend → SESSION cookie → /auth/is-logged-in.

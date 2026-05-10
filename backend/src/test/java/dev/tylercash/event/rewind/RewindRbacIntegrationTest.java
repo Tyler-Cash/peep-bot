@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
@@ -16,6 +15,7 @@ import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.rewind.model.RewindStatsDto;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import net.dv8tion.jda.api.JDA;
@@ -33,6 +33,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.server.ResponseStatusException;
+
 /**
  * Verifies that the rewind feature scopes data by Discord guild membership: a
  * user who only belongs to guild2 cannot read rewind data for guild1, and the

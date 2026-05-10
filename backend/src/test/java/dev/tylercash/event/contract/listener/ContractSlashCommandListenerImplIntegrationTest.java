@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.ContractGraphService;
 import dev.tylercash.event.contract.ContractPinnedMessageService;
 import dev.tylercash.event.contract.UserBalanceService;
@@ -24,6 +23,7 @@ import dev.tylercash.event.discord.DiscordChannelService;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordMessageService;
 import dev.tylercash.event.discord.DiscordService;
+import dev.tylercash.event.test.SharedPostgres;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -48,6 +48,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 /**
  * Integration tests for {@link ContractSlashCommandListenerImpl}.
  *

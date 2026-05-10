@@ -3,7 +3,6 @@ package dev.tylercash.event.concurrency;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.contract.UserBalanceService;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.EventRepository;
@@ -14,6 +13,7 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 /**
  * Integration tests exercising concurrent access to shared mutable state.
  * All tests use a {@link CountDownLatch} start gate so threads fire simultaneously,
@@ -53,6 +54,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ConcurrencyIntegrationTest {
 
     private static final long GUILD_ID = 500L;
+
     @MockitoBean
     JDA jda;
 
@@ -86,8 +88,7 @@ class ConcurrencyIntegrationTest {
     }
 
     @BeforeEach
-    void cleanUp() {
-    }
+    void cleanUp() {}
 
     // -----------------------------------------------------------------------
     // Test 1: Concurrent RSVPs from distinct users converge to N rows

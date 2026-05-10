@@ -5,7 +5,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
@@ -13,6 +12,7 @@ import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+
 /**
  * Authorization fuzz suite — for every controller endpoint that requires auth,
  * assert anonymous → 401, wrong-guild → 403 (when the endpoint is guild-scoped),

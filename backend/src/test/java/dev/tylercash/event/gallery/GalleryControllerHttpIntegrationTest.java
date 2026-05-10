@@ -5,8 +5,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.immich.ImmichAlbumResponse;
-import dev.tylercash.event.test.TestIds;
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.TestIds;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +29,7 @@ class GalleryControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         GUILD_A = TestIds.nextLong();
         GUILD_B = TestIds.nextLong();
     }
+
     private static final String ALBUM_ID = "album-gallery-1";
 
     @Autowired

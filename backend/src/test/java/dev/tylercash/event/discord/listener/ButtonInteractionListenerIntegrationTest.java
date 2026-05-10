@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.discord.DiscordInitializationService;
@@ -21,6 +20,7 @@ import dev.tylercash.event.event.model.AttendanceRecord;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +44,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(
         classes = PeepBotApplication.class,
         properties = {
@@ -96,8 +97,7 @@ class ButtonInteractionListenerIntegrationTest {
     }
 
     @BeforeEach
-    void truncate() {
-    }
+    void truncate() {}
 
     private Event seedPlannedEvent() {
         long id = idCounter.incrementAndGet();

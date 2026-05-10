@@ -1,9 +1,9 @@
 package dev.tylercash.event.event;
 
 import dev.tylercash.event.PeepBotApplication;
-import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
+import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+
 /**
  * End-to-end tests that require real external services (Discord bot, PostgreSQL).
  * Requires DISCORD_TOKEN, DISCORD_GUILD_ID, and OAuth2 credentials to be set

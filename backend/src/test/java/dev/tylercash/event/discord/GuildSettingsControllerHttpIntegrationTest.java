@@ -22,6 +22,7 @@ class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegration
         GUILD_1 = TestIds.nextLong();
         GUILD_2 = TestIds.nextLong();
     }
+
     @Test
     void anonymous_get_returns401() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/guild/{guildId}/settings", GUILD_1))
