@@ -64,7 +64,12 @@ class AnonymousSessionPersistenceIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        // Isolated DB so other test classes' authenticated sessions can't end up in our
+        // SPRING_SESSION table during the test window. The F-002 invariant being asserted is
+        // about anonymous probes specifically — sibling contexts in the JVM may continue to
+        // run filters that persist sessions in the background, so a shared SPRING_SESSION
+        // table makes the absolute-zero assertion non-deterministic.
+        SharedPostgres.registerIsolatedDatabase(registry, AnonymousSessionPersistenceIntegrationTest.class);
     }
 
     @BeforeEach
