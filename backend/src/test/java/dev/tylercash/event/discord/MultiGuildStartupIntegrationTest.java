@@ -46,7 +46,10 @@ class MultiGuildStartupIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        SharedPostgres.registerProperties(registry);
+        // Isolated DB: this test does guildRepository.deleteAll() (which would clobber other
+        // tests' guild rows in a shared DB) and asserts on findAllByActiveTrue() with
+        // hard-coded IDs 1L/2L.
+        SharedPostgres.registerIsolatedDatabase(registry, MultiGuildStartupIntegrationTest.class);
     }
 
     @BeforeEach

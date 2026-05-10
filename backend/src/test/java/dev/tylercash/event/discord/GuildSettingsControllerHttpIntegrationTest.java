@@ -5,12 +5,22 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import dev.tylercash.event.test.AbstractHttpIntegrationTest;
+import dev.tylercash.event.test.SharedPostgres;
 import dev.tylercash.event.test.TestIds;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
+
+    // Dedicated context so the @MockitoBean discordAuthService isn't polluted by sibling
+    // HTTP tests that share the parent context.
+    @DynamicPropertySource
+    static void datasourceOverride(DynamicPropertyRegistry r) {
+        SharedPostgres.registerIsolatedDatabase(r, GuildSettingsControllerHttpIntegrationTest.class);
+    }
 
     private String USER_ID;
     private long GUILD_1;

@@ -22,7 +22,12 @@ public final class SharedPostgres {
     public static final PostgreSQLContainer<?> CONTAINER;
 
     static {
-        CONTAINER = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17");
+        // Bump max_connections from Postgres' default 100. With one shared container, every
+        // Spring test context's Hikari pool draws from this limit; contexts cached by
+        // TestContextCache plus the per-class contexts created by registerIsolatedDatabase()
+        // can easily exceed 100 in CI. Raise the ceiling and shrink pools below.
+        CONTAINER = new PostgreSQLContainer<>("pgvector/pgvector:0.8.0-pg17")
+                .withCommand("postgres", "-c", "max_connections=400");
         CONTAINER.start();
     }
 
@@ -33,6 +38,7 @@ public final class SharedPostgres {
         r.add("spring.datasource.url", CONTAINER::getJdbcUrl);
         r.add("spring.datasource.username", CONTAINER::getUsername);
         r.add("spring.datasource.password", CONTAINER::getPassword);
+        registerSmallPool(r);
     }
 
     /**
@@ -47,6 +53,17 @@ public final class SharedPostgres {
         r.add("spring.datasource.url", () -> CONTAINER.getJdbcUrl().replaceFirst("/[^/]*$", "/" + dbName));
         r.add("spring.datasource.username", CONTAINER::getUsername);
         r.add("spring.datasource.password", CONTAINER::getPassword);
+        registerSmallPool(r);
+    }
+
+    /**
+     * Cap each Spring test context's Hikari pool to something small. With dozens of cached
+     * contexts in a single suite run, the default pool size (10) × N contexts trivially blows
+     * past Postgres' max_connections.
+     */
+    private static void registerSmallPool(DynamicPropertyRegistry r) {
+        r.add("spring.datasource.hikari.maximum-pool-size", () -> "3");
+        r.add("spring.datasource.hikari.minimum-idle", () -> "0");
     }
 
     private static synchronized void ensureDatabase(String dbName) {
