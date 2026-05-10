@@ -14,6 +14,22 @@ dependencies — no system installs beyond Node 20+.
 
 ## Tools
 
+### LSP semantic navigation
+
+Backed by `typescript-language-server` (TS/TSX/JS/JSX) and `jdtls` (Java).
+Cold start is paid once per server lifetime: tsserver ~8s, jdtls ~18–35s
+(jdtls workspace cached at `mcp/.cache/jdtls-workspace/`). Subsequent calls
+are 10–200ms. Both servers are pre-warmed in the background on MCP startup.
+
+| Tool | Purpose |
+|------|---------|
+| `lsp_references({path,line,character} \| {name,glob?,lang?,includeDeclaration?})` | True semantic references. Routes by extension. |
+| `lsp_definition(...)` | Goto-definition. |
+| `lsp_hover(...)` | Hover info (signature, javadoc/jsdoc, inferred type). |
+| `lsp_call_hierarchy({...,direction?})` | Who calls X (incoming) or what X calls (outgoing). Strictly more focused than references. |
+| `lsp_workspace_symbol(query, lang?, limit?)` | Fuzzy 'find me everything matching query' across the project. Both servers consulted by default. |
+| `lsp_diagnostics(path?, lang?, severity?)` | Compile/type/lint diagnostics. Per-file or workspace-wide. |
+
 ### Code navigation
 
 | Tool | Purpose |
@@ -23,6 +39,7 @@ dependencies — no system installs beyond Node 20+.
 | `find_symbol(name, kind?, lang?, glob?)` | Locate a definition by AST node kind. Exact name match. |
 | `find_references(name, glob?)` | Word-boundary text search for usages (text-only). |
 | `ast_search(pattern, lang, glob?)` | Raw ast-grep pattern. `$VAR` for nodes, `$$$` for variadics. |
+| `ast_rewrite(pattern, rewrite, lang, glob?, apply?)` | AST-aware bulk codemod. Preview by default; `apply=true` writes in place. Far safer than regex codemods for structural changes. |
 | `grep(pattern, glob?, ignoreCase?)` | Regex text search via ripgrep. |
 | `lsp_references({path,line,character} \| {name,glob?,lang?})` | True semantic references. Routes by file extension: tsserver for TS/TSX/JS/JSX, jdtls for Java. |
 | `lsp_definition({path,line,character} \| {name,glob?,lang?})` | Goto-definition. Picks the right server by extension. |
@@ -40,6 +57,17 @@ dependencies — no system installs beyond Node 20+.
 | `test_mocks(type?)` | `@MockBean` / `@MockitoBean` / `@SpyBean` topology. With no args: all mocked types ranked by # of test classes mocking them. With `type='<fqn or simpleName>'`: just the test classes that mock that type. |
 | `db_info()` | Discover the active Postgres: prefers a Testcontainers-managed pgvector container (the `SharedPostgres` used by the backend test suite), falls back to the docker-compose dev DB. Override with `PEEP_BOT_DB_URL`. |
 | `db_query(sql, database?, allowWrite?, maxRows?)` | Run SQL against the discovered Postgres. Read-only by default (wraps in `BEGIN READ ONLY` / `ROLLBACK`, refuses write keywords). Use `database='test_<classname>'` to target a per-class isolated DB created by `SharedPostgres.registerIsolatedDatabase`. Statement timeout 10s. |
+
+### Project synthesizers (peep-bot specific)
+
+| Tool | Purpose |
+|------|---------|
+| `lifecycle_registry()` | Derived registry of `DurableEventListener` implementations grouped by event type, with retry/component annotations and constructor deps. Replaces the hand-maintained `docs/event-state-machine.md` table. |
+| `discord_interaction_map()` | Slash commands, subcommands, button IDs, modal IDs, and listener handler overrides discovered by scanning JDA usage in `discord/` and `contract/`. |
+| `msw_spring_diff()` | Diff frontend MSW handlers against Spring endpoints. Surfaces stale mocks (will 404 in live mode) and Spring endpoints lacking a mock (frontend will fail in mock mode). |
+| `migration_lint()` | Lint Liquibase changesets for risky patterns: NOT NULL adds without defaults, FKs without indexes, drops without rollback, raw-SQL `CREATE INDEX` without `CONCURRENTLY`. |
+| `spring_property(key, profiles?)` | Resolve a Spring property under an explicit profile list, walking `application.yaml` + `application-{profile}.yaml` in Spring's merge order. Reports value + source file + matching `@ConfigurationProperties` bindings. Approximation — doesn't follow env vars, CLI args, or `@PropertySource`. |
+| `spring_properties_list(profiles?, prefix?)` | List resolved properties under the given profiles, optionally filtered by prefix. |
 
 ### Resources
 
@@ -107,6 +135,30 @@ Or add to `~/.claude.json` / a custom `.mcp.json`:
 ```
 
 `PEEP_BOT_ROOT` defaults to the parent of the `mcp/` directory.
+
+## Troubleshooting
+
+- **Java LSP returns empty references / hover.** Almost always because jdtls is
+  importing extra Gradle projects under the workspace root (typically stale
+  `.claude/worktrees/agent-*/backend/`). The MCP points jdtls at
+  `<repo>/backend` by default to avoid this; set `PEEP_BOT_JAVA_ROOT=<abs>`
+  if your project root is somewhere else.
+- **`db_query` says no Postgres found.** Either no Testcontainer is running
+  (start a backend test) or no docker-compose Postgres (`docker compose up -d`),
+  or `docker ps` requires sudo on this host. Override with
+  `PEEP_BOT_DB_URL=postgresql://user:pass@host:port/db`.
+- **`db_query` returns "Refused: ... write keyword".** Read-only by default
+  to avoid mutating live test state. Pass `allowWrite=true` to override.
+- **First Java tool call hangs for ~30s.** jdtls cold start. Subsequent calls
+  are fast (the client is reused for the MCP server lifetime). Pre-warmed in
+  background on startup.
+- **`run_test` on backend prints exit=0 with no JUnit summary.** Compile
+  failure before tests ran — falls back to stdout tail. Check `[stderr]`
+  section for the Java compile error.
+- **`.cache/` is large.** jdtls tarball (~50MB) plus the workspace
+  (~200MB once indexed). Wipe with
+  `rm -rf mcp/.cache/jdtls-workspace` to force re-index; wipe
+  `mcp/.cache/jdtls/` + the tarball to force a fresh download.
 
 ## Notes & gotchas
 

@@ -22,6 +22,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -35,6 +36,37 @@ jobs:
               - 'backend/**'
             frontend:
               - 'frontend/**'
+            mcp:
+              - 'mcp/**'
+
+  mcp-test:
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Install
+        working-directory: mcp
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        working-directory: mcp
+        run: npm run build
+
+      - name: Test
+        working-directory: mcp
+        run: npm test
 
   backend-test:
     runs-on: ubuntu-24.04
