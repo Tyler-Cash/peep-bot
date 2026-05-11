@@ -1314,3 +1314,37 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+  - changeSet:
+      id: server-settings-redesign columns
+      author: tyler
+      comment: >
+        Adds per-guild category configuration (planned + archived), archive
+        retention (7/14/30/90, default 90), and the anyone-can-create toggle
+        introduced by the server-settings redesign.
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: planned_category_id
+                  type: text
+              - column:
+                  name: archived_category_id
+                  type: text
+              - column:
+                  name: archive_days
+                  type: integer
+                  defaultValueNumeric: 90
+                  constraints:
+                    nullable: false
+              - column:
+                  name: anyone_can_create
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              ALTER TABLE guild ADD CONSTRAINT guild_archive_days_check
+              CHECK (archive_days IN (7, 14, 30, 90))
+
