@@ -1,14 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Chunky } from "@/components/ui/Chunky";
-import { Slab } from "@/components/ui/Slab";
-import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
+import { CategoriesArchiveCard } from "@/components/guild/settings/CategoriesArchiveCard";
+import { CreationThrottleCard } from "@/components/guild/settings/CreationThrottleCard";
+import { DangerZoneCard } from "@/components/guild/settings/DangerZoneCard";
+import { PrimaryLocationCard } from "@/components/guild/settings/PrimaryLocationCard";
+import { RolesPermissionsCard } from "@/components/guild/settings/RolesPermissionsCard";
+import { RsvpEmojiCard } from "@/components/guild/settings/RsvpEmojiCard";
+import { StickySaveBar } from "@/components/guild/settings/StickySaveBar";
 import {
+  kickBotFromGuild,
   updateGuildSettings,
   useCurrentUser,
+  useGuildCategories,
+  useGuildRoles,
   useGuildSettings,
   useGuilds,
 } from "@/lib/hooks";
@@ -19,18 +26,22 @@ import {
   newPlacesSessionToken,
 } from "@/lib/places";
 
-type TabKey = "roles" | "emoji" | "defaults";
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "roles", label: "Roles & channels" },
-  { key: "emoji", label: "RSVP emoji" },
-  { key: "defaults", label: "Defaults & limits" },
-];
-
-function readTabFromHash(): TabKey {
-  if (typeof window === "undefined") return "roles";
-  const m = window.location.hash.match(/tab=(roles|emoji|defaults)/);
-  return (m?.[1] as TabKey) ?? "roles";
-}
+type State = {
+  primaryLocation: string;
+  primaryLocationPlaceId: string | null;
+  primaryLocationLat: number | null;
+  primaryLocationLng: number | null;
+  notifRole: string;
+  organiserRole: string;
+  anyoneCanCreate: boolean;
+  rateLimit: number;
+  plannedCategoryId: string | null;
+  archivedCategoryId: string | null;
+  archiveDays: 7 | 14 | 30 | 90;
+  emojiAccepted: string;
+  emojiDeclined: string;
+  emojiMaybe: string;
+};
 
 export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const router = useRouter();
@@ -38,77 +49,47 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const { data: guilds } = useGuilds();
   const guild = guilds?.find((g) => g.id === guildId) ?? null;
   const { data: settings, isLoading, error } = useGuildSettings(guildId);
+  const { data: roles, isLoading: rolesLoading } = useGuildRoles(guildId);
+  const { data: categories, isLoading: categoriesLoading } = useGuildCategories(guildId);
   const sessionToken = useMemo(newPlacesSessionToken, []);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("roles");
-  useEffect(() => {
-    setActiveTab(readTabFromHash());
-    const onHash = () => setActiveTab(readTabFromHash());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
-
-  const [primaryLocation, setPrimaryLocation] = useState("");
-  const [primaryLocationPlaceId, setPrimaryLocationPlaceId] = useState<string | null>(null);
-  const [primaryLocationLat, setPrimaryLocationLat] = useState<number | null>(null);
-  const [primaryLocationLng, setPrimaryLocationLng] = useState<number | null>(null);
-  const [eventsRole, setEventsRole] = useState("events");
-  const [organiserRole, setOrganiserRole] = useState("event-organiser");
-  const [separatorChannel, setSeparatorChannel] = useState("");
-  const [emojiAccepted, setEmojiAccepted] = useState("✅");
-  const [emojiDeclined, setEmojiDeclined] = useState("❌");
-  const [emojiMaybe, setEmojiMaybe] = useState("❓");
-  const [rateLimit, setRateLimit] = useState<number | null>(null);
-  const [rateLimitDefault, setRateLimitDefault] = useState<number>(5);
-  const initialOrganiserRole = useRef<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [state, setState] = useState<State | null>(null);
+  const [initial, setInitial] = useState<State | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (settings && !initialized) {
-      setPrimaryLocation(settings.primaryLocationName ?? "");
-      setPrimaryLocationPlaceId(settings.primaryLocationPlaceId ?? null);
-      setPrimaryLocationLat(settings.primaryLocationLat ?? null);
-      setPrimaryLocationLng(settings.primaryLocationLng ?? null);
-      setEventsRole(settings.eventsRole ?? "events");
-      setOrganiserRole(settings.organiserRole ?? "event-organiser");
-      setSeparatorChannel(settings.separatorChannel ?? "");
-      setEmojiAccepted(settings.emojiAccepted ?? "✅");
-      setEmojiDeclined(settings.emojiDeclined ?? "❌");
-      setEmojiMaybe(settings.emojiMaybe ?? "❓");
-      setRateLimit(settings.eventCreateRateLimitPerHour ?? null);
-      setRateLimitDefault(settings.defaultEventCreateRateLimitPerHour ?? 5);
-      initialOrganiserRole.current = settings.organiserRole ?? "event-organiser";
-      setInitialized(true);
+    if (settings && state === null) {
+      const snapshot: State = {
+        primaryLocation: settings.primaryLocationName ?? "",
+        primaryLocationPlaceId: settings.primaryLocationPlaceId ?? null,
+        primaryLocationLat: settings.primaryLocationLat ?? null,
+        primaryLocationLng: settings.primaryLocationLng ?? null,
+        notifRole: settings.eventsRole ?? "events",
+        organiserRole: settings.organiserRole ?? "event-organiser",
+        anyoneCanCreate: settings.anyoneCanCreate ?? true,
+        rateLimit:
+          settings.eventCreateRateLimitPerHour ??
+          settings.defaultEventCreateRateLimitPerHour ??
+          5,
+        plannedCategoryId: settings.plannedCategoryId ?? null,
+        archivedCategoryId: settings.archivedCategoryId ?? null,
+        archiveDays: (settings.archiveDays ?? 90) as 7 | 14 | 30 | 90,
+        emojiAccepted: settings.emojiAccepted ?? "✅",
+        emojiDeclined: settings.emojiDeclined ?? "❌",
+        emojiMaybe: settings.emojiMaybe ?? "❓",
+      };
+      setState(snapshot);
+      setInitial(snapshot);
     }
-  }, [settings, initialized]);
+  }, [settings, state]);
 
   useEffect(() => {
     if (user && !user.ownedGuildIds?.includes(guildId)) router.push("/");
   }, [user, router, guildId]);
 
-  const handleLocationChange = (value: string) => {
-    setPrimaryLocation(value);
-    setPrimaryLocationPlaceId(null);
-    setPrimaryLocationLat(null);
-    setPrimaryLocationLng(null);
-  };
-
-  const handleLocationPick = async (placeId: string, displayValue: string) => {
-    setPrimaryLocation(displayValue);
-    setPrimaryLocationPlaceId(placeId);
-    fetchPlaceDetails(placeId, sessionToken);
-    const coords = await geocodePlace(placeId, sessionToken);
-    if (coords) {
-      setPrimaryLocationLat(coords.lat);
-      setPrimaryLocationLng(coords.lng);
-    }
-  };
-
   if (isLoading && !settings && !error) {
-    return <div className="mx-auto max-w-[820px] p-8 text-mute">loading…</div>;
+    return <div className="p-8 text-mute">loading…</div>;
   }
-
   if (error) {
     const isUnauthorized = error instanceof UnauthorizedError;
     return (
@@ -121,44 +102,64 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
             ? "You don't have permission to view server settings."
             : "Something went wrong. Try refreshing the page."}
         </p>
-        <Link href="/" className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink">
+        <Link
+          href="/"
+          className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink"
+        >
           ← back
         </Link>
       </div>
     );
   }
-
-  if (!settings) {
-    return <div className="mx-auto max-w-[820px] p-8 text-mute">loading…</div>;
+  if (!settings || !state || !initial) {
+    return <div className="p-8 text-mute">loading…</div>;
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (organiserRole !== initialOrganiserRole.current) {
-      const ok = window.confirm(
-        `After this change, only members with the role "${organiserRole}" will be able to organise events (cancel, recategorize, create private channels). Continue?`
+  const dirty = JSON.stringify(state) !== JSON.stringify(initial);
+
+  const handleLocationPick = async (placeId: string, displayValue: string) => {
+    setState({
+      ...state,
+      primaryLocation: displayValue,
+      primaryLocationPlaceId: placeId,
+    });
+    fetchPlaceDetails(placeId, sessionToken);
+    const coords = await geocodePlace(placeId, sessionToken);
+    if (coords) {
+      setState((s) =>
+        s ? { ...s, primaryLocationLat: coords.lat, primaryLocationLng: coords.lng } : s,
       );
-      if (!ok) return;
     }
+  };
+
+  const onSave = async () => {
     setSubmitting(true);
     try {
       await updateGuildSettings(guildId, {
-        primaryLocationPlaceId,
-        primaryLocationName: primaryLocation.trim() || null,
-        primaryLocationLat,
-        primaryLocationLng,
-        eventsRole,
-        organiserRole,
-        separatorChannel: separatorChannel.trim() || null,
-        emojiAccepted,
-        emojiDeclined,
-        emojiMaybe,
-        eventCreateRateLimitPerHour: rateLimit,
+        primaryLocationPlaceId: state.primaryLocationPlaceId,
+        primaryLocationName: state.primaryLocation.trim() || null,
+        primaryLocationLat: state.primaryLocationLat,
+        primaryLocationLng: state.primaryLocationLng,
+        eventsRole: state.notifRole,
+        organiserRole: state.organiserRole,
+        emojiAccepted: state.emojiAccepted,
+        emojiDeclined: state.emojiDeclined,
+        emojiMaybe: state.emojiMaybe,
+        anyoneCanCreate: state.anyoneCanCreate,
+        eventCreateRateLimitPerHour: state.anyoneCanCreate ? state.rateLimit : null,
+        plannedCategoryId: state.plannedCategoryId,
+        archivedCategoryId: state.archivedCategoryId,
+        archiveDays: state.archiveDays,
       });
-      router.push("/");
+      setInitial(state);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onKick = async (confirmGuildName: string) => {
+    await kickBotFromGuild(guildId, confirmGuildName);
+    router.push("/");
   };
 
   const locationBias =
@@ -166,210 +167,102 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
       ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
       : undefined;
 
-  const switchTab = (key: TabKey) => {
-    setActiveTab(key);
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `#tab=${key}`);
-    }
-  };
+  const toChipOptions = (entries: { id?: string; name?: string }[] | undefined) =>
+    (entries ?? [])
+      .filter((e): e is { id: string; name: string } => !!e.id && !!e.name);
 
   return (
-    <div className="mx-auto max-w-[820px] px-4 sm:px-5 py-6 pb-28">
-      <div className="flex items-center justify-between mb-5">
+    <div className="px-14 pt-8 pb-14">
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-[36px] font-extrabold tracking-[-0.03em] lowercase">
+            {guild?.name ?? "server config"}
+          </h1>
+          <p className="text-[13.5px] font-semibold text-mute mt-1">
+            edit settings for {guild?.name?.toLowerCase() ?? "this server"}
+            {typeof guild?.members === "number" ? ` · ${guild.members} members` : ""}
+          </p>
+        </div>
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-[18px] font-semibold text-mute hover:text-ink"
+          className="inline-flex items-center gap-1.5 text-[16px] font-semibold text-mute hover:text-ink"
         >
           ← back
         </Link>
-      </div>
-
-      <header className="flex items-center gap-3 mb-5">
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-chip border-[1.5px] border-ink shadow-rest bg-paper2 text-[18px]">
-          ⚙️
-        </span>
-        <div>
-          <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
-            SERVER SETTINGS
-          </span>
-          <h1 className="text-[26px] sm:text-[36px] font-extrabold tracking-[-0.03em] leading-tight mt-0.5 break-words">
-            {guild?.name ?? "server config"}
-          </h1>
-        </div>
       </header>
 
-      <nav
-        role="tablist"
-        className="flex gap-2 overflow-x-auto -mx-4 px-4 mb-4 sticky top-0 bg-paper z-10 py-2"
-      >
-        {TABS.map((t) => {
-          const active = t.key === activeTab;
-          return (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={active}
-              type="button"
-              onClick={() => switchTab(t.key)}
-              className={
-                "shrink-0 px-4 py-2 rounded-chip border-[1.5px] border-ink text-[14px] font-extrabold tracking-[-0.01em] " +
-                (active ? "bg-ink text-paper shadow-rest" : "bg-paper2 text-ink hover:bg-paper3")
-              }
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        {activeTab === "roles" && (
-          <Slab className="p-5 flex flex-col gap-4">
-            <Field label="events role">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={eventsRole}
-                onChange={(e) => setEventsRole(e.target.value)}
-              />
-              <p className="text-[11.5px] text-mute font-semibold mt-1">
-                Role pinged when new events are created.
-              </p>
-            </Field>
-            <Field label="event organiser role">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={organiserRole}
-                onChange={(e) => setOrganiserRole(e.target.value)}
-              />
-              <p className="text-[11.5px] text-mute font-semibold mt-1">
-                Members with this role can cancel events, recategorize, remove attendees, and create private channels.
-              </p>
-            </Field>
-            <Field label="separator channel">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={separatorChannel}
-                onChange={(e) => setSeparatorChannel(e.target.value)}
-                placeholder="(none)"
-              />
-            </Field>
-          </Slab>
-        )}
-
-        {activeTab === "emoji" && (
-          <Slab className="p-5 flex flex-col gap-4">
-            <Field label="accepted emoji">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={emojiAccepted}
-                onChange={(e) => setEmojiAccepted(e.target.value)}
-              />
-              <p className="text-[11.5px] text-mute font-semibold mt-1">
-                Unicode emoji or the name of a custom emoji in this guild.
-              </p>
-            </Field>
-            <Field label="declined emoji">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={emojiDeclined}
-                onChange={(e) => setEmojiDeclined(e.target.value)}
-              />
-            </Field>
-            <Field label="maybe emoji">
-              <input
-                className="w-full px-3 py-2 rounded-input border-[1.5px] border-ink"
-                value={emojiMaybe}
-                onChange={(e) => setEmojiMaybe(e.target.value)}
-              />
-            </Field>
-          </Slab>
-        )}
-
-        {activeTab === "defaults" && (
-          <Slab className="p-5 flex flex-col gap-4">
-            <Field label="primary location">
-              <LocationAutocomplete
-                value={primaryLocation}
-                onChange={handleLocationChange}
-                onPick={handleLocationPick}
-                placeholder="e.g. Melbourne, VIC"
-                locationBias={locationBias}
-              />
-              <p className="text-[11.5px] text-mute font-semibold mt-1">
-                Used to bias venue search results towards your group&apos;s area.
-              </p>
-            </Field>
-
-            <Field label="event-create rate limit">
-              <label className="flex items-center gap-2 text-[14px] font-semibold">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 border-[1.5px] border-ink rounded-sm"
-                  checked={rateLimit === null}
-                  onChange={(e) =>
-                    setRateLimit(e.target.checked ? null : (rateLimit ?? rateLimitDefault))
-                  }
-                />
-                Use server default ({rateLimitDefault} / hour)
-              </label>
-              {rateLimit !== null && (
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
-                    const active = rateLimit === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setRateLimit(n)}
-                        className={
-                          "px-4 py-2 rounded-chip border-[1.5px] border-ink text-[14px] font-extrabold " +
-                          (active ? "bg-ink text-paper shadow-rest" : "bg-paper2 text-ink hover:bg-paper3")
-                        }
-                      >
-                        {n} / hour
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <p className="text-[11.5px] text-mute font-semibold mt-1">
-                Caps how many events members of this server can create each hour.
-              </p>
-            </Field>
-          </Slab>
-        )}
-
-        <div className="fixed bottom-0 left-0 right-0 border-t-[1.5px] border-ink bg-paper px-4 py-3 z-20">
-          <div className="mx-auto max-w-[820px] flex items-center justify-between">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-[16px] font-semibold text-mute hover:text-ink"
-            >
-              cancel
-            </Link>
-            <Chunky type="submit" variant="leaf" size="lg" disabled={submitting}>
-              {submitting ? "saving…" : "save settings"}
-            </Chunky>
-          </div>
+      <div className="flex gap-5 items-start">
+        <div className="flex-[1.2] flex flex-col gap-5">
+          <RsvpEmojiCard
+            value={{
+              accept: state.emojiAccepted,
+              decline: state.emojiDeclined,
+              maybe: state.emojiMaybe,
+            }}
+            onChange={(v) =>
+              setState({
+                ...state,
+                emojiAccepted: v.accept,
+                emojiDeclined: v.decline,
+                emojiMaybe: v.maybe,
+              })
+            }
+          />
+          <CategoriesArchiveCard
+            plannedCategoryId={state.plannedCategoryId}
+            archivedCategoryId={state.archivedCategoryId}
+            archiveDays={state.archiveDays}
+            categories={toChipOptions(categories)}
+            ready={!categoriesLoading}
+            onPlannedChange={(id) => setState({ ...state, plannedCategoryId: id })}
+            onArchivedChange={(id) => setState({ ...state, archivedCategoryId: id })}
+            onArchiveDaysChange={(d) =>
+              setState({ ...state, archiveDays: d as 7 | 14 | 30 | 90 })
+            }
+          />
         </div>
-      </form>
-    </div>
-  );
-}
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold tracking-[0.18em] text-mute uppercase">
-        {label}
-      </span>
-      {children}
-    </label>
+        <div className="flex-1 flex flex-col gap-5">
+          <PrimaryLocationCard
+            value={state.primaryLocation}
+            onChange={(v) =>
+              setState({
+                ...state,
+                primaryLocation: v,
+                primaryLocationPlaceId: null,
+                primaryLocationLat: null,
+                primaryLocationLng: null,
+              })
+            }
+            onPick={handleLocationPick}
+            locationBias={locationBias}
+          />
+          <RolesPermissionsCard
+            notifRole={state.notifRole}
+            organiserRole={state.organiserRole}
+            anyoneCanCreate={state.anyoneCanCreate}
+            roles={toChipOptions(roles)}
+            ready={!rolesLoading}
+            onNotifRoleChange={(n) => setState({ ...state, notifRole: n })}
+            onOrganiserRoleChange={(n) => setState({ ...state, organiserRole: n })}
+            onAnyoneCanCreateChange={(v) => setState({ ...state, anyoneCanCreate: v })}
+          />
+          {state.anyoneCanCreate && (
+            <CreationThrottleCard
+              rateLimit={state.rateLimit}
+              onRateLimitChange={(n) => setState({ ...state, rateLimit: n })}
+            />
+          )}
+          <DangerZoneCard guildName={guild?.name ?? ""} onKick={onKick} />
+        </div>
+      </div>
+
+      <StickySaveBar
+        dirty={dirty}
+        submitting={submitting}
+        onDiscard={() => setState(initial)}
+        onSave={onSave}
+      />
+    </div>
   );
 }

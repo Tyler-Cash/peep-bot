@@ -14,13 +14,16 @@ vi.mock("next/navigation", () => ({
 // MSW handlers in src/mocks/handlers.ts service the SWR fetches.
 
 describe("GuildSettingsForm (render harness)", () => {
-  it("mounts without crashing and shows the primary location label", async () => {
+  it("mounts without crashing and renders the settings cards", async () => {
     const { errors, restore } = trapConsoleError();
     try {
       renderWithProviders(<GuildSettingsForm guildId="mockguild-1" />);
 
-      // The default active tab ("Roles & channels") shows the events role field once settings load.
-      await screen.findByText(/events role/i, undefined, { timeout: 3000 });
+      // Once settings + roles + categories load via MSW, the cards render their headings.
+      await screen.findByRole("heading", { name: /rsvp emoji/i }, { timeout: 3000 });
+      await screen.findByRole("heading", { name: /categories & archive/i });
+      await screen.findByRole("heading", { name: /primary location/i });
+      await screen.findByRole("heading", { name: /roles & permissions/i });
     } finally {
       restore();
     }
