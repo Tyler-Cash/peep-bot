@@ -11,6 +11,8 @@ import {
   findEvent,
   galleryAlbums,
   guild,
+  guildCategories,
+  guildRoles,
   guildSettings,
   secondGuild,
   rewindStats,
@@ -155,6 +157,19 @@ export const handlers = [
       guild.primaryLocationLat = body.primaryLocationLat ?? null;
       guild.primaryLocationLng = body.primaryLocationLng ?? null;
       return HttpResponse.json(guildSettings);
+    }),
+  ),
+
+  http.get(API("/guild/[^/]+/roles"), requireAuth(() => HttpResponse.json(guildRoles))),
+
+  http.get(API("/guild/[^/]+/categories"), requireAuth(() => HttpResponse.json(guildCategories))),
+
+  http.delete(
+    API("/guild/[^/]+"),
+    requireAuth(async ({ request }) => {
+      const body = (await request.json()) as { confirmGuildName?: string };
+      if (!body?.confirmGuildName) return new HttpResponse(null, { status: 400 });
+      return new HttpResponse(null, { status: 204 });
     }),
   ),
 

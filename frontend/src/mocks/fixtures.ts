@@ -126,11 +126,29 @@ export const guildSettings = {
   primaryLocationLng: null as number | null,
   eventsRole: "events",
   adminRole: "event-admin",
+  organiserRole: "event-organiser",
   separatorChannel: null as string | null,
   emojiAccepted: "✅",
   emojiDeclined: "❌",
   emojiMaybe: "❓",
+  eventCreateRateLimitPerHour: null as number | null,
+  defaultEventCreateRateLimitPerHour: 5,
+  plannedCategoryId: null as string | null,
+  archivedCategoryId: null as string | null,
+  archiveDays: 90,
+  anyoneCanCreate: true,
 };
+
+export const guildRoles = [
+  { id: "10", name: "events" },
+  { id: "20", name: "event-organiser" },
+  { id: "30", name: "mods" },
+];
+
+export const guildCategories = [
+  { id: "100", name: "Active events" },
+  { id: "200", name: "Archive" },
+];
 
 // In-memory store — mutated by handlers so RSVPs + create-event persist across navigations.
 export const store = {

@@ -5,7 +5,13 @@ import useSWR, { mutate as globalMutate } from "swr";
 import { z } from "zod";
 import { apiFetch, api } from "./api";
 import { clearSwrCache } from "./swrCache";
-import { zGuildDto, zGuildSettingsDto, zUserInfoDto } from "./api/generated/zod.gen";
+import {
+  zDirectoryEntry,
+  zGuildDto,
+  zGuildSettingsDto,
+  zUserInfoDto,
+} from "./api/generated/zod.gen";
+import type { DirectoryEntry } from "./api/generated";
 import type {
   EventDetailDto,
   EventDto,
@@ -501,6 +507,30 @@ export async function updateGuildSettings(
   });
   await globalMutate(`/guild/${guildId}/settings`, undefined, {
     revalidate: true,
+  });
+  await globalMutate("/guild", undefined, { revalidate: true });
+}
+
+const directoryListSchema = z.array(zDirectoryEntry);
+
+export function useGuildRoles(guildId: string | null) {
+  return useSWR<DirectoryEntry[]>(
+    guildId ? `/guild/${guildId}/roles` : null,
+    (path) => apiFetch(path, {}, directoryListSchema),
+  );
+}
+
+export function useGuildCategories(guildId: string | null) {
+  return useSWR<DirectoryEntry[]>(
+    guildId ? `/guild/${guildId}/categories` : null,
+    (path) => apiFetch(path, {}, directoryListSchema),
+  );
+}
+
+export async function kickBotFromGuild(guildId: string, confirmGuildName: string): Promise<void> {
+  await apiFetch(`/guild/${guildId}`, {
+    method: "DELETE",
+    body: JSON.stringify({ confirmGuildName }),
   });
   await globalMutate("/guild", undefined, { revalidate: true });
 }

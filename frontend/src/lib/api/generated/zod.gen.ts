@@ -93,6 +93,11 @@ export const zCsrfToken = z.object({
     token: z.string().nullable().optional()
 });
 
+export const zDirectoryEntry = z.object({
+    id: z.string().nullable().optional(),
+    name: z.string().nullable().optional()
+});
+
 export const zEventCategoryDto = z.object({
     eventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     name: z.string().nullable().optional(),
@@ -199,6 +204,9 @@ export const zGuildDto = z.object({
 });
 
 export const zGuildSettingsDto = z.object({
+    anyoneCanCreate: z.boolean().nullable().optional(),
+    archiveDays: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    archivedCategoryId: z.string().nullable().optional(),
     defaultEventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     emojiAccepted: z.string().nullable().optional(),
     emojiDeclined: z.string().nullable().optional(),
@@ -206,6 +214,7 @@ export const zGuildSettingsDto = z.object({
     eventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     eventsRole: z.string().nullable().optional(),
     organiserRole: z.string().nullable().optional(),
+    plannedCategoryId: z.string().nullable().optional(),
     primaryLocationLat: z.number().nullable().optional(),
     primaryLocationLng: z.number().nullable().optional(),
     primaryLocationName: z.string().nullable().optional(),
@@ -214,12 +223,16 @@ export const zGuildSettingsDto = z.object({
 });
 
 export const zGuildSettingsRequest = z.object({
+    anyoneCanCreate: z.boolean().nullable().optional(),
+    archiveDays: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    archivedCategoryId: z.string().nullable().optional(),
     emojiAccepted: z.string().nullable().optional(),
     emojiDeclined: z.string().nullable().optional(),
     emojiMaybe: z.string().nullable().optional(),
     eventCreateRateLimitPerHour: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     eventsRole: z.string().nullable().optional(),
     organiserRole: z.string().nullable().optional(),
+    plannedCategoryId: z.string().nullable().optional(),
     primaryLocationLat: z.number().nullable().optional(),
     primaryLocationLng: z.number().nullable().optional(),
     primaryLocationName: z.string().nullable().optional(),
@@ -251,6 +264,10 @@ export const zAdminEventDto = z.object({
     name: z.string().nullable().optional(),
     state: z.string().nullable().optional(),
     when: z.string().nullable().optional()
+});
+
+export const zKickGuildRequest = z.object({
+    confirmGuildName: z.string().min(1)
 });
 
 export const zPageMetadata = z.object({
@@ -537,6 +554,21 @@ export const zOpenAlbumResponse = z.record(z.string(), z.string());
  */
 export const zGetGuildsResponse = z.array(zGuildDto);
 
+export const zKickBody = zKickGuildRequest;
+
+export const zKickPath = z.object({
+    guildId: z.string()
+});
+
+export const zCategoriesPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zCategoriesResponse = z.array(zDirectoryEntry);
+
 export const zGetFeaturesPath = z.object({
     guildId: z.string()
 });
@@ -545,6 +577,15 @@ export const zGetFeaturesPath = z.object({
  * OK
  */
 export const zGetFeaturesResponse = z.record(z.string(), z.boolean());
+
+export const zRolesPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zRolesResponse = z.array(zDirectoryEntry);
 
 export const zGetSettingsPath = z.object({
     guildId: z.string()

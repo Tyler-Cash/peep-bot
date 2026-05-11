@@ -113,6 +113,11 @@ export type CsrfToken = {
     token?: string;
 };
 
+export type DirectoryEntry = {
+    id?: string;
+    name?: string;
+};
+
 export type EventCategoryDto = {
     eventCount?: number;
     name?: string;
@@ -219,6 +224,9 @@ export type GuildDto = {
 };
 
 export type GuildSettingsDto = {
+    anyoneCanCreate?: boolean;
+    archiveDays?: number;
+    archivedCategoryId?: string;
     defaultEventCreateRateLimitPerHour?: number;
     emojiAccepted?: string;
     emojiDeclined?: string;
@@ -226,6 +234,7 @@ export type GuildSettingsDto = {
     eventCreateRateLimitPerHour?: number;
     eventsRole?: string;
     organiserRole?: string;
+    plannedCategoryId?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
@@ -234,12 +243,16 @@ export type GuildSettingsDto = {
 };
 
 export type GuildSettingsRequest = {
+    anyoneCanCreate?: boolean;
+    archiveDays?: number;
+    archivedCategoryId?: string;
     emojiAccepted?: string;
     emojiDeclined?: string;
     emojiMaybe?: string;
     eventCreateRateLimitPerHour?: number;
     eventsRole?: string;
     organiserRole?: string;
+    plannedCategoryId?: string;
     primaryLocationLat?: number;
     primaryLocationLng?: number;
     primaryLocationName?: string;
@@ -260,6 +273,10 @@ export type HistoryEntry = {
 export type InstallUrlDto = {
     permissions?: Array<PermissionDto>;
     url?: string;
+};
+
+export type KickGuildRequest = {
+    confirmGuildName: string;
 };
 
 export type PageMetadata = {
@@ -1221,6 +1238,62 @@ export type GetGuildsResponses = {
 
 export type GetGuildsResponse = GetGuildsResponses[keyof GetGuildsResponses];
 
+export type KickData = {
+    body: KickGuildRequest;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/guild/{guildId}';
+};
+
+export type KickErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type KickError = KickErrors[keyof KickErrors];
+
+export type KickResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type CategoriesData = {
+    body?: never;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/guild/{guildId}/categories';
+};
+
+export type CategoriesErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type CategoriesError = CategoriesErrors[keyof CategoriesErrors];
+
+export type CategoriesResponses = {
+    /**
+     * OK
+     */
+    200: Array<DirectoryEntry>;
+};
+
+export type CategoriesResponse = CategoriesResponses[keyof CategoriesResponses];
+
 export type GetFeaturesData = {
     body?: never;
     path: {
@@ -1251,6 +1324,35 @@ export type GetFeaturesResponses = {
 };
 
 export type GetFeaturesResponse = GetFeaturesResponses[keyof GetFeaturesResponses];
+
+export type RolesData = {
+    body?: never;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/guild/{guildId}/roles';
+};
+
+export type RolesErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type RolesError = RolesErrors[keyof RolesErrors];
+
+export type RolesResponses = {
+    /**
+     * OK
+     */
+    200: Array<DirectoryEntry>;
+};
+
+export type RolesResponse = RolesResponses[keyof RolesResponses];
 
 export type GetSettingsData = {
     body?: never;
