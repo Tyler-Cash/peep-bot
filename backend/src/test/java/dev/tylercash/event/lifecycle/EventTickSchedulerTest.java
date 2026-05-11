@@ -81,10 +81,25 @@ class EventTickSchedulerTest {
     }
 
     private Event saveEvent(ZonedDateTime dateTime, EventState state) {
+        return saveEvent(dateTime, state, 111L);
+    }
+
+    private Event saveEvent(ZonedDateTime dateTime, EventState state, long guildId) {
         long id = dev.tylercash.event.test.TestIds.nextLong();
-        Event e = new Event(id, 111L, id, "Test Event", "creator", dateTime, "desc");
+        Event e = new Event(id, guildId, id, "Test Event", "creator", dateTime, "desc");
         e.setState(state);
         return eventRepository.save(e);
+    }
+
+    private void insertGuildWithArchiveDays(long guildId, int archiveDays) {
+        jdbc.update(
+                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined, "
+                        + "emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled, "
+                        + "rewind_enabled, contracts_enabled, tfnsw_enabled, archive_days, anyone_can_create) "
+                        + "VALUES (?, 'events', 'event-organiser', '✅', '❌', '❓', now(), true, false, false, "
+                        + "false, false, false, ?, true) ON CONFLICT (guild_id) DO UPDATE SET archive_days = EXCLUDED.archive_days",
+                guildId,
+                archiveDays);
     }
 
     // -----------------------------------------------------------------------------------------
@@ -152,13 +167,15 @@ class EventTickSchedulerTest {
     }
 
     // -----------------------------------------------------------------------------------------
-    // ARCHIVAL: event.dateTime < now - 22h, state POST_COMPLETED
+    // ARCHIVAL: per-guild archive_days threshold (default 90), state POST_COMPLETED.
+    // The candidate window is now - 7 days (smallest legal value); per-event the scheduler
+    // checks the owning guild's configured threshold before publishing.
     // -----------------------------------------------------------------------------------------
 
     @Test
-    void emit_publishesArchivalForOldPostCompletedEvent_onlyOnce() {
-        // dateTime = now - 30h → well past the 22h conservative threshold
-        Event e = saveEvent(FIXED_NOW.minusHours(30), EventState.POST_COMPLETED);
+    void emit_publishesArchivalForEventOlderThanDefaultThreshold_onlyOnce() {
+        // dateTime = now - 91 days → past the default 90-day threshold (no guild row → default)
+        Event e = saveEvent(FIXED_NOW.minusDays(91), EventState.POST_COMPLETED);
 
         scheduler.emit();
         scheduler.emit();
@@ -169,13 +186,41 @@ class EventTickSchedulerTest {
     }
 
     @Test
-    void emit_doesNotPublishArchival_whenTooRecent() {
-        // dateTime = now - 10h → inside the 22h threshold
-        saveEvent(FIXED_NOW.minusHours(10), EventState.POST_COMPLETED);
+    void emit_doesNotPublishArchival_whenInsideDefaultThreshold() {
+        // dateTime = now - 8 days → past the 7-day candidate window, but well inside 90-day default
+        saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED);
 
         scheduler.emit();
 
         verify(publisher, times(0)).publish(any(EventLifecycleEvent.EventArchivalDue.class));
+    }
+
+    @Test
+    void emit_publishesArchivalUsingPerGuildThreshold() {
+        // Unique guild with archive_days=7: an 8-day-old event must publish.
+        long guildId = dev.tylercash.event.test.TestIds.nextLong();
+        insertGuildWithArchiveDays(guildId, 7);
+        Event e = saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED, guildId);
+
+        scheduler.emit();
+
+        // Scope to this event — other tests in this class share the same scheduler invocation.
+        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "ARCHIVAL")))
+                .isTrue();
+        verify(publisher).publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
+    }
+
+    @Test
+    void emit_doesNotPublishArchival_whenInsidePerGuildThreshold() {
+        // Unique guild with archive_days=30: an 8-day-old event must NOT publish.
+        long guildId = dev.tylercash.event.test.TestIds.nextLong();
+        insertGuildWithArchiveDays(guildId, 30);
+        Event e = saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED, guildId);
+
+        scheduler.emit();
+
+        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "ARCHIVAL")))
+                .isFalse();
     }
 
     // -----------------------------------------------------------------------------------------

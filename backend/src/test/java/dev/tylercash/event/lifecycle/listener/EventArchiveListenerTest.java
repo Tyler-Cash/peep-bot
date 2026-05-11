@@ -1,7 +1,6 @@
 package dev.tylercash.event.lifecycle.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.db.repository.EventRepository;
@@ -11,8 +10,6 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.lifecycle.EventLifecycleEvent;
 import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -32,10 +29,10 @@ class EventArchiveListenerTest {
     private Event event;
 
     @SuppressWarnings("unchecked")
-    private EventArchiveListener listenerWithClock(Clock clock) {
+    private EventArchiveListener buildListener() {
         ObjectProvider<EventService> eventServiceProvider = mock(ObjectProvider.class);
         when(eventServiceProvider.getObject()).thenReturn(eventService);
-        return new EventArchiveListener(clock, discordService, eventRepository, eventServiceProvider, publisher);
+        return new EventArchiveListener(discordService, eventRepository, eventServiceProvider, publisher);
     }
 
     @BeforeEach
@@ -45,7 +42,6 @@ class EventArchiveListenerTest {
         eventService = mock(EventService.class);
         publisher = mock(EventLifecyclePublisher.class);
 
-        // event.dateTime = 2026-05-04T12:00Z
         event = new Event();
         event.setId(eventId);
         event.setName("Test Event");
@@ -54,25 +50,8 @@ class EventArchiveListenerTest {
     }
 
     @Test
-    void tooEarly_throwsIllegalStateException_noDiscordInteractions() {
-        // clock = 2026-05-04T18:00Z; archiveTime = 2026-05-05T22:00Z — well in the future
-        Clock clock = Clock.fixed(Instant.parse("2026-05-04T18:00:00Z"), ZoneOffset.UTC);
-        EventArchiveListener listener = listenerWithClock(clock);
-
-        assertThatThrownBy(() -> listener.handle(new EventLifecycleEvent.EventArchivalDue(eventId)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("not yet ready for archival");
-
-        verifyNoInteractions(discordService);
-        verify(eventRepository, never()).save(any());
-        verifyNoInteractions(publisher);
-    }
-
-    @Test
     void happyPath_archivesEventAndPublishes() throws Exception {
-        // clock = 2026-05-06T22:01Z; archiveTime = 2026-05-05T22:00Z — already past
-        Clock clock = Clock.fixed(Instant.parse("2026-05-06T22:01:00Z"), ZoneOffset.UTC);
-        EventArchiveListener listener = listenerWithClock(clock);
+        EventArchiveListener listener = buildListener();
 
         listener.handle(new EventLifecycleEvent.EventArchivalDue(eventId));
 

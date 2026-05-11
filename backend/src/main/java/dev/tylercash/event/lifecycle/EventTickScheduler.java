@@ -1,6 +1,7 @@
 package dev.tylercash.event.lifecycle;
 
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.GuildRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import java.time.Clock;
@@ -19,10 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class EventTickScheduler {
 
+    private static final int MIN_ARCHIVE_DAYS = 7;
+    private static final int DEFAULT_ARCHIVE_DAYS = 90;
+
     private final EventRepository events;
     private final EventTickLogRepository tickLog;
     private final EventLifecyclePublisher publisher;
     private final Clock clock;
+    private final GuildRepository guildRepository;
 
     @Scheduled(cron = "0 * * * * *")
     @SchedulerLock(name = "EventTickScheduler", lockAtMostFor = "PT5M")
@@ -43,23 +48,41 @@ public class EventTickScheduler {
                 EventState.PRE_NOTIFIED,
                 EventLifecycleEvent.EventCompletionDue::new);
 
-        // ARCHIVAL: guard is now > event.dateTime.plusDays(1)@22:00:00
-        // The exact threshold depends on the time-of-day of the event's dateTime, which cannot be
-        // expressed as a simple BETWEEN in JPQL. We use a conservative approximation: emit for all
-        // POST_COMPLETED events whose dateTime is more than 22 hours ago. Borderline events (dateTime
-        // 22–24h ago whose archiveTime hasn't hit 22:00 yet) may be emitted slightly early; the
-        // ArchiveOperation guard inside the listener will reject and retry until the threshold passes.
-        emitTick(
-                "ARCHIVAL",
-                now.minusYears(10),
-                now.minusHours(22),
-                EventState.POST_COMPLETED,
-                EventLifecycleEvent.EventArchivalDue::new);
+        // ARCHIVAL: the archive threshold is per-guild (`guild.archive_days`, default 90 days).
+        // We widen the candidate window to MIN_ARCHIVE_DAYS (the smallest legal value), then
+        // per-event check the owning guild's configured threshold before publishing. This keeps
+        // the scheduler as the single source of timing — the listener never has to retry.
+        emitArchivalTicks(now);
 
         // DELETE: guard is now > event.dateTime + 3 months
         // → event.dateTime < now - 3 months, applies to both CANCELLED and ARCHIVED states
         emitDeletionTick(now, EventState.CANCELLED);
         emitDeletionTick(now, EventState.ARCHIVED);
+    }
+
+    private void emitArchivalTicks(ZonedDateTime now) {
+        ZonedDateTime from = now.minusYears(10);
+        ZonedDateTime to = now.minusDays(MIN_ARCHIVE_DAYS);
+        for (Event e : events.findInDateWindow(from, to, EventState.POST_COMPLETED)) {
+            int days = guildRepository
+                    .findById(e.getServerId())
+                    .map(g -> g.getArchiveDays() == 0 ? DEFAULT_ARCHIVE_DAYS : g.getArchiveDays())
+                    .orElse(DEFAULT_ARCHIVE_DAYS);
+            if (now.isBefore(e.getDateTime().plusDays(days))) {
+                continue;
+            }
+            EventTickLogId id = new EventTickLogId(e.getId(), "ARCHIVAL");
+            if (tickLog.existsById(id)) continue;
+            EventTickLog row = new EventTickLog();
+            row.setEventId(e.getId());
+            row.setTickType("ARCHIVAL");
+            tickLog.save(row);
+            try {
+                publisher.publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
+            } catch (Exception ex) {
+                log.error("Failed to publish ARCHIVAL for event {}", e.getId(), ex);
+            }
+        }
     }
 
     private void emitTick(

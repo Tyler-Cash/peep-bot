@@ -9,8 +9,6 @@ import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.lifecycle.DurableEventListener;
 import dev.tylercash.event.lifecycle.EventLifecycleEvent;
 import dev.tylercash.event.lifecycle.EventLifecyclePublisher;
-import java.time.Clock;
-import java.time.ZonedDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -20,19 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class EventArchiveListener implements DurableEventListener<EventLifecycleEvent.EventArchivalDue> {
 
-    private final Clock clock;
     private final DiscordService discordService;
     private final EventRepository eventRepository;
     private final ObjectProvider<EventService> eventServiceProvider;
     private final EventLifecyclePublisher publisher;
 
     public EventArchiveListener(
-            Clock clock,
             DiscordService discordService,
             EventRepository eventRepository,
             ObjectProvider<EventService> eventServiceProvider,
             EventLifecyclePublisher publisher) {
-        this.clock = clock;
         this.discordService = discordService;
         this.eventRepository = eventRepository;
         this.eventServiceProvider = eventServiceProvider;
@@ -53,20 +48,9 @@ public class EventArchiveListener implements DurableEventListener<EventLifecycle
     @Transactional
     public void handle(EventLifecycleEvent.EventArchivalDue e) throws Exception {
         Event event = eventRepository.findById(e.eventId()).orElseThrow();
-        // Precise re-check: the scheduler uses a conservative approximation (dateTime < now - 22h)
-        // which may fire slightly early. Re-enforce the original boundary so that the bus marks
-        // FAILED and retries until the exact archival time has passed.
-        ZonedDateTime now = ZonedDateTime.now(clock);
-        ZonedDateTime archiveTime = event.getDateTime()
-                .plusDays(1)
-                .withHour(22)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
-        if (now.isBefore(archiveTime)) {
-            throw new IllegalStateException("Event " + event.getId() + " not yet ready for archival (archive at "
-                    + archiveTime + ", now=" + now + ")");
-        }
+        // No precise re-check here: EventTickScheduler is the single source of timing.
+        // It already filters by the guild's configured archive_days before publishing, so
+        // by the time we receive the event it is genuinely due.
 
         String eventName = DiscordUtil.getChannelNameFromEvent(event);
         log.info("Archiving event: {}", eventName);
