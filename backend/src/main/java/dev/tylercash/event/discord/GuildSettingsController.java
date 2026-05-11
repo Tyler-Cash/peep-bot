@@ -3,7 +3,7 @@ package dev.tylercash.event.discord;
 import dev.tylercash.event.event.EventCreateRateLimitConfiguration;
 import dev.tylercash.event.event.EventCreateRateLimiter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Set;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.JDA;
 import org.springframework.http.HttpStatus;
@@ -17,8 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Tag(name = "Guild", description = "Discord guild info")
 public class GuildSettingsController {
-
-    private static final Set<Integer> ALLOWED_RATE_LIMIT_VALUES = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
     private final GuildRepository guildRepository;
     private final GuildMembershipService guildMembershipService;
@@ -40,7 +38,7 @@ public class GuildSettingsController {
     @PatchMapping
     public GuildSettingsDto updateSettings(
             @PathVariable String guildId,
-            @RequestBody GuildSettingsRequest request,
+            @Valid @RequestBody GuildSettingsRequest request,
             @AuthenticationPrincipal OAuth2User principal) {
         String snowflake = principal.getAttribute("id");
         long guildIdLong = Long.parseLong(guildId);
@@ -73,13 +71,38 @@ public class GuildSettingsController {
             row.setEmojiDeclined(request.emojiDeclined());
         if (request.emojiMaybe() != null && !request.emojiMaybe().isBlank()) row.setEmojiMaybe(request.emojiMaybe());
 
-        Integer requestedLimit = request.eventCreateRateLimitPerHour();
-        if (requestedLimit != null && !ALLOWED_RATE_LIMIT_VALUES.contains(requestedLimit)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "eventCreateRateLimitPerHour must be one of " + ALLOWED_RATE_LIMIT_VALUES + " or null");
+        if (request.archiveDays() != null) {
+            row.setArchiveDays(request.archiveDays());
         }
-        row.setEventCreateRateLimitPerHour(requestedLimit);
+
+        String requestedPlanned = request.plannedCategoryId();
+        String requestedArchived = request.archivedCategoryId();
+        // Within-payload distinctness is enforced by bean validation. Here we only
+        // need to cross-check a one-sided update against the persisted value.
+        if (requestedPlanned != null
+                && requestedArchived == null
+                && requestedPlanned.equals(row.getArchivedCategoryId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "planned category cannot equal current archived category");
+        }
+        if (requestedArchived != null
+                && requestedPlanned == null
+                && requestedArchived.equals(row.getPlannedCategoryId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "archived category cannot equal current planned category");
+        }
+        row.setPlannedCategoryId(requestedPlanned);
+        row.setArchivedCategoryId(requestedArchived);
+
+        Boolean requestedAnyoneCanCreate = request.anyoneCanCreate();
+        if (requestedAnyoneCanCreate != null) {
+            row.setAnyoneCanCreate(requestedAnyoneCanCreate);
+        }
+        if (requestedAnyoneCanCreate != null && !requestedAnyoneCanCreate) {
+            row.setEventCreateRateLimitPerHour(null);
+        } else {
+            row.setEventCreateRateLimitPerHour(request.eventCreateRateLimitPerHour());
+        }
 
         guildRepository.save(row);
         eventCreateRateLimiter.invalidate(guildIdLong);

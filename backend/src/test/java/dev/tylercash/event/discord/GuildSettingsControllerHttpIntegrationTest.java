@@ -124,4 +124,70 @@ class GuildSettingsControllerHttpIntegrationTest extends AbstractHttpIntegration
                 .andExpect(jsonPath("$.primaryLocationLat").value(-33.86))
                 .andExpect(jsonPath("$.primaryLocationLng").value(151.20));
     }
+
+    @Test
+    void rejectsInvalidArchiveDays() throws Exception {
+        fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
+        when(discordAuthService.isGuildOwner(GUILD_1, Long.parseLong(USER_ID))).thenReturn(true);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/guild/{guildId}/settings", GUILD_1)
+                        .with(authedAs(USER_ID))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"archiveDays\":15}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsPlannedEqualToArchivedCategory() throws Exception {
+        fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
+        when(discordAuthService.isGuildOwner(GUILD_1, Long.parseLong(USER_ID))).thenReturn(true);
+
+        String sameId = TestIds.nextSnowflake();
+        String body = "{\"plannedCategoryId\":\"" + sameId + "\",\"archivedCategoryId\":\"" + sameId + "\"}";
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/guild/{guildId}/settings", GUILD_1)
+                        .with(authedAs(USER_ID))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void clearsRateLimitWhenAnyoneCanCreateFalse() throws Exception {
+        fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
+        when(discordAuthService.isGuildOwner(GUILD_1, Long.parseLong(USER_ID))).thenReturn(true);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/guild/{guildId}/settings", GUILD_1)
+                        .with(authedAs(USER_ID))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"anyoneCanCreate\":false,\"eventCreateRateLimitPerHour\":5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCreateRateLimitPerHour").doesNotExist())
+                .andExpect(jsonPath("$.anyoneCanCreate").value(false));
+    }
+
+    @Test
+    void persistsArchiveAndCategoryAndAnyoneCanCreate() throws Exception {
+        fixtures.registerMember(USER_ID, GUILD_1, "Alice", "alice");
+        when(discordAuthService.isGuildOwner(GUILD_1, Long.parseLong(USER_ID))).thenReturn(true);
+        String planned = TestIds.nextSnowflake();
+        String archived = TestIds.nextSnowflake();
+
+        String body = "{\"plannedCategoryId\":\"" + planned + "\",\"archivedCategoryId\":\"" + archived
+                + "\",\"archiveDays\":30,\"anyoneCanCreate\":true}";
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/guild/{guildId}/settings", GUILD_1)
+                        .with(authedAs(USER_ID))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plannedCategoryId").value(planned))
+                .andExpect(jsonPath("$.archivedCategoryId").value(archived))
+                .andExpect(jsonPath("$.archiveDays").value(30))
+                .andExpect(jsonPath("$.anyoneCanCreate").value(true));
+    }
 }
