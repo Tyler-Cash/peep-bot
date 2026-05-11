@@ -34,17 +34,17 @@ public class TfnswAlertsClient {
 
     @CircuitBreaker(name = "tfnsw")
     public List<RailAlert> fetchSydneyTrains() {
-        return fetch("/v1/gtfs/alerts/sydneytrains", "sydneytrains");
+        return fetch("/v2/gtfs/alerts/sydneytrains", "sydneytrains");
     }
 
     @CircuitBreaker(name = "tfnsw")
     public List<RailAlert> fetchSydneyMetro() {
-        return fetch("/v1/gtfs/alerts/sydneymetro", "sydneymetro");
+        return fetch("/v2/gtfs/alerts/metro", "sydneymetro");
     }
 
     @CircuitBreaker(name = "tfnsw")
     public List<RailAlert> fetchTripReplacements() {
-        return fetch("/v1/gtfs/realtime/sydneytrains", "trip-replacements");
+        return fetch("/v2/gtfs/realtime/sydneytrains", "trip-replacements");
     }
 
     private List<RailAlert> fetch(String path, String agency) {
