@@ -76,26 +76,32 @@ public class GtfsStopsIndex {
             log.info("TfNSW disabled — skipping GTFS stops index load");
             return;
         }
+        List<Stop> all = new ArrayList<>();
+        all.addAll(fetchAgency("Sydney Trains", cfg.getSydneyTrainsSchedulePath()));
+        all.addAll(fetchAgency("Sydney Metro", cfg.getSydneyMetroSchedulePath()));
+        if (all.isEmpty()) return;
+        Set<String> majors = all.stream()
+                .filter(s -> MAJOR_STATION_NAMES.contains(s.name().toLowerCase()))
+                .map(Stop::stopId)
+                .collect(Collectors.toUnmodifiableSet());
+        this.stops = List.copyOf(all);
+        this.majorIds = majors;
+        log.info("Loaded {} TfNSW parent stops ({} major) from GTFS schedule feed", stops.size(), majorIds.size());
+        if (majorIds.size() < MAJOR_STATION_NAMES.size()) {
+            log.warn(
+                    "Major-station resolution incomplete — matched {}/{} names. "
+                            + "Unmatched names will be silently ignored; check stop_name spelling against the feed.",
+                    majorIds.size(),
+                    MAJOR_STATION_NAMES.size());
+        }
+    }
+
+    private List<Stop> fetchAgency(String label, String path) {
         try {
-            List<Stop> all = new ArrayList<>();
-            all.addAll(fetchAndParseStops(cfg.getSydneyTrainsSchedulePath()));
-            all.addAll(fetchAndParseStops(cfg.getSydneyMetroSchedulePath()));
-            Set<String> majors = all.stream()
-                    .filter(s -> MAJOR_STATION_NAMES.contains(s.name().toLowerCase()))
-                    .map(Stop::stopId)
-                    .collect(Collectors.toUnmodifiableSet());
-            this.stops = List.copyOf(all);
-            this.majorIds = majors;
-            log.info("Loaded {} TfNSW parent stops ({} major) from GTFS schedule feed", stops.size(), majorIds.size());
-            if (!stops.isEmpty() && majorIds.size() < MAJOR_STATION_NAMES.size()) {
-                log.warn(
-                        "Major-station resolution incomplete — matched {}/{} names. "
-                                + "Unmatched names will be silently ignored; check stop_name spelling against the feed.",
-                        majorIds.size(),
-                        MAJOR_STATION_NAMES.size());
-            }
+            return fetchAndParseStops(path);
         } catch (Exception e) {
-            log.error("Failed to load TfNSW GTFS stops index: {}", e.toString());
+            log.warn("TfNSW stops fetch failed for {} ({}): {}", label, path, e.toString());
+            return List.of();
         }
     }
 
