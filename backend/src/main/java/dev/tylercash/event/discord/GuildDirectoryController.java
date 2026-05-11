@@ -25,8 +25,7 @@ public class GuildDirectoryController {
     private final JDA jda;
 
     @GetMapping("/roles")
-    public List<DirectoryEntry> roles(
-            @PathVariable String guildId, @AuthenticationPrincipal OAuth2User principal) {
+    public List<DirectoryEntry> roles(@PathVariable String guildId, @AuthenticationPrincipal OAuth2User principal) {
         long guildIdLong = authoriseAndResolve(guildId, principal);
         Guild jdaGuild = jda.getGuildById(guildIdLong);
         if (jdaGuild == null) {

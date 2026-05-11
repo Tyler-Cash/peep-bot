@@ -301,6 +301,17 @@
         },
         "type" : "object"
       },
+      "DirectoryEntry" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "EventCategoryDto" : {
         "properties" : {
           "eventCount" : {
@@ -632,6 +643,16 @@
       },
       "GuildSettingsDto" : {
         "properties" : {
+          "anyoneCanCreate" : {
+            "type" : "boolean"
+          },
+          "archiveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "archivedCategoryId" : {
+            "type" : "string"
+          },
           "defaultEventCreateRateLimitPerHour" : {
             "format" : "int32",
             "type" : "integer"
@@ -653,6 +674,9 @@
             "type" : "string"
           },
           "organiserRole" : {
+            "type" : "string"
+          },
+          "plannedCategoryId" : {
             "type" : "string"
           },
           "primaryLocationLat" : {
@@ -677,6 +701,16 @@
       },
       "GuildSettingsRequest" : {
         "properties" : {
+          "anyoneCanCreate" : {
+            "type" : "boolean"
+          },
+          "archiveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "archivedCategoryId" : {
+            "type" : "string"
+          },
           "emojiAccepted" : {
             "type" : "string"
           },
@@ -694,6 +728,9 @@
             "type" : "string"
           },
           "organiserRole" : {
+            "type" : "string"
+          },
+          "plannedCategoryId" : {
             "type" : "string"
           },
           "primaryLocationLat" : {
@@ -756,6 +793,16 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "KickGuildRequest" : {
+        "properties" : {
+          "confirmGuildName" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "confirmGuildName" ],
         "type" : "object"
       },
       "PageMetadata" : {
@@ -2222,6 +2269,86 @@
         "tags" : [ "Guild" ]
       }
     },
+    "/guild/{guildId}" : {
+      "delete" : {
+        "operationId" : "kick",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/KickGuildRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
+    "/guild/{guildId}/categories" : {
+      "get" : {
+        "operationId" : "categories",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DirectoryEntry"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
     "/guild/{guildId}/features" : {
       "get" : {
         "operationId" : "getFeatures",
@@ -2242,6 +2369,46 @@
                     "type" : "boolean"
                   },
                   "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Guild" ]
+      }
+    },
+    "/guild/{guildId}/roles" : {
+      "get" : {
+        "operationId" : "roles",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DirectoryEntry"
+                  },
+                  "type" : "array"
                 }
               }
             },
@@ -2510,11 +2677,11 @@
     "url" : "http://localhost"
   } ],
   "tags" : [ {
-    "description" : "Read-only dashboard endpoints for the admin panel",
-    "name" : "Bot admin · monitor"
-  }, {
     "description" : "Discord guild info",
     "name" : "Guild"
+  }, {
+    "description" : "Read-only dashboard endpoints for the admin panel",
+    "name" : "Bot admin · monitor"
   }, {
     "description" : "Event history statistics",
     "name" : "Rewind"

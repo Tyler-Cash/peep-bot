@@ -44,7 +44,8 @@ class GuildControllerKickHttpIntegrationTest extends AbstractHttpIntegrationTest
         String snowflake = TestIds.nextSnowflake();
         long guildId = TestIds.nextLong();
         fixtures.registerMember(snowflake, guildId, "Alice", "alice");
-        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake))).thenReturn(true);
+        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake)))
+                .thenReturn(true);
         Guild g = mock(Guild.class);
         when(g.getName()).thenReturn("Porch Pigeons");
         when(jda.getGuildById(guildId)).thenReturn(g);
@@ -63,7 +64,8 @@ class GuildControllerKickHttpIntegrationTest extends AbstractHttpIntegrationTest
         String snowflake = TestIds.nextSnowflake();
         long guildId = TestIds.nextLong();
         fixtures.registerMember(snowflake, guildId, "Alice", "alice");
-        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake))).thenReturn(true);
+        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake)))
+                .thenReturn(true);
         Guild g = mock(Guild.class);
         when(g.getName()).thenReturn("Porch Pigeons");
         RestAction<Void> leaveAction = mock(RestAction.class);
@@ -85,7 +87,8 @@ class GuildControllerKickHttpIntegrationTest extends AbstractHttpIntegrationTest
         String snowflake = TestIds.nextSnowflake();
         long guildId = TestIds.nextLong();
         fixtures.registerMember(snowflake, guildId, "Alice", "alice");
-        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake))).thenReturn(true);
+        when(discordAuthService.isGuildOwner(guildId, Long.parseLong(snowflake)))
+                .thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/guild/{id}", guildId)
                         .with(authedAs(snowflake))

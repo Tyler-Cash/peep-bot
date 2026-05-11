@@ -39,8 +39,6 @@ public record GuildSettingsRequest(
     @AssertTrue(message = "planned and archived categories must differ")
     @JsonIgnore
     public boolean isCategoriesDistinct() {
-        return plannedCategoryId == null
-                || archivedCategoryId == null
-                || !plannedCategoryId.equals(archivedCategoryId);
+        return plannedCategoryId == null || archivedCategoryId == null || !plannedCategoryId.equals(archivedCategoryId);
     }
 }

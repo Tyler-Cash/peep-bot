@@ -66,7 +66,8 @@ class GuildDirectoryControllerHttpIntegrationTest extends AbstractHttpIntegratio
         List<Category> categories = List.of(stubCategory("200", "Zeta"), stubCategory("100", "Alpha"));
         when(g.getCategories()).thenReturn(categories);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/guild/{id}/categories", guildId).with(authedAs(snowflake)))
+        mockMvc.perform(MockMvcRequestBuilders.get("/guild/{id}/categories", guildId)
+                        .with(authedAs(snowflake)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Alpha"))
                 .andExpect(jsonPath("$[0].id").value("100"))

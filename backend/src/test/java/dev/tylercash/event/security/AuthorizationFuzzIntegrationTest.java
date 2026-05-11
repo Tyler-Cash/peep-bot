@@ -336,6 +336,30 @@ class AuthorizationFuzzIntegrationTest {
                         true,
                         true),
 
+                // GuildDirectoryController
+                new EndpointCase(
+                        "GET",
+                        "/guild/{guildId}/roles",
+                        () -> MockMvcRequestBuilders.get("/guild/" + GUILD_1 + "/roles"),
+                        true,
+                        false),
+                new EndpointCase(
+                        "GET",
+                        "/guild/{guildId}/categories",
+                        () -> MockMvcRequestBuilders.get("/guild/" + GUILD_1 + "/categories"),
+                        true,
+                        false),
+
+                // GuildController#kick
+                new EndpointCase(
+                        "DELETE",
+                        "/guild/{guildId}",
+                        () -> MockMvcRequestBuilders.delete("/guild/" + GUILD_1)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"confirmGuildName\":\"x\"}"),
+                        true,
+                        true),
+
                 // SecurityController is in the public allowlist — not in this list.
 
                 // EventController

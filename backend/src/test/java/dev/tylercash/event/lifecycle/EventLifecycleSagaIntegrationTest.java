@@ -250,9 +250,16 @@ class EventLifecycleSagaIntegrationTest {
         awaitOutboxSuccess(id, "EventCompleted", "Immich Album Post");
 
         // ── Step 5: archival ─────────────────────────────────────────────────────
-        // Archive time = event.dateTime.plusDays(1) @ 22:00 = 2026-05-05T22:00Z.
-        // Advance past that threshold.
-        advanceTo(Instant.parse("2026-05-05T23:00:00Z"));
+        // Archive threshold is per-guild (archive_days, default 90, minimum 7). The saga's
+        // synthetic guild has no row yet → default 90 applies, which is impractical for an
+        // integration test. Insert the guild row with archive_days=7, then advance past
+        // event.dateTime + 7 days.
+        jdbc.update("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined, "
+                + "emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled, "
+                + "rewind_enabled, contracts_enabled, tfnsw_enabled, archive_days, anyone_can_create) "
+                + "VALUES (111, 'events', 'event-organiser', '✅', '❌', '❓', now(), true, false, "
+                + "false, false, false, false, 7, true) ON CONFLICT (guild_id) DO UPDATE SET archive_days = 7");
+        advanceTo(Instant.parse("2026-05-11T18:00:00Z"));
         emitTick();
         awaitOutboxSuccess(id, "EventArchivalDue", "Event Archive");
         awaitState(id, EventState.ARCHIVED);
