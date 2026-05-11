@@ -3,6 +3,8 @@ package dev.tylercash.event.lifecycle;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,14 @@ public class DurableListenerRetryPoller {
     private static final int BATCH = 100;
     private static final int STUCK_ATTEMPTS_THRESHOLD = 24;
 
+    /**
+     * How long an IN_PROGRESS row can sit before we assume the claiming worker died (JVM crash,
+     * kill -9, network partition) and reset it to PENDING for retry. Comfortably longer than
+     * {@link PostCommitDispatcher#INVOCATION_TIMEOUT_SECONDS} (60s) so we never race a live
+     * invocation that's about to mark SUCCESS/FAILED.
+     */
+    private static final Duration STUCK_IN_PROGRESS_THRESHOLD = Duration.ofMinutes(5);
+
     private final ListenerInvocationRepository invocations;
     private final PostCommitDispatcher dispatcher;
     private final Clock clock;
@@ -33,7 +43,12 @@ public class DurableListenerRetryPoller {
     @Scheduled(fixedDelay = 60_000)
     @SchedulerLock(name = "DurableListenerRetryPoller", lockAtMostFor = "PT5M")
     public void retry() {
-        List<ListenerInvocation> due = invocations.findDueForRetry(clock.instant(), PageRequest.of(0, BATCH));
+        Instant now = clock.instant();
+        int reclaimed = invocations.reclaimStuckInProgress(now.minus(STUCK_IN_PROGRESS_THRESHOLD));
+        if (reclaimed > 0) {
+            log.warn("Reclaimed {} stuck IN_PROGRESS listener invocations", reclaimed);
+        }
+        List<ListenerInvocation> due = invocations.findDueForRetry(now, PageRequest.of(0, BATCH));
         if (due.isEmpty()) return;
         log.info("Retrying {} listener invocations", due.size());
         for (ListenerInvocation row : due) {

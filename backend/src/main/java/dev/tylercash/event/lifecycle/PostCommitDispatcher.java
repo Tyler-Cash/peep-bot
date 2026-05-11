@@ -67,6 +67,12 @@ public class PostCommitDispatcher {
     /**
      * Re-invoke a single outbox row asynchronously. Used by the dispatcher itself AND by the retry
      * poller when the caller already holds the event instance.
+     *
+     * <p>Claims the row by atomically transitioning PENDING/FAILED → IN_PROGRESS before
+     * dispatching. If the claim fails (another worker beat us to it), we return without
+     * invoking — preventing the dispatcher/retry-poller race that previously double-fired
+     * listeners and crashed downstream {@code publish()} calls with duplicate-key violations
+     * on {@code pk_listener_invocation}.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     void invokeOnce(ListenerInvocation row, EventLifecycleEvent event) {
@@ -76,6 +82,17 @@ public class PostCommitDispatcher {
             log.error("No listener registered for name '{}'", row.getListenerName());
             return;
         }
+        int claimed =
+                invocations.claim(row.getEventId(), row.getLifecycleEventType(), row.getListenerName(), Instant.now());
+        if (claimed == 0) {
+            log.debug(
+                    "Skipping invocation {}/{}/{} — already claimed by another worker",
+                    row.getEventId(),
+                    row.getLifecycleEventType(),
+                    row.getListenerName());
+            return;
+        }
+        row.setStatus(ListenerInvocationStatus.IN_PROGRESS);
         CompletableFuture.runAsync(
                         () -> {
                             try {

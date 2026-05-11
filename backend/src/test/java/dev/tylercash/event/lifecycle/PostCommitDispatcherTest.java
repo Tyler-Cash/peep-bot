@@ -37,6 +37,8 @@ class PostCommitDispatcherTest {
     @BeforeEach
     void setUp() {
         repo = mock(ListenerInvocationRepository.class);
+        // Default: claim succeeds (1 row updated). Tests that want a contested claim override this.
+        when(repo.claim(any(), any(), any(), any())).thenReturn(1);
         backoff = new BackoffPolicy();
         matchingListener = mock(DurableEventListener.class);
         when(matchingListener.name()).thenReturn("Test Listener");
@@ -99,6 +101,22 @@ class PostCommitDispatcherTest {
 
         verify(repo, never()).save(any());
         verify(matchingListener, never()).handle(any());
+    }
+
+    @Test
+    void invokeOnce_skipsWhenClaimContested() throws Exception {
+        // Simulates the dispatcher/retry-poller race: another worker has already claimed the row,
+        // so claim() updates 0 rows. We must not invoke the listener (otherwise downstream
+        // publish() would re-insert the next outbox row and crash on the PK constraint).
+        when(repo.claim(any(), any(), any(), any())).thenReturn(0);
+        UUID id = UUID.randomUUID();
+        EventLifecycleEvent.EventCreated event = new EventLifecycleEvent.EventCreated(id);
+        ListenerInvocation row = pendingRow(id, "EventCreated", "Test Listener");
+
+        dispatcher.invokeOnce(row, event);
+
+        verify(matchingListener, never()).handle(any());
+        verify(repo, never()).save(any());
     }
 
     @Test

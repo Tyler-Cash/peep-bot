@@ -5,10 +5,55 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface ListenerInvocationRepository extends JpaRepository<ListenerInvocation, ListenerInvocationId> {
+
+    /**
+     * Atomically claim a row for invocation: transition PENDING/FAILED → IN_PROGRESS. Returns the
+     * number of rows updated (1 = caller owns the invocation; 0 = another worker beat us to it, or
+     * the row is already SUCCESS/IN_PROGRESS). Runs in its own transaction so concurrent callers
+     * see each other's commits — without this the dispatcher and retry poller can both invoke the
+     * same row and double-fire downstream publishes (duplicate-key on the next outbox insert).
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(
+            """
+            UPDATE ListenerInvocation i
+            SET i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.IN_PROGRESS,
+                i.lastAttemptAt = :now
+            WHERE i.eventId = :eventId
+              AND i.lifecycleEventType = :type
+              AND i.listenerName = :listener
+              AND (i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.PENDING
+                   OR i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.FAILED)
+            """)
+    int claim(
+            @Param("eventId") UUID eventId,
+            @Param("type") String type,
+            @Param("listener") String listener,
+            @Param("now") Instant now);
+
+    /**
+     * Reset IN_PROGRESS rows whose claim is older than {@code cutoff} back to PENDING so the retry
+     * poller can re-attempt them. Covers the case where the worker that claimed the row died
+     * before markSuccess/markFailed ran (JVM crash, kill -9). Returns the number of rows reset.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(
+            """
+            UPDATE ListenerInvocation i
+            SET i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.PENDING
+            WHERE i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.IN_PROGRESS
+              AND i.lastAttemptAt < :cutoff
+            """)
+    int reclaimStuckInProgress(@Param("cutoff") Instant cutoff);
 
     @Query(
             """
