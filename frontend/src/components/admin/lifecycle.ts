@@ -9,6 +9,22 @@
 
 export type StageKind = "transition" | "side";
 
+/**
+ * Idempotency / safety tag for a stage. Rendered as a colored chip in the replay console so the
+ * admin knows what risk they're taking before clicking. Map:
+ *   - safe          : pure compute or dedup'd write, fine to re-run
+ *   - posts-discord : will create or update a Discord message/embed
+ *   - sends-dm      : will DM users — visible to the recipient
+ *   - creates-channel : creates/renames a Discord channel
+ *   - destructive   : tears down channels, roles, or records
+ */
+export type StageIdempotency =
+  | "safe"
+  | "posts-discord"
+  | "sends-dm"
+  | "creates-channel"
+  | "destructive";
+
 export type LifecycleStage = {
   id: string;
   label: string;
@@ -24,6 +40,15 @@ export type LifecycleStage = {
   state: string | null;
   /** Listener bean name(s) that will react to the trigger. Informational only. */
   listener: string;
+  /**
+   * Concrete user-facing description of what re-running this stage will do. Reads at the
+   * "what will happen" box in the replay console — write it so a tired admin at 2am can tell
+   * whether clicking the button is safe.
+   */
+  humanEffect: string;
+  idempotency: StageIdempotency;
+  /** Optional one-liner for how the listener avoids producing duplicates. */
+  dedup?: string;
 };
 
 export const LIFECYCLE_STAGES: LifecycleStage[] = [
@@ -35,6 +60,8 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventCreated",
     state: "CREATED",
     listener: "—",
+    humanEffect: "Marker stage — the event row exists. Nothing runs on replay of this stage itself.",
+    idempotency: "safe",
   },
   {
     id: "init-channel",
@@ -44,6 +71,10 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventCreated",
     state: "INIT_CHANNEL",
     listener: "DiscordChannelInitListener",
+    humanEffect:
+      "Creates the per-event Discord text channel under the events category (or reuses an existing one matched by stored channel id).",
+    idempotency: "creates-channel",
+    dedup: "channel id stored on the event row — re-runs reuse the existing channel.",
   },
   {
     id: "init-roles",
@@ -53,6 +84,10 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventChannelReady",
     state: "INIT_ROLES",
     listener: "DiscordRolesInitListener",
+    humanEffect:
+      "Grants the per-event Discord role to the creator + RSVP-going users so they can see the channel.",
+    idempotency: "safe",
+    dedup: "role grants are idempotent — re-applying a role is a no-op.",
   },
   {
     id: "classify",
@@ -62,6 +97,9 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventRolesReady",
     state: "CLASSIFY",
     listener: "EventClassifyListener",
+    humanEffect:
+      "Classifies the event (category/tags) using the configured classifier. Pure compute, writes a category back to the row.",
+    idempotency: "safe",
   },
   {
     id: "planned",
@@ -71,6 +109,23 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventClassified",
     state: "PLANNED",
     listener: "EventInitCompleteListener",
+    humanEffect:
+      "Finalises init — posts the initial event embed to the event's channel and transitions to PLANNED.",
+    idempotency: "posts-discord",
+    dedup: "edits the existing embed when a message id is already stored; otherwise posts a new one.",
+  },
+  {
+    id: "tfnsw-notice",
+    label: "tfnsw notice",
+    emoji: "🚆",
+    kind: "side",
+    trigger: "EventCreated",
+    state: null,
+    listener: "TfnswEventCreatedListener",
+    humanEffect:
+      "Resolves the event location via Google Places, fetches GTFS-R alerts + Live Traffic NSW, and posts a transport notice embed to the event channel if anything is noteworthy.",
+    idempotency: "posts-discord",
+    dedup: "skips when the snapshot hash matches the last post (tfnsw_event_snapshot). Guild-gated by tfnsw_enabled.",
   },
   {
     id: "album-prep",
@@ -80,6 +135,10 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventPreNotified",
     state: null,
     listener: "ImmichAlbumPrepListener",
+    humanEffect:
+      "Creates the Immich album for the event so attendees can drop photos before the event runs.",
+    idempotency: "safe",
+    dedup: "album id stored on the event row — re-runs reuse the existing album.",
   },
   {
     id: "pre-notified",
@@ -89,6 +148,9 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventPreNotifyDue",
     state: "PRE_NOTIFIED",
     listener: "PreEventNotificationListener",
+    humanEffect:
+      "Posts a pre-event reminder to the event channel and pings the event role. Visible to every member of the channel.",
+    idempotency: "posts-discord",
   },
   {
     id: "completed",
@@ -98,6 +160,9 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventCompletionDue",
     state: "POST_COMPLETED",
     listener: "EventCompleteListener",
+    humanEffect:
+      "Closes out the event — posts a wrap-up embed and transitions to POST_COMPLETED.",
+    idempotency: "posts-discord",
   },
   {
     id: "album-post",
@@ -107,6 +172,10 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventCompleted",
     state: null,
     listener: "ImmichAlbumPostListener",
+    humanEffect:
+      "Posts the Immich album link to the event channel after completion — visible to every member.",
+    idempotency: "posts-discord",
+    dedup: "skips when an album-post message id is already recorded.",
   },
   {
     id: "archived",
@@ -116,6 +185,9 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventArchivalDue",
     state: "ARCHIVED",
     listener: "EventArchiveListener",
+    humanEffect:
+      "Archives the event — deletes/locks the Discord channel and transitions to ARCHIVED.",
+    idempotency: "destructive",
   },
   {
     id: "cancelled",
@@ -125,6 +197,9 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventCancelRequested",
     state: "CANCELLED",
     listener: "EventCancelListener",
+    humanEffect:
+      "Cancels the event — posts a cancellation notice and stops further scheduled work for this event.",
+    idempotency: "posts-discord",
   },
   {
     id: "deleted",
@@ -134,12 +209,43 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
     trigger: "EventDeleteRequested",
     state: "DELETED",
     listener: "EventDeleteListener",
+    humanEffect:
+      "Hard-deletes the event row and tears down channel + roles. Cannot be undone.",
+    idempotency: "destructive",
   },
 ];
 
 export const STAGE_BY_ID: Record<string, LifecycleStage> = Object.fromEntries(
   LIFECYCLE_STAGES.map((s) => [s.id, s]),
 );
+
+/**
+ * Stages whose listeners also subscribe to the same lifecycle trigger — replaying any one of
+ * these republishes the trigger, which fans out to every listener. Used in the replay console
+ * so the admin can see "you're about to fire N listeners" before clicking.
+ */
+export function coListenersForTrigger(trigger: string, exceptId?: string): LifecycleStage[] {
+  return LIFECYCLE_STAGES.filter(
+    (s) => s.trigger === trigger && s.id !== exceptId && s.listener !== "—",
+  );
+}
+
+export const IDEMPOTENCY_LABEL: Record<StageIdempotency, string> = {
+  safe: "safe to re-run",
+  "posts-discord": "posts to discord",
+  "sends-dm": "sends DMs",
+  "creates-channel": "creates channels",
+  destructive: "destructive",
+};
+
+/** Tailwind classes for the idempotency chip — paired with the label above. */
+export const IDEMPOTENCY_CHIP: Record<StageIdempotency, string> = {
+  safe: "bg-leafLt text-[#1F4410] border-[#1F4410]",
+  "posts-discord": "bg-[#FFF0A6] text-ink border-ink",
+  "sends-dm": "bg-[#FFD9B0] text-[#7A3A00] border-[#7A3A00]",
+  "creates-channel": "bg-[#E8DAFF] text-[#3D1F7A] border-[#3D1F7A]",
+  destructive: "bg-[#FFE5E5] text-[#7A1A1A] border-[#7A1A1A]",
+};
 
 // State columns in the pipeline view. Excludes side-effect stages (which don't change state) and
 // the cancelled / deleted terminal columns (rendered demoted on a separate strip).

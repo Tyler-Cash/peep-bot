@@ -77,11 +77,12 @@ describe("AdminPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /^↻ replay…$/ }));
+    // With no prefilled event the modal opens straight into the searchable event picker.
     await waitFor(() => {
-      expect(screen.getByText(/rerun a lifecycle stage/i)).toBeInTheDocument();
+      expect(screen.getByText(/pick an event to replay/i)).toBeInTheDocument();
     });
-    // The modal renders the lifecycle stage picker — verify a couple of stage labels show up.
-    expect(screen.getAllByText(/init channel/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/classify/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByPlaceholderText(/search .* events by name, state, id/i),
+    ).toBeInTheDocument();
   });
 });

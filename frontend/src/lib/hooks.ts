@@ -344,11 +344,19 @@ export async function updateGuildFeatures(
     tfnswEnabled: boolean;
   }>,
 ) {
-  await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {
+  const updated = await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
-  await globalMutate("/admin/guilds", undefined, { revalidate: true });
+  // Optimistically merge the PATCH response into the cache so the UI flips instantly,
+  // then revalidate in the background. Without the optimistic update, SWR's revalidate
+  // can be deduped or return cached/CDN data and the toggle appears not to apply.
+  await globalMutate<AdminGuild[]>(
+    "/admin/guilds",
+    (current) =>
+      current?.map((g) => (g.guildId === guildId ? { ...g, ...updated } : g)),
+    { revalidate: true },
+  );
 }
 
 // ---------- admin monitor & lifecycle hooks ----------------------------------

@@ -105,7 +105,7 @@ export function GuildSwitcher({ fullWidth = false }: { fullWidth?: boolean }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={clsx(
-          "inline-flex items-center gap-2.5 h-[46px] rounded-card border-[1.5px] border-ink bg-paper pl-1.5 pr-3",
+          "inline-flex items-center gap-2.5 h-[46px] rounded-card border-[1.5px] border-ink bg-paper text-ink pl-1.5 pr-3",
           "shadow-rest hover:shadow-rest active:shadow-press active:translate-x-[0.5px] active:translate-y-[0.5px]",
           "transition-[box-shadow,transform] select-none",
           fullWidth && "w-full",
@@ -169,7 +169,7 @@ function GuildDropdown({
   return (
     <div
       className={clsx(
-        "absolute left-0 top-[calc(100%+6px)] z-30 rounded-card border-[1.5px] border-ink bg-paper shadow-rest overflow-hidden",
+        "absolute left-0 top-[calc(100%+6px)] z-30 rounded-card border-[1.5px] border-ink bg-paper text-ink shadow-rest overflow-hidden",
         fullWidth ? "w-full" : "w-[260px]",
       )}
     >
