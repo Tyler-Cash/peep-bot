@@ -18,7 +18,8 @@ class TfnswNoteworthyFilterTest {
     private static final LocalDate EVENT_DATE = LocalDate.of(2026, 5, 17);
 
     private final TfnswConfiguration cfg = defaultCfg();
-    private final TfnswNoteworthyFilter filter = new TfnswNoteworthyFilter(cfg);
+    private final GtfsStopsIndex stopsIndex = indexWithMajors("CENTRAL", "TOWN_HALL");
+    private final TfnswNoteworthyFilter filter = new TfnswNoteworthyFilter(cfg, stopsIndex);
 
     private static TfnswConfiguration defaultCfg() {
         TfnswConfiguration c = new TfnswConfiguration();
@@ -26,6 +27,12 @@ class TfnswNoteworthyFilterTest {
         c.setMajorEventRadiusKm(5.0);
         c.setClosureRadiusKm(2.0);
         return c;
+    }
+
+    private static GtfsStopsIndex indexWithMajors(String... ids) {
+        GtfsStopsIndex idx = new GtfsStopsIndex(new TfnswConfiguration(), null);
+        idx.setStopsForTest(java.util.List.of(), java.util.Set.of(ids));
+        return idx;
     }
 
     private static Instant atDate(LocalDate d, int hourOffset) {

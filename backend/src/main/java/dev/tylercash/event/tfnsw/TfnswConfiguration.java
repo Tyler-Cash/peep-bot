@@ -16,6 +16,8 @@ public class TfnswConfiguration {
     private String apiKey = "";
     private String alertsBaseUrl = "https://api.transport.nsw.gov.au";
     private String liveTrafficBaseUrl = "https://api.transport.nsw.gov.au";
+    private String sydneyTrainsSchedulePath = "/v1/gtfs/schedule/sydneytrains";
+    private String sydneyMetroSchedulePath = "/v1/gtfs/schedule/sydneymetro";
     private double nearestStationRadiusKm = 1.5;
     private double majorEventRadiusKm = 5.0;
     private double closureRadiusKm = 2.0;

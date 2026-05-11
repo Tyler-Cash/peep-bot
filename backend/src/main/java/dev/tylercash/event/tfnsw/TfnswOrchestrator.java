@@ -41,6 +41,7 @@ public class TfnswOrchestrator {
     private final EventRepository events;
     private final GuildRepository guilds;
     private final PlacesDetailsClient placesDetails;
+    private final GtfsStopsIndex stopsIndex;
 
     @Transactional
     public void process(UUID eventId, boolean isWeekBeforeRecheck) {
@@ -65,8 +66,12 @@ public class TfnswOrchestrator {
         trafficEvents.addAll(liveTrafficClient.fetchHazards());
 
         LocalDate eventDate = event.getDateTime().withZoneSameInstant(SYDNEY).toLocalDate();
-        // nearestStationId is null in v1 — future enhancement can compute from a stops index.
-        List<NoteworthyItem> items = filter.filter(rail, trafficEvents, coords.lat(), coords.lng(), null, eventDate);
+        String nearestStationId = stopsIndex
+                .findNearest(coords.lat(), coords.lng(), cfg.getNearestStationRadiusKm())
+                .map(GtfsStopsIndex.Stop::stopId)
+                .orElse(null);
+        List<NoteworthyItem> items =
+                filter.filter(rail, trafficEvents, coords.lat(), coords.lng(), nearestStationId, eventDate);
 
         String newHash = hash(items);
         Optional<TfnswEventSnapshot> prior = snapshots.findById(eventId);

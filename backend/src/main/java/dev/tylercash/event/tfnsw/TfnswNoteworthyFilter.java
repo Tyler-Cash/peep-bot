@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
  * <p>Rail/Metro rules (any one matches):
  * <ul>
  *   <li>Alert affects the nearest known rail/metro station to the venue</li>
- *   <li>Alert affects any station in {@link MajorStations#STOP_IDS}</li>
+ *   <li>Alert affects any station returned by {@link GtfsStopsIndex#majorStopIds()}</li>
  *   <li>Alert is SEVERE and affects a Sydney Trains line or Sydney Metro line</li>
  * </ul>
  *
@@ -37,6 +37,7 @@ public class TfnswNoteworthyFilter {
     private static final Set<String> CITYWIDE_LINE_PREFIXES = Set.of("T", "MET", "Sydney Trains", "Sydney Metro");
 
     private final TfnswConfiguration cfg;
+    private final GtfsStopsIndex stopsIndex;
 
     public List<NoteworthyItem> filter(
             List<RailAlert> railAlerts,
@@ -48,13 +49,14 @@ public class TfnswNoteworthyFilter {
         List<NoteworthyItem> out = new ArrayList<>();
         Instant dayStart = eventDate.atStartOfDay(SYDNEY).toInstant();
         Instant dayEnd = eventDate.plusDays(1).atStartOfDay(SYDNEY).toInstant();
+        Set<String> majorIds = stopsIndex.majorStopIds();
 
         for (RailAlert a : railAlerts) {
             if (!overlaps(a.start(), a.end(), dayStart, dayEnd)) continue;
             Reason reason = null;
             if (nearestStationId != null && a.affectedStopIds().contains(nearestStationId)) {
                 reason = Reason.NEAREST_STATION;
-            } else if (!Collections.disjoint(a.affectedStopIds(), MajorStations.STOP_IDS)) {
+            } else if (!Collections.disjoint(a.affectedStopIds(), majorIds)) {
                 reason = Reason.MAJOR_STATION;
             } else if (a.severity() == RailAlert.Severity.SEVERE && affectsCityWideLine(a.affectedRouteIds())) {
                 reason = Reason.SEVERE_CITYWIDE;
@@ -91,7 +93,7 @@ public class TfnswNoteworthyFilter {
         return routeIds.stream().anyMatch(r -> CITYWIDE_LINE_PREFIXES.stream().anyMatch(r::startsWith));
     }
 
-    static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+    public static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
         double r = 6371.0;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);

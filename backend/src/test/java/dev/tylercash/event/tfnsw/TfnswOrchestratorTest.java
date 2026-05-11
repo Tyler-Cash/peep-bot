@@ -37,6 +37,7 @@ class TfnswOrchestratorTest {
     private EventRepository events;
     private GuildRepository guilds;
     private PlacesDetailsClient places;
+    private GtfsStopsIndex stopsIndex;
     private TfnswOrchestrator sut;
 
     @BeforeEach
@@ -51,7 +52,10 @@ class TfnswOrchestratorTest {
         events = mock(EventRepository.class);
         guilds = mock(GuildRepository.class);
         places = mock(PlacesDetailsClient.class);
-        sut = new TfnswOrchestrator(cfg, alerts, traffic, filter, reporter, snapshots, events, guilds, places);
+        stopsIndex = mock(GtfsStopsIndex.class);
+        when(stopsIndex.findNearest(anyDouble(), anyDouble(), anyDouble())).thenReturn(Optional.empty());
+        sut = new TfnswOrchestrator(
+                cfg, alerts, traffic, filter, reporter, snapshots, events, guilds, places, stopsIndex);
         when(alerts.fetchSydneyTrains()).thenReturn(List.of());
         when(alerts.fetchSydneyMetro()).thenReturn(List.of());
         when(alerts.fetchTripReplacements()).thenReturn(List.of());
@@ -131,6 +135,24 @@ class TfnswOrchestratorTest {
         sut.process(id, false);
 
         verifyNoInteractions(places);
+    }
+
+    @Test
+    void passesResolvedNearestStationIdIntoFilter() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(stopsIndex.findNearest(eq(-33.0), eq(151.0), anyDouble()))
+                .thenReturn(Optional.of(new GtfsStopsIndex.Stop("200060", "Central", -33.0, 151.0)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), eq("200060"), any()))
+                .thenReturn(List.of());
+
+        sut.process(id, false);
+
+        verify(filter).filter(any(), any(), anyDouble(), anyDouble(), eq("200060"), any());
     }
 
     @Test
