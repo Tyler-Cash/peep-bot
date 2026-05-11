@@ -1,12 +1,17 @@
 package dev.tylercash.event.contract;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.contract.model.Contract;
 import dev.tylercash.event.contract.model.ContractOutcome;
+import dev.tylercash.event.discord.Guild;
+import dev.tylercash.event.discord.GuildRepository;
 import dev.tylercash.event.test.SharedPostgres;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +22,8 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * End-to-end tests for the prediction contract flow against real Discord and PostgreSQL.
- * Requires a valid application-local.yaml with Discord credentials.
+ * Requires a valid application-local.yaml with Discord credentials, and the bot must
+ * already be joined to at least one guild (so a `guild` row exists in the local DB).
  *
  * Run explicitly with: ./gradlew e2eTest
  */
@@ -33,11 +39,25 @@ class ContractServiceE2ETest {
     private UserBalanceService balanceService;
 
     @Autowired
+    private GuildRepository guildRepository;
+
+    @Autowired
     private JDA jda;
+
+    private long guildId;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         SharedPostgres.registerProperties(registry);
+    }
+
+    @BeforeEach
+    void resolveLocalGuildId() {
+        Guild guild = guildRepository.findAllByActiveTrue().stream().findFirst().orElse(null);
+        assumeTrue(
+                guild != null,
+                "No active guild row in local DB — start the bot once so GuildJoinEvent seeds one before running e2eTest");
+        guildId = guild.getGuildId();
     }
 
     @Test
@@ -49,7 +69,7 @@ class ContractServiceE2ETest {
         balanceService.credit(trader, 500L);
 
         Contract contract =
-                contractService.createContract(0L, creator, "E2E Test Contract", null, List.of("YES", "NO"));
+                contractService.createContract(guildId, creator, "E2E Test Contract", null, List.of("YES", "NO"));
 
         ContractOutcome yes = contract.getOutcomes().stream()
                 .filter(o -> o.getLabel().equals("YES"))
@@ -70,8 +90,8 @@ class ContractServiceE2ETest {
         balanceService.credit(creator, 500L);
         balanceService.credit(trader, 500L);
 
-        Contract contract =
-                contractService.createContract(0L, creator, "E2E Cancel Test Contract", null, List.of("YES", "NO"));
+        Contract contract = contractService.createContract(
+                guildId, creator, "E2E Cancel Test Contract", null, List.of("YES", "NO"));
 
         ContractOutcome no = contract.getOutcomes().stream()
                 .filter(o -> o.getLabel().equals("NO"))
