@@ -61,7 +61,7 @@ public class DiscordService {
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
-        Category category = discordChannelService.getCategoryByName(event.getServerId(), EVENT_CATEGORY);
+        Category category = resolvePlannedCategory(event.getServerId());
         return discordChannelService.createTextChannel(category, DiscordUtil.getChannelNameFromEvent(event));
     }
 
@@ -70,7 +70,30 @@ public class DiscordService {
     }
 
     public @NotNull Category getEventCategory(long serverId) {
-        return discordChannelService.getCategoryByName(serverId, EVENT_CATEGORY);
+        return resolvePlannedCategory(serverId);
+    }
+
+    /**
+     * Returns the planned-events category configured for the guild. Falls back to the legacy
+     * named category ({@link DiscordConfiguration#EVENT_CATEGORY}) when no id is configured or
+     * the configured id no longer resolves (e.g. category was deleted in Discord).
+     */
+    private @NotNull Category resolvePlannedCategory(long guildId) {
+        Category byId = resolveCategoryById(guildId, dev.tylercash.event.discord.Guild::getPlannedCategoryId);
+        return byId != null ? byId : discordChannelService.getCategoryByName(guildId, EVENT_CATEGORY);
+    }
+
+    private @NotNull Category resolveArchivedCategory(long guildId) {
+        Category byId = resolveCategoryById(guildId, dev.tylercash.event.discord.Guild::getArchivedCategoryId);
+        return byId != null ? byId : discordChannelService.getCategoryByName(guildId, EVENT_ARCHIVE_CATEGORY);
+    }
+
+    private Category resolveCategoryById(
+            long guildId, java.util.function.Function<dev.tylercash.event.discord.Guild, String> selector) {
+        String id = guildRepository.findById(guildId).map(selector).orElse(null);
+        if (id == null) return null;
+        Guild jdaGuild = jda.getGuildById(guildId);
+        return jdaGuild == null ? null : jdaGuild.getCategoryById(id);
     }
 
     @Observed(name = "discord.post-message")
@@ -183,7 +206,7 @@ public class DiscordService {
     public void sortArchiveChannels() {
         for (dev.tylercash.event.discord.Guild row : guildRepository.findAllByActiveTrue()) {
             try {
-                Category category = discordChannelService.getCategoryByName(row.getGuildId(), EVENT_ARCHIVE_CATEGORY);
+                Category category = resolveArchivedCategory(row.getGuildId());
                 sortChannelsByChannelName(category);
             } catch (Exception e) {
                 log.warn("Failed to sort archive channels for guild {}: {}", row.getGuildId(), e.getMessage());
@@ -244,7 +267,7 @@ public class DiscordService {
         List<TextChannel> keptOrphans = new ArrayList<>();
         if (featureToggles.isArchiveOrphanedChannels()) {
             OffsetDateTime cutoff = OffsetDateTime.now(clock).minusDays(ORPHAN_AGE_DAYS);
-            Category archiveCategory = discordChannelService.getCategoryByName(guildId, EVENT_ARCHIVE_CATEGORY);
+            Category archiveCategory = resolveArchivedCategory(guildId);
             for (TextChannel orphan : withoutEvent) {
                 if (orphan.getTimeCreated().isBefore(cutoff)) {
                     log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
@@ -291,7 +314,7 @@ public class DiscordService {
                     HttpStatus.CONFLICT, "Event roles have not been created yet — please wait and try again");
         }
         Guild guild = jda.getGuildById(event.getServerId());
-        Category category = discordChannelService.getCategoryByName(event.getServerId(), EVENT_CATEGORY);
+        Category category = resolvePlannedCategory(event.getServerId());
         String channelName = DiscordUtil.getChannelNameFromEvent(event) + "-private";
         TextChannel channel = discordChannelService.createPrivateTextChannel(
                 category, channelName, guild.getPublicRole().getIdLong(), event.getAcceptedRoleId());
@@ -324,7 +347,7 @@ public class DiscordService {
     @Observed(name = "discord.archive-channel")
     public void archiveEventChannel(Event event) {
         TextChannel eventChannel = discordChannelService.getTextChannel(event.getChannelId());
-        Category archiveCategory = discordChannelService.getCategoryByName(event.getServerId(), EVENT_ARCHIVE_CATEGORY);
+        Category archiveCategory = resolveArchivedCategory(event.getServerId());
         discordChannelService.moveChannelToCategory(eventChannel, archiveCategory);
         discordChannelService.sortChannelsByChannelName(archiveCategory);
     }
