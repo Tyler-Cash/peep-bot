@@ -10,6 +10,7 @@ dev.tylercash:
     album-name-prefix: "[DEV] "
   frontend:
     protocol: https
+    hostname: api.event.tylercash.dev
     path: /
   rate-limit:
     read-capacity: 300

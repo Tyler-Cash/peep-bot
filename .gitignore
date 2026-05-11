@@ -44,7 +44,6 @@ bin/
 
 **/application.properties
 **/application-local.yaml
-!backend/src/test/resources/application-local.yaml
 **/application-k8s.yaml
 .idea/sonarlint/
 .idea/dataSources*.xml
@@ -55,7 +54,6 @@ bin/
 *.sqlite
 *.sqlite3
 *.yaml
-!backend/src/test/resources/application-local.yaml
 *.json
 !.releaserc.json
 !backend/openapi.json
