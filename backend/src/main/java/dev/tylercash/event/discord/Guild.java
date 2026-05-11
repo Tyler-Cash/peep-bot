@@ -74,6 +74,18 @@ public class Guild {
     @Column(name = "event_create_rate_limit_per_hour")
     private Integer eventCreateRateLimitPerHour;
 
+    @Column(name = "planned_category_id")
+    private String plannedCategoryId;
+
+    @Column(name = "archived_category_id")
+    private String archivedCategoryId;
+
+    @Column(name = "archive_days", nullable = false)
+    private int archiveDays;
+
+    @Column(name = "anyone_can_create", nullable = false)
+    private boolean anyoneCanCreate;
+
     public static Guild withDefaults(long guildId) {
         Guild g = new Guild();
         g.setGuildId(guildId);
@@ -89,6 +101,8 @@ public class Guild {
         g.setRewindEnabled(false);
         g.setContractsEnabled(false);
         g.setTfnswEnabled(false);
+        g.setArchiveDays(90);
+        g.setAnyoneCanCreate(true);
         return g;
     }
 }

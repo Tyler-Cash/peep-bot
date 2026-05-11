@@ -11,4 +11,8 @@ public record GuildSettingsRequest(
         String emojiAccepted,
         String emojiDeclined,
         String emojiMaybe,
-        Integer eventCreateRateLimitPerHour) {}
+        Integer eventCreateRateLimitPerHour,
+        String plannedCategoryId,
+        String archivedCategoryId,
+        Integer archiveDays,
+        Boolean anyoneCanCreate) {}

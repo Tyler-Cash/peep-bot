@@ -12,6 +12,10 @@ public record GuildSettingsDto(
         String emojiDeclined,
         String emojiMaybe,
         Integer eventCreateRateLimitPerHour,
+        String plannedCategoryId,
+        String archivedCategoryId,
+        int archiveDays,
+        boolean anyoneCanCreate,
         int defaultEventCreateRateLimitPerHour) {
 
     public static GuildSettingsDto from(Guild row, int defaultEventCreateRateLimitPerHour) {
@@ -27,6 +31,10 @@ public record GuildSettingsDto(
                 row.getEmojiDeclined(),
                 row.getEmojiMaybe(),
                 row.getEventCreateRateLimitPerHour(),
+                row.getPlannedCategoryId(),
+                row.getArchivedCategoryId(),
+                row.getArchiveDays(),
+                row.isAnyoneCanCreate(),
                 defaultEventCreateRateLimitPerHour);
     }
 }
