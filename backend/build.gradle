@@ -166,6 +166,12 @@ jacocoTestReport {
     mustRunAfter e2eTest
     // Pick up exec files from both test and e2eTest when both have run
     executionData fileTree(layout.buildDirectory.dir("jacoco")).include("*.exec")
+    // Exclude generated GTFS-R protobuf — ~13k lines we don't author, dominates the headline number.
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(it) {
+            exclude 'com/google/transit/realtime/**'
+        }
+    }))
     reports {
         xml.required = true
         html.required = true

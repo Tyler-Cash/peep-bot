@@ -24,6 +24,7 @@ import dev.tylercash.event.discord.DiscordInitializationService;
 import dev.tylercash.event.discord.DiscordMessageService;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.test.SharedPostgres;
+import dev.tylercash.event.test.TestIds;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -32,13 +33,16 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.AutoCompleteQuery;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.AutoCompleteCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +58,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  *
  * <p>The Spring context is fully wired (real ContractService, UserBalanceService, repositories).
  * Discord-side infrastructure (JDA, channel/message services, pinned-message refresh) is mocked
- * so that the tests don't require a live Discord connection.
+ * so the tests don't require a live Discord connection.
+ *
+ * <p><b>Parallel-safety:</b> each test method allocates its own guild id, creator/resolver
+ * snowflakes, and unique contract titles via {@link TestIds}. All repository lookups are scoped
+ * to the per-test guild so sibling tests sharing the JVM-wide Postgres container cannot collide.
+ * No global truncates.
  */
 @SpringBootTest(
         classes = PeepBotApplication.class,
@@ -69,11 +78,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
 @ActiveProfiles("local")
-@Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractSlashCommandListenerImplIntegrationTest {
-
-    private static final String CREATOR_SNOWFLAKE = "777888999";
-    private static final String RESOLVER_SNOWFLAKE = "111000111";
 
     @MockitoBean
     JDA jda;
@@ -118,23 +123,38 @@ class ContractSlashCommandListenerImplIntegrationTest {
         SharedPostgres.registerProperties(registry);
     }
 
-    // Shared Discord stub objects — created once, reused across @BeforeEach setups
-    // to avoid re-creating final-ish JDA types.
-    private TextChannel fakeChannel;
-    private Message fakeMessage;
+    // Per-test isolation: every test method gets its own guild id, snowflakes, and title suffix.
+    private long guildId;
+    private String creatorSnowflake;
+    private String resolverSnowflake;
+    private String traderSnowflake;
+    private String titleSuffix;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @BeforeEach
     void setUp() {
-        jdbc.execute("DELETE FROM contract_trade");
-        jdbc.execute("DELETE FROM contract_outcome");
-        jdbc.execute("DELETE FROM contract");
-        jdbc.execute("DELETE FROM user_balance");
+        guildId = TestIds.nextLong();
+        creatorSnowflake = TestIds.nextSnowflake();
+        resolverSnowflake = TestIds.nextSnowflake();
+        traderSnowflake = TestIds.nextSnowflake();
+        titleSuffix = " #" + TestIds.nextLong();
+
+        // Seed a guild row with contracts_enabled = true so FeatureFlagService allows the handler
+        // to proceed. Without this row the listener short-circuits with "not enabled" and no
+        // contract is persisted.
+        jdbc.update(
+                "INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined,"
+                        + " emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled,"
+                        + " rewind_enabled, contracts_enabled)"
+                        + " VALUES (?, 'events', 'event-organiser', '✅', '❌', '❓', NOW(),"
+                        + " true, false, false, false, true)"
+                        + " ON CONFLICT (guild_id) DO UPDATE SET contracts_enabled = true",
+                guildId);
 
         // Stub initChannel path so ContractService.createContract() completes without NPE.
         Category category = mock(Category.class);
-        fakeChannel = mock(TextChannel.class);
-        fakeMessage = mock(Message.class);
+        TextChannel fakeChannel = mock(TextChannel.class);
+        Message fakeMessage = mock(Message.class);
 
         lenient()
                 .when(discordChannelService.getOrCreateCategory(any(), anyString()))
@@ -142,11 +162,11 @@ class ContractSlashCommandListenerImplIntegrationTest {
         lenient()
                 .when(discordChannelService.createTextChannel(any(), anyString()))
                 .thenReturn(fakeChannel);
-        lenient().when(fakeChannel.getIdLong()).thenReturn(12345L);
+        lenient().when(fakeChannel.getIdLong()).thenReturn(TestIds.nextLong());
         lenient()
                 .when(discordMessageService.sendEmbedWithAttachment(any(), anyList(), any(byte[].class), anyString()))
                 .thenReturn(fakeMessage);
-        lenient().when(fakeMessage.getIdLong()).thenReturn(67890L);
+        lenient().when(fakeMessage.getIdLong()).thenReturn(TestIds.nextLong());
 
         // buildEmbed and renderChart must return non-null so List.of(embed) doesn't NPE.
         lenient()
@@ -168,12 +188,19 @@ class ContractSlashCommandListenerImplIntegrationTest {
     // -------------------------------------------------------------------------
 
     /**
+     * Per-test unique title. Sibling tests on the shared DB own their own rows; never assert via
+     * "find all" — always look up by this title + guildId.
+     */
+    private String t(String label) {
+        return label + titleSuffix;
+    }
+
+    /**
      * Build a pre-stubbed OptionMapping mock.
-     * <p>
-     * IMPORTANT: always build this mock BEFORE composing it into a
-     * {@code when(event.getOption(...))} call. Constructing a mock with internal
-     * {@code when()} calls inside an outer {@code thenReturn()} triggers Mockito's
-     * "unfinished stubbing" detection.
+     *
+     * <p>IMPORTANT: always build this mock BEFORE composing it into a {@code
+     * when(event.getOption(...))} call. Constructing a mock with internal {@code when()} calls
+     * inside an outer {@code thenReturn()} triggers Mockito's "unfinished stubbing" detection.
      */
     private OptionMapping opt(String value) {
         OptionMapping m = mock(OptionMapping.class);
@@ -192,10 +219,8 @@ class ContractSlashCommandListenerImplIntegrationTest {
         lenient().when(user.getIdLong()).thenReturn(Long.parseLong(userId));
         lenient().when(evt.getUser()).thenReturn(user);
 
-        // Multi-guild: handleResolve/handleCancel read event.getGuild().getIdLong()
-        // to scope role lookups. Stub a guild so those handlers don't NPE.
         Guild guild = mock(Guild.class);
-        lenient().when(guild.getIdLong()).thenReturn(427465120554418177L);
+        lenient().when(guild.getIdLong()).thenReturn(guildId);
         lenient().when(evt.getGuild()).thenReturn(guild);
 
         ReplyCallbackAction deferAction = mock(ReplyCallbackAction.class);
@@ -213,14 +238,56 @@ class ContractSlashCommandListenerImplIntegrationTest {
         return evt;
     }
 
-    /** Convenience: create a contract and return a ref to it from the DB. */
+    /**
+     * Build a {@link CommandAutoCompleteInteractionEvent} mock whose focused option has the given
+     * name and typed value, plus a stubbed {@link AutoCompleteCallbackAction} return for {@code
+     * replyChoices(...)} so the handler's {@code .queue()} call doesn't NPE.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CommandAutoCompleteInteractionEvent autoCompleteEvent(String focusedFieldName, String typed) {
+        CommandAutoCompleteInteractionEvent evt = mock(CommandAutoCompleteInteractionEvent.class);
+
+        Guild guild = mock(Guild.class);
+        lenient().when(guild.getIdLong()).thenReturn(guildId);
+        lenient().when(evt.getGuild()).thenReturn(guild);
+
+        AutoCompleteQuery focused = mock(AutoCompleteQuery.class);
+        lenient().when(focused.getName()).thenReturn(focusedFieldName);
+        lenient().when(focused.getValue()).thenReturn(typed);
+        lenient().when(evt.getFocusedOption()).thenReturn(focused);
+
+        AutoCompleteCallbackAction action = mock(AutoCompleteCallbackAction.class);
+        lenient().when(evt.replyChoices(anyList())).thenReturn(action);
+
+        return evt;
+    }
+
+    /**
+     * Like {@link #autoCompleteEvent} but captures the {@link Command.Choice} list passed to
+     * {@code replyChoices(...)} into the supplied holder, so tests can assert on the choices
+     * instead of just verifying the call happened.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CommandAutoCompleteInteractionEvent autoCompleteEventCapturing(
+            String focusedFieldName,
+            String typed,
+            java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured) {
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEvent(focusedFieldName, typed);
+        AutoCompleteCallbackAction action = mock(AutoCompleteCallbackAction.class);
+        lenient().when(evt.replyChoices(anyList())).thenAnswer(inv -> {
+            captured.set((List<Command.Choice>) inv.getArgument(0));
+            return action;
+        });
+        return evt;
+    }
+
+    /** Convenience: create a contract and return a guild-scoped reference to it from the DB. */
     private Contract createContract(String title, String outcome1, String outcome2) {
-        // Pre-build option mocks before composing them into when() calls.
         OptionMapping titleOpt = opt(title);
         OptionMapping o1Opt = outcome1 != null ? opt(outcome1) : null;
         OptionMapping o2Opt = outcome2 != null ? opt(outcome2) : null;
 
-        SlashCommandInteractionEvent evt = contractEvent("create", CREATOR_SNOWFLAKE);
+        SlashCommandInteractionEvent evt = contractEvent("create", creatorSnowflake);
         when(evt.getOption("title")).thenReturn(titleOpt);
         when(evt.getOption("outcome_1")).thenReturn(o1Opt);
         when(evt.getOption("outcome_2")).thenReturn(o2Opt);
@@ -230,8 +297,8 @@ class ContractSlashCommandListenerImplIntegrationTest {
         listener.handleSlashCommand(evt);
 
         return contractRepository
-                .findFirstByStateInAndTitleIgnoreCase(List.of(ContractState.OPEN), title)
-                .orElseThrow(() -> new AssertionError("Contract not created: " + title));
+                .findFirstByServerIdAndStateInAndTitleIgnoreCase(guildId, List.of(ContractState.OPEN), title)
+                .orElseThrow(() -> new AssertionError("Contract not created: " + title + " (guild " + guildId + ")"));
     }
 
     // -------------------------------------------------------------------------
@@ -241,19 +308,46 @@ class ContractSlashCommandListenerImplIntegrationTest {
     @Test
     @DisplayName("create → contract row persisted in DB with OPEN state and correct outcomes")
     void createContract_persistsContractAndOutcomes() {
-        Contract saved = createContract("Will it rain tomorrow?", "YES", "NO");
+        String title = t("Will it rain tomorrow?");
+        Contract saved = createContract(title, "YES", "NO");
 
-        assertThat(saved.getTitle()).isEqualTo("Will it rain tomorrow?");
-        assertThat(saved.getCreatorSnowflake()).isEqualTo(CREATOR_SNOWFLAKE);
+        assertThat(saved.getTitle()).isEqualTo(title);
+        assertThat(saved.getCreatorSnowflake()).isEqualTo(creatorSnowflake);
+        assertThat(saved.getServerId()).isEqualTo(guildId);
         assertThat(saved.getOutcomes()).extracting(ContractOutcome::getLabel).containsExactlyInAnyOrder("YES", "NO");
     }
 
     @Test
     @DisplayName("create with no explicit outcomes → defaults YES/NO")
     void createContract_defaultsToYesNo() {
-        Contract saved = createContract("Will we win?", null, null);
+        Contract saved = createContract(t("Will we win?"), null, null);
 
         assertThat(saved.getOutcomes()).extracting(ContractOutcome::getLabel).containsExactlyInAnyOrder("YES", "NO");
+    }
+
+    @Test
+    @DisplayName("create when contracts_enabled = false on guild → no row persisted")
+    void createContract_disabledGuild_doesNothing() {
+        // Flip the gate off for this test's guild.
+        jdbc.update("UPDATE guild SET contracts_enabled = false WHERE guild_id = ?", guildId);
+
+        String title = t("Should not persist");
+        OptionMapping titleOpt = opt(title);
+        OptionMapping o1Opt = opt("YES");
+        OptionMapping o2Opt = opt("NO");
+        SlashCommandInteractionEvent evt = contractEvent("create", creatorSnowflake);
+        when(evt.getOption("title")).thenReturn(titleOpt);
+        when(evt.getOption("outcome_1")).thenReturn(o1Opt);
+        when(evt.getOption("outcome_2")).thenReturn(o2Opt);
+        when(evt.getOption("outcome_3")).thenReturn(null);
+        when(evt.getOption("outcome_4")).thenReturn(null);
+        when(evt.getOption("outcome_5")).thenReturn(null);
+
+        listener.handleSlashCommand(evt);
+
+        assertThat(contractRepository.findFirstByServerIdAndStateInAndTitleIgnoreCase(
+                        guildId, List.of(ContractState.OPEN), title))
+                .isEmpty();
     }
 
     // -------------------------------------------------------------------------
@@ -263,18 +357,17 @@ class ContractSlashCommandListenerImplIntegrationTest {
     @Test
     @DisplayName("trade → user balance debited, shares incremented on the outcome")
     void trade_debitsBalanceAndIncrementsShares() {
-        Contract contract = createContract("Trade Test", "WIN", "LOSE");
+        String title = t("Trade Test");
+        Contract contract = createContract(title, "WIN", "LOSE");
         double sharesBefore = contract.getOutcomes().stream()
                 .filter(o -> o.getLabel().equals("WIN"))
                 .findFirst()
                 .orElseThrow()
                 .getSharesOutstanding();
 
-        String traderSnowflake = "222333444";
         long balanceBefore = userBalanceService.getBalance(traderSnowflake);
 
-        // Pre-build option mocks before composing them into when() calls.
-        OptionMapping contractOpt = opt("Trade Test");
+        OptionMapping contractOpt = opt(title);
         OptionMapping outcomeOpt = opt("WIN");
         OptionMapping amountOpt = opt("50");
 
@@ -303,11 +396,11 @@ class ContractSlashCommandListenerImplIntegrationTest {
     @Test
     @DisplayName("resolve → contract state RESOLVED, winning outcome ID set, winner credited")
     void resolve_transitionsToResolvedAndCreditsWinners() {
-        Contract contract = createContract("Resolve Test", "A", "B");
+        String title = t("Resolve Test");
+        Contract contract = createContract(title, "A", "B");
 
         // Place a trade on outcome A so there's a winner to credit.
-        String traderSnowflake = "555666777";
-        OptionMapping contractOpt1 = opt("Resolve Test");
+        OptionMapping contractOpt1 = opt(title);
         OptionMapping outcomeOpt1 = opt("A");
         OptionMapping amountOpt1 = opt("100");
         SlashCommandInteractionEvent tradeEvt = contractEvent("trade", traderSnowflake);
@@ -320,9 +413,9 @@ class ContractSlashCommandListenerImplIntegrationTest {
         // Resolver has the required role.
         when(discordAuthService.hasRole(anyLong(), anyLong(), anyString())).thenReturn(true);
 
-        OptionMapping contractOpt2 = opt("Resolve Test");
+        OptionMapping contractOpt2 = opt(title);
         OptionMapping outcomeOpt2 = opt("A");
-        SlashCommandInteractionEvent resolveEvt = contractEvent("resolve", RESOLVER_SNOWFLAKE);
+        SlashCommandInteractionEvent resolveEvt = contractEvent("resolve", resolverSnowflake);
         when(resolveEvt.getOption("contract")).thenReturn(contractOpt2);
         when(resolveEvt.getOption("outcome")).thenReturn(outcomeOpt2);
         listener.handleSlashCommand(resolveEvt);
@@ -342,12 +435,12 @@ class ContractSlashCommandListenerImplIntegrationTest {
     @Test
     @DisplayName("cancel → contract state CANCELLED, trades refunded to buyers")
     void cancel_transitionsToCancelledAndRefundsTrades() {
-        Contract contract = createContract("Cancel Test", "X", "Y");
+        String title = t("Cancel Test");
+        Contract contract = createContract(title, "X", "Y");
 
-        String traderSnowflake = "888777666";
         long balanceBefore = userBalanceService.getBalance(traderSnowflake);
 
-        OptionMapping contractOpt1 = opt("Cancel Test");
+        OptionMapping contractOpt1 = opt(title);
         OptionMapping outcomeOpt1 = opt("X");
         OptionMapping amountOpt1 = opt("100");
         SlashCommandInteractionEvent tradeEvt = contractEvent("trade", traderSnowflake);
@@ -359,11 +452,10 @@ class ContractSlashCommandListenerImplIntegrationTest {
         long balanceAfterTrade = userBalanceService.getBalance(traderSnowflake);
         assertThat(balanceAfterTrade).isLessThan(balanceBefore);
 
-        // Cancel — resolver role granted
         when(discordAuthService.hasRole(anyLong(), anyLong(), anyString())).thenReturn(true);
 
-        OptionMapping cancelContractOpt = opt("Cancel Test");
-        SlashCommandInteractionEvent cancelEvt = contractEvent("cancel", RESOLVER_SNOWFLAKE);
+        OptionMapping cancelContractOpt = opt(title);
+        SlashCommandInteractionEvent cancelEvt = contractEvent("cancel", resolverSnowflake);
         when(cancelEvt.getOption("contract")).thenReturn(cancelContractOpt);
         listener.handleSlashCommand(cancelEvt);
 
@@ -379,15 +471,133 @@ class ContractSlashCommandListenerImplIntegrationTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("list → reply contains open contract titles")
+    @DisplayName("list → reply contains open contract titles scoped to this guild")
     void list_repliesWithOpenContracts() {
-        createContract("Alpha Contract", null, null);
-        createContract("Beta Contract", null, null);
+        String alpha = t("Alpha Contract");
+        String beta = t("Beta Contract");
+        createContract(alpha, null, null);
+        createContract(beta, null, null);
 
-        SlashCommandInteractionEvent listEvt = contractEvent("list", CREATOR_SNOWFLAKE);
+        SlashCommandInteractionEvent listEvt = contractEvent("list", creatorSnowflake);
         listener.handleSlashCommand(listEvt);
 
-        // The list handler calls event.reply(...).setEphemeral(true).queue()
-        verify(listEvt).reply(org.mockito.ArgumentMatchers.contains("Alpha Contract"));
+        // The list handler calls event.reply(...).setEphemeral(true).queue() with the joined titles.
+        verify(listEvt).reply(org.mockito.ArgumentMatchers.contains(alpha));
+        verify(listEvt).reply(org.mockito.ArgumentMatchers.contains(beta));
+    }
+
+    // -------------------------------------------------------------------------
+    // balance
+    // -------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------
+    // autocomplete (handleAutoComplete)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("autocomplete on disabled guild → no choices")
+    void autocomplete_disabledGuild_repliesEmpty() {
+        jdbc.update("UPDATE guild SET contracts_enabled = false WHERE guild_id = ?", guildId);
+
+        java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEventCapturing("contract", "anything", captured);
+
+        listener.handleAutoComplete(evt);
+
+        assertThat(captured.get()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("autocomplete on contract field → returns matching open contract titles")
+    void autocomplete_contractField_returnsMatchingTitles() {
+        String matchingTitle = t("Alpha Match");
+        String nonMatching = t("Zebra");
+        createContract(matchingTitle, null, null);
+        createContract(nonMatching, null, null);
+
+        @SuppressWarnings("unchecked")
+        java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEventCapturing("contract", "alpha", captured);
+
+        listener.handleAutoComplete(evt);
+
+        assertThat(captured.get())
+                .extracting(Command.Choice::getName)
+                .anyMatch(name -> name.equals(matchingTitle))
+                .noneMatch(name -> name.equals(nonMatching));
+    }
+
+    @Test
+    @DisplayName("autocomplete on outcome field → returns outcome labels filtered by typed prefix")
+    void autocomplete_outcomeField_returnsOutcomeLabels() {
+        String title = t("Outcome AC Test");
+        createContract(title, "APPLE", "BANANA");
+
+        @SuppressWarnings("unchecked")
+        java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEventCapturing("outcome", "app", captured);
+        // The autocomplete handler reads the prior `contract` option to resolve outcomes.
+        OptionMapping contractOpt = opt(title);
+        lenient().when(evt.getOption("contract")).thenReturn(contractOpt);
+
+        listener.handleAutoComplete(evt);
+
+        assertThat(captured.get()).extracting(Command.Choice::getName).containsExactly("APPLE");
+    }
+
+    @Test
+    @DisplayName("autocomplete on outcome field without contract context → no choices")
+    void autocomplete_outcomeField_noContractContext_repliesEmpty() {
+        @SuppressWarnings("unchecked")
+        java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEventCapturing("outcome", "any", captured);
+        lenient().when(evt.getOption("contract")).thenReturn(null);
+
+        listener.handleAutoComplete(evt);
+
+        assertThat(captured.get()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("autocomplete on unknown field → no choices")
+    void autocomplete_unknownField_repliesEmpty() {
+        @SuppressWarnings("unchecked")
+        java.util.concurrent.atomic.AtomicReference<List<Command.Choice>> captured =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CommandAutoCompleteInteractionEvent evt = autoCompleteEventCapturing("nonsense", "x", captured);
+
+        listener.handleAutoComplete(evt);
+
+        assertThat(captured.get()).isEmpty();
+    }
+
+    // -------------------------------------------------------------------------
+    // balance
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("balance → replies with current balance for the requesting user")
+    void balance_repliesWithCurrentBalance() {
+        SlashCommandInteractionEvent balanceEvt = mock(SlashCommandInteractionEvent.class);
+        when(balanceEvt.getName()).thenReturn("balance");
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(traderSnowflake);
+        when(balanceEvt.getUser()).thenReturn(user);
+        Guild guild = mock(Guild.class);
+        when(guild.getIdLong()).thenReturn(guildId);
+        when(balanceEvt.getGuild()).thenReturn(guild);
+
+        ReplyCallbackAction reply = mock(ReplyCallbackAction.class);
+        when(balanceEvt.reply(anyString())).thenReturn(reply);
+        when(reply.setEphemeral(true)).thenReturn(reply);
+
+        listener.handleSlashCommand(balanceEvt);
+
+        long expected = userBalanceService.getBalance(traderSnowflake);
+        verify(balanceEvt).reply(org.mockito.ArgumentMatchers.contains(Long.toString(expected)));
     }
 }

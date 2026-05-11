@@ -7,7 +7,6 @@ import dev.tylercash.event.test.SharedPostgres;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import org.springframework.test.context.DynamicPropertySource;
 @SpringBootTest(classes = PeepBotApplication.class)
 @ActiveProfiles("local")
 @Tag("e2e")
-@Disabled("Prediction contracts feature is being orphaned on this branch")
 class ContractServiceE2ETest {
 
     @Autowired

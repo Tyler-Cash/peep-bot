@@ -3,11 +3,9 @@ package dev.tylercash.event.contract;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Prediction contracts feature is being orphaned on this branch")
 class LmsrServiceTest {
     private final LmsrService lmsr = new LmsrService();
 

@@ -229,6 +229,168 @@ class ImmichServiceTest {
         service.addAssetsToAlbum("album-123", List.of("asset-abc")); // no exception = pass
     }
 
+    // -------------------------------------------------------------------------
+    // streamThumbnail
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("streamThumbnail: 2xx response copies body to output stream and returns true")
+    void streamThumbnailSuccess() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        byte[] thumbnailBytes = new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}; // jpeg magic prefix
+        server.expect(requestTo("https://immich.example.com/api/assets/asset-xyz/thumbnail?size=preview"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(thumbnailBytes, MediaType.IMAGE_JPEG));
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        boolean ok = service.streamThumbnail("asset-xyz", out);
+
+        assertTrue(ok);
+        assertEquals(3, out.size());
+        assertEquals((byte) 0xFF, out.toByteArray()[0]);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("streamThumbnail: disabled config returns false without HTTP calls")
+    void streamThumbnailDisabledReturnsFalse() {
+        ImmichService service =
+                new ImmichService(disabledConfig(), RestClient.builder().build(), noWaitRetry());
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        assertTrue(!service.streamThumbnail("asset-xyz", out));
+        assertEquals(0, out.size());
+    }
+
+    @Test
+    @DisplayName("streamThumbnail: server error returns false")
+    void streamThumbnailServerErrorReturnsFalse() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(requestTo("https://immich.example.com/api/assets/asset-xyz/thumbnail?size=preview"))
+                .andRespond(withServerError());
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        boolean ok = service.streamThumbnail("asset-xyz", out);
+
+        assertTrue(!ok);
+        server.verify();
+    }
+
+    // -------------------------------------------------------------------------
+    // getAlbumDetails
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("getAlbumDetails: 200 response returns populated Optional")
+    void getAlbumDetailsSuccess() throws JsonProcessingException {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ImmichAlbumResponse expected = new ImmichAlbumResponse("album-xyz", "My Album", "thumb-asset-id", 7);
+        server.expect(requestTo("https://immich.example.com/api/albums/album-xyz?withoutAssets=true"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(objectMapper.writeValueAsString(expected), MediaType.APPLICATION_JSON));
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        Optional<ImmichAlbumResponse> result = service.getAlbumDetails("album-xyz");
+
+        assertTrue(result.isPresent());
+        assertEquals("album-xyz", result.get().id());
+        assertEquals("My Album", result.get().albumName());
+        assertEquals("thumb-asset-id", result.get().albumThumbnailAssetId());
+        assertEquals(7, result.get().assetCount());
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("getAlbumDetails: disabled config returns empty without HTTP calls")
+    void getAlbumDetailsDisabledReturnsEmpty() {
+        ImmichService service =
+                new ImmichService(disabledConfig(), RestClient.builder().build(), noWaitRetry());
+        assertTrue(service.getAlbumDetails("album-xyz").isEmpty());
+    }
+
+    @Test
+    @DisplayName("getAlbumDetails: server error returns empty Optional")
+    void getAlbumDetailsServerErrorReturnsEmpty() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(requestTo("https://immich.example.com/api/albums/album-xyz?withoutAssets=true"))
+                .andRespond(withServerError());
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        Optional<ImmichAlbumResponse> result = service.getAlbumDetails("album-xyz");
+
+        assertTrue(result.isEmpty());
+        server.verify();
+    }
+
+    // -------------------------------------------------------------------------
+    // createSharedLink with description + expiry
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("createSharedLink with description+expiry: body includes both fields")
+    void createSharedLinkWithDescriptionAndExpiry() throws JsonProcessingException {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        java.time.Instant expiry = java.time.Instant.parse("2030-01-01T00:00:00Z");
+        server.expect(requestTo("https://immich.example.com/api/shared-links"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content()
+                        .json("{\"type\":\"ALBUM\",\"albumId\":\"album-xyz\",\"allowUpload\":true,"
+                                + "\"allowDownload\":true,\"showMetadata\":true,"
+                                + "\"description\":\"Alice — 2030\","
+                                + "\"expiresAt\":\"2030-01-01T00:00:00Z\"}"))
+                .andRespond(withSuccess(
+                        objectMapper.writeValueAsString(new ImmichSharedLinkResponse("key-xyz")),
+                        MediaType.APPLICATION_JSON));
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        Optional<String> result = service.createSharedLink("album-xyz", "Alice — 2030", expiry);
+
+        assertTrue(result.isPresent());
+        assertEquals("key-xyz", result.get());
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("createSharedLink with blank description: body omits description field")
+    void createSharedLinkBlankDescriptionOmitsField() throws JsonProcessingException {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(requestTo("https://immich.example.com/api/shared-links"))
+                .andExpect(method(HttpMethod.POST))
+                // Body should NOT contain "description" — only the always-present fields.
+                .andExpect(content().json("{\"type\":\"ALBUM\",\"albumId\":\"album-xyz\"}"))
+                .andRespond(withSuccess(
+                        objectMapper.writeValueAsString(new ImmichSharedLinkResponse("k")),
+                        MediaType.APPLICATION_JSON));
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        Optional<String> result = service.createSharedLink("album-xyz", "   ", null);
+
+        assertTrue(result.isPresent());
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("createSharedLink: null body response returns empty Optional")
+    void createSharedLinkNullBodyReturnsEmpty() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        // 204 No Content → null body deserialised
+        server.expect(requestTo("https://immich.example.com/api/shared-links")).andRespond(withSuccess());
+
+        ImmichService service = new ImmichService(enabledConfig(), builder.build(), noWaitRetry());
+        Optional<String> result = service.createSharedLink("album-xyz");
+
+        assertTrue(result.isEmpty());
+        server.verify();
+    }
+
     @Test
     @DisplayName("addAssetsToAlbum: server error after retries does not throw")
     void addAssetsToAlbumServerErrorDoesNotThrow() {
