@@ -21,6 +21,10 @@ const config: Config = {
         leafLt: "#C8E5B0",
         pond: "#2F4A1E",
         discord: "#5865F2",
+        danger: "#DC2626",
+        rsvpGoing: "#E6F4D8",
+        rsvpNo: "#FCE5E8",
+        rsvpMaybe: "#F5EDD2",
         // Category palette — bg / ink / dot per category
         "cat-movie-bg": "#FFD89B",
         "cat-movie-ink": "#5A2E08",
