@@ -45,7 +45,7 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java:4.34.1'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.3.Final'
+    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.4.Final'
     implementation 'org.liquibase:liquibase-core'
     implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
