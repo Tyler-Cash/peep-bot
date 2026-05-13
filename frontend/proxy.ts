@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login"];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const mode = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
   // In mock mode, auth is synthetic — never redirect.
   if (mode === "mock") return NextResponse.next();
