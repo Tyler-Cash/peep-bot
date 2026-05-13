@@ -2,7 +2,7 @@ plugins {
     id 'application'
     id 'jacoco'
     id 'com.diffplug.spotless' version '8.4.0'
-    id 'org.springframework.boot' version '3.5.14'
+    id 'org.springframework.boot' version '4.0.6'
     id 'org.cyclonedx.bom' version '2.4.1'
     id 'com.google.protobuf' version '0.10.0'
 }
@@ -31,11 +31,17 @@ configurations {
 
 repositories {
     mavenCentral()
+    // Spring AI 2.x (Spring Boot 4 / Jackson 3 compatible) is still in milestones.
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencyManagement {
     imports {
-        mavenBom 'org.springframework.ai:spring-ai-bom:1.1.6'
+        mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-M6'
+        // Spring Boot 4 manages testcontainers, but the protobuf-gradle-plugin builds
+        // its own *ProtoPath configurations that don't inherit Boot's BOM. Importing
+        // the testcontainers BOM explicitly applies versions across every config.
+        mavenBom 'org.testcontainers:testcontainers-bom:2.0.5'
     }
 }
 
@@ -45,11 +51,13 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java:4.34.1'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.4.Final'
-    implementation 'org.liquibase:liquibase-core'
+    implementation 'org.hibernate.orm:hibernate-community-dialects'
+    // Boot 4 moved Liquibase auto-configuration into a dedicated starter; the
+    // bare liquibase-core dependency no longer triggers migration on startup.
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
     implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -57,11 +65,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Boot 4 defaults to Jackson 3 (`tools.jackson.*`). The codebase still uses
+    // Jackson 2 (`com.fasterxml.jackson.*`); spring-boot-jackson2 re-registers
+    // the Jackson 2 ObjectMapper bean and HTTP message converters.
+    implementation 'org.springframework.boot:spring-boot-jackson2'
     implementation 'io.github.resilience4j:resilience4j-annotations:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
-    implementation 'org.springframework.security:spring-security-oauth2-client'
+    // Boot 4 split the OAuth2 client autoconfiguration (and OAuth2ClientProperties)
+    // into the dedicated spring-boot-starter-oauth2-client module.
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
@@ -71,29 +85,38 @@ dependencies {
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'org.springframework.retry:spring-retry'
+    // Spring Boot 4 renamed spring-boot-starter-aop → spring-boot-starter-aspectj
+    // and dropped spring-retry from managed dependencies.
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+    implementation 'org.springframework.retry:spring-retry:2.0.12'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.jfree:jfreechart:1.5.6'
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
+    // Boot 4 ships Hibernate 7.2; the matching hypersistence-utils artifact is the -71 variant.
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-71:3.15.2'
     implementation 'org.springframework.ai:spring-ai-starter-model-transformers'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.springframework.boot:spring-boot-properties-migrator'
 
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.46'
-    testImplementation "org.testcontainers:testcontainers"
+    // Testcontainers 2.x renamed every module with a `testcontainers-` prefix.
+    // Versions pinned because the protobuf-gradle-plugin's *ProtoPath configs do
+    // not inherit BOM-managed versions from the dependency-management plugin.
+    testImplementation 'org.testcontainers:testcontainers:2.0.5'
     testImplementation 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Boot 4 split webmvc test slices (AutoConfigureMockMvc, MockMvc helpers) into
+    // a dedicated module that spring-boot-starter-test no longer pulls in by default.
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
+    testImplementation 'org.testcontainers:testcontainers-postgresql:2.0.5'
     testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -215,9 +238,8 @@ tasks.register("downloadModel") {
 
 processResources.dependsOn("downloadModel")
 
-tasks.named("bootJar") {
-    launchScript()
-}
+// Spring Boot 4 removed BootJar.launchScript() / fully-executable jars.
+// Deployment uses the buildpack image below, so no launch script is needed.
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"

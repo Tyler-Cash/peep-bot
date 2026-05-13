@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
@@ -74,7 +74,7 @@ class CsrfHardeningIntegrationTest {
     private JdbcTemplate jdbc;
 
     @Autowired
-    private org.springframework.boot.autoconfigure.web.ServerProperties serverProperties;
+    private org.springframework.boot.web.server.autoconfigure.ServerProperties serverProperties;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

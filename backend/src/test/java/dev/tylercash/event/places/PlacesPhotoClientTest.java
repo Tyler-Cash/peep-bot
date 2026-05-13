@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -22,9 +23,21 @@ class PlacesPhotoClientTest {
         return c;
     }
 
+    /**
+     * Boot 4's default RestClient.builder() registers Jackson 3 converters only;
+     * the production code reads responses into Jackson 2's JsonNode, so each test
+     * builder needs the Jackson 2 converter explicitly (production wires the same
+     * via {@code jackson2RestClientCustomizer}).
+     */
+    private static RestClient.Builder jackson2Builder(String baseUrl) {
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .messageConverters(converters -> converters.add(0, new MappingJackson2HttpMessageConverter()));
+    }
+
     @Test
     void fetchesPhotoBytesForPlaceId() {
-        RestClient.Builder builder = RestClient.builder().baseUrl("https://places.googleapis.com");
+        RestClient.Builder builder = jackson2Builder("https://places.googleapis.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://places.googleapis.com/v1/places/abc?fields=photos&key=fake-key"))
                 .andExpect(method(HttpMethod.GET))
@@ -48,7 +61,7 @@ class PlacesPhotoClientTest {
 
     @Test
     void returnsEmptyWhenPlaceHasNoPhotos() {
-        RestClient.Builder builder = RestClient.builder().baseUrl("https://places.googleapis.com");
+        RestClient.Builder builder = jackson2Builder("https://places.googleapis.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://places.googleapis.com/v1/places/empty?fields=photos&key=fake-key"))
                 .andRespond(withSuccess("{\"photos\":[]}", MediaType.APPLICATION_JSON));
@@ -61,7 +74,7 @@ class PlacesPhotoClientTest {
 
     @Test
     void returnsEmptyOnHttpError() {
-        RestClient.Builder builder = RestClient.builder().baseUrl("https://places.googleapis.com");
+        RestClient.Builder builder = jackson2Builder("https://places.googleapis.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://places.googleapis.com/v1/places/bad?fields=photos&key=fake-key"))
                 .andRespond(withServerError());

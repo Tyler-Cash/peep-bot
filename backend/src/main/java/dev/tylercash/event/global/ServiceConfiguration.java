@@ -1,5 +1,6 @@
 package dev.tylercash.event.global;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.immich.ImmichConfiguration;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.ratelimiter.RateLimiter;
@@ -8,9 +9,11 @@ import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import java.time.Clock;
 import java.time.Duration;
+import org.springframework.boot.restclient.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -49,15 +52,26 @@ public class ServiceConfiguration {
         return Retry.of("immichUpload", config);
     }
 
+    /**
+     * Spring Boot 4 defaults web autoconfiguration to Jackson 3 (`tools.jackson.*`).
+     * The codebase still consumes Jackson 2 (`com.fasterxml.jackson.databind.JsonNode`)
+     * via RestClient, so register the Jackson 2 message converter on every
+     * autoconfigured RestClient.Builder.
+     */
     @Bean
-    public RestClient placesRestClient() {
-        return RestClient.builder().baseUrl("https://places.googleapis.com").build();
+    public RestClientCustomizer jackson2RestClientCustomizer(ObjectMapper jackson2ObjectMapper) {
+        return builder -> builder.messageConverters(
+                converters -> converters.add(0, new MappingJackson2HttpMessageConverter(jackson2ObjectMapper)));
     }
 
     @Bean
-    public RestClient immichRestClient(ImmichConfiguration immichConfiguration) {
-        return RestClient.builder()
-                .baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
+    public RestClient placesRestClient(RestClient.Builder builder) {
+        return builder.baseUrl("https://places.googleapis.com").build();
+    }
+
+    @Bean
+    public RestClient immichRestClient(RestClient.Builder builder, ImmichConfiguration immichConfiguration) {
+        return builder.baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
                 .defaultHeader(
                         "x-api-key", immichConfiguration.getApiKey() != null ? immichConfiguration.getApiKey() : "")
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
