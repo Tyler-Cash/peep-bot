@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
@@ -122,6 +123,24 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     @Modifying
     @Query("update Event e set e.state = :state, e.version = e.version + 1 where e.id = :id")
     int updateState(@Param("id") UUID id, @Param("state") EventState state);
+
+    // Discord side-effects (channel creation, embed posting) are irreversible. If the surrounding
+    // listener transaction later fails (e.g. optimistic-lock collision with a sibling
+    // EventCreated listener writing to the same Event row), a rolled-back full-entity save would
+    // wipe the persisted channel/message IDs — and the retry would re-create both in Discord,
+    // duplicating the channel and embed. REQUIRES_NEW commits these IDs in their own transaction
+    // so the retry sees them and short-circuits.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Modifying
+    @Query("update Event e set e.channelId = :channelId, e.version = e.version + 1 where e.id = :id")
+    int updateChannelId(@Param("id") UUID id, @Param("channelId") long channelId);
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Modifying
+    @Query("update Event e set e.messageId = :messageId, e.serverId = :serverId,"
+            + " e.version = e.version + 1 where e.id = :id")
+    int updateMessageAndServerId(
+            @Param("id") UUID id, @Param("messageId") long messageId, @Param("serverId") long serverId);
 
     @Transactional
     @Modifying
