@@ -32,7 +32,7 @@ class GoogleCalendarServiceTest {
         String calendarEventUrl = GoogleCalendarService.getCalendarEventUrl(event);
         assertNotNull(calendarEventUrl);
         assertEquals(
-                UriComponentsBuilder.fromHttpUrl("https://www.google.com/calendar/event" + "?action=TEMPLATE"
+                UriComponentsBuilder.fromUriString("https://www.google.com/calendar/event" + "?action=TEMPLATE"
                                 + "&text="
                                 + event.getName() + "&dates=20240816T132400Z/20240816T142400Z")
                         .encode()
