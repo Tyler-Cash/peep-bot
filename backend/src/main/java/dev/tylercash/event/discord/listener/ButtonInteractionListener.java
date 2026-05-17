@@ -111,8 +111,14 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private void handleButtonInteraction(
             @NonNull ButtonInteractionEvent buttonInteractionEvent, @NonNull Event event, String customId) {
         MDC.put("eventId", event.getId().toString());
-        MDC.put("guildId", Long.toString(buttonInteractionEvent.getGuild().getIdLong()));
-        MDC.put("channelId", Long.toString(buttonInteractionEvent.getChannel().getIdLong()));
+        if (buttonInteractionEvent.getGuild() != null) {
+            MDC.put("guildId", Long.toString(buttonInteractionEvent.getGuild().getIdLong()));
+        }
+        if (buttonInteractionEvent.getChannel() != null) {
+            MDC.put(
+                    "channelId",
+                    Long.toString(buttonInteractionEvent.getChannel().getIdLong()));
+        }
         MDC.put("interactionId", buttonInteractionEvent.getId());
         try {
             String userId =
