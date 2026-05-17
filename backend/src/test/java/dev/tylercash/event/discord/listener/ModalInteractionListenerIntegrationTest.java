@@ -2,6 +2,8 @@ package dev.tylercash.event.discord.listener;
 
 import static dev.tylercash.event.discord.listener.ModalInteractionListener.PLUS_ONE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +20,7 @@ import dev.tylercash.event.test.SharedPostgres;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
@@ -35,7 +38,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -55,7 +57,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
             "dev.tylercash.rate-limit.write-capacity=10000"
         })
 @ActiveProfiles("local")
-@Import(SynchronousDiscordListenerExecutorTestConfig.class)
 class ModalInteractionListenerIntegrationTest {
 
     private static final String OWNER_SNOWFLAKE = "444555666";
@@ -73,6 +74,9 @@ class ModalInteractionListenerIntegrationTest {
 
     @MockitoBean
     DiscordInitializationService discordInitializationService;
+
+    @MockitoBean(name = "discordListenerExecutor")
+    ExecutorService discordListenerExecutor;
 
     @Autowired
     ModalInteractionListener listener;
@@ -92,7 +96,14 @@ class ModalInteractionListenerIntegrationTest {
     }
 
     @BeforeEach
-    void truncate() {}
+    void setUpSynchronousExecutor() {
+        doAnswer(inv -> {
+                    ((Runnable) inv.getArgument(0)).run();
+                    return null;
+                })
+                .when(discordListenerExecutor)
+                .execute(any(Runnable.class));
+    }
 
     private Event seedOpenEvent() {
         long id = idCounter.incrementAndGet();
