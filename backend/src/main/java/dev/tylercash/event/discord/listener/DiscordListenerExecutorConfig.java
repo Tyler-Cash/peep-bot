@@ -1,0 +1,27 @@
+package dev.tylercash.event.discord.listener;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+
+@Configuration
+public class DiscordListenerExecutorConfig {
+
+    @Bean(name = "discordListenerExecutor", destroyMethod = "shutdown")
+    public ExecutorService discordListenerExecutor() {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                4,
+                16,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(512),
+                new CustomizableThreadFactory("discord-listener-"),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.allowCoreThreadTimeOut(true);
+        return executor;
+    }
+}
