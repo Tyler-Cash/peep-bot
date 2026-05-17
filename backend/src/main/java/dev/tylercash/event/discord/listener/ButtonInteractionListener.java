@@ -16,6 +16,7 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.components.label.Label;
@@ -26,6 +27,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.modals.Modal;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -43,6 +45,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
     private final ObjectProvider<DiscordService> discordServiceProvider;
+    private final Executor executor;
 
     public ButtonInteractionListener(
             Clock clock,
@@ -52,7 +55,8 @@ public class ButtonInteractionListener extends ListenerAdapter {
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
             DiscordUserCacheService discordUserCacheService,
-            ObjectProvider<DiscordService> discordServiceProvider) {
+            ObjectProvider<DiscordService> discordServiceProvider,
+            @Qualifier("discordListenerExecutor") Executor executor) {
         this.clock = clock;
         this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
@@ -61,6 +65,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
         this.discordServiceProvider = discordServiceProvider;
+        this.executor = executor;
     }
 
     private static void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
@@ -77,18 +82,11 @@ public class ButtonInteractionListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
-        Observation.createNotStarted("discord.button-interaction", observationRegistry)
-                .lowCardinalityKeyValue("interaction.type", "button")
-                .observe(() -> handleButtonInteraction(buttonInteractionEvent));
-    }
-
-    private void handleButtonInteraction(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
         Event event = eventRepository.findByMessageId(buttonInteractionEvent.getMessageIdLong());
         if (event == null) {
             log.warn("Unrecognized event message ID {}", buttonInteractionEvent.getMessageIdLong());
             return;
         }
-        MDC.put("eventId", event.getId().toString());
         if (eventServiceProvider.getObject().isCompleted(event)) {
             buttonInteractionEvent
                     .reply("Attendance is locked for this event.")
@@ -96,42 +94,61 @@ public class ButtonInteractionListener extends ListenerAdapter {
                     .queue();
             return;
         }
-        String eventType = buttonInteractionEvent.getButton().getCustomId();
-        if (Objects.equals(eventType, PLUS_ONE_ID)) {
+        String customId = buttonInteractionEvent.getButton().getCustomId();
+        if (Objects.equals(customId, PLUS_ONE_ID)) {
             replyWithModal(buttonInteractionEvent);
             return;
         }
 
-        String userId =
-                Objects.requireNonNull(buttonInteractionEvent.getMember()).getId();
-        String displayName = DiscordUtil.getUserDisplayName(buttonInteractionEvent.getMember());
-        String username = buttonInteractionEvent.getUser().getName();
-        discordUserCacheService.upsertUser(userId, displayName, username, null, event.getServerId());
+        buttonInteractionEvent.deferEdit().queue();
 
-        AttendanceStatus status = mapButtonToStatus(Objects.requireNonNull(eventType));
-        if (status != null) {
-            AttendanceStatus resolvedStatus = attendanceService.flipAttendance(event.getId(), userId, null, status);
-            try {
-                if (resolvedStatus == AttendanceStatus.REMOVED) {
-                    discordServiceProvider.getObject().removeAllEventRoles(event, userId);
-                } else {
-                    discordServiceProvider.getObject().assignEventRole(event, userId, resolvedStatus);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to update Discord role for user {} on event '{}'", userId, event.getName(), e);
+        executor.execute(() -> Observation.createNotStarted("discord.button-interaction", observationRegistry)
+                .lowCardinalityKeyValue("interaction.type", "button")
+                .observe(() -> handleButtonInteraction(buttonInteractionEvent, event, customId)));
+    }
+
+    private void handleButtonInteraction(
+            @NonNull ButtonInteractionEvent buttonInteractionEvent, @NonNull Event event, String customId) {
+        MDC.put("eventId", event.getId().toString());
+        try {
+            String userId =
+                    Objects.requireNonNull(buttonInteractionEvent.getMember()).getId();
+            String displayName = DiscordUtil.getUserDisplayName(buttonInteractionEvent.getMember());
+            String username = buttonInteractionEvent.getUser().getName();
+            discordUserCacheService.upsertUser(userId, displayName, username, null, event.getServerId());
+
+            AttendanceStatus status = mapButtonToStatus(Objects.requireNonNull(customId));
+            AttendanceStatus resolvedStatus = null;
+            if (status != null) {
+                resolvedStatus = attendanceService.flipAttendance(event.getId(), userId, null, status);
             }
+
+            eventServiceProvider.getObject().populateAttendance(event);
+            buttonInteractionEvent
+                    .getHook()
+                    .editOriginalEmbeds(embedService.getMessage(event, clock))
+                    .queue();
+
+            if (resolvedStatus != null) {
+                try {
+                    if (resolvedStatus == AttendanceStatus.REMOVED) {
+                        discordServiceProvider.getObject().removeAllEventRoles(event, userId);
+                    } else {
+                        discordServiceProvider.getObject().assignEventRole(event, userId, resolvedStatus);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to update Discord role for user {} on event '{}'", userId, event.getName(), e);
+                }
+            }
+
+            log.info(
+                    "User {} interacting with status {} on event {}",
+                    buttonInteractionEvent.getMember().getEffectiveName(),
+                    customId,
+                    event.getName());
+        } finally {
+            MDC.remove("eventId");
         }
-
-        eventServiceProvider.getObject().populateAttendance(event);
-        buttonInteractionEvent
-                .editMessageEmbeds(embedService.getMessage(event, clock))
-                .complete();
-
-        log.info(
-                "User {} interacting with status {} on event {}",
-                buttonInteractionEvent.getMember().getEffectiveName(),
-                eventType,
-                event.getName());
     }
 
     private AttendanceStatus mapButtonToStatus(String buttonId) {

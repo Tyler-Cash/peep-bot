@@ -31,6 +31,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
@@ -134,6 +136,16 @@ class ButtonInteractionListenerIntegrationTest {
 
         when(evt.editMessageEmbeds(any(List.class))).thenReturn(mock(MessageEditCallbackAction.class));
         when(evt.editMessageEmbeds(any(MessageEmbed[].class))).thenReturn(mock(MessageEditCallbackAction.class));
+
+        MessageEditCallbackAction deferAction = mock(MessageEditCallbackAction.class);
+        when(evt.deferEdit()).thenReturn(deferAction);
+        InteractionHook hook = mock(InteractionHook.class);
+        when(evt.getHook()).thenReturn(hook);
+        @SuppressWarnings("unchecked")
+        WebhookMessageEditAction<net.dv8tion.jda.api.entities.Message> editAction =
+                mock(WebhookMessageEditAction.class);
+        when(hook.editOriginalEmbeds(any(List.class))).thenReturn(editAction);
+        when(hook.editOriginalEmbeds(any(MessageEmbed[].class))).thenReturn(editAction);
 
         return evt;
     }

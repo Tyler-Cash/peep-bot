@@ -31,11 +31,14 @@ import net.dv8tion.jda.api.components.textinput.TextInput;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.modals.Modal;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.ObjectProvider;
 
 class ButtonInteractionListenerTest {
@@ -63,7 +66,8 @@ class ButtonInteractionListenerTest {
                 eventServiceProvider,
                 attendanceService,
                 discordUserCacheService,
-                mockDiscordServiceProvider());
+                mockDiscordServiceProvider(),
+                Runnable::run);
 
         String nickname = "testNickname";
         String snowflake = "38943984983";
@@ -89,15 +93,27 @@ class ButtonInteractionListenerTest {
         when(eventRepository.findByMessageId(messageId)).thenReturn(event);
         when(eventService.isCompleted(event)).thenReturn(false);
         when(embedService.getMessage(event, fixedClock)).thenReturn(List.of(mock(MessageEmbed.class)));
-        when(buttonInteractionEvent.editMessageEmbeds(embedService.getMessage(event, fixedClock)))
-                .thenReturn(mock(MessageEditCallbackAction.class));
+
+        MessageEditCallbackAction deferAction = mock(MessageEditCallbackAction.class);
+        when(buttonInteractionEvent.deferEdit()).thenReturn(deferAction);
+        InteractionHook hook = mock(InteractionHook.class);
+        when(buttonInteractionEvent.getHook()).thenReturn(hook);
+        @SuppressWarnings("unchecked")
+        WebhookMessageEditAction<net.dv8tion.jda.api.entities.Message> editAction =
+                mock(WebhookMessageEditAction.class);
+        when(hook.editOriginalEmbeds(anyList())).thenReturn(editAction);
 
         listener.onButtonInteraction(buttonInteractionEvent);
 
         verify(discordUserCacheService).upsertUser(eq(snowflake), eq(nickname), eq("testuser"), eq(null), anyLong());
         verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
         verify(eventService).populateAttendance(event);
-        verify(buttonInteractionEvent).editMessageEmbeds(embedService.getMessage(event, fixedClock));
+
+        InOrder inOrder = inOrder(buttonInteractionEvent, attendanceService, hook);
+        inOrder.verify(buttonInteractionEvent).deferEdit();
+        inOrder.verify(attendanceService).flipAttendance(eventId, snowflake, null, AttendanceStatus.ACCEPTED);
+        inOrder.verify(hook).editOriginalEmbeds(embedService.getMessage(event, fixedClock));
+        verify(buttonInteractionEvent, never()).editMessageEmbeds(anyList());
     }
 
     @Test
@@ -115,7 +131,8 @@ class ButtonInteractionListenerTest {
                 esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mockDiscordServiceProvider());
+                mockDiscordServiceProvider(),
+                Runnable::run);
 
         when(buttonInteractionEvent.getMessageIdLong()).thenReturn(messageId);
         when(buttonInteractionEvent.getButton()).thenReturn(mock(Button.class));
@@ -145,7 +162,8 @@ class ButtonInteractionListenerTest {
                 esp,
                 mock(AttendanceService.class),
                 mock(DiscordUserCacheService.class),
-                mockDiscordServiceProvider());
+                mockDiscordServiceProvider(),
+                Runnable::run);
 
         Event futureEvent = mock(Event.class);
         when(futureEvent.getId()).thenReturn(UUID.randomUUID());
