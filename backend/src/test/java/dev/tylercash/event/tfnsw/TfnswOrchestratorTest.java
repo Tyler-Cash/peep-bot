@@ -110,7 +110,8 @@ class TfnswOrchestratorTest {
         when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
         when(places.fetchCoords("pid")).thenReturn(Optional.of(new Coords(-33.0, 151.0)));
         when(filter.filter(any(), any(), eq(-33.0), eq(151.0), any(), any()))
-                .thenReturn(List.of(new NoteworthyItem(Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION)));
+                .thenReturn(List.of(new NoteworthyItem(
+                        Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION, java.util.Set.of())));
 
         sut.process(id, false);
 
@@ -163,7 +164,8 @@ class TfnswOrchestratorTest {
         e.setLocationLng(151.0);
         when(events.findById(id)).thenReturn(Optional.of(e));
         when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
-        var item = new NoteworthyItem(Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION);
+        var item =
+                new NoteworthyItem(Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION, java.util.Set.of());
         when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
                 .thenReturn(List.of(item));
 

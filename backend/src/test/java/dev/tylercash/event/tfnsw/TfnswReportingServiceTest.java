@@ -35,14 +35,16 @@ class TfnswReportingServiceTest {
                                 "T1 line suspended",
                                 "Trackwork all day",
                                 "https://x",
-                                Reason.NEAREST_STATION),
+                                Reason.NEAREST_STATION,
+                                java.util.Set.of()),
                         new NoteworthyItem(
                                 Source.TRAFFIC,
                                 "e1",
                                 "Marathon",
                                 "Roads closed",
                                 "https://y",
-                                Reason.MAJOR_EVENT_NEAR_VENUE)),
+                                Reason.MAJOR_EVENT_NEAR_VENUE,
+                                java.util.Set.of())),
                 false);
 
         ArgumentCaptor<MessageEmbed> cap = ArgumentCaptor.forClass(MessageEmbed.class);
@@ -65,7 +67,11 @@ class TfnswReportingServiceTest {
         e.setName("Trivia");
         e.setChannelId(1L);
 
-        svc.post(e, List.of(new NoteworthyItem(Source.RAIL_METRO, "a", "x", "y", "u", Reason.MAJOR_STATION)), true);
+        svc.post(
+                e,
+                List.of(new NoteworthyItem(
+                        Source.RAIL_METRO, "a", "x", "y", "u", Reason.MAJOR_STATION, java.util.Set.of())),
+                true);
 
         ArgumentCaptor<MessageEmbed> cap = ArgumentCaptor.forClass(MessageEmbed.class);
         verify(discord).sendEmbedToEventChannel(eq(e), cap.capture());

@@ -66,7 +66,14 @@ public class TfnswNoteworthyFilter {
                 reason = Reason.CITYWIDE_LINE;
             }
             if (reason != null) {
-                out.add(new NoteworthyItem(Source.RAIL_METRO, a.id(), a.headline(), a.description(), a.url(), reason));
+                out.add(new NoteworthyItem(
+                        Source.RAIL_METRO,
+                        a.id(),
+                        a.headline(),
+                        a.description(),
+                        a.url(),
+                        reason,
+                        a.affectedRouteIds()));
             }
         }
 
@@ -83,7 +90,8 @@ public class TfnswNoteworthyFilter {
                 reason = Reason.CLOSURE_NEAR_VENUE;
             }
             if (reason != null) {
-                out.add(new NoteworthyItem(Source.TRAFFIC, t.id(), t.headline(), t.description(), t.url(), reason));
+                out.add(new NoteworthyItem(
+                        Source.TRAFFIC, t.id(), t.headline(), t.description(), t.url(), reason, Set.of()));
             }
         }
         return out;
