@@ -61,7 +61,8 @@ public class TfnswNoteworthyFilter {
                 reason = Reason.NEAREST_STATION;
             } else if (!Collections.disjoint(a.affectedStopIds(), majorIds)) {
                 reason = Reason.MAJOR_STATION;
-            } else if (BackboneRoutes.touches(a.affectedRouteIds()) && a.effect().isDisruptive()) {
+            } else if (BackboneRoutes.touches(a.affectedRouteIds())
+                    && a.effect().isDisruptive()) {
                 reason = Reason.CITYWIDE_LINE;
             }
             if (reason != null) {

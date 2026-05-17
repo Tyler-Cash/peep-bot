@@ -106,11 +106,7 @@ class TfnswNoteworthyFilterTest {
     void citywideBackboneRouteWithoutDisruptiveEffectIsIgnored() {
         var items = filter.filter(
                 List.of(alert(
-                        "cosmetic",
-                        Set.of(),
-                        Set.of("SMNW_M1"),
-                        RailAlert.Severity.UNKNOWN,
-                        RailAlert.Effect.UNKNOWN)),
+                        "cosmetic", Set.of(), Set.of("SMNW_M1"), RailAlert.Severity.UNKNOWN, RailAlert.Effect.UNKNOWN)),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,
@@ -155,12 +151,10 @@ class TfnswNoteworthyFilterTest {
                 doonsideLng,
                 null,
                 EVENT_DATE);
-        assertThat(items)
-                .singleElement()
-                .satisfies(i -> {
-                    assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
-                    assertThat(i.id()).isEqualTo("metro-saturday");
-                });
+        assertThat(items).singleElement().satisfies(i -> {
+            assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
+            assertThat(i.id()).isEqualTo("metro-saturday");
+        });
     }
 
     @Test
@@ -277,5 +271,24 @@ class TfnswNoteworthyFilterTest {
                 null,
                 EVENT_DATE);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
+    }
+
+    @Test
+    void liveMetroFixtureSurfacesSaturdayTrackworkForDoonside() throws Exception {
+        byte[] bytes = java.nio.file.Files.readAllBytes(
+                java.nio.file.Path.of("src/test/resources/tfnsw/metro-alerts-sample.pb"));
+        var alerts = TfnswAlertsClient.parse(bytes, "metro");
+
+        double doonsideLat = -33.7693;
+        double doonsideLng = 150.8722;
+        // The fixture's metro alert is active Sat 2026-05-16 02:00 AEST → Mon 02:00 AEST.
+        LocalDate eventDate = LocalDate.of(2026, 5, 16);
+
+        var items = filter.filter(alerts, List.of(), doonsideLat, doonsideLng, null, eventDate);
+
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
+            assertThat(i.title()).contains("Buses replace metro services");
+        });
     }
 }
