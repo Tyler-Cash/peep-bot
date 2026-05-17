@@ -13,7 +13,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ObservabilityConfiguration {
 
-    private static final List<String> MDC_KEYS = List.of("userId", "requestId", "eventId");
+    private static final List<String> MDC_KEYS =
+            List.of("userId", "requestId", "eventId", "guildId", "channelId", "interactionId");
 
     @Bean
     ObservedAspect observedAspect(ObservationRegistry observationRegistry) {

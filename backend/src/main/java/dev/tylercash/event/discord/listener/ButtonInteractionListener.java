@@ -104,12 +104,16 @@ public class ButtonInteractionListener extends ListenerAdapter {
 
         executor.execute(() -> Observation.createNotStarted("discord.button-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "button")
+                .lowCardinalityKeyValue("button.action", mapButtonToActionLabel(customId))
                 .observe(() -> handleButtonInteraction(buttonInteractionEvent, event, customId)));
     }
 
     private void handleButtonInteraction(
             @NonNull ButtonInteractionEvent buttonInteractionEvent, @NonNull Event event, String customId) {
         MDC.put("eventId", event.getId().toString());
+        MDC.put("guildId", Long.toString(buttonInteractionEvent.getGuild().getIdLong()));
+        MDC.put("channelId", Long.toString(buttonInteractionEvent.getChannel().getIdLong()));
+        MDC.put("interactionId", buttonInteractionEvent.getId());
         try {
             String userId =
                     Objects.requireNonNull(buttonInteractionEvent.getMember()).getId();
@@ -148,6 +152,9 @@ public class ButtonInteractionListener extends ListenerAdapter {
                     event.getName());
         } finally {
             MDC.remove("eventId");
+            MDC.remove("guildId");
+            MDC.remove("channelId");
+            MDC.remove("interactionId");
         }
     }
 
@@ -157,6 +164,16 @@ public class ButtonInteractionListener extends ListenerAdapter {
             case DECLINED -> AttendanceStatus.DECLINED;
             case MAYBE -> AttendanceStatus.MAYBE;
             default -> null;
+        };
+    }
+
+    private static String mapButtonToActionLabel(String buttonId) {
+        return switch (buttonId) {
+            case ACCEPTED -> "accept";
+            case DECLINED -> "decline";
+            case MAYBE -> "maybe";
+            case PLUS_ONE_ID -> "plus-one";
+            default -> "unknown";
         };
     }
 }

@@ -77,11 +77,15 @@ public class ModalInteractionListener extends ListenerAdapter {
 
         executor.execute(() -> Observation.createNotStarted("discord.modal-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "modal")
+                .lowCardinalityKeyValue("modal.id", interaction.getModalId())
                 .observe(() -> handleModalInteraction(modalInteractionEvent, event)));
     }
 
     private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent, @NonNull Event event) {
         MDC.put("eventId", event.getId().toString());
+        MDC.put("guildId", Long.toString(modalInteractionEvent.getGuild().getIdLong()));
+        MDC.put("channelId", Long.toString(modalInteractionEvent.getChannel().getIdLong()));
+        MDC.put("interactionId", modalInteractionEvent.getId());
         try {
             String ownerSnowflake = modalInteractionEvent.getUser().getId();
             String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
@@ -107,6 +111,9 @@ public class ModalInteractionListener extends ListenerAdapter {
                     event.getName());
         } finally {
             MDC.remove("eventId");
+            MDC.remove("guildId");
+            MDC.remove("channelId");
+            MDC.remove("interactionId");
         }
     }
 }

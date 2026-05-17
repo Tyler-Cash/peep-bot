@@ -19,10 +19,19 @@
         <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
                 <customFields>{"service":"peep-bot-backend"}</customFields>
+                <!-- Rename MDC keys so SigNoz correlates logs↔traces on the standard OTel field names. -->
+                <mdcKeyFieldName>traceId=trace_id</mdcKeyFieldName>
+                <mdcKeyFieldName>spanId=span_id</mdcKeyFieldName>
             </encoder>
+        </appender>
+        <!-- Forwards LogRecords over OTLP and stamps the active Span's trace_id/span_id on them. -->
+        <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+            <captureExperimentalAttributes>true</captureExperimentalAttributes>
+            <captureMdcAttributes>*</captureMdcAttributes>
         </appender>
         <root level="INFO">
             <appender-ref ref="JSON" />
+            <appender-ref ref="OTEL" />
         </root>
     </springProfile>
 </configuration>

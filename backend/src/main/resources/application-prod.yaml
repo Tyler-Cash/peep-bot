@@ -1,3 +1,9 @@
+management:
+  opentelemetry:
+    resource-attributes:
+      deployment.environment.name: production
+      service.namespace: peep-bot
+
 dev.tylercash:
   cors:
     allowed-origins:
