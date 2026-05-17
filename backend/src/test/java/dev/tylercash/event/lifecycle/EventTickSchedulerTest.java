@@ -167,28 +167,32 @@ class EventTickSchedulerTest {
     }
 
     // -----------------------------------------------------------------------------------------
-    // ARCHIVAL: per-guild archive_days threshold (default 90), state POST_COMPLETED.
-    // The candidate window is now - 7 days (smallest legal value); per-event the scheduler
-    // checks the owning guild's configured threshold before publishing.
+    // ARCHIVAL: archive at 10:00 (event-zone) on completion-date + 2 days. Constant for all
+    // guilds. completion-date = date of event.dateTime + 6h. State POST_COMPLETED.
+    // FIXED_NOW = 2026-05-04 18:00Z.
     // -----------------------------------------------------------------------------------------
 
     @Test
-    void emit_publishesArchivalForEventOlderThanDefaultThreshold_onlyOnce() {
-        // dateTime = now - 91 days → past the default 90-day threshold (no guild row → default)
-        Event e = saveEvent(FIXED_NOW.minusDays(91), EventState.POST_COMPLETED);
+    void emit_publishesArchivalPastDueMoment_onlyOnce() {
+        // Event 2026-05-02 06:00Z → completion 2026-05-02 12:00Z → due 2026-05-04 10:00Z.
+        // FIXED_NOW 2026-05-04 18:00Z is past → due.
+        Event e = saveEvent(ZonedDateTime.of(2026, 5, 2, 6, 0, 0, 0, ZoneOffset.UTC), EventState.POST_COMPLETED);
 
         scheduler.emit();
         scheduler.emit();
 
-        verify(publisher, times(1)).publish(any(EventLifecycleEvent.EventArchivalDue.class));
+        verify(publisher, times(1)).publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
         assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "ARCHIVAL")))
                 .isTrue();
     }
 
     @Test
-    void emit_doesNotPublishArchival_whenInsideDefaultThreshold() {
-        // dateTime = now - 8 days → past the 7-day candidate window, but well inside 90-day default
-        saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED);
+    void emit_doesNotPublishArchival_whenBefore10amOnDueDay() {
+        // Event 2026-05-02 06:00Z → due 2026-05-04 10:00Z. Pretend "now" is 2026-05-04 09:00Z.
+        saveEvent(ZonedDateTime.of(2026, 5, 2, 6, 0, 0, 0, ZoneOffset.UTC), EventState.POST_COMPLETED);
+        when(clock.instant())
+                .thenReturn(
+                        ZonedDateTime.of(2026, 5, 4, 9, 0, 0, 0, ZoneOffset.UTC).toInstant());
 
         scheduler.emit();
 
@@ -196,66 +200,48 @@ class EventTickSchedulerTest {
     }
 
     @Test
-    void emit_publishesArchivalUsingPerGuildThreshold() {
-        // Unique guild with archive_days=7: an 8-day-old event must publish.
-        long guildId = dev.tylercash.event.test.TestIds.nextLong();
-        insertGuildWithArchiveDays(guildId, 7);
-        Event e = saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED, guildId);
+    void emit_doesNotPublishArchival_onCompletionDayPlusOne() {
+        // Event ~20h before now: completion-date is yesterday, due is tomorrow 10am → NOT due
+        // (covers "not the next day, but the day after").
+        saveEvent(FIXED_NOW.minusHours(20), EventState.POST_COMPLETED);
 
         scheduler.emit();
 
-        // Scope to this event — other tests in this class share the same scheduler invocation.
-        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "ARCHIVAL")))
-                .isTrue();
-        verify(publisher).publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
+        verify(publisher, times(0)).publish(any(EventLifecycleEvent.EventArchivalDue.class));
     }
 
     @Test
-    void emit_doesNotPublishArchival_whenInsidePerGuildThreshold() {
-        // Unique guild with archive_days=30: an 8-day-old event must NOT publish.
+    void emit_archivalIgnoresPerGuildArchiveDays() {
+        // archive_days only governs retention in the archived category, not the completion→archive
+        // delay. Setting archive_days=90 on a 3-day-old event must NOT prevent archival.
         long guildId = dev.tylercash.event.test.TestIds.nextLong();
-        insertGuildWithArchiveDays(guildId, 30);
-        Event e = saveEvent(FIXED_NOW.minusDays(8), EventState.POST_COMPLETED, guildId);
+        insertGuildWithArchiveDays(guildId, 90);
+        Event e =
+                saveEvent(ZonedDateTime.of(2026, 5, 1, 6, 0, 0, 0, ZoneOffset.UTC), EventState.POST_COMPLETED, guildId);
 
         scheduler.emit();
 
-        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "ARCHIVAL")))
-                .isFalse();
+        verify(publisher).publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
     }
 
     // -----------------------------------------------------------------------------------------
-    // DELETE: event.dateTime < now - 3 months, states CANCELLED and ARCHIVED
+    // DELETE_CANCELLED: event.dateTime < now - 3 months. archive_days does not apply.
     // -----------------------------------------------------------------------------------------
 
     @Test
     void emit_publishesDeleteForOldCancelledEvent_onlyOnce() {
-        // dateTime = now - 4 months → past the 3-month delete threshold
         Event e = saveEvent(FIXED_NOW.minusMonths(4), EventState.CANCELLED);
 
         scheduler.emit();
         scheduler.emit();
 
-        verify(publisher, times(1)).publish(any(EventLifecycleEvent.EventDeleteRequested.class));
+        verify(publisher, times(1)).publish(new EventLifecycleEvent.EventDeleteRequested(e.getId()));
         assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "DELETE_CANCELLED")))
                 .isTrue();
     }
 
     @Test
-    void emit_publishesDeleteForOldArchivedEvent_onlyOnce() {
-        // dateTime = now - 4 months → past the 3-month delete threshold
-        Event e = saveEvent(FIXED_NOW.minusMonths(4), EventState.ARCHIVED);
-
-        scheduler.emit();
-        scheduler.emit();
-
-        verify(publisher, times(1)).publish(any(EventLifecycleEvent.EventDeleteRequested.class));
-        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "DELETE_ARCHIVED")))
-                .isTrue();
-    }
-
-    @Test
-    void emit_doesNotPublishDelete_whenWithinRetentionWindow() {
-        // dateTime = now - 2 months → inside the 3-month threshold
+    void emit_doesNotPublishDeleteForCancelled_whenWithin3Months() {
         saveEvent(FIXED_NOW.minusMonths(2), EventState.CANCELLED);
 
         scheduler.emit();
@@ -263,18 +249,51 @@ class EventTickSchedulerTest {
         verify(publisher, times(0)).publish(any(EventLifecycleEvent.EventDeleteRequested.class));
     }
 
+    // -----------------------------------------------------------------------------------------
+    // DELETE_ARCHIVED: fires guild.archive_days after the archive moment (event.dateTime + 6h →
+    // completion-date + 2 days at 10:00). Default 90 days when no guild row exists.
+    // -----------------------------------------------------------------------------------------
+
     @Test
-    void emit_publishesDeleteForBothCancelledAndArchived_independently() {
-        Event cancelled = saveEvent(FIXED_NOW.minusMonths(4), EventState.CANCELLED);
-        Event archived = saveEvent(FIXED_NOW.minusMonths(5), EventState.ARCHIVED);
+    void emit_publishesDeleteForArchivedPastDefaultRetention_onlyOnce() {
+        // No guild row → default 90. Event 2026-01-01 → archive ~2026-01-03 10:00 → delete due
+        // ~2026-04-03 10:00. FIXED_NOW 2026-05-04 is past → due.
+        Event e = saveEvent(ZonedDateTime.of(2026, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC), EventState.ARCHIVED);
+
+        scheduler.emit();
+        scheduler.emit();
+
+        verify(publisher, times(1)).publish(new EventLifecycleEvent.EventDeleteRequested(e.getId()));
+        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "DELETE_ARCHIVED")))
+                .isTrue();
+    }
+
+    @Test
+    void emit_publishesDeleteForArchivedUsingPerGuildRetention() {
+        // archive_days=7. Event 2026-04-23 06:00Z → archive 2026-04-25 10:00Z → delete due
+        // 2026-05-02 10:00Z. FIXED_NOW 2026-05-04 18:00Z is past → due.
+        long guildId = dev.tylercash.event.test.TestIds.nextLong();
+        insertGuildWithArchiveDays(guildId, 7);
+        Event e = saveEvent(ZonedDateTime.of(2026, 4, 23, 6, 0, 0, 0, ZoneOffset.UTC), EventState.ARCHIVED, guildId);
 
         scheduler.emit();
 
-        verify(publisher, times(2)).publish(any(EventLifecycleEvent.EventDeleteRequested.class));
-        assertThat(tickLog.existsById(new EventTickLogId(cancelled.getId(), "DELETE_CANCELLED")))
+        verify(publisher).publish(new EventLifecycleEvent.EventDeleteRequested(e.getId()));
+        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "DELETE_ARCHIVED")))
                 .isTrue();
-        assertThat(tickLog.existsById(new EventTickLogId(archived.getId(), "DELETE_ARCHIVED")))
-                .isTrue();
+    }
+
+    @Test
+    void emit_doesNotPublishDeleteForArchived_whenInsidePerGuildRetention() {
+        // archive_days=30. 10-day-old event is well inside the retention → NOT due.
+        long guildId = dev.tylercash.event.test.TestIds.nextLong();
+        insertGuildWithArchiveDays(guildId, 30);
+        Event e = saveEvent(FIXED_NOW.minusDays(10), EventState.ARCHIVED, guildId);
+
+        scheduler.emit();
+
+        assertThat(tickLog.existsById(new EventTickLogId(e.getId(), "DELETE_ARCHIVED")))
+                .isFalse();
     }
 
     // -----------------------------------------------------------------------------------------

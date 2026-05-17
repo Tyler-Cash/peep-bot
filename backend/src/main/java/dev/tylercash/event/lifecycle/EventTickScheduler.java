@@ -5,6 +5,7 @@ import dev.tylercash.event.discord.GuildRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import java.time.Clock;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.function.Function;
@@ -20,8 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class EventTickScheduler {
 
-    private static final int MIN_ARCHIVE_DAYS = 7;
+    // Lifecycle timing:
+    //   POST_COMPLETED → ARCHIVED  at 10:00 (event zone) on completion-date + 2 days.
+    //                              completion-date is the date of event.dateTime + 6h. Constant
+    //                              for all guilds — "the day after the day after the event ends".
+    //   ARCHIVED → DELETED         archive_days after the archive moment (per-guild setting,
+    //                              default 90, minimum 7). The archived channel is deleted then;
+    //                              the event row + attendance + roles persist beyond that, only
+    //                              the channel and roles are removed by the DELETE listener.
+    private static final int COMPLETION_TO_ARCHIVE_DAYS = 2;
+    private static final int SHORTEST_ARCHIVE_DAYS = 7;
     private static final int DEFAULT_ARCHIVE_DAYS = 90;
+    private static final LocalTime ARCHIVE_TIME_OF_DAY = LocalTime.of(10, 0);
 
     private final EventRepository events;
     private final EventTickLogRepository tickLog;
@@ -48,41 +59,81 @@ public class EventTickScheduler {
                 EventState.PRE_NOTIFIED,
                 EventLifecycleEvent.EventCompletionDue::new);
 
-        // ARCHIVAL: the archive threshold is per-guild (`guild.archive_days`, default 90 days).
-        // We widen the candidate window to MIN_ARCHIVE_DAYS (the smallest legal value), then
-        // per-event check the owning guild's configured threshold before publishing. This keeps
-        // the scheduler as the single source of timing — the listener never has to retry.
+        // ARCHIVAL: archive at 10:00 (event-zone) on completion-date + 2 days. Constant.
         emitArchivalTicks(now);
 
-        // DELETE: guard is now > event.dateTime + 3 months
-        // → event.dateTime < now - 3 months, applies to both CANCELLED and ARCHIVED states
-        emitDeletionTick(now, EventState.CANCELLED);
-        emitDeletionTick(now, EventState.ARCHIVED);
+        // DELETE:
+        //   CANCELLED → DELETED: 3 months after event.dateTime (cancelled events skip the archive
+        //                        category entirely, so archive_days does not apply).
+        //   ARCHIVED  → DELETED: guild.archive_days after the archive moment.
+        emitCancelledDeletionTicks(now);
+        emitArchivedDeletionTicks(now);
     }
 
     private void emitArchivalTicks(ZonedDateTime now) {
+        // The earliest possible archive-due moment is completion-date + 2 days at 10:00. Any event
+        // whose dateTime is within the last ~2 days cannot be due yet.
         ZonedDateTime from = now.minusYears(10);
-        ZonedDateTime to = now.minusDays(MIN_ARCHIVE_DAYS);
+        ZonedDateTime to = now.minusDays(COMPLETION_TO_ARCHIVE_DAYS);
         for (Event e : events.findInDateWindow(from, to, EventState.POST_COMPLETED)) {
-            int days = guildRepository
+            if (now.isBefore(archiveDueAt(e))) {
+                continue;
+            }
+            recordAndPublishTick(e, "ARCHIVAL", () -> new EventLifecycleEvent.EventArchivalDue(e.getId()));
+        }
+    }
+
+    private void emitArchivedDeletionTicks(ZonedDateTime now) {
+        // Candidate window: events whose dateTime is older than (2 + minimum archive_days) days.
+        // Anything more recent cannot have spent enough time in the archived category yet.
+        ZonedDateTime from = now.minusYears(10);
+        ZonedDateTime to = now.minusDays(COMPLETION_TO_ARCHIVE_DAYS + SHORTEST_ARCHIVE_DAYS);
+        for (Event e : events.findInDateWindow(from, to, EventState.ARCHIVED)) {
+            int archiveDays = guildRepository
                     .findById(e.getServerId())
                     .map(g -> g.getArchiveDays() == 0 ? DEFAULT_ARCHIVE_DAYS : g.getArchiveDays())
                     .orElse(DEFAULT_ARCHIVE_DAYS);
-            if (now.isBefore(e.getDateTime().plusDays(days))) {
+            ZonedDateTime deleteAt = archiveDueAt(e).plusDays(archiveDays);
+            if (now.isBefore(deleteAt)) {
                 continue;
             }
-            EventTickLogId id = new EventTickLogId(e.getId(), "ARCHIVAL");
-            if (tickLog.existsById(id)) continue;
-            EventTickLog row = new EventTickLog();
-            row.setEventId(e.getId());
-            row.setTickType("ARCHIVAL");
-            tickLog.save(row);
-            try {
-                publisher.publish(new EventLifecycleEvent.EventArchivalDue(e.getId()));
-            } catch (Exception ex) {
-                log.error("Failed to publish ARCHIVAL for event {}", e.getId(), ex);
-            }
+            recordAndPublishTick(e, "DELETE_ARCHIVED", () -> new EventLifecycleEvent.EventDeleteRequested(e.getId()));
         }
+    }
+
+    private void emitCancelledDeletionTicks(ZonedDateTime now) {
+        // Cancelled events skip the archive category — retention is the historical 3 months from
+        // event.dateTime, regardless of guild.archive_days.
+        ZonedDateTime to = now.minusMonths(3);
+        emitTick(
+                "DELETE_CANCELLED",
+                now.minusYears(10),
+                to,
+                EventState.CANCELLED,
+                EventLifecycleEvent.EventDeleteRequested::new);
+    }
+
+    private void recordAndPublishTick(Event e, String tickType, java.util.function.Supplier<EventLifecycleEvent> ctor) {
+        EventTickLogId id = new EventTickLogId(e.getId(), tickType);
+        if (tickLog.existsById(id)) return;
+        EventTickLog row = new EventTickLog();
+        row.setEventId(e.getId());
+        row.setTickType(tickType);
+        tickLog.save(row);
+        try {
+            publisher.publish(ctor.get());
+        } catch (Exception ex) {
+            log.error("Failed to publish {} for event {}", tickType, e.getId(), ex);
+        }
+    }
+
+    private static ZonedDateTime archiveDueAt(Event e) {
+        ZonedDateTime completion = e.getDateTime().plusHours(6);
+        return completion
+                .toLocalDate()
+                .plusDays(COMPLETION_TO_ARCHIVE_DAYS)
+                .atTime(ARCHIVE_TIME_OF_DAY)
+                .atZone(completion.getZone());
     }
 
     private void emitTick(
@@ -104,12 +155,5 @@ public class EventTickScheduler {
                 log.error("Failed to publish {} for event {}", tickType, e.getId(), ex);
             }
         }
-    }
-
-    private void emitDeletionTick(ZonedDateTime now, EventState state) {
-        // DELETE guard: now > event.dateTime + 3 months → event.dateTime < now - 3 months
-        ZonedDateTime to = now.minusMonths(3);
-        String tickType = "DELETE_" + state.name();
-        emitTick(tickType, now.minusYears(10), to, state, EventLifecycleEvent.EventDeleteRequested::new);
     }
 }

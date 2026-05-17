@@ -250,24 +250,24 @@ class EventLifecycleSagaIntegrationTest {
         awaitOutboxSuccess(id, "EventCompleted", "Immich Album Post");
 
         // ── Step 5: archival ─────────────────────────────────────────────────────
-        // Archive threshold is per-guild (archive_days, default 90, minimum 7). The saga's
-        // synthetic guild has no row yet → default 90 applies, which is impractical for an
-        // integration test. Insert the guild row with archive_days=7, then advance past
-        // event.dateTime + 7 days.
+        // Archive timing = 10:00 (event zone) on completion-date + 2 days. Constant for all
+        // guilds. Event 2026-05-04 17:00Z → completion-date 2026-05-04 → due 2026-05-06 10:00Z.
+        // The guild row is inserted now to set archive_days=7 for Step 6's deletion timing
+        // (default 90 would be impractical for a test).
         jdbc.update("INSERT INTO guild (guild_id, events_role, organiser_role, emoji_accepted, emoji_declined, "
                 + "emoji_maybe, joined_at, active, immich_enabled, google_autocomplete_enabled, "
                 + "rewind_enabled, contracts_enabled, tfnsw_enabled, archive_days, anyone_can_create) "
                 + "VALUES (111, 'events', 'event-organiser', '✅', '❌', '❓', now(), true, false, "
                 + "false, false, false, false, 7, true) ON CONFLICT (guild_id) DO UPDATE SET archive_days = 7");
-        advanceTo(Instant.parse("2026-05-11T18:00:00Z"));
+        advanceTo(Instant.parse("2026-05-06T10:30:00Z"));
         emitTick();
         awaitOutboxSuccess(id, "EventArchivalDue", "Event Archive");
         awaitState(id, EventState.ARCHIVED);
 
         // ── Step 6: delete ───────────────────────────────────────────────────────
-        // Retention = 3 months after event.dateTime (2026-05-04) → 2026-08-04.
-        // Advance 3 months + 1 day.
-        advanceTo(Instant.parse("2026-08-05T00:00:00Z"));
+        // Deletion = archive moment + guild.archive_days. Archive moment 2026-05-06 10:00Z plus
+        // 7 days = 2026-05-13 10:00Z. Advance just past that.
+        advanceTo(Instant.parse("2026-05-13T10:30:00Z"));
         emitTick();
         awaitOutboxSuccess(id, "EventDeleteRequested", "Event Delete");
         awaitState(id, EventState.DELETED);

@@ -20,8 +20,8 @@ CREATED → INIT_CHANNEL → INIT_ROLES → PLANNED → PRE_NOTIFIED → POST_AL
 | POST_ALBUM | Post album link to Discord (1h after event) |
 | COMPLETE | Lock attendance, remove buttons (6h after event) |
 | CANCEL | User-initiated cancel from any active state |
-| ARCHIVE | Re-render message, archive Discord channel (day+1 at 22:00) |
-| DELETE | Delete Discord roles and channel (3 months after event) |
+| ARCHIVE | Re-render message, move channel to archive category (10:00 in event zone on completion-date + 2 days; constant for all guilds) |
+| DELETE | Delete archived Discord channel and roles (`guild.archive_days` after archive moment for ARCHIVED; 3 months after event for CANCELLED). Event row persists, state → DELETED |
 
 ## Transition Table
 
@@ -43,8 +43,9 @@ CREATED → INIT_CHANNEL → INIT_ROLES → PLANNED → PRE_NOTIFIED → POST_AL
 | 14 | PRE_NOTIFIED | ARCHIVED | CANCEL | *(none)* | rename, archive, lock attendance |
 | 15 | POST_ALBUM_READY | ARCHIVED | CANCEL | *(none)* | rename, archive, lock attendance |
 | 16 | POST_ALBUM_SHARED | ARCHIVED | CANCEL | *(none)* | rename, archive, lock attendance |
-| 17 | POST_COMPLETED | ARCHIVED | ARCHIVE | day+1 at 22:00 | re-render message, archive channel |
-| 18 | ARCHIVED | DELETED | DELETE | 3 months after event | delete roles, delete channel |
+| 17 | POST_COMPLETED | ARCHIVED | ARCHIVE | 10:00 (event zone) on completion-date + 2 days | re-render message, archive channel |
+| 18 | ARCHIVED | DELETED | DELETE | archive moment + `guild.archive_days` | delete roles + archived channel (event row persists) |
+| 19 | CANCELLED | DELETED | DELETE | 3 months after event | delete roles + channel (event row persists) |
 
 ## Poller Signal Mapping
 
@@ -107,12 +108,12 @@ CANCEL │           ┌────────────┘
 active)│    ┌────────────────┐
        │    │ POST_COMPLETED │
        │    └───────┬────────┘
-       │            │ ARCHIVE (day+1 22:00)
+       │            │ ARCHIVE (completion-date+2 @ 10:00)
        ▼            ▼
     ┌──────────┐
     │ ARCHIVED │
     └─────┬────┘
-          │ DELETE (3 months)
+          │ DELETE (archive moment + archive_days)
           ▼
     ┌─────────┐
     │ DELETED │
@@ -130,7 +131,7 @@ Event names are truncated to 89 characters to stay within Discord's 100-characte
 
 When a user clicks an attendance button, their event roles are updated to match their status. If they toggle off (REMOVED), all event roles are removed.
 
-Roles are deleted during the `DELETE` transition (3 months after event).
+Roles and the archived Discord channel are deleted during the `DELETE` transition (3 months after event). The event row and attendance records persist; the event's state becomes `DELETED`.
 
 ## Operation Files
 
