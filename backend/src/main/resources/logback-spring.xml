@@ -16,21 +16,24 @@
     </springProfile>
 
     <springProfile name="!local">
-        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"service":"peep-bot-backend"}</customFields>
-                <!-- Rename MDC keys so SigNoz correlates logs↔traces on the standard OTel field names. -->
-                <mdcKeyFieldName>traceId=trace_id</mdcKeyFieldName>
-                <mdcKeyFieldName>spanId=span_id</mdcKeyFieldName>
+        <!-- Plain text on stdout so `docker logs` / `kubectl logs` stays readable, but
+             deliberately not JSON: nothing should re-parse stdout into structured logs.
+             The OTLP appender below is the single authoritative path to SigNoz. -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] eventId=%X{eventId:-} %logger{36} - %msg%n</pattern>
             </encoder>
         </appender>
-        <!-- Forwards LogRecords over OTLP and stamps the active Span's trace_id/span_id on them. -->
+        <!-- Forwards LogRecords over OTLP and stamps the active Span's trace_id/span_id on
+             them as top-level attributes. captureMdcAttributes promotes every MDC key
+             (eventId, guildId, channelId, interactionId, …) to an indexed log attribute,
+             so SigNoz sees them as fast filters rather than buried in the body. -->
         <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
             <captureExperimentalAttributes>true</captureExperimentalAttributes>
             <captureMdcAttributes>*</captureMdcAttributes>
         </appender>
         <root level="INFO">
-            <appender-ref ref="JSON" />
+            <appender-ref ref="CONSOLE" />
             <appender-ref ref="OTEL" />
         </root>
     </springProfile>
