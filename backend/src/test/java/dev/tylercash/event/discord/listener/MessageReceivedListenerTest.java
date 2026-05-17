@@ -38,7 +38,8 @@ class MessageReceivedListenerTest {
         immichConfiguration = new ImmichConfiguration();
         immichConfiguration.setEnabled(true);
         immichService = mock(ImmichService.class);
-        listener = new MessageReceivedListener(clock, eventRepository, immichConfiguration, immichService);
+        listener =
+                new MessageReceivedListener(clock, eventRepository, immichConfiguration, immichService, Runnable::run);
     }
 
     private MessageReceivedEvent buildEvent(long channelId, List<Message.Attachment> attachments) {

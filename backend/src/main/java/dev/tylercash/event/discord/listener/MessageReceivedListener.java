@@ -8,23 +8,37 @@ import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MessageReceivedListener extends ListenerAdapter {
 
     private final Clock clock;
     private final EventRepository eventRepository;
     private final ImmichConfiguration immichConfiguration;
     private final ImmichService immichService;
+    private final Executor executor;
+
+    public MessageReceivedListener(
+            Clock clock,
+            EventRepository eventRepository,
+            ImmichConfiguration immichConfiguration,
+            ImmichService immichService,
+            @Qualifier("discordListenerExecutor") Executor executor) {
+        this.clock = clock;
+        this.eventRepository = eventRepository;
+        this.immichConfiguration = immichConfiguration;
+        this.immichService = immichService;
+        this.executor = executor;
+    }
 
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
@@ -53,6 +67,10 @@ public class MessageReceivedListener extends ListenerAdapter {
             log.info("Event '{}' has not started yet — skipping attachment upload", dbEvent.getName());
             return;
         }
+        executor.execute(() -> uploadAttachments(dbEvent, attachments));
+    }
+
+    private void uploadAttachments(Event dbEvent, List<Message.Attachment> attachments) {
         List<String> assetIds = new ArrayList<>();
         for (Message.Attachment attachment : attachments) {
             String contentType = attachment.getContentType();
