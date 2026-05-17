@@ -40,6 +40,11 @@ class TfnswNoteworthyFilterTest {
     }
 
     private static RailAlert alert(String id, Set<String> stops, Set<String> routes, RailAlert.Severity sev) {
+        return alert(id, stops, routes, sev, RailAlert.Effect.UNKNOWN);
+    }
+
+    private static RailAlert alert(
+            String id, Set<String> stops, Set<String> routes, RailAlert.Severity sev, RailAlert.Effect eff) {
         return new RailAlert(
                 id,
                 "Headline",
@@ -48,6 +53,7 @@ class TfnswNoteworthyFilterTest {
                 stops,
                 routes,
                 sev,
+                eff,
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24));
     }
@@ -112,6 +118,7 @@ class TfnswNoteworthyFilterTest {
                         Set.of("CENTRAL"),
                         Set.of(),
                         RailAlert.Severity.WARNING,
+                        RailAlert.Effect.UNKNOWN,
                         later,
                         later.plusSeconds(3600))),
                 List.of(),

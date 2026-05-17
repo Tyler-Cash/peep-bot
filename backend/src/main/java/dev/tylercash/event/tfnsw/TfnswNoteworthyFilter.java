@@ -113,6 +113,7 @@ public class TfnswNoteworthyFilter {
             Set<String> affectedStopIds,
             Set<String> affectedRouteIds,
             Severity severity,
+            Effect effect,
             Instant start,
             Instant end) {
         public enum Severity {
@@ -120,6 +121,32 @@ public class TfnswNoteworthyFilter {
             INFO,
             WARNING,
             SEVERE
+        }
+
+        public enum Effect {
+            UNKNOWN,
+            NO_SERVICE,
+            REDUCED_SERVICE,
+            SIGNIFICANT_DELAYS,
+            DETOUR,
+            ADDITIONAL_SERVICE,
+            MODIFIED_SERVICE,
+            STOP_MOVED,
+            OTHER;
+
+            /**
+             * GTFS effects we treat as "service-disrupting" for the citywide
+             * filter — populated by TfNSW for the great majority of alerts
+             * (severity is not). Anything else is considered cosmetic for the
+             * purpose of citywide posting.
+             */
+            public boolean isDisruptive() {
+                return this == NO_SERVICE
+                        || this == REDUCED_SERVICE
+                        || this == SIGNIFICANT_DELAYS
+                        || this == DETOUR
+                        || this == MODIFIED_SERVICE;
+            }
         }
     }
 
