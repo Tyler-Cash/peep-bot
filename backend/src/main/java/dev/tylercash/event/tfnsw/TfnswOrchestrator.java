@@ -11,10 +11,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -73,30 +76,70 @@ public class TfnswOrchestrator {
         List<NoteworthyItem> items =
                 filter.filter(rail, trafficEvents, coords.lat(), coords.lng(), nearestStationId, eventDate);
 
-        String newHash = hash(items);
         Optional<TfnswEventSnapshot> prior = snapshots.findById(eventId);
-        boolean shouldPost = decidePost(items, newHash, prior, isWeekBeforeRecheck);
-
-        if (shouldPost) {
-            reporter.post(event, items, isWeekBeforeRecheck);
-        }
-
         TfnswEventSnapshot snap = prior.orElseGet(() -> {
             TfnswEventSnapshot s = new TfnswEventSnapshot();
             s.setEventId(eventId);
             return s;
         });
-        snap.setAlertIdsHash(newHash);
-        if (shouldPost) snap.setLastPostedAt(Instant.now());
+        snap.setAlertIdsHash(hash(items)); // kept for backwards visibility, no longer drives posting
+
+        if (items.isEmpty()) {
+            snapshots.save(snap);
+            return;
+        }
+
+        Set<String> previouslyPosted = parsePostedIds(snap.getPostedAlertIds());
+        List<NoteworthyItem> newItems =
+                items.stream().filter(i -> !previouslyPosted.contains(i.id())).toList();
+
+        if (!isWeekBeforeRecheck) {
+            // First-run post: every surviving item is "new".
+            Long messageId = reporter.post(event, items);
+            if (messageId != null) {
+                snap.setOriginalMessageId(messageId);
+                snap.setPostedAlertIds(serialisePostedIds(
+                        items.stream().map(NoteworthyItem::id).toList()));
+                snap.setLastPostedAt(Instant.now());
+            }
+            snapshots.save(snap);
+            return;
+        }
+
+        // Week-before recheck: only post if there are additive material changes.
+        if (newItems.isEmpty()) {
+            snapshots.save(snap);
+            return;
+        }
+
+        boolean posted = false;
+        if (snap.getOriginalMessageId() != null) {
+            posted = Boolean.TRUE.equals(reporter.postUpdate(event, snap.getOriginalMessageId(), newItems));
+        }
+        if (!posted) {
+            // Reply target missing or never recorded — send fresh and re-anchor.
+            Long messageId = reporter.post(event, newItems);
+            if (messageId != null) {
+                snap.setOriginalMessageId(messageId);
+                posted = true;
+            }
+        }
+        if (posted) {
+            List<String> merged = new ArrayList<>(previouslyPosted);
+            for (NoteworthyItem n : newItems) merged.add(n.id());
+            snap.setPostedAlertIds(serialisePostedIds(merged));
+            snap.setLastPostedAt(Instant.now());
+        }
         snapshots.save(snap);
     }
 
-    private static boolean decidePost(
-            List<NoteworthyItem> items, String newHash, Optional<TfnswEventSnapshot> prior, boolean recheck) {
-        if (items.isEmpty()) return false;
-        if (!recheck) return true;
-        // Week-before recheck: only post when the hash differs from last time.
-        return prior.map(p -> !p.getAlertIdsHash().equals(newHash)).orElse(true);
+    private static Set<String> parsePostedIds(String raw) {
+        if (raw == null || raw.isBlank()) return Set.of();
+        return Arrays.stream(raw.split("\n")).filter(s -> !s.isBlank()).collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static String serialisePostedIds(List<String> ids) {
+        return String.join("\n", ids);
     }
 
     private Coords resolveCoords(Event e) {

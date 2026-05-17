@@ -3,9 +3,10 @@ package dev.tylercash.event.tfnsw;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -22,9 +23,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class TfnswOrchestratorTest {
 
@@ -43,7 +46,7 @@ class TfnswOrchestratorTest {
     @BeforeEach
     void setUp() {
         cfg = new TfnswConfiguration();
-        cfg.setApiKey("k"); // enabled
+        cfg.setApiKey("k");
         alerts = mock(TfnswAlertsClient.class);
         traffic = mock(LiveTrafficClient.class);
         filter = mock(TfnswNoteworthyFilter.class);
@@ -80,6 +83,10 @@ class TfnswOrchestratorTest {
         return g;
     }
 
+    private NoteworthyItem item(String id) {
+        return new NoteworthyItem(Source.RAIL_METRO, id, "h", "d", "u", Reason.CITYWIDE_LINE, Set.of("SMNW_M1"));
+    }
+
     @Test
     void skipsWhenGuildFlagOff() {
         UUID id = UUID.randomUUID();
@@ -103,21 +110,120 @@ class TfnswOrchestratorTest {
     }
 
     @Test
-    void resolvesCoordsFromPlacesAndPosts() {
+    void firstRunPersistsMessageIdAndPostedAlertIds() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1")));
+        when(reporter.post(eq(e), any())).thenReturn(555L);
+
+        sut.process(id, false);
+
+        ArgumentCaptor<TfnswEventSnapshot> snap = ArgumentCaptor.forClass(TfnswEventSnapshot.class);
+        verify(snapshots).save(snap.capture());
+        assertThat(snap.getValue().getOriginalMessageId()).isEqualTo(555L);
+        assertThat(snap.getValue().getPostedAlertIds()).isEqualTo("metro-1");
+    }
+
+    @Test
+    void recheckWithNoNewItemsDoesNotPost() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1"), item("trains-1")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setAlertIdsHash("anything");
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1\ntrains-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+
+        sut.process(id, true);
+
+        verify(reporter, never()).post(any(), any());
+        verify(reporter, never()).postUpdate(any(), anyLong(), any());
+    }
+
+    @Test
+    void recheckWithNewItemsRepliesToOriginal() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1"), item("trains-2")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setAlertIdsHash("anything");
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+        when(reporter.postUpdate(eq(e), eq(555L), any())).thenReturn(true);
+
+        sut.process(id, true);
+
+        ArgumentCaptor<List<NoteworthyItem>> delta = ArgumentCaptor.forClass(List.class);
+        verify(reporter).postUpdate(eq(e), eq(555L), delta.capture());
+        assertThat(delta.getValue()).extracting(NoteworthyItem::id).containsExactly("trains-2");
+
+        ArgumentCaptor<TfnswEventSnapshot> snap = ArgumentCaptor.forClass(TfnswEventSnapshot.class);
+        verify(snapshots).save(snap.capture());
+        assertThat(snap.getValue().getPostedAlertIds()).isEqualTo("metro-1\ntrains-2");
+    }
+
+    @Test
+    void recheckFallsBackToFreshPostWhenReplyTargetMissing() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1"), item("trains-2")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setAlertIdsHash("anything");
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+        when(reporter.postUpdate(eq(e), eq(555L), any())).thenReturn(false);
+        when(reporter.post(eq(e), any())).thenReturn(777L);
+
+        sut.process(id, true);
+
+        verify(reporter).post(eq(e), any());
+
+        ArgumentCaptor<TfnswEventSnapshot> snap = ArgumentCaptor.forClass(TfnswEventSnapshot.class);
+        verify(snapshots).save(snap.capture());
+        assertThat(snap.getValue().getOriginalMessageId()).isEqualTo(777L);
+        assertThat(snap.getValue().getPostedAlertIds()).isEqualTo("metro-1\ntrains-2");
+    }
+
+    @Test
+    void resolvesCoordsFromPlaces() {
         UUID id = UUID.randomUUID();
         Event e = event(id, 1L, "pid");
         when(events.findById(id)).thenReturn(Optional.of(e));
         when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
         when(places.fetchCoords("pid")).thenReturn(Optional.of(new Coords(-33.0, 151.0)));
-        when(filter.filter(any(), any(), eq(-33.0), eq(151.0), any(), any()))
-                .thenReturn(List.of(new NoteworthyItem(
-                        Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION, java.util.Set.of())));
+        when(filter.filter(any(), any(), eq(-33.0), eq(151.0), any(), any())).thenReturn(List.of());
 
         sut.process(id, false);
 
-        verify(reporter).post(eq(e), anyList(), eq(false));
-        verify(snapshots).save(any(TfnswEventSnapshot.class));
-        // coords should be cached on the event
         assertThat(e.getLocationLat()).isEqualTo(-33.0);
         assertThat(e.getLocationLng()).isEqualTo(151.0);
     }
@@ -157,32 +263,8 @@ class TfnswOrchestratorTest {
     }
 
     @Test
-    void weekBeforeSuppressesWhenHashUnchanged() {
-        UUID id = UUID.randomUUID();
-        Event e = event(id, 1L, "pid");
-        e.setLocationLat(-33.0);
-        e.setLocationLng(151.0);
-        when(events.findById(id)).thenReturn(Optional.of(e));
-        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
-        var item =
-                new NoteworthyItem(Source.RAIL_METRO, "a", "x", "y", "u", Reason.NEAREST_STATION, java.util.Set.of());
-        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
-                .thenReturn(List.of(item));
-
-        TfnswEventSnapshot prev = new TfnswEventSnapshot();
-        prev.setEventId(id);
-        prev.setAlertIdsHash(TfnswOrchestrator.hash(List.of(item)));
-        prev.setLastPostedAt(java.time.Instant.now());
-        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
-
-        sut.process(id, true);
-
-        verifyNoInteractions(reporter);
-    }
-
-    @Test
     void disabledConfigSkipsEverything() {
-        cfg.setApiKey(""); // disabled
+        cfg.setApiKey("");
         UUID id = UUID.randomUUID();
 
         sut.process(id, false);
