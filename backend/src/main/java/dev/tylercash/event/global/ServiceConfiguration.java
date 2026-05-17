@@ -50,14 +50,13 @@ public class ServiceConfiguration {
     }
 
     @Bean
-    public RestClient placesRestClient() {
-        return RestClient.builder().baseUrl("https://places.googleapis.com").build();
+    public RestClient placesRestClient(RestClient.Builder builder) {
+        return builder.baseUrl("https://places.googleapis.com").build();
     }
 
     @Bean
-    public RestClient immichRestClient(ImmichConfiguration immichConfiguration) {
-        return RestClient.builder()
-                .baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
+    public RestClient immichRestClient(RestClient.Builder builder, ImmichConfiguration immichConfiguration) {
+        return builder.baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
                 .defaultHeader(
                         "x-api-key", immichConfiguration.getApiKey() != null ? immichConfiguration.getApiKey() : "")
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)

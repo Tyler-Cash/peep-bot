@@ -1,6 +1,7 @@
 package dev.tylercash.event.places;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.micrometer.observation.annotation.Observed;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class PlacesDetailsClient {
         this.config = config;
     }
 
+    @Observed(name = "places.fetch-coords")
     public Optional<Coords> fetchCoords(String placeId) {
         if (!config.isEnabled() || placeId == null || placeId.isBlank()) {
             return Optional.empty();

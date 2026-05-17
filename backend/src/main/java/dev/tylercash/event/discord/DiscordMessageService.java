@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.micrometer.observation.annotation.Observed;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -18,10 +19,12 @@ import org.springframework.stereotype.Service;
 public class DiscordMessageService {
     private final JDA jda;
 
+    @Observed(name = "discord.message.send")
     public Message sendMessage(TextChannel channel, String content) {
         return channel.sendMessage(content).complete();
     }
 
+    @Observed(name = "discord.message.send-embed")
     public Message sendEmbed(
             TextChannel channel, String content, Collection<MessageEmbed> embeds, List<ActionRow> components) {
         MessageCreateBuilder builder =
@@ -34,12 +37,14 @@ public class DiscordMessageService {
         return message;
     }
 
+    @Observed(name = "discord.message.send-with-attachment")
     public Message sendWithAttachment(TextChannel channel, String content, byte[] data, String filename) {
         return channel.sendMessage(content)
                 .addFiles(FileUpload.fromData(data, filename))
                 .complete();
     }
 
+    @Observed(name = "discord.message.send-embed-with-attachment")
     public Message sendEmbedWithAttachment(
             TextChannel channel, Collection<MessageEmbed> embeds, byte[] data, String filename) {
         MessageCreateBuilder builder = new MessageCreateBuilder().addEmbeds(embeds);
@@ -50,6 +55,7 @@ public class DiscordMessageService {
         return message;
     }
 
+    @Observed(name = "discord.message.edit-embed-with-attachment")
     public void editEmbedWithAttachment(
             long channelId, long messageId, Collection<MessageEmbed> embeds, byte[] data, String filename) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
@@ -63,12 +69,14 @@ public class DiscordMessageService {
                 .queue();
     }
 
+    @Observed(name = "discord.message.edit-embeds")
     public void editEmbeds(long channelId, long messageId, Collection<MessageEmbed> embeds) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel == null) return;
         channel.editMessageEmbedsById(messageId, embeds).queue();
     }
 
+    @Observed(name = "discord.message.edit-components")
     public void editComponents(long channelId, long messageId, List<ActionRow> components) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel == null) return;
@@ -79,6 +87,7 @@ public class DiscordMessageService {
         }
     }
 
+    @Observed(name = "discord.message.delete")
     public void deleteMessage(long channelId, long messageId) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel != null) channel.deleteMessageById(messageId).queue();

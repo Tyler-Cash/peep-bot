@@ -32,17 +32,15 @@ public class TfnswConfiguration {
     }
 
     @Bean
-    public RestClient tfnswAlertsRestClient() {
-        return RestClient.builder()
-                .baseUrl(alertsBaseUrl)
+    public RestClient tfnswAlertsRestClient(RestClient.Builder builder) {
+        return builder.baseUrl(alertsBaseUrl)
                 .defaultHeader("Authorization", "apikey " + (isEnabled() ? apiKey : "none"))
                 .build();
     }
 
     @Bean
-    public RestClient tfnswLiveTrafficRestClient() {
-        return RestClient.builder()
-                .baseUrl(liveTrafficBaseUrl)
+    public RestClient tfnswLiveTrafficRestClient(RestClient.Builder builder) {
+        return builder.baseUrl(liveTrafficBaseUrl)
                 .defaultHeader("Authorization", "apikey " + (isEnabled() ? apiKey : "none"))
                 .build();
     }

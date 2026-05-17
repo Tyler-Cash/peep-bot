@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.TrafficEvent;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.TrafficEvent.Kind;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -28,11 +29,13 @@ public class LiveTrafficClient {
         this.cfg = cfg;
     }
 
+    @Observed(name = "tfnsw.live-traffic.major-events")
     @CircuitBreaker(name = "tfnsw")
     public List<TrafficEvent> fetchMajorEvents() {
         return fetch("/v2/live/hazards/majorevent/open", LiveTrafficClient::parseMajorEvents);
     }
 
+    @Observed(name = "tfnsw.live-traffic.hazards")
     @CircuitBreaker(name = "tfnsw")
     public List<TrafficEvent> fetchHazards() {
         return fetch("/v2/live/hazards/incident/open", LiveTrafficClient::parseHazards);

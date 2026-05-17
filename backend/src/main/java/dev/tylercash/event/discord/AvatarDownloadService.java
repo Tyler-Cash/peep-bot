@@ -1,5 +1,7 @@
 package dev.tylercash.event.discord;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,6 +20,12 @@ public class AvatarDownloadService {
     private static final HttpClient HTTP =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
+    private final ObservationRegistry observationRegistry;
+
+    public AvatarDownloadService(ObservationRegistry observationRegistry) {
+        this.observationRegistry = observationRegistry;
+    }
+
     public Optional<AvatarBytes> download(String url) {
         if (url == null || url.isBlank()) {
             return Optional.empty();
@@ -28,7 +36,10 @@ public class AvatarDownloadService {
                     .timeout(Duration.ofSeconds(10))
                     .GET()
                     .build();
-            HttpResponse<byte[]> response = HTTP.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = Observation.createNotStarted("avatar.download", observationRegistry)
+                    .lowCardinalityKeyValue("http.method", "GET")
+                    .lowCardinalityKeyValue("server.address", request.uri().getHost())
+                    .observeChecked(() -> HTTP.send(request, HttpResponse.BodyHandlers.ofByteArray()));
             if (response.statusCode() != 200) {
                 log.debug("Avatar download returned {} for {}", response.statusCode(), url);
                 return Optional.empty();
