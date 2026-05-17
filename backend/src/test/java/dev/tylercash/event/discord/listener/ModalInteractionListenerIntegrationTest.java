@@ -25,8 +25,10 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -134,6 +136,15 @@ class ModalInteractionListenerIntegrationTest {
 
         when(evt.editMessageEmbeds(any(List.class))).thenReturn(mock(MessageEditCallbackAction.class));
         when(evt.editMessageEmbeds(any(MessageEmbed[].class))).thenReturn(mock(MessageEditCallbackAction.class));
+
+        when(evt.deferEdit()).thenReturn(mock(MessageEditCallbackAction.class));
+        InteractionHook hook = mock(InteractionHook.class);
+        when(evt.getHook()).thenReturn(hook);
+        @SuppressWarnings("unchecked")
+        WebhookMessageEditAction<net.dv8tion.jda.api.entities.Message> editAction =
+                mock(WebhookMessageEditAction.class);
+        when(hook.editOriginalEmbeds(any(List.class))).thenReturn(editAction);
+        when(hook.editOriginalEmbeds(any(MessageEmbed[].class))).thenReturn(editAction);
 
         return evt;
     }

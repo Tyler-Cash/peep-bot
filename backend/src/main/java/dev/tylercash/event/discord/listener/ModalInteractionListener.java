@@ -11,6 +11,7 @@ import dev.tylercash.event.event.model.Event;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
+import java.util.concurrent.Executor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -18,6 +19,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -32,6 +34,7 @@ public class ModalInteractionListener extends ListenerAdapter {
     private final ObjectProvider<EventService> eventServiceProvider;
     private final AttendanceService attendanceService;
     private final DiscordUserCacheService discordUserCacheService;
+    private final Executor executor;
 
     public ModalInteractionListener(
             Clock clock,
@@ -40,7 +43,8 @@ public class ModalInteractionListener extends ListenerAdapter {
             EmbedService embedService,
             ObjectProvider<EventService> eventServiceProvider,
             AttendanceService attendanceService,
-            DiscordUserCacheService discordUserCacheService) {
+            DiscordUserCacheService discordUserCacheService,
+            @Qualifier("discordListenerExecutor") Executor executor) {
         this.clock = clock;
         this.observationRegistry = observationRegistry;
         this.eventRepository = eventRepository;
@@ -48,18 +52,12 @@ public class ModalInteractionListener extends ListenerAdapter {
         this.eventServiceProvider = eventServiceProvider;
         this.attendanceService = attendanceService;
         this.discordUserCacheService = discordUserCacheService;
+        this.executor = executor;
     }
 
     @Override
     public void onModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
-        Observation.createNotStarted("discord.modal-interaction", observationRegistry)
-                .lowCardinalityKeyValue("interaction.type", "modal")
-                .observe(() -> handleModalInteraction(modalInteractionEvent));
-    }
-
-    private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent) {
         ModalInteraction interaction = modalInteractionEvent.getInteraction();
-
         if (!PLUS_ONE_ID.equals(interaction.getModalId())) {
             log.warn("Unrecognised modal ID: {}", interaction.getModalId());
             return;
@@ -74,26 +72,41 @@ public class ModalInteractionListener extends ListenerAdapter {
                     .queue();
             return;
         }
+
+        modalInteractionEvent.deferEdit().queue();
+
+        executor.execute(() -> Observation.createNotStarted("discord.modal-interaction", observationRegistry)
+                .lowCardinalityKeyValue("interaction.type", "modal")
+                .observe(() -> handleModalInteraction(modalInteractionEvent, event)));
+    }
+
+    private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent, @NonNull Event event) {
         MDC.put("eventId", event.getId().toString());
+        try {
+            String ownerSnowflake = modalInteractionEvent.getUser().getId();
+            String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
+            String ownerUsername = modalInteractionEvent.getUser().getName();
+            discordUserCacheService.upsertUser(
+                    ownerSnowflake, ownerDisplayName, ownerUsername, null, event.getServerId());
 
-        String ownerSnowflake = modalInteractionEvent.getUser().getId();
-        String ownerDisplayName = DiscordUtil.getUserDisplayName(modalInteractionEvent.getMember());
-        String ownerUsername = modalInteractionEvent.getUser().getName();
-        discordUserCacheService.upsertUser(ownerSnowflake, ownerDisplayName, ownerUsername, null, event.getServerId());
+            String plus1Name =
+                    modalInteractionEvent.getInteraction().getValues().get(0).getAsString();
+            attendanceService.recordAttendance(
+                    event.getId(), null, "[+1] " + plus1Name, AttendanceStatus.ACCEPTED, ownerSnowflake);
 
-        String plus1Name = interaction.getValues().get(0).getAsString();
-        attendanceService.recordAttendance(
-                event.getId(), null, "[+1] " + plus1Name, AttendanceStatus.ACCEPTED, ownerSnowflake);
+            eventServiceProvider.getObject().populateAttendance(event);
+            modalInteractionEvent
+                    .getHook()
+                    .editOriginalEmbeds(embedService.getMessage(event, clock))
+                    .queue();
 
-        eventServiceProvider.getObject().populateAttendance(event);
-        modalInteractionEvent
-                .editMessageEmbeds(embedService.getMessage(event, clock))
-                .queue();
-
-        log.info(
-                "User {} adding +1 '{}' on event {}",
-                modalInteractionEvent.getUser().getEffectiveName(),
-                plus1Name,
-                event.getName());
+            log.info(
+                    "User {} adding +1 '{}' on event {}",
+                    modalInteractionEvent.getUser().getEffectiveName(),
+                    plus1Name,
+                    event.getName());
+        } finally {
+            MDC.remove("eventId");
+        }
     }
 }

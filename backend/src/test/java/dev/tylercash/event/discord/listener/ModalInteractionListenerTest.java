@@ -29,8 +29,10 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.modals.ModalInteraction;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +75,8 @@ class ModalInteractionListenerTest {
                 embedService,
                 eventServiceProvider,
                 attendanceService,
-                discordUserCacheService);
+                discordUserCacheService,
+                Runnable::run);
     }
 
     private ModalInteractionEvent modalEvent(String modalId, String plusOneName) {
@@ -119,17 +122,26 @@ class ModalInteractionListenerTest {
         when(eventRepository.findByChannelId(CHANNEL_ID)).thenReturn(event);
         when(eventService.isCompleted(event)).thenReturn(false);
         when(embedService.getMessage(event, clock)).thenReturn(List.of(mock(MessageEmbed.class)));
-        when(evt.editMessageEmbeds(embedService.getMessage(event, clock)))
-                .thenReturn(mock(MessageEditCallbackAction.class));
+
+        MessageEditCallbackAction deferAction = mock(MessageEditCallbackAction.class);
+        when(evt.deferEdit()).thenReturn(deferAction);
+        InteractionHook hook = mock(InteractionHook.class);
+        when(evt.getHook()).thenReturn(hook);
+        @SuppressWarnings("unchecked")
+        WebhookMessageEditAction<net.dv8tion.jda.api.entities.Message> editAction =
+                mock(WebhookMessageEditAction.class);
+        when(hook.editOriginalEmbeds(any(List.class))).thenReturn(editAction);
 
         listener.onModalInteraction(evt);
 
+        verify(evt).deferEdit();
         verify(discordUserCacheService)
                 .upsertUser(eq(USER_ID), eq(USER_NICKNAME), eq(USER_USERNAME), eq(null), anyLong());
         verify(attendanceService)
                 .recordAttendance(event.getId(), null, "[+1] Guest Name", AttendanceStatus.ACCEPTED, USER_ID);
         verify(eventService).populateAttendance(event);
-        verify(evt).editMessageEmbeds(embedService.getMessage(event, clock));
+        verify(hook).editOriginalEmbeds(embedService.getMessage(event, clock));
+        verify(evt, never()).editMessageEmbeds(any(List.class));
     }
 
     @Test
