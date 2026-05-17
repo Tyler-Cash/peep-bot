@@ -20,7 +20,11 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>Alert affects the nearest known rail/metro station to the venue</li>
  *   <li>Alert affects any station returned by {@link GtfsStopsIndex#majorStopIds()}</li>
- *   <li>Alert is SEVERE and affects a Sydney Trains line or Sydney Metro line</li>
+ *   <li>Alert touches a backbone Sydney Trains or Sydney Metro line
+ *       (see {@link BackboneRoutes}) and its GTFS effect is service-disrupting
+ *       (no service, reduced service, significant delays, detour, modified
+ *       service). TfNSW does not populate {@code severity_level}, so this
+ *       rule is gated on {@code effect} instead.</li>
  * </ul>
  *
  * <p>Traffic rules (any one matches):
@@ -34,7 +38,6 @@ import org.springframework.stereotype.Component;
 public class TfnswNoteworthyFilter {
     private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
     private static final Set<String> ARTERIAL_CLASSES = Set.of("motorway", "arterial", "sub-arterial");
-    private static final Set<String> CITYWIDE_LINE_PREFIXES = Set.of("T", "MET", "Sydney Trains", "Sydney Metro");
 
     private final TfnswConfiguration cfg;
     private final GtfsStopsIndex stopsIndex;
@@ -58,7 +61,7 @@ public class TfnswNoteworthyFilter {
                 reason = Reason.NEAREST_STATION;
             } else if (!Collections.disjoint(a.affectedStopIds(), majorIds)) {
                 reason = Reason.MAJOR_STATION;
-            } else if (a.severity() == RailAlert.Severity.SEVERE && affectsCityWideLine(a.affectedRouteIds())) {
+            } else if (BackboneRoutes.touches(a.affectedRouteIds()) && a.effect().isDisruptive()) {
                 reason = Reason.CITYWIDE_LINE;
             }
             if (reason != null) {
@@ -87,10 +90,6 @@ public class TfnswNoteworthyFilter {
 
     private static boolean overlaps(Instant aStart, Instant aEnd, Instant bStart, Instant bEnd) {
         return !aStart.isAfter(bEnd) && !aEnd.isBefore(bStart);
-    }
-
-    private static boolean affectsCityWideLine(Set<String> routeIds) {
-        return routeIds.stream().anyMatch(r -> CITYWIDE_LINE_PREFIXES.stream().anyMatch(r::startsWith));
     }
 
     public static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
