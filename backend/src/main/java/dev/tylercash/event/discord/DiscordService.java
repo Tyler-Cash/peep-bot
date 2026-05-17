@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.springframework.http.HttpStatus;
@@ -367,6 +368,41 @@ public class DiscordService {
             return;
         }
         channel.sendMessageEmbeds(embed).queue();
+    }
+
+    /** Sends a plain-content message to the event's Discord channel. Returns the new message snowflake. */
+    public Long sendContentToEventChannel(Event event, String content) {
+        TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
+        if (channel == null) {
+            log.warn("Cannot send content to event {}: channel {} not found", event.getId(), event.getChannelId());
+            return null;
+        }
+        Message msg = channel.sendMessage(content).complete();
+        return msg.getIdLong();
+    }
+
+    /**
+     * Replies to {@code parentMessageId} in the event's channel with the given content.
+     * Returns {@code true} on success, {@code false} if the parent message could not be
+     * retrieved (deleted, channel changed, permissions) — the caller is expected to
+     * fall back to {@link #sendContentToEventChannel(Event, String)} in that case.
+     */
+    public Boolean replyToMessage(Event event, long parentMessageId, String content) {
+        TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
+        if (channel == null) return false;
+        try {
+            Message parent = channel.retrieveMessageById(parentMessageId).complete();
+            parent.reply(content).complete();
+            return true;
+        } catch (ErrorResponseException e) {
+            log.info(
+                    "TfNSW reply target {} missing in channel {} for event {}: {}",
+                    parentMessageId,
+                    event.getChannelId(),
+                    event.getId(),
+                    e.getMeaning());
+            return false;
+        }
     }
 
     @Observed(name = "discord.send-album-link")

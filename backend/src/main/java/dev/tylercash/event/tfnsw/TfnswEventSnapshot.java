@@ -28,6 +28,12 @@ public class TfnswEventSnapshot {
     @Column(name = "last_posted_at")
     private Instant lastPostedAt;
 
+    @Column(name = "original_message_id")
+    private Long originalMessageId;
+
+    @Column(name = "posted_alert_ids", columnDefinition = "text")
+    private String postedAlertIds;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

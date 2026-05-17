@@ -2,60 +2,67 @@ package dev.tylercash.event.tfnsw;
 
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
-import dev.tylercash.event.tfnsw.NoteworthyItem.Source;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import org.springframework.stereotype.Service;
 
 /**
- * Composes a Discord embed summarising noteworthy TfNSW items for a given event
- * and posts it to the event's Discord channel via {@link DiscordService}.
+ * Renders TfNSW noteworthy items as a single plain-content Discord message per
+ * event. Week-before deltas are sent as a reply to the original post; if the
+ * original message is missing, the caller is expected to fall back to a fresh
+ * {@link #post(Event, List)}.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TfnswReportingService {
-    private static final int TFNSW_BLUE = 0x0072CE;
+    private static final String FIRST_HEADER =
+            "🚧 Transport notice — trackwork or disruption may affect travel to this event:";
+    private static final String UPDATE_HEADER = "⚠️ Update — additional disruption since the previous notice:";
 
     private final DiscordService discordService;
 
-    public void post(Event event, List<NoteworthyItem> items, boolean isUpdate) {
-        if (items.isEmpty()) return;
-
-        StringBuilder body = new StringBuilder();
-        appendSection(body, items, Source.RAIL_METRO, "🚆 Transport");
-        appendSection(body, items, Source.TRAFFIC, "🚗 Traffic");
-
-        MessageEmbed embed = new EmbedBuilder()
-                .setTitle((isUpdate ? "Update: " : "") + "Travel notice for " + event.getName())
-                .setColor(TFNSW_BLUE)
-                .setDescription(body.toString())
-                .setFooter("Source: Transport for NSW")
-                .build();
-
+    /** Returns the new message snowflake, or null if nothing was posted. */
+    public Long post(Event event, List<NoteworthyItem> items) {
+        if (items.isEmpty()) return null;
+        String body = FIRST_HEADER + "\n" + formatBullets(items);
         try {
-            discordService.sendEmbedToEventChannel(event, embed);
+            return discordService.sendContentToEventChannel(event, body);
         } catch (Exception e) {
-            log.warn("Failed to post TfNSW embed to event {}: {}", event.getId(), e.getMessage());
+            log.warn("Failed to post TfNSW notice to event {}: {}", event.getId(), e.getMessage());
+            return null;
         }
     }
 
-    private static void appendSection(StringBuilder body, List<NoteworthyItem> items, Source source, String header) {
-        var matching = items.stream().filter(i -> i.source() == source).toList();
-        if (matching.isEmpty()) return;
-        body.append("**").append(header).append("**\n");
-        for (var i : matching) {
-            body.append("• [")
-                    .append(i.title())
-                    .append("](")
-                    .append(i.url())
-                    .append(") — ")
-                    .append(i.detail())
-                    .append('\n');
+    /** Returns true if the reply succeeded; false if the parent message could not be resolved. */
+    public Boolean postUpdate(Event event, long originalMessageId, List<NoteworthyItem> newItems) {
+        if (newItems.isEmpty()) return true;
+        String body = UPDATE_HEADER + "\n" + formatBullets(newItems);
+        try {
+            return discordService.replyToMessage(event, originalMessageId, body);
+        } catch (Exception e) {
+            log.warn("Failed to post TfNSW update to event {}: {}", event.getId(), e.getMessage());
+            return false;
         }
-        body.append('\n');
+    }
+
+    private static String formatBullets(List<NoteworthyItem> items) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) sb.append('\n');
+            NoteworthyItem item = items.get(i);
+            String lineLabel = LineNames.distinctNames(item.routeIds()).stream()
+                    .findFirst()
+                    .orElse("Transport");
+            sb.append("• **")
+                    .append(lineLabel)
+                    .append("** — ")
+                    .append(item.title())
+                    .append(" (<")
+                    .append(item.url())
+                    .append(">)");
+        }
+        return sb.toString();
     }
 }

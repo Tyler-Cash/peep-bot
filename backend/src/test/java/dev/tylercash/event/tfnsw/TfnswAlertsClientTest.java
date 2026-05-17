@@ -11,7 +11,10 @@ import com.google.transit.realtime.GtfsRealtime.TimeRange;
 import com.google.transit.realtime.GtfsRealtime.TranslatedString;
 import com.google.transit.realtime.GtfsRealtime.TranslatedString.Translation;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert;
+import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Effect;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Severity;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -19,13 +22,14 @@ import org.junit.jupiter.api.Test;
 class TfnswAlertsClientTest {
 
     @Test
-    void parsesAlertWithStopRouteAndSeverity() throws Exception {
+    void parsesAlertWithStopRouteSeverityAndEffect() throws Exception {
         FeedMessage feed = FeedMessage.newBuilder()
                 .setHeader(FeedHeader.newBuilder().setGtfsRealtimeVersion("2.0").build())
                 .addEntity(FeedEntity.newBuilder()
                         .setId("entity-1")
                         .setAlert(Alert.newBuilder()
                                 .setSeverityLevel(Alert.SeverityLevel.SEVERE)
+                                .setEffect(Alert.Effect.MODIFIED_SERVICE)
                                 .setHeaderText(TranslatedString.newBuilder()
                                         .addTranslation(Translation.newBuilder()
                                                 .setText("Trackwork")
@@ -56,10 +60,40 @@ class TfnswAlertsClientTest {
         assertThat(a.description()).isEqualTo("Buses replace trains");
         assertThat(a.url()).isEqualTo("https://x");
         assertThat(a.severity()).isEqualTo(Severity.SEVERE);
+        assertThat(a.effect()).isEqualTo(Effect.MODIFIED_SERVICE);
         assertThat(a.affectedStopIds()).containsExactly("CENTRAL");
         assertThat(a.affectedRouteIds()).containsExactly("T1");
         assertThat(a.start()).isEqualTo(Instant.ofEpochSecond(1_800_000_000L));
         assertThat(a.end()).isEqualTo(Instant.ofEpochSecond(1_800_010_000L));
+    }
+
+    @Test
+    void mapsUnknownEffectWhenFieldAbsent() throws Exception {
+        FeedMessage feed = FeedMessage.newBuilder()
+                .setHeader(FeedHeader.newBuilder().setGtfsRealtimeVersion("2.0").build())
+                .addEntity(FeedEntity.newBuilder()
+                        .setId("entity-2")
+                        .setAlert(Alert.newBuilder()
+                                .addInformedEntity(EntitySelector.newBuilder().setRouteId("T1"))))
+                .build();
+        List<RailAlert> alerts = TfnswAlertsClient.parse(feed.toByteArray(), "test");
+        assertThat(alerts).hasSize(1);
+        assertThat(alerts.get(0).effect()).isEqualTo(Effect.UNKNOWN);
+    }
+
+    @Test
+    void parsesLiveMetroFixtureWithEffect() throws Exception {
+        byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/tfnsw/metro-alerts-sample.pb"));
+        List<RailAlert> alerts = TfnswAlertsClient.parse(bytes, "metro");
+        assertThat(alerts).hasSize(2);
+        RailAlert metroTrackwork = alerts.stream()
+                .filter(a -> a.affectedRouteIds().contains("SMNW_M1")
+                        && a.affectedStopIds().isEmpty())
+                .findFirst()
+                .orElseThrow();
+        assertThat(metroTrackwork.effect()).isEqualTo(Effect.MODIFIED_SERVICE);
+        assertThat(metroTrackwork.severity()).isEqualTo(Severity.UNKNOWN);
+        assertThat(metroTrackwork.headline()).contains("Buses replace metro services");
     }
 
     @Test

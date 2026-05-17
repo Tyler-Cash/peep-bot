@@ -6,6 +6,7 @@ import com.google.transit.realtime.GtfsRealtime.FeedEntity;
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
 import com.google.transit.realtime.GtfsRealtime.TranslatedString;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert;
+import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Effect;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Severity;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.time.Instant;
@@ -80,7 +81,8 @@ public class TfnswAlertsClient {
                     ? Instant.ofEpochSecond(a.getActivePeriod(0).getEnd())
                     : Instant.ofEpochSecond(FAR_FUTURE_SECONDS);
             Severity sev = mapSeverity(a.getSeverityLevel());
-            out.add(new RailAlert(entity.getId(), headline, desc, url, stops, routes, sev, start, end));
+            Effect eff = mapEffect(a.getEffect());
+            out.add(new RailAlert(entity.getId(), headline, desc, url, stops, routes, sev, eff, start, end));
         }
         log.debug("Parsed {} alerts from {}", out.size(), agency);
         return out;
@@ -96,6 +98,20 @@ public class TfnswAlertsClient {
             case WARNING -> Severity.WARNING;
             case SEVERE -> Severity.SEVERE;
             default -> Severity.UNKNOWN;
+        };
+    }
+
+    private static Effect mapEffect(Alert.Effect e) {
+        return switch (e) {
+            case NO_SERVICE -> Effect.NO_SERVICE;
+            case REDUCED_SERVICE -> Effect.REDUCED_SERVICE;
+            case SIGNIFICANT_DELAYS -> Effect.SIGNIFICANT_DELAYS;
+            case DETOUR -> Effect.DETOUR;
+            case ADDITIONAL_SERVICE -> Effect.ADDITIONAL_SERVICE;
+            case MODIFIED_SERVICE -> Effect.MODIFIED_SERVICE;
+            case STOP_MOVED -> Effect.STOP_MOVED;
+            case OTHER_EFFECT -> Effect.OTHER;
+            default -> Effect.UNKNOWN;
         };
     }
 }

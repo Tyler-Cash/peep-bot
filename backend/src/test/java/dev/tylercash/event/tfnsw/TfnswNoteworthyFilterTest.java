@@ -40,6 +40,11 @@ class TfnswNoteworthyFilterTest {
     }
 
     private static RailAlert alert(String id, Set<String> stops, Set<String> routes, RailAlert.Severity sev) {
+        return alert(id, stops, routes, sev, RailAlert.Effect.UNKNOWN);
+    }
+
+    private static RailAlert alert(
+            String id, Set<String> stops, Set<String> routes, RailAlert.Severity sev, RailAlert.Effect eff) {
         return new RailAlert(
                 id,
                 "Headline",
@@ -48,6 +53,7 @@ class TfnswNoteworthyFilterTest {
                 stops,
                 routes,
                 sev,
+                eff,
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24));
     }
@@ -77,15 +83,78 @@ class TfnswNoteworthyFilterTest {
     }
 
     @Test
-    void severeCityWideMatches() {
+    void citywideBackboneRouteWithDisruptiveEffectMatches() {
+        // TfNSW publishes effect but not severity. The Saturday 2026-05-16
+        // metro alert had: routes=[SMNW_M1], stops=[], effect=MODIFIED_SERVICE,
+        // severity=UNKNOWN. This must be surfaced.
         var items = filter.filter(
-                List.of(alert("a3", Set.of("UNKNOWN_STOP"), Set.of("T1"), RailAlert.Severity.SEVERE)),
+                List.of(alert(
+                        "metro-trackwork",
+                        Set.of(),
+                        Set.of("SMNW_M1"),
+                        RailAlert.Severity.UNKNOWN,
+                        RailAlert.Effect.MODIFIED_SERVICE)),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,
-                "ZZZ",
+                null,
                 EVENT_DATE);
-        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.SEVERE_CITYWIDE);
+        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.CITYWIDE_LINE);
+    }
+
+    @Test
+    void citywideBackboneRouteWithoutDisruptiveEffectIsIgnored() {
+        var items = filter.filter(
+                List.of(alert(
+                        "cosmetic", Set.of(), Set.of("SMNW_M1"), RailAlert.Severity.UNKNOWN, RailAlert.Effect.UNKNOWN)),
+                List.of(),
+                VENUE_LAT,
+                VENUE_LNG,
+                null,
+                EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void nonBackboneRouteWithDisruptiveEffectIsIgnored() {
+        var items = filter.filter(
+                List.of(alert(
+                        "light-rail",
+                        Set.of(),
+                        Set.of("LightRail_L1"),
+                        RailAlert.Severity.UNKNOWN,
+                        RailAlert.Effect.MODIFIED_SERVICE)),
+                List.of(),
+                VENUE_LAT,
+                VENUE_LNG,
+                null,
+                EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void doonsideVenueGetsCitywideMetroAlert() {
+        // Regression for 2026-05-16: event in Doonside (far from any metro
+        // stop) must still receive a metro trackwork alert because it's a
+        // citywide line outage.
+        double doonsideLat = -33.7693;
+        double doonsideLng = 150.8722;
+        var items = filter.filter(
+                List.of(alert(
+                        "metro-saturday",
+                        Set.of(),
+                        Set.of("SMNW_M1"),
+                        RailAlert.Severity.UNKNOWN,
+                        RailAlert.Effect.MODIFIED_SERVICE)),
+                List.of(),
+                doonsideLat,
+                doonsideLng,
+                null,
+                EVENT_DATE);
+        assertThat(items).singleElement().satisfies(i -> {
+            assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
+            assertThat(i.id()).isEqualTo("metro-saturday");
+        });
     }
 
     @Test
@@ -112,6 +181,7 @@ class TfnswNoteworthyFilterTest {
                         Set.of("CENTRAL"),
                         Set.of(),
                         RailAlert.Severity.WARNING,
+                        RailAlert.Effect.UNKNOWN,
                         later,
                         later.plusSeconds(3600))),
                 List.of(),
@@ -201,5 +271,24 @@ class TfnswNoteworthyFilterTest {
                 null,
                 EVENT_DATE);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
+    }
+
+    @Test
+    void liveMetroFixtureSurfacesSaturdayTrackworkForDoonside() throws Exception {
+        byte[] bytes = java.nio.file.Files.readAllBytes(
+                java.nio.file.Path.of("src/test/resources/tfnsw/metro-alerts-sample.pb"));
+        var alerts = TfnswAlertsClient.parse(bytes, "metro");
+
+        double doonsideLat = -33.7693;
+        double doonsideLng = 150.8722;
+        // The fixture's metro alert is active Sat 2026-05-16 02:00 AEST → Mon 02:00 AEST.
+        LocalDate eventDate = LocalDate.of(2026, 5, 16);
+
+        var items = filter.filter(alerts, List.of(), doonsideLat, doonsideLng, null, eventDate);
+
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
+            assertThat(i.title()).contains("Buses replace metro services");
+        });
     }
 }
