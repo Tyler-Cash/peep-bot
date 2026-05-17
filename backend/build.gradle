@@ -70,7 +70,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-otlp'
     implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
-    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.1.0'
+    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.4.1'
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
