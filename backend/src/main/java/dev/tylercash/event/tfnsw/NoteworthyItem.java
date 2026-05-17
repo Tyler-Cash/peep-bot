@@ -15,7 +15,7 @@ public record NoteworthyItem(Source source, String id, String title, String deta
     public enum Reason {
         NEAREST_STATION,
         MAJOR_STATION,
-        SEVERE_CITYWIDE,
+        CITYWIDE_LINE,
         MAJOR_EVENT_NEAR_VENUE,
         CLOSURE_NEAR_VENUE
     }

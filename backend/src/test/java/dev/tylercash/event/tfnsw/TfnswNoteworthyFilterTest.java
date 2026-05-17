@@ -91,7 +91,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LNG,
                 "ZZZ",
                 EVENT_DATE);
-        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.SEVERE_CITYWIDE);
+        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.CITYWIDE_LINE);
     }
 
     @Test

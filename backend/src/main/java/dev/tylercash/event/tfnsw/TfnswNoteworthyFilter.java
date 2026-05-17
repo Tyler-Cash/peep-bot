@@ -59,7 +59,7 @@ public class TfnswNoteworthyFilter {
             } else if (!Collections.disjoint(a.affectedStopIds(), majorIds)) {
                 reason = Reason.MAJOR_STATION;
             } else if (a.severity() == RailAlert.Severity.SEVERE && affectsCityWideLine(a.affectedRouteIds())) {
-                reason = Reason.SEVERE_CITYWIDE;
+                reason = Reason.CITYWIDE_LINE;
             }
             if (reason != null) {
                 out.add(new NoteworthyItem(Source.RAIL_METRO, a.id(), a.headline(), a.description(), a.url(), reason));
