@@ -1348,3 +1348,20 @@ databaseChangeLog:
               ALTER TABLE guild ADD CONSTRAINT guild_archive_days_check
               CHECK (archive_days IN (7, 14, 30, 90))
 
+  - changeSet:
+      id: add original_message_id and posted_alert_ids to tfnsw_event_snapshot
+      author: tyler
+      comment: >
+        Lets the TfNSW reporter reply to its original post on the week-before
+        recheck and only post additive material changes. Both columns are
+        nullable so existing snapshot rows survive.
+      changes:
+        - addColumn:
+            tableName: tfnsw_event_snapshot
+            columns:
+              - column:
+                  name: original_message_id
+                  type: bigint
+              - column:
+                  name: posted_alert_ids
+                  type: text

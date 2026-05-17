@@ -29,4 +29,21 @@ class TfnswEventSnapshotRepositoryTest extends AbstractHttpIntegrationTest {
         assertThat(reloaded.getAlertIdsHash()).isEqualTo("deadbeef");
         assertThat(reloaded.getLastPostedAt()).isEqualTo(Instant.parse("2026-05-10T00:00:00Z"));
     }
+
+    @Test
+    void roundTripsOriginalMessageIdAndPostedAlertIds() {
+        long guildId = TestIds.nextLong();
+        Event e = fixtures.seedEvent(
+                guildId, "123456789", "Test Event", ZonedDateTime.now().plusDays(1), ev -> {});
+        TfnswEventSnapshot snap = new TfnswEventSnapshot();
+        snap.setEventId(e.getId());
+        snap.setAlertIdsHash("hash-1");
+        snap.setOriginalMessageId(1_234_567_890L);
+        snap.setPostedAlertIds("alert-a\nalert-b\nalert-c");
+        repo.save(snap);
+
+        TfnswEventSnapshot reloaded = repo.findById(e.getId()).orElseThrow();
+        assertThat(reloaded.getOriginalMessageId()).isEqualTo(1_234_567_890L);
+        assertThat(reloaded.getPostedAlertIds()).isEqualTo("alert-a\nalert-b\nalert-c");
+    }
 }
