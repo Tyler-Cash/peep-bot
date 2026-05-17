@@ -213,6 +213,12 @@ All code changes **must** pass linting and formatting checks before committing. 
   `OpenApiSpecGenerationTest` writes `backend/openapi.json` on every backend test run; the frontend codegen
   consumes that file.
 - **Metrics** — Prometheus endpoint at `/api/actuator/prometheus`
+- **Discord listener offload.** All `ListenerAdapter` subclasses under `discord/listener/` must do the minimum
+  possible work on the JDA WebSocket read thread: resolve the target entity, then either reply (modal/ephemeral)
+  or `deferEdit().queue()` / `deferReply().queue()` to ack the interaction within Discord's 3-second budget,
+  then dispatch the remaining work to the `@Qualifier("discordListenerExecutor")` `Executor`. User-visible
+  message edits go through `interaction.getHook().editOriginal*().queue()` — never `.complete()`. The
+  `ListenerNoCompleteCallsTest` guard test enforces this and prevents `ErrorResponseException: 10062` regressions.
 
 ### Multi-guild support
 
