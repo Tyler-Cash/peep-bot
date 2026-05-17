@@ -71,10 +71,12 @@ public class EventTickScheduler {
     }
 
     private void emitArchivalTicks(ZonedDateTime now) {
-        // The earliest possible archive-due moment is completion-date + 2 days at 10:00. Any event
-        // whose dateTime is within the last ~2 days cannot be due yet.
+        // archive-due = completion-date + 2 days at 10:00 in the event's zone. The minimum time
+        // between event.dateTime and archive-due is ~40h (event late in the day) — wider than
+        // `now - 2 days`. Use a conservative 1-day upper bound and let the exact per-event check
+        // gate publishing.
         ZonedDateTime from = now.minusYears(10);
-        ZonedDateTime to = now.minusDays(COMPLETION_TO_ARCHIVE_DAYS);
+        ZonedDateTime to = now.minusDays(1);
         for (Event e : events.findInDateWindow(from, to, EventState.POST_COMPLETED)) {
             if (now.isBefore(archiveDueAt(e))) {
                 continue;
@@ -84,10 +86,11 @@ public class EventTickScheduler {
     }
 
     private void emitArchivedDeletionTicks(ZonedDateTime now) {
-        // Candidate window: events whose dateTime is older than (2 + minimum archive_days) days.
-        // Anything more recent cannot have spent enough time in the archived category yet.
+        // delete-due = archive moment + archive_days. The minimum total (event → delete-due) for
+        // the shortest legal archive_days is ~(SHORTEST_ARCHIVE_DAYS) days + ~40h, so a candidate
+        // bound of `now - SHORTEST_ARCHIVE_DAYS` cannot miss anything.
         ZonedDateTime from = now.minusYears(10);
-        ZonedDateTime to = now.minusDays(COMPLETION_TO_ARCHIVE_DAYS + SHORTEST_ARCHIVE_DAYS);
+        ZonedDateTime to = now.minusDays(SHORTEST_ARCHIVE_DAYS);
         for (Event e : events.findInDateWindow(from, to, EventState.ARCHIVED)) {
             int archiveDays = guildRepository
                     .findById(e.getServerId())
