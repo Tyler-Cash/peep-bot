@@ -1,5 +1,16 @@
 spring.application.name: peepbot-backend
 
+# Spring Boot Actuator's own OTLP-logging autoconfig (OpenTelemetryLoggingAutoConfiguration,
+# OtlpLoggingAutoConfiguration) was racing the opentelemetry-spring-boot-starter for the
+# @ConditionalOnMissingBean SdkLoggerProvider — actuator was winning and creating an empty
+# no-op provider (because we dropped the management.otlp.logging.* config), so the
+# starter's logs pipeline never installed and log records went nowhere. Excluding the
+# actuator's logging autoconfig lets the starter own the logs SDK end-to-end; metrics
+# stay on the Actuator + Micrometer path (OtlpMeterRegistry), traces stay on the starter.
+spring.autoconfigure.exclude:
+  - org.springframework.boot.actuate.autoconfigure.logging.OpenTelemetryLoggingAutoConfiguration
+  - org.springframework.boot.actuate.autoconfigure.logging.otlp.OtlpLoggingAutoConfiguration
+
 dev.tylercash:
   discord:
     timeout: 60
