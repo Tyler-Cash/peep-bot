@@ -1,12 +1,4 @@
 spring.application.name: peepbot-backend
-
-# Spring Boot Actuator's own OTLP-logging autoconfig (OpenTelemetryLoggingAutoConfiguration,
-# OtlpLoggingAutoConfiguration) was racing the opentelemetry-spring-boot-starter for the
-# @ConditionalOnMissingBean SdkLoggerProvider — actuator was winning and creating an empty
-# no-op provider (because we dropped the management.otlp.logging.* config), so the
-# starter's logs pipeline never installed and log records went nowhere. Excluding the
-# actuator's logging autoconfig lets the starter own the logs SDK end-to-end; metrics
-# stay on the Actuator + Micrometer path (OtlpMeterRegistry), traces stay on the starter.
 spring.autoconfigure.exclude:
   - org.springframework.boot.actuate.autoconfigure.logging.OpenTelemetryLoggingAutoConfiguration
   - org.springframework.boot.actuate.autoconfigure.logging.otlp.OtlpLoggingAutoConfiguration
@@ -135,18 +127,6 @@ management:
     metrics:
       export:
         enabled: true
-  # Metrics ship via Micrometer's OtlpMeterRegistry so existing SigNoz dashboards keep
-  # their metric names. Traces + logs ship via the OpenTelemetry Spring Boot starter,
-  # which reads standard OTEL_* env vars (OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
-  # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, etc.) and auto-installs the logback appender
-  # bridge. Setting OTEL_METRICS_EXPORTER=none in deployed envs stops the starter from
-  # double-publishing metrics.
-  #
-  # Endpoints intentionally have no application.yaml default: deployed envs set
-  # MANAGEMENT_OTLP_METRICS_EXPORT_URL explicitly. Falling back to the public Traefik
-  # URL (https://otel.tylercash.dev) caused the OTLP log shipping to fail silently from
-  # inside the container — the same fallback used to apply to logs and traces too, and
-  # was responsible for ~24h of "where are my logs?" debugging.
   otlp:
     metrics:
       export:
