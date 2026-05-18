@@ -126,15 +126,20 @@ management:
         enabled: true
   # Metrics ship via Micrometer's OtlpMeterRegistry so existing SigNoz dashboards keep
   # their metric names. Traces + logs ship via the OpenTelemetry Spring Boot starter,
-  # which reads standard OTEL_* env vars (OTEL_EXPORTER_OTLP_ENDPOINT,
-  # OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, etc.) and
-  # auto-installs the logback appender bridge. Setting OTEL_METRICS_EXPORTER=none in
-  # deployed envs stops the starter from double-publishing metrics.
+  # which reads standard OTEL_* env vars (OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
+  # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, etc.) and auto-installs the logback appender
+  # bridge. Setting OTEL_METRICS_EXPORTER=none in deployed envs stops the starter from
+  # double-publishing metrics.
+  #
+  # Endpoints intentionally have no application.yaml default: deployed envs set
+  # MANAGEMENT_OTLP_METRICS_EXPORT_URL explicitly. Falling back to the public Traefik
+  # URL (https://otel.tylercash.dev) caused the OTLP log shipping to fail silently from
+  # inside the container — the same fallback used to apply to logs and traces too, and
+  # was responsible for ~24h of "where are my logs?" debugging.
   otlp:
     metrics:
       export:
         enabled: true
-        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/metrics
         step: 30s
         resource-attributes:
           service.name: ${spring.application.name}
