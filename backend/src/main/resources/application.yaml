@@ -1,4 +1,4 @@
-spring.application.name: peep-bot
+spring.application.name: peepbot-backend
 
 dev.tylercash:
   discord:
@@ -124,9 +124,13 @@ management:
     metrics:
       export:
         enabled: true
+  # Metrics ship via Micrometer's OtlpMeterRegistry so existing SigNoz dashboards keep
+  # their metric names. Traces + logs ship via the OpenTelemetry Spring Boot starter,
+  # which reads standard OTEL_* env vars (OTEL_EXPORTER_OTLP_ENDPOINT,
+  # OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, etc.) and
+  # auto-installs the logback appender bridge. Setting OTEL_METRICS_EXPORTER=none in
+  # deployed envs stops the starter from double-publishing metrics.
   otlp:
-    tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/traces
     metrics:
       export:
         enabled: true
@@ -134,13 +138,6 @@ management:
         step: 30s
         resource-attributes:
           service.name: ${spring.application.name}
-    logging:
-      export:
-        enabled: true
-        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:https://otel.tylercash.dev}/v1/logs
-  tracing:
-    sampling:
-      probability: 1.0 # 100% sampling — appropriate for low-traffic hobby project
 
 
 resilience4j:

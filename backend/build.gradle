@@ -36,6 +36,7 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:1.1.6'
+        mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.21.0'
     }
 }
 
@@ -65,10 +66,18 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
+    // OpenTelemetry Spring Boot starter: auto-installs the logback appender bridge,
+    // auto-configures the OTel SDK + OTLP exporters for traces/logs from standard
+    // OTEL_* env vars, and auto-instruments common Spring components (web, JDBC, etc.).
+    // We deliberately keep Micrometer for metrics (micrometer-registry-otlp below) so
+    // existing dashboard names stay stable — the starter is told not to ship metrics
+    // (OTEL_METRICS_EXPORTER=none) to avoid double publication.
+    implementation 'io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter'
+    // Bridges Micrometer Observation spans (@Observed, ObservationRegistry usage) onto
+    // the OTel SDK the starter installs.
     implementation 'io.micrometer:micrometer-tracing-bridge-otel'
-    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    // Metrics export path: Micrometer → OTLP. Configured via management.otlp.metrics.
     implementation 'io.micrometer:micrometer-registry-otlp'
-    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
     implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.4.1'
     implementation("net.dv8tion:JDA:6.4.1") {
@@ -129,10 +138,15 @@ tasks.named('test') {
     // embedding weights) don't OOM the test JVM. Default gradle test heap is 512MB.
     maxHeapSize = '2g'
     // Disable OTLP exporters in tests — there is no collector listening, so each
-    // scheduled push spams the log with ConnectException stack traces.
+    // scheduled push spams the log with ConnectException stack traces. The
+    // management.otlp.* toggles cover the Micrometer metric path; the otel.*.exporter
+    // toggles cover the OpenTelemetry Spring Boot starter's traces/logs/metrics path.
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
     systemProperty 'management.otlp.tracing.export.enabled', 'false'
     systemProperty 'management.otlp.logging.export.enabled', 'false'
+    systemProperty 'otel.traces.exporter', 'none'
+    systemProperty 'otel.metrics.exporter', 'none'
+    systemProperty 'otel.logs.exporter', 'none'
     finalizedBy jacocoTestReport
 }
 
