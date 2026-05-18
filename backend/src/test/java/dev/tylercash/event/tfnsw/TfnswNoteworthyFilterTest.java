@@ -54,8 +54,9 @@ class TfnswNoteworthyFilterTest {
                 routes,
                 sev,
                 eff,
-                atDate(EVENT_DATE, 0),
-                atDate(EVENT_DATE, 24));
+                RailAlert.Cause.UNKNOWN,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
     }
 
     @Test
@@ -158,6 +159,49 @@ class TfnswNoteworthyFilterTest {
     }
 
     @Test
+    void cosmeticHeadlineIsSuppressedEvenOnMajorStation() {
+        // Eastern Suburbs alert from 2026-05-18: trains still run between
+        // their normal terminuses, the only "disruption" is extra stops.
+        // TfNSW codes it as MODIFIED_SERVICE which would otherwise survive the
+        // citywide rule, but the rider experience is unchanged.
+        RailAlert cosmetic = new RailAlert(
+                "esi-cosmetic",
+                "Some trains make extra stops",
+                "Nightly from 9:30PM to 1:30AM, some trains make extra stops at St Peters and Erskineville.",
+                "https://transportnsw.info/alerts/esi-cosmetic",
+                Set.of("CENTRAL"),
+                Set.of("ESI_1a"),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.MODIFIED_SERVICE,
+                RailAlert.Cause.MAINTENANCE,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
+        var items = filter.filter(List.of(cosmetic), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void terminusTruncationOnSameLineIsKept() {
+        // "Trains run between Hornsby and Central" is a real terminus
+        // truncation — must NOT be filtered as cosmetic just because it shares
+        // the MODIFIED_SERVICE effect with the cosmetic alerts.
+        RailAlert real = new RailAlert(
+                "nth-truncation",
+                "Trains run between Hornsby and Central, platforms 1-14",
+                "Monday and Tuesday\nNightly from 9:40PM to 1:30AM, trains run to a changed timetable.",
+                "https://transportnsw.info/alerts/nth-truncation",
+                Set.of("CENTRAL"),
+                Set.of("NTH_1a"),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.MODIFIED_SERVICE,
+                RailAlert.Cause.MAINTENANCE,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
+        var items = filter.filter(List.of(real), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        assertThat(items).hasSize(1);
+    }
+
+    @Test
     void minorAlertOnUnrelatedStationSkipped() {
         var items = filter.filter(
                 List.of(alert("a4", Set.of("UNKNOWN_STOP"), Set.of(), RailAlert.Severity.INFO)),
@@ -182,8 +226,9 @@ class TfnswNoteworthyFilterTest {
                         Set.of(),
                         RailAlert.Severity.WARNING,
                         RailAlert.Effect.UNKNOWN,
-                        later,
-                        later.plusSeconds(3600))),
+                        RailAlert.Cause.UNKNOWN,
+                        List.of(later),
+                        List.of(later.plusSeconds(3600)))),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,

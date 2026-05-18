@@ -55,7 +55,8 @@ public class TfnswNoteworthyFilter {
         Set<String> majorIds = stopsIndex.majorStopIds();
 
         for (RailAlert a : railAlerts) {
-            if (!overlaps(a.start(), a.end(), dayStart, dayEnd)) continue;
+            if (!overlapsAnyPeriod(a.startTimes(), a.endTimes(), dayStart, dayEnd)) continue;
+            if (isCosmeticHeadline(a.headline())) continue;
             Reason reason = null;
             if (nearestStationId != null && a.affectedStopIds().contains(nearestStationId)) {
                 reason = Reason.NEAREST_STATION;
@@ -73,7 +74,10 @@ public class TfnswNoteworthyFilter {
                         a.description(),
                         a.url(),
                         reason,
-                        a.affectedRouteIds()));
+                        a.affectedRouteIds(),
+                        a.cause(),
+                        a.startTimes(),
+                        a.endTimes()));
             }
         }
 
@@ -91,7 +95,16 @@ public class TfnswNoteworthyFilter {
             }
             if (reason != null) {
                 out.add(new NoteworthyItem(
-                        Source.TRAFFIC, t.id(), t.headline(), t.description(), t.url(), reason, Set.of()));
+                        Source.TRAFFIC,
+                        t.id(),
+                        t.headline(),
+                        t.description(),
+                        t.url(),
+                        reason,
+                        Set.of(),
+                        null,
+                        List.of(t.start()),
+                        List.of(t.end())));
             }
         }
         return out;
@@ -99,6 +112,47 @@ public class TfnswNoteworthyFilter {
 
     private static boolean overlaps(Instant aStart, Instant aEnd, Instant bStart, Instant bEnd) {
         return !aStart.isAfter(bEnd) && !aEnd.isBefore(bStart);
+    }
+
+    /** True if any of the alert's active periods overlaps the event-day window. */
+    private static boolean overlapsAnyPeriod(
+            List<Instant> startTimes, List<Instant> endTimes, Instant dayStart, Instant dayEnd) {
+        if (startTimes.isEmpty()) return false;
+        for (int i = 0; i < startTimes.size(); i++) {
+            if (overlaps(startTimes.get(i), endTimes.get(i), dayStart, dayEnd)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Drops alerts that are effectively cosmetic — trains are still running on
+     * normal terminuses, the only "disruption" is extra stopping patterns or a
+     * shuffled timetable. TfNSW publishes these with GTFS effect
+     * MODIFIED_SERVICE which our citywide rule otherwise treats as
+     * service-disrupting, but the rider experience is unchanged. We strip them
+     * by headline shape because the GTFS effect alone can't tell us apart from
+     * a real terminus truncation. Anything with stronger language ("buses
+     * replace", "do not run", "between X and Y only", "start and end at",
+     * "delays", "cancelled", "closed") falls through the early-return and is
+     * kept.
+     */
+    static boolean isCosmeticHeadline(String headline) {
+        if (headline == null) return false;
+        String lower = headline.toLowerCase().strip();
+        if (lower.isEmpty()) return false;
+        if (lower.contains("do not run")
+                || lower.contains("buses replace")
+                || lower.contains(" only")
+                || lower.contains("start and end")
+                || lower.contains("no service")
+                || lower.contains("delays")
+                || lower.contains("cancelled")
+                || lower.contains("closed")
+                || lower.contains("suspended")
+                || lower.contains("between ")) return false;
+        return lower.startsWith("some trains make extra stops")
+                || lower.startsWith("trains make extra stops")
+                || lower.startsWith("trains run to a changed timetable");
     }
 
     public static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
@@ -122,13 +176,35 @@ public class TfnswNoteworthyFilter {
             Set<String> affectedRouteIds,
             Severity severity,
             Effect effect,
-            Instant start,
-            Instant end) {
+            Cause cause,
+            List<Instant> startTimes,
+            List<Instant> endTimes) {
         public enum Severity {
             UNKNOWN,
             INFO,
             WARNING,
             SEVERE
+        }
+
+        /**
+         * GTFS-R Alert.Cause subset we care about. Used to label alert clusters
+         * (e.g. MAINTENANCE → "Trackwork") when two or more alerts share the
+         * same cause and active-period end times — that combination is a
+         * reliable fingerprint for "downstream of the same planned job."
+         */
+        public enum Cause {
+            UNKNOWN,
+            OTHER,
+            TECHNICAL_PROBLEM,
+            STRIKE,
+            DEMONSTRATION,
+            ACCIDENT,
+            HOLIDAY,
+            WEATHER,
+            MAINTENANCE,
+            CONSTRUCTION,
+            POLICE_ACTIVITY,
+            MEDICAL_EMERGENCY
         }
 
         public enum Effect {

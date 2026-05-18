@@ -13,6 +13,8 @@ import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.tfnsw.NoteworthyItem.Reason;
 import dev.tylercash.event.tfnsw.NoteworthyItem.Source;
+import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Cause;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,20 @@ class TfnswReportingServiceTest {
     private final DiscordService discord = mock(DiscordService.class);
     private final TfnswReportingService reporter = new TfnswReportingService(discord);
 
+    private static NoteworthyItem rail(String id, String title, String detail, String url, Set<String> routes) {
+        return new NoteworthyItem(
+                Source.RAIL_METRO,
+                id,
+                title,
+                detail,
+                url,
+                Reason.CITYWIDE_LINE,
+                routes,
+                Cause.UNKNOWN,
+                List.of(),
+                List.of());
+    }
+
     @Test
     void firstPostFormatsBulletsWithHumanLineNamesAndReturnsMessageId() {
         Event event = new Event();
@@ -30,21 +46,17 @@ class TfnswReportingServiceTest {
         when(discord.sendContentToEventChannel(eq(event), any(String.class))).thenReturn(123_456L);
 
         var items = List.of(
-                new NoteworthyItem(
-                        Source.RAIL_METRO,
+                rail(
                         "metro-1",
                         "Buses replace metro services between Tallawong and Chatswood",
                         "Use trains between Chatswood and Sydenham",
                         "https://transportnsw.info/alerts/metro-1",
-                        Reason.CITYWIDE_LINE,
                         Set.of("SMNW_M1")),
-                new NoteworthyItem(
-                        Source.RAIL_METRO,
+                rail(
                         "trains-1",
                         "Trackwork between Hornsby and Strathfield",
                         "Buses replace trains",
                         "https://transportnsw.info/alerts/trains-1",
-                        Reason.CITYWIDE_LINE,
                         Set.of("NTH_1a", "NTH_1b")));
 
         Long id = reporter.post(event, items);
@@ -53,10 +65,12 @@ class TfnswReportingServiceTest {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         verify(discord).sendContentToEventChannel(eq(event), captor.capture());
         String expected = "🚧 Transport notice — trackwork or disruption may affect travel to this event:\n"
-                + "• **Sydney Metro Northwest** — Buses replace metro services between Tallawong and Chatswood "
-                + "(<https://transportnsw.info/alerts/metro-1>)\n"
-                + "• **Northern Line** — Trackwork between Hornsby and Strathfield "
-                + "(<https://transportnsw.info/alerts/trains-1>)";
+                + "• Sydney Metro Northwest — Buses replace metro services between Tallawong and Chatswood "
+                + "([details](https://transportnsw.info/alerts/metro-1))\n"
+                + "  Use trains between Chatswood and Sydenham\n"
+                + "• Northern Line — Trackwork between Hornsby and Strathfield "
+                + "([details](https://transportnsw.info/alerts/trains-1))\n"
+                + "  Buses replace trains";
         assertThat(captor.getValue()).isEqualTo(expected);
     }
 
@@ -74,13 +88,11 @@ class TfnswReportingServiceTest {
         event.setChannelId(1L);
         when(discord.replyToMessage(eq(event), eq(999L), any(String.class))).thenReturn(true);
 
-        var newItems = List.of(new NoteworthyItem(
-                Source.RAIL_METRO,
+        var newItems = List.of(rail(
                 "trains-2",
                 "T1 reduced timetable",
                 "Friday and Saturday only",
                 "https://transportnsw.info/alerts/trains-2",
-                Reason.CITYWIDE_LINE,
                 Set.of("T1")));
 
         Boolean replied = reporter.postUpdate(event, 999L, newItems);
@@ -89,8 +101,8 @@ class TfnswReportingServiceTest {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         verify(discord).replyToMessage(eq(event), eq(999L), captor.capture());
         String expected = "⚠️ Update — additional disruption since the previous notice:\n"
-                + "• **T1 Western** — T1 reduced timetable "
-                + "(<https://transportnsw.info/alerts/trains-2>)";
+                + "• T1 reduced timetable ([details](https://transportnsw.info/alerts/trains-2))\n"
+                + "  Friday and Saturday only";
         assertThat(captor.getValue()).isEqualTo(expected);
     }
 
@@ -99,14 +111,79 @@ class TfnswReportingServiceTest {
         Event event = new Event();
         event.setChannelId(1L);
         when(discord.replyToMessage(eq(event), anyLong(), any(String.class))).thenReturn(false);
-        var newItems = List.of(new NoteworthyItem(
-                Source.RAIL_METRO,
+        var newItems = List.of(rail(
                 "trains-2",
                 "T1 reduced timetable",
                 "Friday",
                 "https://transportnsw.info/alerts/trains-2",
-                Reason.CITYWIDE_LINE,
                 Set.of("T1")));
         assertThat(reporter.postUpdate(event, 999L, newItems)).isFalse();
+    }
+
+    @Test
+    void railItemsSharingCauseAndEndTimesCollapseIntoOneCluster() {
+        // Two alerts with cause=MAINTENANCE and matching end-times across both
+        // active periods (the canonical "same City Circle trackwork job"
+        // fingerprint) must render under one banner with sub-bullets. A third
+        // alert in the same batch with no shared end-times stays as its own
+        // top-level bullet.
+        Event event = new Event();
+        event.setChannelId(1L);
+        when(discord.sendContentToEventChannel(eq(event), any(String.class))).thenReturn(1L);
+
+        // Mon 2026-05-18 21:40 Sydney → 2026-05-19 01:30 Sydney; same shape
+        // again the following night. Sydney is UTC+10 in May (no DST).
+        List<Instant> sharedStarts =
+                List.of(Instant.parse("2026-05-18T11:40:00Z"), Instant.parse("2026-05-19T11:40:00Z"));
+        List<Instant> sharedEnds =
+                List.of(Instant.parse("2026-05-18T15:30:00Z"), Instant.parse("2026-05-19T15:30:00Z"));
+
+        var clusterA = new NoteworthyItem(
+                Source.RAIL_METRO,
+                "ems-71595",
+                "City Circle: Trains do not run on the City Circle, or between Central and Wynyard",
+                "Mon 18 and Tue 19 May\nNightly from 9:40PM to 1:30AM, ...",
+                "https://transportnsw.info/alerts/ems-71595",
+                Reason.CITYWIDE_LINE,
+                Set.of("APS_1a"),
+                Cause.MAINTENANCE,
+                sharedStarts,
+                sharedEnds);
+        var clusterB = new NoteworthyItem(
+                Source.RAIL_METRO,
+                "ems-71634",
+                "Trains run between Hornsby and Central, platforms 1-14",
+                "Mon 18 and Tue 19 May\nNightly from 9:40PM to 1:30AM, ...",
+                "https://transportnsw.info/alerts/ems-71634",
+                Reason.CITYWIDE_LINE,
+                Set.of("NTH_1a"),
+                Cause.MAINTENANCE,
+                sharedStarts,
+                sharedEnds);
+        // Same cause but a different end-time → standalone.
+        var standalone = new NoteworthyItem(
+                Source.RAIL_METRO,
+                "ems-99999",
+                "T1 separate trackwork",
+                "Wed 20 May\nNightly from 9:40PM to 2:00AM, ...",
+                "https://transportnsw.info/alerts/ems-99999",
+                Reason.CITYWIDE_LINE,
+                Set.of("WST_1a"),
+                Cause.MAINTENANCE,
+                List.of(Instant.parse("2026-05-20T11:40:00Z")),
+                List.of(Instant.parse("2026-05-20T16:00:00Z")));
+
+        reporter.post(event, List.of(clusterA, clusterB, standalone));
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(discord).sendContentToEventChannel(eq(event), captor.capture());
+        String body = captor.getValue();
+        assertThat(body).contains("🚧 Trackwork — Mon 18 / Tue 19 May, 9:40PM–1:30AM (2 alerts):");
+        assertThat(body).contains("↳ Airport & South Line — City Circle:");
+        assertThat(body).contains("↳ Northern Line — Trains run between Hornsby and Central");
+        // Standalone bullet uses the normal "•" prefix and keeps its time
+        // subline, since there's no banner above it to carry the window.
+        assertThat(body).contains("• T1 separate trackwork");
+        assertThat(body).contains("  Wed 20 May — Nightly from 9:40PM to 2:00AM,");
     }
 }

@@ -6,6 +6,7 @@ import com.google.transit.realtime.GtfsRealtime.FeedEntity;
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
 import com.google.transit.realtime.GtfsRealtime.TranslatedString;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert;
+import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Cause;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Effect;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Severity;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -74,15 +75,26 @@ public class TfnswAlertsClient {
             String headline = textOf(a.getHeaderText());
             String desc = textOf(a.getDescriptionText());
             String url = textOf(a.getUrl());
-            Instant start = a.getActivePeriodCount() > 0 && a.getActivePeriod(0).getStart() > 0
-                    ? Instant.ofEpochSecond(a.getActivePeriod(0).getStart())
-                    : Instant.EPOCH;
-            Instant end = a.getActivePeriodCount() > 0 && a.getActivePeriod(0).getEnd() > 0
-                    ? Instant.ofEpochSecond(a.getActivePeriod(0).getEnd())
-                    : Instant.ofEpochSecond(FAR_FUTURE_SECONDS);
+            List<Instant> startTimes = new ArrayList<>();
+            List<Instant> endTimes = new ArrayList<>();
+            if (a.getActivePeriodCount() == 0) {
+                startTimes.add(Instant.EPOCH);
+                endTimes.add(Instant.ofEpochSecond(FAR_FUTURE_SECONDS));
+            } else {
+                for (int i = 0; i < a.getActivePeriodCount(); i++) {
+                    var period = a.getActivePeriod(i);
+                    startTimes.add(period.getStart() > 0 ? Instant.ofEpochSecond(period.getStart()) : Instant.EPOCH);
+                    endTimes.add(
+                            period.getEnd() > 0
+                                    ? Instant.ofEpochSecond(period.getEnd())
+                                    : Instant.ofEpochSecond(FAR_FUTURE_SECONDS));
+                }
+            }
             Severity sev = mapSeverity(a.getSeverityLevel());
             Effect eff = mapEffect(a.getEffect());
-            out.add(new RailAlert(entity.getId(), headline, desc, url, stops, routes, sev, eff, start, end));
+            Cause cause = mapCause(a.getCause());
+            out.add(new RailAlert(
+                    entity.getId(), headline, desc, url, stops, routes, sev, eff, cause, startTimes, endTimes));
         }
         log.debug("Parsed {} alerts from {}", out.size(), agency);
         return out;
@@ -98,6 +110,23 @@ public class TfnswAlertsClient {
             case WARNING -> Severity.WARNING;
             case SEVERE -> Severity.SEVERE;
             default -> Severity.UNKNOWN;
+        };
+    }
+
+    private static Cause mapCause(Alert.Cause c) {
+        return switch (c) {
+            case OTHER_CAUSE -> Cause.OTHER;
+            case TECHNICAL_PROBLEM -> Cause.TECHNICAL_PROBLEM;
+            case STRIKE -> Cause.STRIKE;
+            case DEMONSTRATION -> Cause.DEMONSTRATION;
+            case ACCIDENT -> Cause.ACCIDENT;
+            case HOLIDAY -> Cause.HOLIDAY;
+            case WEATHER -> Cause.WEATHER;
+            case MAINTENANCE -> Cause.MAINTENANCE;
+            case CONSTRUCTION -> Cause.CONSTRUCTION;
+            case POLICE_ACTIVITY -> Cause.POLICE_ACTIVITY;
+            case MEDICAL_EMERGENCY -> Cause.MEDICAL_EMERGENCY;
+            default -> Cause.UNKNOWN;
         };
     }
 

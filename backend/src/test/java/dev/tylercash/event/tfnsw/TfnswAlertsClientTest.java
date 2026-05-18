@@ -63,8 +63,8 @@ class TfnswAlertsClientTest {
         assertThat(a.effect()).isEqualTo(Effect.MODIFIED_SERVICE);
         assertThat(a.affectedStopIds()).containsExactly("CENTRAL");
         assertThat(a.affectedRouteIds()).containsExactly("T1");
-        assertThat(a.start()).isEqualTo(Instant.ofEpochSecond(1_800_000_000L));
-        assertThat(a.end()).isEqualTo(Instant.ofEpochSecond(1_800_010_000L));
+        assertThat(a.startTimes()).containsExactly(Instant.ofEpochSecond(1_800_000_000L));
+        assertThat(a.endTimes()).containsExactly(Instant.ofEpochSecond(1_800_010_000L));
     }
 
     @Test

@@ -84,7 +84,17 @@ class TfnswOrchestratorTest {
     }
 
     private NoteworthyItem item(String id) {
-        return new NoteworthyItem(Source.RAIL_METRO, id, "h", "d", "u", Reason.CITYWIDE_LINE, Set.of("SMNW_M1"));
+        return new NoteworthyItem(
+                Source.RAIL_METRO,
+                id,
+                "h",
+                "d",
+                "u",
+                Reason.CITYWIDE_LINE,
+                Set.of("SMNW_M1"),
+                TfnswNoteworthyFilter.RailAlert.Cause.UNKNOWN,
+                java.util.List.of(),
+                java.util.List.of());
     }
 
     @Test
@@ -260,6 +270,31 @@ class TfnswOrchestratorTest {
         sut.process(id, false);
 
         verify(filter).filter(any(), any(), anyDouble(), anyDouble(), eq("200060"), any());
+    }
+
+    @Test
+    void retriedFirstRunDoesNotDoublePostWhenSnapshotAlreadyHasMessageId() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+
+        // EventCreated listener retried by the outbox after we already posted —
+        // must not call reporter.post again, and must not synthesise an update.
+        sut.process(id, false);
+
+        verify(reporter, never()).post(any(), any());
+        verify(reporter, never()).postUpdate(any(), anyLong(), any());
     }
 
     @Test

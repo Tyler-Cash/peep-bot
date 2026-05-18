@@ -93,8 +93,12 @@ public class TfnswOrchestrator {
         List<NoteworthyItem> newItems =
                 items.stream().filter(i -> !previouslyPosted.contains(i.id())).toList();
 
-        if (!isWeekBeforeRecheck) {
-            // First-run post: every surviving item is "new".
+        // Idempotency: if we've never posted for this event, do the first-run post.
+        // Otherwise (whether this is the week-before recheck or a retried EventCreated
+        // delivery from the outbox) treat it as an additive update — only post items
+        // we haven't already posted, so a transient failure after Discord delivery
+        // can't double-post on retry.
+        if (snap.getOriginalMessageId() == null) {
             Long messageId = reporter.post(event, items);
             if (messageId != null) {
                 snap.setOriginalMessageId(messageId);
@@ -106,16 +110,12 @@ public class TfnswOrchestrator {
             return;
         }
 
-        // Week-before recheck: only post if there are additive material changes.
         if (newItems.isEmpty()) {
             snapshots.save(snap);
             return;
         }
 
-        boolean posted = false;
-        if (snap.getOriginalMessageId() != null) {
-            posted = Boolean.TRUE.equals(reporter.postUpdate(event, snap.getOriginalMessageId(), newItems));
-        }
+        boolean posted = Boolean.TRUE.equals(reporter.postUpdate(event, snap.getOriginalMessageId(), newItems));
         if (!posted) {
             // Reply target missing or never recorded — send fresh and re-anchor.
             Long messageId = reporter.post(event, newItems);
