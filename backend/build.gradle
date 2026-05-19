@@ -79,7 +79,7 @@ dependencies {
     // Metrics export path: Micrometer → OTLP. Configured via management.otlp.metrics.
     implementation 'io.micrometer:micrometer-registry-otlp'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
-    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.4.1'
+    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
