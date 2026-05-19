@@ -36,7 +36,7 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:1.1.6'
-        mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.21.0'
+        mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.27.0'
     }
 }
 
