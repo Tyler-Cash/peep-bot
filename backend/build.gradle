@@ -221,6 +221,23 @@ spotless {
     }
 }
 
+// Emit META-INF/build-info.properties so the running app can stamp
+// service.version + service.commit onto OTel resource attributes.
+// The short SHA is the durable identifier for SNAPSHOT builds; the
+// gradle `version` covers real CI-tagged releases.
+def gitShortSha = providers.exec {
+    commandLine 'git', 'rev-parse', '--short', 'HEAD'
+    ignoreExitValue = true
+}.standardOutput.asText.map { it.trim() }.getOrElse('unknown')
+
+springBoot {
+    buildInfo {
+        properties {
+            additional = [commit: gitShortSha]
+        }
+    }
+}
+
 // Point git at the tracked .githooks directory so the spotless pre-commit
 // hook runs on every contributor's machine without a manual setup step.
 // Self-installs on first build; the marker file makes the task incremental.
