@@ -33,6 +33,20 @@ class GtfsStopsIndexTest {
     }
 
     @Test
+    void parsesQuotedFieldsAsEmittedByLiveTfnswFeed() {
+        // Live TfNSW feed quotes every field including the header — caused empty index in prod.
+        String quoted =
+                """
+                "stop_id","stop_code","stop_name","stop_desc","stop_lat","stop_lon","zone_id","stop_url","location_type","parent_station","wheelchair_boarding","platform_code"
+                "200060","","Central Station","","-33.8832","151.2065","","","1","","1",""
+                "2000061","","Central Station Platform 1","","-33.8832","151.2065","","","0","200060","1","1"
+                """;
+        List<Stop> stops = GtfsStopsIndex.parseStopsCsv(quoted);
+        assertThat(stops).extracting(Stop::stopId).containsExactly("200060");
+        assertThat(stops).extracting(Stop::name).containsExactly("Central Station");
+    }
+
+    @Test
     void parsesStopsFromZip() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(bos)) {

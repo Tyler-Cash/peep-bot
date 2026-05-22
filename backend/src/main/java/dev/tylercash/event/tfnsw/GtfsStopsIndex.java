@@ -168,15 +168,15 @@ public class GtfsStopsIndex {
             // Only retain parent stations — that's what GTFS-R alerts reference. If the
             // feed leaves location_type blank for a row, include it (some agencies do).
             if (typeIdx >= 0 && f.length > typeIdx) {
-                String t = f[typeIdx].trim();
+                String t = unquote(f[typeIdx]);
                 if (!t.isEmpty() && !"1".equals(t)) continue;
             }
             try {
                 out.add(new Stop(
-                        f[idIdx].trim(),
-                        f[nameIdx].trim(),
-                        Double.parseDouble(f[latIdx].trim()),
-                        Double.parseDouble(f[lngIdx].trim())));
+                        unquote(f[idIdx]),
+                        unquote(f[nameIdx]),
+                        Double.parseDouble(unquote(f[latIdx])),
+                        Double.parseDouble(unquote(f[lngIdx]))));
             } catch (NumberFormatException ignored) {
                 // skip malformed row
             }
@@ -186,8 +186,18 @@ public class GtfsStopsIndex {
 
     private static int indexOf(String[] header, String key) {
         for (int i = 0; i < header.length; i++) {
-            if (header[i].trim().equals(key)) return i;
+            if (unquote(header[i]).equals(key)) return i;
         }
         return -1;
+    }
+
+    // Live TfNSW stops.txt quotes every field ("stop_id","stop_code",...). Strip a single
+    // pair of surrounding double quotes after trimming whitespace.
+    private static String unquote(String s) {
+        String t = s.trim();
+        if (t.length() >= 2 && t.charAt(0) == '"' && t.charAt(t.length() - 1) == '"') {
+            return t.substring(1, t.length() - 1);
+        }
+        return t;
     }
 }
