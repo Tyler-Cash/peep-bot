@@ -180,6 +180,11 @@ public class DiscordService {
         return discordAuthService.getMember(serverId, userId);
     }
 
+    /** Bulk variant — resolves multiple users in a guild in a single Gateway request. */
+    public java.util.List<Member> getMembersFromServer(long serverId, long[] userIds) {
+        return discordAuthService.getMembers(serverId, userIds);
+    }
+
     public boolean isUserMemberOfServer(long serverId, long userId) {
         return discordAuthService.isMember(serverId, userId);
     }

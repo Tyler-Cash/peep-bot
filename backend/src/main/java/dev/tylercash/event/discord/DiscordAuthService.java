@@ -32,6 +32,22 @@ public class DiscordAuthService {
         }
     }
 
+    /**
+     * Bulk-resolves members in a single Gateway request. Members not in the guild (left, unknown)
+     * are simply absent from the returned list. Returns an empty list if the bot isn't in the
+     * guild.
+     */
+    public java.util.List<Member> getMembers(long guildId, long[] userIds) {
+        if (userIds == null || userIds.length == 0) {
+            return java.util.List.of();
+        }
+        net.dv8tion.jda.api.entities.Guild jdaGuild = jda.getGuildById(guildId);
+        if (jdaGuild == null) {
+            return java.util.List.of();
+        }
+        return jdaGuild.retrieveMembersByIds(userIds).get();
+    }
+
     public boolean isMember(long guildId, long userId) {
         if (devUserProperties.isPresent() && devUserProperties.get().isForceAdmin()) {
             return true;
