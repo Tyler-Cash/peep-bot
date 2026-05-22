@@ -63,6 +63,7 @@ class EmbeddingServiceTest {
     @DisplayName("embedEvent persists the embedding with a comma-separated bracketed vector string")
     void embedEvent_savesVectorInPgVectorFormat() {
         when(embeddingModel.embed(anyString())).thenReturn(new float[] {0.5f, -0.25f, 1.0f});
+        when(normalisationService.isAvailable()).thenReturn(true);
         when(normalisationService.classify(any(Event.class))).thenReturn("Food");
         EmbeddingService svc = service(embeddingModel);
         UUID eventId = UUID.randomUUID();
