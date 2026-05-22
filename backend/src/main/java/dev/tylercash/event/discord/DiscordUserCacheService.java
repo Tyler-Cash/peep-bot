@@ -1,60 +1,35 @@
 package dev.tylercash.event.discord;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import dev.tylercash.event.db.repository.AttendanceRepository;
 import dev.tylercash.event.db.repository.DiscordUserCacheRepository;
-import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.db.repository.GuildMemberRepository;
 import dev.tylercash.event.discord.AvatarDownloadService.AvatarBytes;
 import dev.tylercash.event.discord.model.DiscordUserCache;
 import dev.tylercash.event.discord.model.GuildMember;
-import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.dv8tion.jda.api.entities.Member;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class DiscordUserCacheService {
-    private static final int REFRESH_BATCH_SIZE = 10;
-    private static final long STALE_MINUTES = 30;
 
     private final DiscordUserCacheRepository cacheRepository;
     private final GuildMemberRepository memberRepository;
-    private final AttendanceRepository attendanceRepository;
-    private final EventRepository eventRepository;
-    private final ObjectProvider<DiscordService> discordServiceProvider;
-    private final GuildRepository guildRepository;
     private final AvatarDownloadService avatarDownloadService;
 
-    public DiscordUserCacheService(
-            DiscordUserCacheRepository cacheRepository,
-            GuildMemberRepository memberRepository,
-            AttendanceRepository attendanceRepository,
-            EventRepository eventRepository,
-            ObjectProvider<DiscordService> discordServiceProvider,
-            GuildRepository guildRepository,
-            AvatarDownloadService avatarDownloadService) {
-        this.cacheRepository = cacheRepository;
-        this.memberRepository = memberRepository;
-        this.attendanceRepository = attendanceRepository;
-        this.eventRepository = eventRepository;
-        this.discordServiceProvider = discordServiceProvider;
-        this.guildRepository = guildRepository;
-        this.avatarDownloadService = avatarDownloadService;
-    }
-
     /** Upsert global user info (username) and per-guild info (displayName, avatar). */
+    @Transactional
     public void upsertUser(String snowflake, String displayName, String username, String avatarUrl, long guildId) {
         upsertGlobal(snowflake, username);
 
@@ -81,6 +56,7 @@ public class DiscordUserCacheService {
     }
 
     /** Remove a single member's row for a guild (e.g. on GuildMemberRemoveEvent). */
+    @Transactional
     public void removeMember(long guildId, String snowflake) {
         if (snowflake == null || snowflake.isBlank()) {
             return;
@@ -92,6 +68,7 @@ public class DiscordUserCacheService {
      * Delete guild_member rows for {@code guildId} whose snowflake isn't in {@code liveSnowflakes}.
      * No-op if the live set is empty (avoids wiping a guild when a load returns nothing).
      */
+    @Transactional
     public int pruneMembersNotIn(long guildId, Set<String> liveSnowflakes) {
         if (liveSnowflakes == null || liveSnowflakes.isEmpty()) {
             return 0;
@@ -100,6 +77,7 @@ public class DiscordUserCacheService {
     }
 
     /** Register a guild membership without overwriting an existing displayName/avatar. */
+    @Transactional
     public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
         upsertGlobal(snowflake, username);
 
@@ -180,57 +158,5 @@ public class DiscordUserCacheService {
             return Set.of();
         }
         return snowflakes.stream().filter(s -> s != null && !s.isBlank()).collect(Collectors.toSet());
-    }
-
-    @Observed(name = "discord.refresh-user-cache")
-    @Scheduled(fixedDelay = 60, timeUnit = SECONDS)
-    public void refreshStaleEntries() {
-        Instant staleCutoff = Instant.now().minus(STALE_MINUTES, ChronoUnit.MINUTES);
-        List<String> activeSnowflakes = new ArrayList<>(attendanceRepository.findAllDistinctSnowflakes());
-        activeSnowflakes.addAll(eventRepository.findAllDistinctCreatorSnowflakes());
-        if (activeSnowflakes.isEmpty()) {
-            return;
-        }
-
-        List<Long> activeGuilds = guildRepository.findAllByActiveTrue().stream()
-                .map(Guild::getGuildId)
-                .toList();
-
-        int refreshed = 0;
-        for (String snowflake : activeSnowflakes) {
-            if (refreshed >= REFRESH_BATCH_SIZE) {
-                break;
-            }
-            for (long guildId : activeGuilds) {
-                if (refreshed >= REFRESH_BATCH_SIZE) {
-                    break;
-                }
-                Optional<GuildMember> entry = memberRepository.findByGuildIdAndSnowflake(guildId, snowflake);
-                if (entry.isPresent() && entry.get().getUpdatedAt().isAfter(staleCutoff)) {
-                    continue;
-                }
-                try {
-                    Member member =
-                            discordServiceProvider.getObject().getMemberFromServer(guildId, Long.parseLong(snowflake));
-                    if (member != null) {
-                        String displayName = DiscordUtil.getUserDisplayName(member);
-                        String username = member.getUser().getName();
-                        String avatarUrl = member.getEffectiveAvatar().getUrl(256);
-                        upsertUser(snowflake, displayName, username, avatarUrl, guildId);
-                        refreshed++;
-                    }
-                } catch (Exception e) {
-                    log.debug(
-                            "Failed to refresh cache for snowflake {} in guild {}: {}",
-                            snowflake,
-                            guildId,
-                            e.getMessage());
-                }
-            }
-        }
-
-        if (refreshed > 0) {
-            log.debug("Refreshed {} user cache entries", refreshed);
-        }
     }
 }
