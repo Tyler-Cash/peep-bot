@@ -15,13 +15,17 @@ import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.immich.ImmichService;
 import dev.tylercash.event.rewind.EmbeddingService;
 import dev.tylercash.event.test.SharedPostgres;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import net.dv8tion.jda.api.JDA;
@@ -74,6 +78,34 @@ class EventLifecycleSagaIntegrationTest {
         AsyncTaskExecutor eventBusExecutor() {
             return new TaskExecutorAdapter(new SyncTaskExecutor());
         }
+
+        /**
+         * Captures every Observation that completes during this test. Read by
+         * {@link #dumpObservationsForEvent(UUID)} when {@link #awaitOutboxSuccess} times out,
+         * so a stuck listener prints its actual span tree (name, duration, error, attrs)
+         * instead of just "status=IN_PROGRESS: null".
+         *
+         * <p>Spring Boot's {@code ObservationAutoConfiguration} registers all
+         * {@code ObservationHandler<?>} beans onto the shared {@code ObservationRegistry}.
+         */
+        @Bean
+        CapturingObservationHandler capturingObservationHandler() {
+            return new CapturingObservationHandler();
+        }
+    }
+
+    static final class CapturingObservationHandler implements ObservationHandler<Observation.Context> {
+        final List<Observation.Context> stopped = new CopyOnWriteArrayList<>();
+
+        @Override
+        public boolean supportsContext(Observation.Context context) {
+            return true;
+        }
+
+        @Override
+        public void onStop(Observation.Context context) {
+            stopped.add(context);
+        }
     }
 
     @MockitoBean
@@ -108,6 +140,9 @@ class EventLifecycleSagaIntegrationTest {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    CapturingObservationHandler observations;
 
     /** Mutable clock — advance with {@link #advanceTo(Instant)}. */
     private final AtomicReference<Instant> nowHolder = new AtomicReference<>(Instant.parse("2026-05-04T10:00:00Z"));
@@ -185,11 +220,82 @@ class EventLifecycleSagaIntegrationTest {
             if (row != null && row.getStatus() == ListenerInvocationStatus.SUCCESS) return;
             Thread.sleep(POLL_INTERVAL_MS);
         }
-        ListenerInvocation row = listenerInvocationRepository.findById(key).orElse(null);
-        String status = row == null ? "<missing>" : row.getStatus().name();
-        String error = row == null ? "" : (": " + row.getLastError());
-        throw new AssertionError("Timed out waiting for SUCCESS on [" + lifecycleEventType + " / " + listenerName
-                + "]; current status=" + status + error);
+        throw new AssertionError(buildTimeoutMessage(eventId, lifecycleEventType, listenerName));
+    }
+
+    /**
+     * Build a diagnostic dump for an {@code awaitOutboxSuccess} timeout. Three layers:
+     *
+     * <ol>
+     *   <li>The stuck row's full state (status, attempts, lastError, timing).
+     *   <li>Every outbox row for {@code eventId} — usually shows whether the upstream
+     *       listener actually completed, which catches "downstream stuck because upstream
+     *       silently didn't fire."
+     *   <li>Every captured Observation tagged with this {@code event.id} — the actual span
+     *       tree with names, durations, and errors. Replaces the old "thread dump on
+     *       timeout" idea: the data is what we'd query Tempo for in prod.
+     * </ol>
+     */
+    private String buildTimeoutMessage(UUID eventId, String lifecycleEventType, String listenerName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Timed out waiting for SUCCESS on [")
+                .append(lifecycleEventType)
+                .append(" / ")
+                .append(listenerName)
+                .append("] (eventId=")
+                .append(eventId)
+                .append(")\n");
+
+        ListenerInvocationId key = new ListenerInvocationId(eventId, lifecycleEventType, listenerName);
+        ListenerInvocation stuck = listenerInvocationRepository.findById(key).orElse(null);
+        sb.append("  stuck row: ").append(rowSummary(stuck)).append('\n');
+
+        sb.append("  all listener_invocation rows for event:\n");
+        List<ListenerInvocation> rows = listenerInvocationRepository.findAll().stream()
+                .filter(r -> eventId.equals(r.getEventId()))
+                .sorted(Comparator.comparing(
+                        ListenerInvocation::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        if (rows.isEmpty()) sb.append("    (none)\n");
+        else for (ListenerInvocation r : rows) sb.append("    ").append(rowSummary(r)).append('\n');
+
+        sb.append("  observations for event.id=").append(eventId).append(":\n");
+        String eventIdStr = eventId.toString();
+        // CopyOnWriteArrayList preserves insertion order, which equals onStop order — i.e.
+        // observations sorted by completion. Good enough to spot "where the chain stopped."
+        List<Observation.Context> matching = observations.stopped.stream()
+                .filter(c -> eventIdStr.equals(keyValue(c, "event.id")))
+                .toList();
+        if (matching.isEmpty()) sb.append("    (none — listener never started or never reached the instrumented path)\n");
+        else for (Observation.Context c : matching) sb.append("    ").append(observationSummary(c)).append('\n');
+
+        return sb.toString();
+    }
+
+    private static String rowSummary(ListenerInvocation r) {
+        if (r == null) return "<missing>";
+        return r.getLifecycleEventType() + "/" + r.getListenerName()
+                + " status=" + r.getStatus()
+                + " attempts=" + r.getAttempts()
+                + " lastAttemptAt=" + r.getLastAttemptAt()
+                + " nextRetryAt=" + r.getNextRetryAt()
+                + " updatedAt=" + r.getUpdatedAt()
+                + " lastError=" + r.getLastError();
+    }
+
+    private static String observationSummary(Observation.Context c) {
+        Throwable err = c.getError();
+        return c.getName()
+                + " lowCardKVs=" + c.getLowCardinalityKeyValues()
+                + " highCardKVs=" + c.getHighCardinalityKeyValues()
+                + (err == null ? "" : " error=" + err.getClass().getSimpleName() + ": " + err.getMessage());
+    }
+
+    private static String keyValue(Observation.Context c, String key) {
+        var low = c.getLowCardinalityKeyValue(key);
+        if (low != null) return low.getValue();
+        var high = c.getHighCardinalityKeyValue(key);
+        return high == null ? null : high.getValue();
     }
 
     /**

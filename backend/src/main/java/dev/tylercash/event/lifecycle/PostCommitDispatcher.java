@@ -1,5 +1,7 @@
 package dev.tylercash.event.lifecycle;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -27,18 +29,21 @@ public class PostCommitDispatcher {
     private final Map<String, DurableEventListener<?>> byName;
     private final List<DurableEventListener<?>> listeners;
     private final DurableListenerInvoker invoker;
+    private final ObservationRegistry observationRegistry;
 
     public PostCommitDispatcher(
             List<DurableEventListener<?>> listeners,
             ListenerInvocationRepository invocations,
             AsyncTaskExecutor eventBusExecutor,
             BackoffPolicy backoff,
-            DurableListenerInvoker invoker) {
+            DurableListenerInvoker invoker,
+            ObservationRegistry observationRegistry) {
         this.listeners = listeners;
         this.invocations = invocations;
         this.executor = eventBusExecutor;
         this.backoff = backoff;
         this.invoker = invoker;
+        this.observationRegistry = observationRegistry;
         Map<String, DurableEventListener<?>> map = new HashMap<>();
         for (DurableEventListener<?> l : listeners) map.put(l.name(), l);
         this.byName = Map.copyOf(map);
@@ -93,14 +98,18 @@ public class PostCommitDispatcher {
             return;
         }
         row.setStatus(ListenerInvocationStatus.IN_PROGRESS);
+        Observation observation = Observation.createNotStarted("lifecycle.listener.invoke", observationRegistry)
+                .lowCardinalityKeyValue("lifecycle.event.type", row.getLifecycleEventType())
+                .lowCardinalityKeyValue("listener.name", row.getListenerName())
+                .highCardinalityKeyValue("event.id", row.getEventId().toString());
         CompletableFuture.runAsync(
-                        () -> {
+                        () -> observation.observe(() -> {
                             try {
                                 invoker.invoke(listener, event);
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }
-                        },
+                        }),
                         executor)
                 .orTimeout(INVOCATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .whenComplete((v, t) -> {
