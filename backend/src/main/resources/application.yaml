@@ -136,6 +136,17 @@ management:
           service.name: ${spring.application.name}
 
 
+otel:
+  instrumentation:
+    # Spring's RestClient already emits an `http get` CLIENT span via Micrometer Observation
+    # (bridged to OTel by micrometer-tracing-bridge-otel). Letting OTel's java-http-client
+    # instrumentation also wrap the underlying JDK HttpClient produces a duplicate child
+    # `GET` span per outbound call. Same dedup pattern as the actuator logging exclusion above.
+    java-http-client:
+      enabled: false
+    http-url-connection:
+      enabled: false
+
 resilience4j:
   circuitbreaker:
     instances:
