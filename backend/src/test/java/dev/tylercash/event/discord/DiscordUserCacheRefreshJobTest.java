@@ -1,19 +1,16 @@
 package dev.tylercash.event.discord;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import dev.tylercash.event.db.repository.AttendanceRepository;
-import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.db.repository.GuildMemberRepository;
-import dev.tylercash.event.discord.model.GuildMember;
+import dev.tylercash.event.db.repository.GuildMemberRepository.StaleMemberRef;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import org.junit.jupiter.api.Test;
@@ -34,38 +31,32 @@ class DiscordUserCacheRefreshJobTest {
     GuildMemberRepository memberRepository;
 
     @Mock
-    AttendanceRepository attendanceRepository;
-
-    @Mock
-    EventRepository eventRepository;
-
-    @Mock
-    GuildRepository guildRepository;
-
-    @Mock
     ObjectProvider<DiscordService> discordServiceProvider;
 
     DiscordUserCacheRefreshJob buildJob() {
-        return new DiscordUserCacheRefreshJob(
-                cacheService,
-                memberRepository,
-                attendanceRepository,
-                eventRepository,
-                guildRepository,
-                discordServiceProvider);
+        return new DiscordUserCacheRefreshJob(cacheService, memberRepository, discordServiceProvider);
+    }
+
+    private static StaleMemberRef ref(long guildId, String snowflake) {
+        return new StaleMemberRef() {
+            @Override
+            public long getGuildId() {
+                return guildId;
+            }
+
+            @Override
+            public String getSnowflake() {
+                return snowflake;
+            }
+        };
     }
 
     @Test
     void refreshesStaleEntries() {
         String snowflake = "123456789012345678";
         long snowflakeLong = Long.parseLong(snowflake);
-        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(Guild.withDefaults(GUILD_ID)));
-        when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
-        when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
-
-        GuildMember stale = new GuildMember(
-                GUILD_ID, snowflake, "OldName", null, null, Instant.now().minus(60, ChronoUnit.MINUTES));
-        when(memberRepository.findByGuildIdAndSnowflake(GUILD_ID, snowflake)).thenReturn(Optional.of(stale));
+        when(memberRepository.findStaleOrMissing(any(Instant.class), anyInt()))
+                .thenReturn(List.of(ref(GUILD_ID, snowflake)));
 
         DiscordService discordService = mock(DiscordService.class);
         Member member = mock(Member.class);
@@ -86,24 +77,20 @@ class DiscordUserCacheRefreshJobTest {
     }
 
     @Test
-    void skipsWhenNoActiveSnowflakes() {
-        when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of());
-        when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
+    void skipsWhenNothingStale() {
+        when(memberRepository.findStaleOrMissing(any(Instant.class), anyInt())).thenReturn(List.of());
 
         buildJob().refreshStaleEntries();
 
-        verifyNoInteractions(memberRepository);
         verifyNoInteractions(cacheService);
+        verifyNoInteractions(discordServiceProvider);
     }
 
     @Test
     void handlesApiFailure() {
         String snowflake = "987654321098765432";
-        when(guildRepository.findAllByActiveTrue()).thenReturn(List.of(Guild.withDefaults(GUILD_ID)));
-        when(attendanceRepository.findAllDistinctSnowflakes()).thenReturn(List.of(snowflake));
-        when(eventRepository.findAllDistinctCreatorSnowflakes()).thenReturn(List.of());
-
-        when(memberRepository.findByGuildIdAndSnowflake(GUILD_ID, snowflake)).thenReturn(Optional.empty());
+        when(memberRepository.findStaleOrMissing(any(Instant.class), anyInt()))
+                .thenReturn(List.of(ref(GUILD_ID, snowflake)));
 
         DiscordService discordService = mock(DiscordService.class);
         when(discordServiceProvider.getObject()).thenReturn(discordService);
