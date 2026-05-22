@@ -221,6 +221,33 @@ spotless {
     }
 }
 
+// Point git at the tracked .githooks directory so the spotless pre-commit
+// hook runs on every contributor's machine without a manual setup step.
+// Self-installs on first build; the marker file makes the task incremental.
+def repoRoot = rootProject.projectDir.parentFile
+def gitHooksDir = new File(repoRoot, '.githooks')
+tasks.register('installGitHooks') {
+    description = "Configure git to use the repo's .githooks directory"
+    group = 'build setup'
+    def marker = layout.buildDirectory.file('git-hooks-installed.marker').get().asFile
+    onlyIf { gitHooksDir.isDirectory() && new File(repoRoot, '.git').exists() }
+    outputs.file(marker)
+    doLast {
+        def proc = new ProcessBuilder('git', 'config', 'core.hooksPath', '.githooks')
+                .directory(repoRoot)
+                .redirectErrorStream(true)
+                .start()
+        def output = proc.inputStream.text
+        if (proc.waitFor() != 0) {
+            throw new GradleException("git config failed: ${output}")
+        }
+        marker.parentFile.mkdirs()
+        marker.text = 'installed'
+        logger.lifecycle("Configured core.hooksPath = .githooks")
+    }
+}
+tasks.named('compileJava').configure { dependsOn('installGitHooks') }
+
 def modelDir = file("src/main/resources/models")
 def tokenizerFile = file("src/main/resources/models/tokenizer.json")
 def modelFile = file("src/main/resources/models/model.onnx")

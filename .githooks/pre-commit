@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Run spotlessApply when staged changes include backend Java files,
+# then re-stage the formatted versions.
+set -euo pipefail
+
+staged_java=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^backend/.*\.java$' || true)
+if [[ -z "$staged_java" ]]; then
+  exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root/backend"
+./gradlew -q spotlessApply
+
+cd "$repo_root"
+# Re-stage only files that were originally staged. If a file was partially
+# staged, unstaged hunks will be pulled in here — `git status` after the
+# commit will make that visible.
+echo "$staged_java" | xargs -r git add --
