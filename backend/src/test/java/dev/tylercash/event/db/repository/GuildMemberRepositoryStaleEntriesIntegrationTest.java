@@ -57,9 +57,8 @@ class GuildMemberRepositoryStaleEntriesIntegrationTest extends AbstractHttpInteg
         fixtures.registerMember(creator, guildId, "Creator", "creator_user");
 
         // backdate the freshly-written row so it falls outside the cutoff
-        GuildMember row = memberRepository
-                .findByGuildIdAndSnowflake(guildId, creator)
-                .orElseThrow();
+        GuildMember row =
+                memberRepository.findByGuildIdAndSnowflake(guildId, creator).orElseThrow();
         row.setUpdatedAt(Instant.now().minus(2, ChronoUnit.HOURS));
         memberRepository.save(row);
 
