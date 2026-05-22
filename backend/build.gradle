@@ -40,6 +40,12 @@ dependencyManagement {
     }
 }
 
+// Override Spring Boot's managed Tomcat to a version that includes the fix for
+// GHSA-5m62-pw8w-7w9f (CVE-2026-43515, critical) — security constraints with
+// HTTP method limits on the same extension pattern were not all applied. Remove
+// once Spring Boot's BOM ships >= 10.1.55.
+ext['tomcat.version'] = '10.1.55'
+
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
