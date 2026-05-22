@@ -4,6 +4,7 @@ import dev.tylercash.event.db.repository.EventClassificationAttemptRepository;
 import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.rewind.EmbeddingService;
+import dev.tylercash.event.rewind.TextNormalisationService;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -27,11 +28,13 @@ public class CategorizationRetryService {
     private final EventRepository eventRepository;
     private final EventClassificationAttemptRepository attemptRepository;
     private final EmbeddingService embeddingService;
+    private final TextNormalisationService normalisationService;
     private final Clock clock;
 
     @Scheduled(fixedRate = 60000)
     @SchedulerLock(name = "categorizationRetry")
     public void retryUnclassifiedEvents() {
+        if (!normalisationService.isAvailable()) return;
         Page<Event> events = eventRepository.findPlannedEventsWithoutCategory(Pageable.ofSize(100));
         if (events.isEmpty()) return;
 

@@ -153,6 +153,12 @@ tasks.named('test') {
     systemProperty 'otel.traces.exporter', 'none'
     systemProperty 'otel.metrics.exporter', 'none'
     systemProperty 'otel.logs.exporter', 'none'
+    // Disable the Ollama chat model in tests. CI has no route to ollama.tylercash.dev,
+    // so every scheduled classify/backfill tick would otherwise spend ~30s retrying
+    // and dump a SpringAiRetryAutoConfiguration stack trace. With chat=none the
+    // OllamaChatModel bean is never created and TextNormalisationService falls back
+    // to its "unavailable" branch.
+    systemProperty 'spring.ai.model.chat', 'none'
     finalizedBy jacocoTestReport
 }
 

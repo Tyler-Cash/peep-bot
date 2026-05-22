@@ -8,6 +8,7 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.rewind.EmbeddingService;
+import dev.tylercash.event.rewind.TextNormalisationService;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -36,7 +37,9 @@ class CategorizationRetryServiceTest {
             EventClassificationAttemptRepository attemptRepo,
             EmbeddingService embeddingService) {
         Clock clock = Clock.fixed(NOW.toInstant(), ZoneOffset.UTC);
-        return new CategorizationRetryService(eventRepo, attemptRepo, embeddingService, clock);
+        TextNormalisationService normalisation = mock(TextNormalisationService.class);
+        when(normalisation.isAvailable()).thenReturn(true);
+        return new CategorizationRetryService(eventRepo, attemptRepo, embeddingService, normalisation, clock);
     }
 
     @Test

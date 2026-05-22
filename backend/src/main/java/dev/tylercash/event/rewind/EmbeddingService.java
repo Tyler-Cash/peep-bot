@@ -70,8 +70,10 @@ public class EmbeddingService {
             embeddingRepository.save(
                     new EventEmbedding(event.getId(), nameText, toVectorString(raw), OffsetDateTime.now()));
 
-            String category = normalisationService.classify(event);
-            saveCategory(event.getId(), category);
+            if (normalisationService.isAvailable()) {
+                String category = normalisationService.classify(event);
+                saveCategory(event.getId(), category);
+            }
         } catch (Exception e) {
             log.error("Failed to embed event: {}", e.getMessage());
         }
