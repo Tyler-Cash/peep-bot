@@ -252,8 +252,8 @@ export function EventDetail({ id }: { id: string }) {
           ← back to events
         </Link>
 
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-7">
-        <div className="flex flex-col gap-5">
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-7">
+        <div className="flex flex-col gap-5 min-w-0">
           {/* hero */}
           <div
             className="relative rounded-hero border-[1.5px] border-ink shadow-hero overflow-hidden p-4 sm:p-6"
@@ -361,7 +361,7 @@ export function EventDetail({ id }: { id: string }) {
               <span className="text-[13px] font-extrabold tracking-[0.18em] text-mute uppercase">
                 the plan
               </span>
-              <p className="mt-2 text-[19px] leading-[1.6] text-ink2 whitespace-pre-line">
+              <p className="mt-2 text-[19px] leading-[1.6] text-ink2 whitespace-pre-line break-words">
                 {data.description}
               </p>
             </Slab>)}
@@ -379,7 +379,7 @@ export function EventDetail({ id }: { id: string }) {
                 className="mt-2 flex items-center gap-2 text-[19px] font-semibold text-ink hover:text-ink2 group"
               >
                 <span className="text-[20px] shrink-0">📍</span>
-                <span className="underline underline-offset-2 decoration-ink/30 group-hover:decoration-ink/60 transition-colors">
+                <span className="underline underline-offset-2 decoration-ink/30 group-hover:decoration-ink/60 transition-colors break-words min-w-0">
                   {data.location}
                 </span>
               </a>
