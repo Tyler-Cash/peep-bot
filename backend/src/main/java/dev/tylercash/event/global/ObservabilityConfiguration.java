@@ -1,12 +1,16 @@
 package dev.tylercash.event.global;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.micrometer.tagged.TaggedCircuitBreakerMetrics;
 import io.micrometer.common.KeyValue;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.aop.ObservedAspect;
 import java.util.List;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,6 +23,18 @@ public class ObservabilityConfiguration {
     @Bean
     ObservedAspect observedAspect(ObservationRegistry observationRegistry) {
         return new ObservedAspect(observationRegistry);
+    }
+
+    /**
+     * Bind every configured {@code resilience4j.circuitbreaker.instances.*} to the shared
+     * {@link MeterRegistry}. Without this, breakers tick state/transitions internally but
+     * emit no {@code resilience4j_circuitbreaker_*} meters, leaving any dashboard panel
+     * that depends on them blank.
+     */
+    @Bean
+    InitializingBean bindCircuitBreakerMetrics(CircuitBreakerRegistry breakerRegistry, MeterRegistry meterRegistry) {
+        return () -> TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(breakerRegistry)
+                .bindTo(meterRegistry);
     }
 
     @Bean

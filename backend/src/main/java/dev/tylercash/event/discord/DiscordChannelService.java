@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,7 @@ public class DiscordChannelService {
         return categories.get(0);
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.channel.get-or-create-category")
     public Category getOrCreateCategory(Guild guild, String name) {
         List<Category> existing = guild.getCategoriesByName(name, true);
@@ -38,11 +40,13 @@ public class DiscordChannelService {
         return guild.createCategory(name).complete();
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.channel.create-text")
     public TextChannel createTextChannel(Category category, String name) {
         return category.createTextChannel(name).setPosition(99).complete();
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.channel.create-private-text")
     public TextChannel createPrivateTextChannel(Category category, String name, long deniedRoleId, long allowedRoleId) {
         return category.createTextChannel(name)

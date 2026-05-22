@@ -68,6 +68,10 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
+    // Tags CircuitBreakerRegistry / RateLimiterRegistry / RetryRegistry events onto the
+    // shared MeterRegistry — without this, the configured breakers exist but emit
+    // nothing to Prometheus/OTLP and dashboards can't render their state.
+    implementation 'io.github.resilience4j:resilience4j-micrometer:2.4.0'
     implementation 'org.springframework.security:spring-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'

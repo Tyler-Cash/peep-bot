@@ -11,6 +11,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.event.model.Notification;
 import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.validation.constraints.NotNull;
@@ -97,6 +98,7 @@ public class DiscordService {
         return jdaGuild == null ? null : jdaGuild.getCategoryById(id);
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.post-message")
     public Message postEventMessage(Event event, TextChannel channel) {
         long guildId = channel.getGuild().getIdLong();
@@ -310,6 +312,7 @@ public class DiscordService {
         discordChannelService.deleteChannel(event.getChannelId());
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.create-private-channel")
     public void createPrivateEventChannel(Event event) {
         if (event.getPrivateChannelId() != null) {
@@ -376,6 +379,7 @@ public class DiscordService {
     }
 
     /** Sends a plain-content message to the event's Discord channel. Returns the new message snowflake. */
+    @CircuitBreaker(name = "discord")
     public Long sendContentToEventChannel(Event event, String content) {
         TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
         if (channel == null) {
@@ -392,6 +396,7 @@ public class DiscordService {
      * retrieved (deleted, channel changed, permissions) — the caller is expected to
      * fall back to {@link #sendContentToEventChannel(Event, String)} in that case.
      */
+    @CircuitBreaker(name = "discord")
     public Boolean replyToMessage(Event event, long parentMessageId, String content) {
         TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
         if (channel == null) return false;
@@ -410,6 +415,7 @@ public class DiscordService {
         }
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.send-album-link")
     public void sendAlbumLink(Event event, String albumUrl) {
         if (event.getNotifications().contains(new Notification(NotificationType.ALBUM_LINK))) {
@@ -467,6 +473,7 @@ public class DiscordService {
         discordRoleService.deleteRole(guild, event.getMaybeRoleId());
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.assign-event-role")
     public void assignEventRole(
             Event event, String snowflake, dev.tylercash.event.event.model.AttendanceStatus status) {
@@ -488,6 +495,7 @@ public class DiscordService {
         discordRoleService.addRoleToMember(guild, member, roleId);
     }
 
+    @CircuitBreaker(name = "discord")
     public void removeAllEventRoles(Event event, String snowflake) {
         Guild guild = jda.getGuildById(event.getServerId());
         Member member = guild.retrieveMemberById(snowflake).complete();
@@ -498,6 +506,7 @@ public class DiscordService {
         }
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.send-pre-event-notification")
     public void sendMessageBeforeEvent(Event event) {
         if (event.getNotifications().contains(new Notification(NotificationType.START_OF_EVENT))) {

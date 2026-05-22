@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class DiscordRoleService {
     private final JDA jda;
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.role.create")
     public Role createRole(Guild guild, String name) {
         return guild.createRole().setName(name).complete();

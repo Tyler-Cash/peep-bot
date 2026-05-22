@@ -155,3 +155,25 @@ resilience4j:
         wait-duration-in-open-state: 60s
         sliding-window-size: 10
         minimum-number-of-calls: 5
+      # Discord brownouts (5xx, gateway slowness) used to pile up on the
+      # discordListenerExecutor while JDA retried indefinitely. Fail fast instead so
+      # listeners mark themselves FAILED and the durable retry poller drains the work
+      # once the half-open probe shows Discord is back. ErrorResponseException is
+      # ignored because it covers client-side 4xx (unknown channel, missing perms, etc.)
+      # — those mean "your request was bad," not "Discord is broken."
+      discord:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 5s
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        ignore-exceptions:
+          - net.dv8tion.jda.api.exceptions.ErrorResponseException
+        record-exceptions:
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+          - java.util.concurrent.CompletionException
+          - net.dv8tion.jda.api.exceptions.RateLimitedException

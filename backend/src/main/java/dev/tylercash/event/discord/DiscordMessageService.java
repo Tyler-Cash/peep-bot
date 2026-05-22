@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.micrometer.observation.annotation.Observed;
 import java.util.Collection;
 import java.util.List;
@@ -19,11 +20,13 @@ import org.springframework.stereotype.Service;
 public class DiscordMessageService {
     private final JDA jda;
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.message.send")
     public Message sendMessage(TextChannel channel, String content) {
         return channel.sendMessage(content).complete();
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.message.send-embed")
     public Message sendEmbed(
             TextChannel channel, String content, Collection<MessageEmbed> embeds, List<ActionRow> components) {
@@ -37,6 +40,7 @@ public class DiscordMessageService {
         return message;
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.message.send-with-attachment")
     public Message sendWithAttachment(TextChannel channel, String content, byte[] data, String filename) {
         return channel.sendMessage(content)
@@ -44,6 +48,7 @@ public class DiscordMessageService {
                 .complete();
     }
 
+    @CircuitBreaker(name = "discord")
     @Observed(name = "discord.message.send-embed-with-attachment")
     public Message sendEmbedWithAttachment(
             TextChannel channel, Collection<MessageEmbed> embeds, byte[] data, String filename) {
