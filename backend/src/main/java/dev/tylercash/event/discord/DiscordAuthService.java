@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import dev.tylercash.event.security.dev.DevUserProperties;
+import io.micrometer.observation.annotation.Observed;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.JDA;
@@ -16,6 +17,7 @@ public class DiscordAuthService {
     private final GuildRepository guildRepository;
     private final Optional<DevUserProperties> devUserProperties;
 
+    @Observed(name = "discord.api.retrieve-member")
     public Member getMember(long guildId, long userId) {
         net.dv8tion.jda.api.entities.Guild jdaGuild = jda.getGuildById(guildId);
         if (jdaGuild == null) {
@@ -37,6 +39,7 @@ public class DiscordAuthService {
      * are simply absent from the returned list. Returns an empty list if the bot isn't in the
      * guild.
      */
+    @Observed(name = "discord.api.retrieve-members")
     public java.util.List<Member> getMembers(long guildId, long[] userIds) {
         if (userIds == null || userIds.length == 0) {
             return java.util.List.of();
