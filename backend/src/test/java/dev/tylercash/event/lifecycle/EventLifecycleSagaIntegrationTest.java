@@ -257,7 +257,9 @@ class EventLifecycleSagaIntegrationTest {
                         ListenerInvocation::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
         if (rows.isEmpty()) sb.append("    (none)\n");
-        else for (ListenerInvocation r : rows) sb.append("    ").append(rowSummary(r)).append('\n');
+        else
+            for (ListenerInvocation r : rows)
+                sb.append("    ").append(rowSummary(r)).append('\n');
 
         sb.append("  observations for event.id=").append(eventId).append(":\n");
         String eventIdStr = eventId.toString();
@@ -266,8 +268,11 @@ class EventLifecycleSagaIntegrationTest {
         List<Observation.Context> matching = observations.stopped.stream()
                 .filter(c -> eventIdStr.equals(keyValue(c, "event.id")))
                 .toList();
-        if (matching.isEmpty()) sb.append("    (none — listener never started or never reached the instrumented path)\n");
-        else for (Observation.Context c : matching) sb.append("    ").append(observationSummary(c)).append('\n');
+        if (matching.isEmpty())
+            sb.append("    (none — listener never started or never reached the instrumented path)\n");
+        else
+            for (Observation.Context c : matching)
+                sb.append("    ").append(observationSummary(c)).append('\n');
 
         return sb.toString();
     }
