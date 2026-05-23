@@ -12,6 +12,12 @@ import org.springframework.stereotype.Repository;
 public interface EventCategoryRepository extends JpaRepository<EventCategory, UUID> {
     List<EventCategory> findByEventIdIn(Collection<UUID> eventIds);
 
+    /** Stream all event IDs whose category was assigned before the cutoff. Caller iterates lazily. */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT ec.eventId FROM EventCategory ec WHERE ec.assignedAt < :cutoff")
+    java.util.stream.Stream<java.util.UUID> findEventIdsAssignedBefore(
+            @org.springframework.data.repository.query.Param("cutoff") java.time.OffsetDateTime cutoff);
+
     /**
      * Upsert by event id: insert with centroid=eventId on first save, update only label and
      * assignedAt on subsequent calls (preserving any existing centroid_event_id). Mirrors the
