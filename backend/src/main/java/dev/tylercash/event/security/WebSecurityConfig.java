@@ -13,8 +13,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
@@ -45,21 +43,6 @@ public class WebSecurityConfig {
     @Value("${dev.tylercash.openapi.public:false}")
     private boolean openapiPublic;
 
-    /**
-     * Skip Spring Security entirely for actuator endpoints. They are public
-     * (`/actuator/health` for the docker healthcheck, `/actuator/prometheus` for scrape) and
-     * reached only over the internal homelab network, so the OAuth2/CSRF/etc. filter stack adds
-     * no protection. Crucially, the management server runs on its own port (9001) which has the
-     * Spring Security filter chain registered (and its Observation decorator) but NOT
-     * {@code ServerHttpObservationFilter} — every 30s healthcheck was creating orphan
-     * {@code security filterchain before/after} root spans because of the missing parent.
-     * {@code web.ignoring()} drops them from the filter chain entirely.
-     */
-    @Bean
-    public WebSecurityCustomizer actuatorBypass() {
-        return (WebSecurity web) -> web.ignoring().requestMatchers("/actuator/**");
-    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.sessionManagement(session ->
@@ -77,9 +60,11 @@ public class WebSecurityConfig {
                         authorize.requestMatchers("/swagger-ui/**").permitAll();
                         authorize.requestMatchers("/v3/api-docs/**").permitAll();
                     }
-                    // Actuator endpoints are excluded from the filter chain entirely
-                    // via the WebSecurityCustomizer above — no permitAll rule needed.
                     authorize
+                            .requestMatchers("/actuator/health")
+                            .permitAll()
+                            .requestMatchers("/actuator/prometheus")
+                            .permitAll()
                             .requestMatchers("/install-url")
                             .permitAll()
                             .anyRequest()
