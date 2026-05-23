@@ -34,7 +34,7 @@ dev.tylercash:
     cluster-similarity-threshold: 0.72
     backfill-batch-size: 20
     normalisation-enabled: false
-    classifier-temperature: 0.1  # set after eval harness picks the winner
+    classifier-temperature: 0.0  # picked from classifier eval (all 4 temps tied at 100%; 0.0 is most deterministic)
   tfnsw:
     api-key: "${TFNSW_API_KEY:}"
     alerts-base-url: "https://api.transport.nsw.gov.au"
@@ -84,7 +84,10 @@ spring:
       base-url: https://ollama.tylercash.dev
       chat:
         enabled: false
-        model: qwen2.5:0.5b
+        # mistral-nemo:12b chosen via the classifier eval harness — qwen2.5:0.5b can't follow
+        # the v2 prompt's structured definitions / tie-breakers / few-shot examples. See
+        # backend/src/test/java/dev/tylercash/event/rewind/eval/ClassifierEvalTest.java.
+        model: mistral-nemo:12b-instruct-2407-q8_0
         options:
           temperature: 0.0
           num-predict: 15
