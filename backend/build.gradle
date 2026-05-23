@@ -54,6 +54,9 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:1.1.6'
+        // Pins OTel SDK + exporter + instrumentation artefacts to a single coherent set.
+        // Spring Boot's BOM only manages a subset; the rest (e.g. opentelemetry-logback-appender)
+        // resolves through this one.
         mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.27.0'
     }
 }
@@ -94,16 +97,22 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
-    // OpenTelemetry Spring Boot starter: auto-installs the logback appender bridge,
-    // auto-configures the OTel SDK + OTLP exporters for traces/logs from standard
-    // OTEL_* env vars, and auto-instruments common Spring components (web, JDBC, etc.).
-    // We deliberately keep Micrometer for metrics (micrometer-registry-otlp below) so
-    // existing dashboard names stay stable — the starter is told not to ship metrics
-    // (OTEL_METRICS_EXPORTER=none) to avoid double publication.
-    implementation 'io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter'
-    // Bridges Micrometer Observation spans (@Observed, ObservationRegistry usage) onto
-    // the OTel SDK the starter installs.
+    // Observability stack — Spring-native (Micrometer Observation API) bridged to OTel.
+    // The OTel Spring Boot starter is deliberately NOT used: combining it with the
+    // Micrometer bridge produced two competing SDKs, duplicate WebMVC instrumentation,
+    // and split service.name resources in Tempo. With the bridge alone, Spring Boot's
+    // own ServerHttpObservationFilter parents every per-request span, @Observed and
+    // ObservationRegistry calls reach OTel through one SDK, and config lives entirely
+    // under `management.*`.
     implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    // Trace + log OTLP exporter. Spring Boot's OtlpTracingAutoConfiguration and
+    // OpenTelemetryLoggingAutoConfiguration require this artefact on the classpath.
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    // Logback appender that ships LogRecords over the OTel SDK above; referenced by
+    // logback-spring.xml. Was transitive via the OTel starter; now declared directly.
+    // Lives under the *-alpha instrumentation BOM, so an explicit version is needed
+    // (the non-alpha BOM imported above does not manage it).
+    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.27.0-alpha'
     // Metrics export path: Micrometer → OTLP. Configured via management.otlp.metrics.
     implementation 'io.micrometer:micrometer-registry-otlp'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
@@ -166,15 +175,10 @@ tasks.named('test') {
     // embedding weights) don't OOM the test JVM. Default gradle test heap is 512MB.
     maxHeapSize = '2g'
     // Disable OTLP exporters in tests — there is no collector listening, so each
-    // scheduled push spams the log with ConnectException stack traces. The
-    // management.otlp.* toggles cover the Micrometer metric path; the otel.*.exporter
-    // toggles cover the OpenTelemetry Spring Boot starter's traces/logs/metrics path.
+    // scheduled push spams the log with ConnectException stack traces.
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
     systemProperty 'management.otlp.tracing.export.enabled', 'false'
     systemProperty 'management.otlp.logging.export.enabled', 'false'
-    systemProperty 'otel.traces.exporter', 'none'
-    systemProperty 'otel.metrics.exporter', 'none'
-    systemProperty 'otel.logs.exporter', 'none'
     // Disable the Ollama chat model in tests. CI has no route to ollama.tylercash.dev,
     // so every scheduled classify/backfill tick would otherwise spend ~30s retrying
     // and dump a SpringAiRetryAutoConfiguration stack trace. With chat=none the

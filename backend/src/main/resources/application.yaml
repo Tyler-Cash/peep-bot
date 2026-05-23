@@ -1,7 +1,4 @@
 spring.application.name: peepbot-backend
-spring.autoconfigure.exclude:
-  - org.springframework.boot.actuate.autoconfigure.logging.OpenTelemetryLoggingAutoConfiguration
-  - org.springframework.boot.actuate.autoconfigure.logging.otlp.OtlpLoggingAutoConfiguration
 
 dev.tylercash:
   discord:
@@ -150,25 +147,29 @@ management:
     metrics:
       export:
         enabled: true
+  # service.name + per-environment attributes (deployment.environment.name,
+  # service.namespace) live under management.opentelemetry.resource-attributes
+  # so all three signals — metrics, traces, logs — share the same Resource.
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
   otlp:
     metrics:
       export:
         enabled: true
         step: 30s
-        resource-attributes:
-          service.name: ${spring.application.name}
-
-
-otel:
-  instrumentation:
-    # Spring's RestClient already emits an `http get` CLIENT span via Micrometer Observation
-    # (bridged to OTel by micrometer-tracing-bridge-otel). Letting OTel's java-http-client
-    # instrumentation also wrap the underlying JDK HttpClient produces a duplicate child
-    # `GET` span per outbound call. Same dedup pattern as the actuator logging exclusion above.
-    java-http-client:
-      enabled: false
-    http-url-connection:
-      enabled: false
+    tracing:
+      export:
+        enabled: true
+    logging:
+      export:
+        enabled: true
+  tracing:
+    sampling:
+      # Sample every request. The traffic profile (a hobby Discord bot fronted by
+      # traefik) is low enough that head sampling at the default 10% would drop
+      # most incident-relevant traces. Revisit if the trace volume becomes a cost.
+      probability: 1.0
 
 # datasource-micrometer creates spans for CONNECTION, QUERY, FETCH, KEYS. The FETCH
 # (result-set) spans add a child per query that's almost always zero-info — drop them
