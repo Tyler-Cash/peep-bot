@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -36,17 +38,22 @@ public class TextNormalisationService {
     }
 
     public String classify(Event event) {
-        return classify(event, defaultPromptTemplate);
+        return classify(event, defaultPromptTemplate, config.getClassifierTemperature());
     }
 
     /** Overload used by the eval harness to swap prompt variants without restarting. */
     public String classify(Event event, String promptTemplate) {
+        return classify(event, promptTemplate, config.getClassifierTemperature());
+    }
+
+    /** Overload used by the eval harness to sweep temperatures. */
+    public String classify(Event event, String promptTemplate, double temperature) {
         if (!isAvailable()) {
             throw new IllegalStateException("LLM service is not available for classification");
         }
         try {
             String prompt = renderPrompt(promptTemplate, event);
-            String response = callModel(prompt);
+            String response = callModel(prompt, temperature);
             return config.getCategories().stream()
                     .filter(c -> c.equalsIgnoreCase(response))
                     .findFirst()
@@ -82,8 +89,13 @@ public class TextNormalisationService {
                 .replace("{description}", description);
     }
 
-    private String callModel(String prompt) {
-        String response = chatModel.call(prompt).trim();
+    private String callModel(String prompt, double temperature) {
+        var options = OllamaChatOptions.builder()
+                .temperature(Double.valueOf(temperature))
+                .build();
+        var promptObj = new Prompt(prompt, options);
+        String response =
+                chatModel.call(promptObj).getResult().getOutput().getText().trim();
         return response.replaceAll("^[\"'`]|[\"'`]$", "").trim();
     }
 }

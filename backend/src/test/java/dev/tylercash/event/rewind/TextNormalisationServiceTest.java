@@ -34,8 +34,14 @@ class TextNormalisationServiceTest {
     void classify_returnsMatchingCategory() {
         org.springframework.ai.ollama.OllamaChatModel chatModel =
                 org.mockito.Mockito.mock(org.springframework.ai.ollama.OllamaChatModel.class);
-        org.mockito.Mockito.when(chatModel.call(org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("Show");
+        org.springframework.ai.chat.messages.AssistantMessage assistant =
+                new org.springframework.ai.chat.messages.AssistantMessage("Show");
+        org.springframework.ai.chat.model.Generation gen = new org.springframework.ai.chat.model.Generation(assistant);
+        org.springframework.ai.chat.model.ChatResponse chatResponse =
+                new org.springframework.ai.chat.model.ChatResponse(java.util.List.of(gen));
+        org.mockito.Mockito.when(chatModel.call(
+                        org.mockito.ArgumentMatchers.any(org.springframework.ai.chat.prompt.Prompt.class)))
+                .thenReturn(chatResponse);
 
         TextNormalisationService svc = new TextNormalisationService(chatModel, config());
 
@@ -52,8 +58,14 @@ class TextNormalisationServiceTest {
     void classify_returnsUnknownForOffListResponse() {
         org.springframework.ai.ollama.OllamaChatModel chatModel =
                 org.mockito.Mockito.mock(org.springframework.ai.ollama.OllamaChatModel.class);
-        org.mockito.Mockito.when(chatModel.call(org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("Cabaret");
+        org.springframework.ai.chat.messages.AssistantMessage assistant =
+                new org.springframework.ai.chat.messages.AssistantMessage("Cabaret");
+        org.springframework.ai.chat.model.Generation gen = new org.springframework.ai.chat.model.Generation(assistant);
+        org.springframework.ai.chat.model.ChatResponse chatResponse =
+                new org.springframework.ai.chat.model.ChatResponse(java.util.List.of(gen));
+        org.mockito.Mockito.when(chatModel.call(
+                        org.mockito.ArgumentMatchers.any(org.springframework.ai.chat.prompt.Prompt.class)))
+                .thenReturn(chatResponse);
 
         TextNormalisationService svc = new TextNormalisationService(chatModel, config());
 

@@ -22,6 +22,7 @@ dev.tylercash:
     cluster-similarity-threshold: 0.72
     backfill-batch-size: 20
     normalisation-enabled: false
+    classifier-temperature: 0.1  # set after eval harness picks the winner
   tfnsw:
     api-key: "${TFNSW_API_KEY:}"
     alerts-base-url: "https://api.transport.nsw.gov.au"
