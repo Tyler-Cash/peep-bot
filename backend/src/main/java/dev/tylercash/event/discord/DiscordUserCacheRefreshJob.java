@@ -51,9 +51,19 @@ public class DiscordUserCacheRefreshJob {
             return;
         }
 
-        // Group by guild so we can issue one bulk Gateway request per guild.
+        // Group by guild so we can issue one bulk Gateway request per guild. Skip refs
+        // whose snowflake isn't a numeric Discord ID — legacy attendance/event rows
+        // sometimes carry a freeform username here (pre-snowflake-migration data), and
+        // an unguarded parseLong used to crash the entire batch with NumberFormatException.
         Map<Long, List<String>> byGuild = new LinkedHashMap<>();
         for (StaleMemberRef ref : toRefresh) {
+            if (parseSnowflakeOrNull(ref.getSnowflake()) == null) {
+                log.debug(
+                        "Skipping non-numeric snowflake '{}' in guild {} during cache refresh",
+                        ref.getSnowflake(),
+                        ref.getGuildId());
+                continue;
+            }
             byGuild.computeIfAbsent(ref.getGuildId(), k -> new java.util.ArrayList<>())
                     .add(ref.getSnowflake());
         }
@@ -65,6 +75,7 @@ public class DiscordUserCacheRefreshJob {
             List<String> snowflakes = entry.getValue();
             long[] ids = new long[snowflakes.size()];
             for (int i = 0; i < snowflakes.size(); i++) {
+                // Safe: filter above guarantees every snowflake here is numeric.
                 ids[i] = Long.parseLong(snowflakes.get(i));
             }
 
@@ -104,6 +115,15 @@ public class DiscordUserCacheRefreshJob {
 
         if (refreshed > 0) {
             log.debug("Refreshed {} user cache entries", refreshed);
+        }
+    }
+
+    private static Long parseSnowflakeOrNull(String s) {
+        if (s == null || s.isEmpty()) return null;
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }
