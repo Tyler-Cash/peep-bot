@@ -1,0 +1,40 @@
+cases:
+  - { name: "Saturday dinner at the new ramen place", expected: Food }
+  - { name: "Birthday brunch at Bills", expected: Food }
+  - { name: "Italian degustation in Surry Hills", expected: Food }
+
+  - { name: "Dune Part Three at IMAX", expected: Movie }
+  - { name: "Movie night at mine — pizza and Shrek", expected: Movie }
+  - { name: "Sunday cinema double feature", expected: Movie }
+
+  - { name: "Stand-up comedy night with the local crew", expected: Show }
+  - { name: "Live jazz at the Basement", expected: Show }
+  - { name: "Hamilton matinee at the Lyric", expected: Show }
+  - { name: "Indie gig at the Lansdowne", expected: Show }
+
+  - { name: "Board game night at Steve's", expected: Game }
+  - { name: "Escape room — the haunted museum", expected: Game }
+  - { name: "Bowling at King Pin", expected: Game }
+
+  - { name: "Tuesday pub quiz at the Lord Roberts", expected: Trivia }
+  - { name: "Trivia at Harpoon Harry's", expected: Trivia }
+  - { name: "Pop culture trivia night", expected: Trivia }
+
+  - { name: "Royal coastal walk — Bundeena to Otford", expected: Outdoor }
+  - { name: "Sunrise hike at Mount Solitary", expected: Outdoor }
+  - { name: "Beach day at Maroubra", expected: Outdoor }
+  - { name: "Watson's Bay lookout and walk", expected: Outdoor }
+
+  - { name: "Carriageworks Saturday market", expected: Market }
+  - { name: "Eveleigh farmers market and breakfast", expected: Market }
+
+  - { name: "After-work drinks at the Shady Pines", expected: Social }
+  - { name: "Friday pub session at the Vic", expected: Social }
+  - { name: "Picnic at Centennial Park", expected: Social }
+  - { name: "House warming at the new flat", expected: Social }
+
+  - { name: "Long weekend in Jervis Bay", expected: Trip }
+  - { name: "Day trip to the Blue Mountains", expected: Trip }
+  - { name: "Three nights camping at Pretty Beach", expected: Trip }
+
+  - { name: "Group photo shoot at the studio", expected: Other }
