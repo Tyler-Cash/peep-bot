@@ -138,6 +138,14 @@ management:
     web:
       exposure:
         include: [ health, prometheus ]
+  metrics:
+    distribution:
+      # Publish Prometheus-compatible histogram buckets for every Timer.
+      # Without this Micrometer emits only `_count`, `_sum`, and an `le="+Inf"`
+      # bucket, so `histogram_quantile()` returns NaN. Dashboards use p95/p99
+      # on scheduled tasks and lifecycle listener latency — they need buckets.
+      percentiles-histogram:
+        all: true
   prometheus:
     metrics:
       export:
