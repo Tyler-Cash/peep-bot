@@ -31,13 +31,19 @@ export function GalleryCard({ album }: { album: GalleryAlbumDto }) {
           />
         </div>
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={album.thumbnailUrl}
+        // `unoptimized` keeps the browser fetching the BFF route directly so
+        // the user's SESSION cookie flows through and Vercel's `/_next/image`
+        // edge cache (which has no per-user key) stays out of the path. Width
+        // and height reserve layout space so the card doesn't blank on remount.
+        <Image
+          src={album.thumbnailUrl!}
           alt={album.eventName}
-          className="w-full h-full object-cover transition-[transform,opacity] duration-200 group-hover/photo:opacity-40 group-hover/photo:scale-[1.02]"
+          width={400}
+          height={400}
+          unoptimized
           loading="lazy"
           onError={() => setThumbBroken(true)}
+          className="w-full h-full object-cover transition-[transform,opacity] duration-200 group-hover/photo:opacity-40 group-hover/photo:scale-[1.02]"
         />
       )}
       <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-[8px] border-[1.5px] border-ink bg-white/95 px-2 py-[3px] text-[11px] font-extrabold tracking-[-0.01em]">

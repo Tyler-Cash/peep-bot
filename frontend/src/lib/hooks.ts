@@ -157,8 +157,17 @@ export function useRewind(year: number | null) {
 export function useGallery() {
   const guild = useActiveGuild();
   const key = guild ? (["gallery", guild.id] as const) : null;
-  return useSWR<GalleryAlbumDto[]>(key, () =>
-    fetcher<GalleryAlbumDto[]>(`/gallery?guildId=${guild!.id}`),
+  // Gallery contents change rarely (only when new photos drop in event channels).
+  // Skip SWR's default refetch-on-focus / refetch-on-mount churn so tab switches
+  // don't force a fresh list (and a fresh round of thumbnail mounts).
+  return useSWR<GalleryAlbumDto[]>(
+    key,
+    () => fetcher<GalleryAlbumDto[]>(`/gallery?guildId=${guild!.id}`),
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 60_000,
+    },
   );
 }
 
