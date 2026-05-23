@@ -155,7 +155,7 @@ cyclonedxBom {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'e2e'
+        excludeTags 'e2e', 'classifier-eval'
     }
     testLogging {
         exceptionFormat = 'full'
@@ -206,6 +206,26 @@ tasks.register('e2eTest', Test) {
         includeTags 'e2e'
     }
     shouldRunAfter test
+}
+
+tasks.register('classifierEvalTest', Test) {
+    description = 'Sweeps the classifier prompt + temperature against the live Ollama. Requires Ollama running.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'classifier-eval'
+    }
+    shouldRunAfter test
+    // Don't fork — this test serialises against a single Ollama and takes ~40 min as-is.
+    maxParallelForks = 1
+    // Bump heap a bit so Spring context + the long run() don't OOM.
+    minHeapSize = '1g'
+    maxHeapSize = '2g'
+    testLogging {
+        exceptionFormat = 'full'
+        showStackTraces = true
+    }
 }
 
 jacoco {
