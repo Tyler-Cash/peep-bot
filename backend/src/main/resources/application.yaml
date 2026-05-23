@@ -93,6 +93,21 @@ spring:
       cleanup-cron: 0 */10 * * * *
   datasource:
     driverClassName: org.postgresql.Driver
+    hikari:
+      # Sized to cover concurrent demand without queueing under realistic load:
+      #   - eventBusExecutor.maxPoolSize = 16 (each listener's @Transactional
+      #     can hold a connection for the duration of its work)
+      #   - schedulers + retry pollers: ~3 simultaneous
+      #   - web requests: realistic peak for a Discord bot ≪ Tomcat's 200
+      # 25 gives the eventbus full headroom plus ~9 for everything else, which
+      # is well within Postgres's per-connection overhead (~10MB).
+      maximum-pool-size: 25
+      minimum-idle: 5
+      # Default is 30s, which exactly matches the saga integration test's
+      # poll-deadline and turns pool exhaustion into a silent test timeout
+      # rather than a clear SQLException. Tighten to 10s so exhaustion fails
+      # fast and the dispatcher's markFailed path runs while tests still observe it.
+      connection-timeout: 10000
   security:
     oauth2:
       client:
