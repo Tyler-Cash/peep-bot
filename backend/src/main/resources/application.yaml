@@ -1,4 +1,13 @@
 spring.application.name: peepbot-backend
+
+peepbot:
+  classifier:
+    backfill:
+      # Set to the deploy timestamp (ISO-8601 with offset, e.g. 2026-05-23T14:00:00+10:00)
+      # to trigger a one-shot reclassification of every event whose category was assigned
+      # before that time. Leave blank in production after the backfill completes.
+      run-before:
+      pacing: PT1S
 spring.autoconfigure.exclude:
   - org.springframework.boot.actuate.autoconfigure.logging.OpenTelemetryLoggingAutoConfiguration
   - org.springframework.boot.actuate.autoconfigure.logging.otlp.OtlpLoggingAutoConfiguration
