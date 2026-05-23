@@ -185,8 +185,12 @@ jobs:
   # still gets a commit-precise identifier rather than "0.0.1-SNAPSHOT".
   compute-version:
     runs-on: ubuntu-24.04
+    # contents: write is required even in dry-run mode — semantic-release's
+    # verifyConditions step probes `git push --dry-run` against the remote
+    # and the GitHub-Actions bot needs push permission for the probe to pass.
+    # No actual writes happen because we pass dry_run: true to the action.
     permissions:
-      contents: read
+      contents: write
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
