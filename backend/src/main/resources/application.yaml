@@ -9,10 +9,6 @@ peepbot:
       run-before:
       pacing: PT1S
 
-spring.autoconfigure.exclude:
-  - org.springframework.boot.actuate.autoconfigure.logging.OpenTelemetryLoggingAutoConfiguration
-  - org.springframework.boot.actuate.autoconfigure.logging.otlp.OtlpLoggingAutoConfiguration
-
 dev.tylercash:
   discord:
     timeout: 60
