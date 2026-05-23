@@ -12,4 +12,5 @@ public class RewindConfiguration {
     private int backfillBatchSize = 20;
     private java.util.List<String> categories = java.util.List.of(
             "Food", "Social", "Movie", "Show", "Game", "Trivia", "Outdoor", "Market", "Trip", "Other");
+    private double classifierTemperature = 0.1;
 }
