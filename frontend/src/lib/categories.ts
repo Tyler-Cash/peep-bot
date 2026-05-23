@@ -20,10 +20,12 @@ export const CATEGORIES: Record<
     ink: "#3D3A14",
     dot: "#C9A820",
   },
-  comedy: {
+  show: {
     emoji: "🎤",
+    // Reuses the legacy comedy peepo until a dedicated show asset is drawn —
+    // show subsumes comedy + music + theatre.
     image: "/peepos/peepo-comedy.png",
-    label: "comedy",
+    label: "show",
     bg: "#FFB8D9",
     ink: "#5A1F3D",
     dot: "#D14785",
@@ -52,16 +54,50 @@ export const CATEGORIES: Record<
     ink: "#2E1A5A",
     dot: "#7849D4",
   },
+  // Four backend categories without bespoke peepo art yet — fall back to the
+  // generic peepo.png. Replace `image` when dedicated assets land.
+  social: {
+    emoji: "🍻",
+    image: "/peepos/peepo.png",
+    label: "social",
+    bg: "#FFE0A6",
+    ink: "#4D3414",
+    dot: "#C99428",
+  },
+  market: {
+    emoji: "🛍️",
+    image: "/peepos/peepo.png",
+    label: "market",
+    bg: "#F5C8B0",
+    ink: "#5A2818",
+    dot: "#C96838",
+  },
+  trip: {
+    emoji: "🧳",
+    image: "/peepos/peepo.png",
+    label: "trip",
+    bg: "#C0CCFF",
+    ink: "#1A2658",
+    dot: "#4868C9",
+  },
+  other: {
+    emoji: "❔",
+    image: "/peepos/peepo.png",
+    label: "other",
+    bg: "#E5DDD0",
+    ink: "#3D3A33",
+    dot: "#9B958A",
+  },
   unknown: {
     label: "unknown",
     bg: "#E5E7EB",
     ink: "#374151",
     dot: "#9CA3AF",
-  }
+  },
 };
 
 export function categoryMeta(c: Category | string | undefined) {
-  if (!c) return CATEGORIES.trivia;
+  if (!c) return CATEGORIES.other;
   // Direct match (mock enum values)
   if (CATEGORIES[c as Category]) return CATEGORIES[c as Category];
   // Fuzzy match from backend free-form labels (e.g., "trivia night" → trivia)

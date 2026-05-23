@@ -190,7 +190,7 @@ export const store = {
     {
       id: "3",
       name: "standup showcase — six sets in an hour",
-      category: "comedy",
+      category: "show",
       state: "ACTIVE",
       hasPrivateChannel: false,
       completed: false,
@@ -374,7 +374,7 @@ export const rewindStats = (year: number): RewindStats => ({
     { name: "outdoor", eventCount: 18, totalAttendees: 108 },
     { name: "game", eventCount: 16, totalAttendees: 128 },
     { name: "movie", eventCount: 12, totalAttendees: 84 },
-    { name: "comedy", eventCount: 8, totalAttendees: 56 },
+    { name: "show", eventCount: 8, totalAttendees: 56 },
   ],
   topAttendees: seedPeople.map((p, i) => ({
     displayName: p.name,

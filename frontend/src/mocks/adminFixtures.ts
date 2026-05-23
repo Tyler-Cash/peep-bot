@@ -193,7 +193,7 @@ export const adminEventsByGuild: Record<string, AdminEvent[]> = {
       id: "1264012398745671200",
       guildId: "mockguild-1",
       name: "vinyl listening party",
-      category: "music",
+      category: "show",
       state: "CLASSIFY",
       when: "sat may 10 · 8:00pm",
       location: "the toff",

@@ -33,10 +33,14 @@ export type {
 export type Category =
   | "movie"
   | "trivia"
-  | "comedy"
+  | "show"
   | "food"
   | "outdoor"
-  | "game";
+  | "game"
+  | "social"
+  | "market"
+  | "trip"
+  | "other";
 
 // Attendee is frontend-shaped — includes UI-only fields (hue) and treats
 // several fields as required that the backend AttendeeDto marks optional.

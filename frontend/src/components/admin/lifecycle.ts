@@ -299,11 +299,14 @@ export function stageIdForState(state: string | undefined | null): string {
 export const CAT_PALETTE: Record<string, { bg: string; ink: string; emoji: string }> = {
   movie: { bg: "#FFD89B", ink: "#5A2E08", emoji: "🎬" },
   trivia: { bg: "#FFF0A6", ink: "#3D3A14", emoji: "🧠" },
-  comedy: { bg: "#FFB8D9", ink: "#5A1F3D", emoji: "🎤" },
+  show: { bg: "#FFB8D9", ink: "#5A1F3D", emoji: "🎤" },
   food: { bg: "#B8E89A", ink: "#1F4410", emoji: "🍜" },
   outdoor: { bg: "#A5D8E0", ink: "#0E3B44", emoji: "🥾" },
   game: { bg: "#D4B8FF", ink: "#2E1A5A", emoji: "🎲" },
-  music: { bg: "#FFC9B8", ink: "#4A1F0E", emoji: "🎶" },
+  social: { bg: "#FFE0A6", ink: "#4D3414", emoji: "🍻" },
+  market: { bg: "#F5C8B0", ink: "#5A2818", emoji: "🛍️" },
+  trip: { bg: "#C0CCFF", ink: "#1A2658", emoji: "🧳" },
+  other: { bg: "#E5DDD0", ink: "#3D3A33", emoji: "❔" },
   unknown: { bg: "#EEE8DA", ink: "#1A1D18", emoji: "•" },
 };
 
