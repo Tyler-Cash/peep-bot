@@ -1,0 +1,7 @@
+Classify this event into exactly one of the following categories: {categories}. Reply with the category name only. No explanation, no punctuation.
+
+Event name: "{name}"
+Location: "{location}"
+Date: {date}
+Description: "{description}"
+Category:
