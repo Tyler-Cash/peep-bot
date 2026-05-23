@@ -40,6 +40,65 @@ public interface ListenerInvocationRepository extends JpaRepository<ListenerInvo
             @Param("now") Instant now);
 
     /**
+     * Atomically transition a claimed row to SUCCESS. Runs in REQUIRES_NEW for the same reason
+     * {@link #claim} does: markSuccess is invoked from a {@code CompletableFuture.whenComplete}
+     * callback which, when the surrounding {@code @TransactionalEventListener(AFTER_COMMIT)} runs
+     * synchronously and the listener executor completes the future inline (notably the final
+     * EventCompleted/Immich Album Post stage in tests), executes on a thread still inside Spring's
+     * transaction-synchronization processing. A plain {@code JpaRepository.save(detachedRow)} from
+     * that context relied on a merge through whatever persistence-context state was still bound
+     * to the thread and silently failed to land the UPDATE — leaving the row stuck IN_PROGRESS with
+     * {@code lastError=null}. A direct JPQL UPDATE in its own transaction avoids the entire detached
+     * merge path.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(
+            """
+            UPDATE ListenerInvocation i
+            SET i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.SUCCESS,
+                i.lastAttemptAt = :now,
+                i.lastError = null,
+                i.updatedAt = :now
+            WHERE i.eventId = :eventId
+              AND i.lifecycleEventType = :type
+              AND i.listenerName = :listener
+            """)
+    int markSuccess(
+            @Param("eventId") UUID eventId,
+            @Param("type") String type,
+            @Param("listener") String listener,
+            @Param("now") Instant now);
+
+    /**
+     * Atomically transition a claimed row to FAILED, incrementing {@code attempts} and recording
+     * the next retry timestamp. Same REQUIRES_NEW rationale as {@link #markSuccess}. The attempts
+     * column is incremented in SQL so concurrent observers always see a monotonic value.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(
+            """
+            UPDATE ListenerInvocation i
+            SET i.status = dev.tylercash.event.lifecycle.ListenerInvocationStatus.FAILED,
+                i.attempts = i.attempts + 1,
+                i.lastAttemptAt = :now,
+                i.nextRetryAt = :nextRetryAt,
+                i.lastError = :error,
+                i.updatedAt = :now
+            WHERE i.eventId = :eventId
+              AND i.lifecycleEventType = :type
+              AND i.listenerName = :listener
+            """)
+    int markFailed(
+            @Param("eventId") UUID eventId,
+            @Param("type") String type,
+            @Param("listener") String listener,
+            @Param("now") Instant now,
+            @Param("nextRetryAt") Instant nextRetryAt,
+            @Param("error") String error);
+
+    /**
      * Reset IN_PROGRESS rows whose claim is older than {@code cutoff} back to PENDING so the retry
      * poller can re-attempt them. Covers the case where the worker that claimed the row died
      * before markSuccess/markFailed ran (JVM crash, kill -9). Returns the number of rows reset.

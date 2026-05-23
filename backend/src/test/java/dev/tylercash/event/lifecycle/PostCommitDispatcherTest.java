@@ -1,8 +1,11 @@
 package dev.tylercash.event.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,6 +42,9 @@ class PostCommitDispatcherTest {
         repo = mock(ListenerInvocationRepository.class);
         // Default: claim succeeds (1 row updated). Tests that want a contested claim override this.
         when(repo.claim(any(), any(), any(), any())).thenReturn(1);
+        // Default: state-transition UPDATEs succeed (1 row updated).
+        when(repo.markSuccess(any(), any(), any(), any())).thenReturn(1);
+        when(repo.markFailed(any(), any(), any(), any(), any(), any())).thenReturn(1);
         backoff = new BackoffPolicy();
         matchingListener = mock(DurableEventListener.class);
         when(matchingListener.name()).thenReturn("Test Listener");
@@ -64,12 +70,10 @@ class PostCommitDispatcherTest {
 
         dispatcher.onCommit(event);
 
-        ArgumentCaptor<ListenerInvocation> captor = ArgumentCaptor.forClass(ListenerInvocation.class);
-        verify(repo).save(captor.capture());
-        ListenerInvocation saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(ListenerInvocationStatus.SUCCESS);
-        assertThat(saved.getLastError()).isNull();
-        assertThat(saved.getLastAttemptAt()).isCloseTo(Instant.now(), within(5, ChronoUnit.SECONDS));
+        ArgumentCaptor<Instant> nowCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(repo).markSuccess(eq(id), eq("EventCreated"), eq("Test Listener"), nowCaptor.capture());
+        assertThat(nowCaptor.getValue()).isCloseTo(Instant.now(), within(5, ChronoUnit.SECONDS));
+        verify(repo, never()).markFailed(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -86,14 +90,20 @@ class PostCommitDispatcherTest {
 
         dispatcher.onCommit(event);
 
-        ArgumentCaptor<ListenerInvocation> captor = ArgumentCaptor.forClass(ListenerInvocation.class);
-        verify(repo).save(captor.capture());
-        ListenerInvocation saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(ListenerInvocationStatus.FAILED);
-        assertThat(saved.getAttempts()).isEqualTo(1);
-        assertThat(saved.getLastError()).contains("boom");
+        ArgumentCaptor<Instant> nowCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> nextRetryCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(repo)
+                .markFailed(
+                        eq(id),
+                        eq("EventCreated"),
+                        eq("Test Listener"),
+                        nowCaptor.capture(),
+                        nextRetryCaptor.capture(),
+                        contains("boom"));
+        assertThat(nowCaptor.getValue()).isCloseTo(Instant.now(), within(5, ChronoUnit.SECONDS));
         // nextRetryAt should be approximately now + 1 minute (first attempt)
-        assertThat(saved.getNextRetryAt()).isCloseTo(Instant.now().plusSeconds(60), within(5, ChronoUnit.SECONDS));
+        assertThat(nextRetryCaptor.getValue()).isCloseTo(Instant.now().plusSeconds(60), within(5, ChronoUnit.SECONDS));
+        verify(repo, never()).markSuccess(any(), any(), any(), any());
     }
 
     @Test
@@ -105,7 +115,8 @@ class PostCommitDispatcherTest {
 
         dispatcher.invokeOnce(row, event);
 
-        verify(repo, never()).save(any());
+        verify(repo, never()).markSuccess(any(), any(), any(), any());
+        verify(repo, never()).markFailed(any(), any(), any(), any(), any(), any());
         verify(matchingListener, never()).handle(any());
     }
 
@@ -122,7 +133,23 @@ class PostCommitDispatcherTest {
         dispatcher.invokeOnce(row, event);
 
         verify(matchingListener, never()).handle(any());
-        verify(repo, never()).save(any());
+        verify(repo, never()).markSuccess(any(), any(), any(), any());
+        verify(repo, never()).markFailed(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void markSuccess_zeroRowsUpdated_doesNotThrow() throws Exception {
+        // Defensive: if a retry-poller reclaim races with our markSuccess (the row was reset back
+        // to PENDING under us), the UPDATE matches 0 rows. We log and move on rather than retry —
+        // the poller will pick it back up.
+        when(repo.markSuccess(any(), any(), any(), any())).thenReturn(0);
+        UUID id = UUID.randomUUID();
+        EventLifecycleEvent.EventCreated event = new EventLifecycleEvent.EventCreated(id);
+        ListenerInvocation row = pendingRow(id, "EventCreated", "Test Listener");
+        when(repo.findById(new ListenerInvocationId(id, "EventCreated", "Test Listener")))
+                .thenReturn(Optional.of(row));
+
+        assertThatCode(() -> dispatcher.onCommit(event)).doesNotThrowAnyException();
     }
 
     @Test

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -142,33 +143,47 @@ public class PostCommitDispatcher {
     }
 
     private void markSuccess(ListenerInvocation row) {
-        row.setStatus(ListenerInvocationStatus.SUCCESS);
-        row.setLastAttemptAt(Instant.now());
-        row.setLastError(null);
-        saveOutboxRow(row, "markSuccess");
+        Instant now = Instant.now();
+        saveOutboxRow(
+                () -> invocations.markSuccess(
+                        row.getEventId(), row.getLifecycleEventType(), row.getListenerName(), now),
+                row,
+                "markSuccess");
     }
 
     private void markFailed(ListenerInvocation row, String error) {
-        row.setStatus(ListenerInvocationStatus.FAILED);
-        row.setAttempts(row.getAttempts() + 1);
-        row.setLastAttemptAt(Instant.now());
-        row.setNextRetryAt(backoff.nextRetryAt(row.getAttempts()));
-        row.setLastError(error);
-        saveOutboxRow(row, "markFailed");
+        Instant now = Instant.now();
+        int newAttempts = row.getAttempts() + 1;
+        Instant nextRetry = backoff.nextRetryAt(newAttempts);
+        saveOutboxRow(
+                () -> invocations.markFailed(
+                        row.getEventId(), row.getLifecycleEventType(), row.getListenerName(), now, nextRetry, error),
+                row,
+                "markFailed");
         log.warn("Listener '{}' failed for event {}: {}", row.getListenerName(), row.getEventId(), error);
     }
 
     /**
-     * Persist the outbox row with bounded retry. Without this, a transient save failure
-     * (e.g., a Hikari connection blip under heavy contention) silently leaves the row in
-     * its current status — only recovered by the 60s retry poller, which is too slow to
-     * keep tests deterministic.
+     * Run a state-transition UPDATE with bounded retry. The underlying repository methods are
+     * {@code @Transactional(REQUIRES_NEW)} JPQL UPDATEs, so they cannot inherit the persistence
+     * context of whichever thread completed the CompletableFuture — including the case where the
+     * future was completed inline within a parent listener's {@code @TransactionalEventListener
+     * (AFTER_COMMIT)} synchronization. Retry covers transient Hikari blips under contention;
+     * without it, a single connection hiccup would leave the row IN_PROGRESS until the 60s
+     * retry-poller reclaim, which is too slow for tests.
      */
-    private void saveOutboxRow(ListenerInvocation row, String op) {
+    private void saveOutboxRow(IntSupplier update, ListenerInvocation row, String op) {
         RuntimeException last = null;
         for (int attempt = 1; attempt <= OUTBOX_SAVE_MAX_ATTEMPTS; attempt++) {
             try {
-                invocations.save(row);
+                int updated = update.getAsInt();
+                if (updated == 0) {
+                    log.warn(
+                            "Outbox {} updated zero rows for {}/{} — row may have been reclaimed",
+                            op,
+                            row.getEventId(),
+                            row.getListenerName());
+                }
                 return;
             } catch (RuntimeException e) {
                 last = e;
