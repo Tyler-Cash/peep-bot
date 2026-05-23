@@ -58,6 +58,7 @@ bin/
 !.releaserc.json
 !backend/openapi.json
 !backend/src/test/resources/tfnsw/*.json
+!backend/src/test/resources/classifier-eval/*.yaml
 *.csv
 npm_output.log
 ### Worktrees and tooling ###
