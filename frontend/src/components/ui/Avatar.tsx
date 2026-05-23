@@ -1,3 +1,4 @@
+import Image from "next/image";
 import clsx from "@/lib/clsx";
 import { initials, stringToColor } from "@/lib/format";
 import { useEffect, useState } from "react";
@@ -57,24 +58,27 @@ export function Avatar({
     >
       {name ? initials(name) : null}
       {who.avatarUrl && !imgFailed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        // `unoptimized` keeps the browser fetching the BFF route directly so
+        // the user's SESSION cookie flows through and Vercel's `/_next/image`
+        // edge cache (which has no per-user key) stays out of the path.
+        <Image
           src={who.avatarUrl}
           alt={name}
           width={size}
           height={size}
+          unoptimized
           className={clsx(
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-150",
             imgLoaded ? "opacity-100" : "opacity-0",
           )}
           onLoad={() => {
-              if (who.avatarUrl) loadedUrls.add(who.avatarUrl);
-              setImgLoaded(true);
-            }}
+            if (who.avatarUrl) loadedUrls.add(who.avatarUrl);
+            setImgLoaded(true);
+          }}
           onError={() => {
-              if (who.avatarUrl) failedUrls.add(who.avatarUrl);
-              setImgFailed(true);
-            }}
+            if (who.avatarUrl) failedUrls.add(who.avatarUrl);
+            setImgFailed(true);
+          }}
         />
       )}
     </span>

@@ -147,11 +147,17 @@ export function useRecentLocations(limit = 8): string[] {
 export function useRewind(year: number | null) {
   const guild = useActiveGuild();
   const key = guild ? (["rewind", guild.id, year] as const) : null;
-  return useSWR<RewindStats>(key, () => {
-    const params = new URLSearchParams({ guildId: guild!.id });
-    if (year !== null) params.set("year", String(year));
-    return fetcher<RewindStats>(`/rewind?${params.toString()}`);
-  });
+  // Past-year stats are immutable; current-year drifts slowly. Either way the
+  // SWR-default refetch-on-focus is wasted backend work.
+  return useSWR<RewindStats>(
+    key,
+    () => {
+      const params = new URLSearchParams({ guildId: guild!.id });
+      if (year !== null) params.set("year", String(year));
+      return fetcher<RewindStats>(`/rewind?${params.toString()}`);
+    },
+    { revalidateOnFocus: false, revalidateIfStale: false, dedupingInterval: 60_000 },
+  );
 }
 
 export function useGallery() {
@@ -300,7 +306,12 @@ export async function updateEvent(
 export type InstallPermission = { name: string; reason: string };
 
 export function useInstallUrl() {
-  return useSWR<{ url: string; permissions: InstallPermission[] }>("/install-url", fetcher);
+  // The install URL is a static config value — refetching on focus is wasted work.
+  return useSWR<{ url: string; permissions: InstallPermission[] }>(
+    "/install-url",
+    fetcher,
+    { revalidateOnFocus: false, revalidateIfStale: false, dedupingInterval: 5 * 60_000 },
+  );
 }
 
 export type GuildFeatures = {
@@ -311,9 +322,11 @@ export type GuildFeatures = {
 };
 
 export function useGuildFeatures(guildId: string | null | undefined) {
+  // Feature flags only change via admin action. Tab-switch refetches are noise.
   return useSWR<GuildFeatures>(
     guildId ? `/guild/${guildId}/features` : null,
     fetcher,
+    { revalidateOnFocus: false, revalidateIfStale: false, dedupingInterval: 60_000 },
   );
 }
 
