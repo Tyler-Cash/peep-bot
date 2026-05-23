@@ -104,12 +104,27 @@ public class ButtonInteractionListener extends ListenerAdapter {
             return;
         }
 
-        JdaObservations.queue(buttonInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
-
-        executor.execute(() -> Observation.createNotStarted("discord.button-interaction", observationRegistry)
+        // Outer observation that parents both the synchronous defer-edit and the async
+        // offloaded work. Kept alive until the executor task completes so every
+        // JdaObservations.queue call (defer + edit-original) chains under this root,
+        // giving Tempo a single waterfall for the entire interaction.
+        Observation parent = Observation.createNotStarted("discord.button-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "button")
                 .lowCardinalityKeyValue("button.action", mapButtonToActionLabel(customId))
-                .observe(() -> handleButtonInteraction(buttonInteractionEvent, event, customId)));
+                .start();
+        try (Observation.Scope ignored = parent.openScope()) {
+            JdaObservations.queue(buttonInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
+            executor.execute(() -> {
+                try (Observation.Scope inner = parent.openScope()) {
+                    handleButtonInteraction(buttonInteractionEvent, event, customId);
+                } catch (RuntimeException e) {
+                    parent.error(e);
+                    throw e;
+                } finally {
+                    parent.stop();
+                }
+            });
+        }
     }
 
     private void handleButtonInteraction(

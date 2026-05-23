@@ -76,12 +76,26 @@ public class ModalInteractionListener extends ListenerAdapter {
             return;
         }
 
-        JdaObservations.queue(modalInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
-
-        executor.execute(() -> Observation.createNotStarted("discord.modal-interaction", observationRegistry)
+        // Outer observation that parents both the synchronous defer-edit and the async
+        // offloaded work. Kept alive until the executor task completes so every
+        // JdaObservations.queue call inside chains under this root.
+        Observation parent = Observation.createNotStarted("discord.modal-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "modal")
                 .lowCardinalityKeyValue("modal.id", interaction.getModalId())
-                .observe(() -> handleModalInteraction(modalInteractionEvent, event)));
+                .start();
+        try (Observation.Scope ignored = parent.openScope()) {
+            JdaObservations.queue(modalInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
+            executor.execute(() -> {
+                try (Observation.Scope inner = parent.openScope()) {
+                    handleModalInteraction(modalInteractionEvent, event);
+                } catch (RuntimeException e) {
+                    parent.error(e);
+                    throw e;
+                } finally {
+                    parent.stop();
+                }
+            });
+        }
     }
 
     private void handleModalInteraction(@NonNull ModalInteractionEvent modalInteractionEvent, @NonNull Event event) {
