@@ -64,8 +64,8 @@ public class TextNormalisationService {
         }
     }
 
-    /** Package-private so the eval harness can preload templates without a service instance. */
-    static String loadPromptTemplate(String classpathResource) {
+    /** Public so the eval harness (in a sub-package) can preload templates without a service instance. */
+    public static String loadPromptTemplate(String classpathResource) {
         try {
             ClassPathResource resource = new ClassPathResource(classpathResource);
             return new String(FileCopyUtils.copyToByteArray(resource.getInputStream()), StandardCharsets.UTF_8);
