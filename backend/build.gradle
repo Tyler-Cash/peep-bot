@@ -3,7 +3,7 @@ plugins {
     id 'jacoco'
     id 'com.diffplug.spotless' version '8.5.1'
     id 'org.springframework.boot' version '3.5.14'
-    id 'org.cyclonedx.bom' version '2.4.1'
+    id 'org.cyclonedx.bom' version '3.2.4'
     id 'com.google.protobuf' version '0.10.0'
 }
 
@@ -158,8 +158,18 @@ protobuf {
 // holds platform-specific native binaries (e.g. protoc-*-linux-x86_64.exe), not jars.
 // CycloneDX scans every resolvable configuration by default and tries to read each
 // artifact's POM as a zip — which throws ZipException on the native binary. Skip it.
-cyclonedxBom {
+// In cyclonedx-gradle-plugin v3 the `skipConfigs` property moved from the default
+// `cyclonedxBom` (now an aggregator) to `cyclonedxDirectBom` (the single-project task).
+cyclonedxDirectBom {
     skipConfigs = ['protobufToolsLocator_protoc']
+}
+
+// v3 changed the default output location from build/reports/application.cdx.{json,xml}
+// to build/reports/cyclonedx/bom.{json,xml}. Pin the legacy path so CI's Grype scan
+// (which reads backend/build/reports/application.cdx.json) keeps working.
+cyclonedxBom {
+    jsonOutput = layout.buildDirectory.file('reports/application.cdx.json')
+    xmlOutput = layout.buildDirectory.file('reports/application.cdx.xml')
 }
 
 tasks.named('test') {
