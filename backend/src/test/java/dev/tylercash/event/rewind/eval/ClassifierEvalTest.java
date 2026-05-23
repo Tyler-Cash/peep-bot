@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Sweeps prompt × temperature combinations against the live Ollama, writes a markdown report to
@@ -24,6 +25,8 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest(classes = PeepBotApplication.class)
 @ActiveProfiles({"local", "docker"})
+@TestPropertySource(
+        properties = {"spring.ai.ollama.chat.enabled=true", "dev.tylercash.rewind.normalisation-enabled=true"})
 @Tag("classifier-eval")
 class ClassifierEvalTest {
 
