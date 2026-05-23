@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import net.javacrumbs.shedlock.core.LockConfiguration;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.core.SimpleLock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -41,6 +44,7 @@ class TfnswOrchestratorTest {
     private GuildRepository guilds;
     private PlacesDetailsClient places;
     private GtfsStopsIndex stopsIndex;
+    private LockProvider lockProvider;
     private TfnswOrchestrator sut;
 
     @BeforeEach
@@ -57,8 +61,11 @@ class TfnswOrchestratorTest {
         places = mock(PlacesDetailsClient.class);
         stopsIndex = mock(GtfsStopsIndex.class);
         when(stopsIndex.findNearest(anyDouble(), anyDouble(), anyDouble())).thenReturn(Optional.empty());
+        lockProvider = mock(LockProvider.class);
+        // Default to "lock acquired" so existing tests don't have to think about it.
+        when(lockProvider.lock(any(LockConfiguration.class))).thenReturn(Optional.of(mock(SimpleLock.class)));
         sut = new TfnswOrchestrator(
-                cfg, alerts, traffic, filter, reporter, snapshots, events, guilds, places, stopsIndex);
+                cfg, alerts, traffic, filter, reporter, snapshots, events, guilds, places, stopsIndex, lockProvider);
         when(alerts.fetchSydneyTrains()).thenReturn(List.of());
         when(alerts.fetchSydneyMetro()).thenReturn(List.of());
         when(alerts.fetchTripReplacements()).thenReturn(List.of());
@@ -70,6 +77,7 @@ class TfnswOrchestratorTest {
         Event e = new Event();
         e.setId(id);
         e.setServerId(guildId);
+        e.setChannelId(424242L);
         e.setLocationPlaceId(placeId);
         e.setDateTime(ZonedDateTime.now(ZoneId.of("Australia/Sydney")).plusDays(7));
         e.setName("Evt");

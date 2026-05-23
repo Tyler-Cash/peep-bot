@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ public class DiscordUserCacheService {
 
     /** Upsert global user info (username) and per-guild info (displayName, avatar). */
     @Transactional
+    @CacheEvict(value = "guildMembership", key = "#snowflake + ':' + #guildId")
     public void upsertUser(String snowflake, String displayName, String username, String avatarUrl, long guildId) {
         upsertGlobal(snowflake, username);
 
@@ -57,6 +59,7 @@ public class DiscordUserCacheService {
 
     /** Remove a single member's row for a guild (e.g. on GuildMemberRemoveEvent). */
     @Transactional
+    @CacheEvict(value = "guildMembership", key = "#snowflake + ':' + #guildId")
     public void removeMember(long guildId, String snowflake) {
         if (snowflake == null || snowflake.isBlank()) {
             return;
@@ -69,6 +72,7 @@ public class DiscordUserCacheService {
      * No-op if the live set is empty (avoids wiping a guild when a load returns nothing).
      */
     @Transactional
+    @CacheEvict(value = "guildMembership", allEntries = true)
     public int pruneMembersNotIn(long guildId, Set<String> liveSnowflakes) {
         if (liveSnowflakes == null || liveSnowflakes.isEmpty()) {
             return 0;
@@ -78,6 +82,7 @@ public class DiscordUserCacheService {
 
     /** Register a guild membership without overwriting an existing displayName/avatar. */
     @Transactional
+    @CacheEvict(value = "guildMembership", key = "#snowflake + ':' + #guildId")
     public void registerIfMissing(String snowflake, String displayName, String username, long guildId) {
         upsertGlobal(snowflake, username);
 

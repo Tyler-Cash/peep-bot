@@ -7,6 +7,7 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.places.PlacesDetailsClient;
 import dev.tylercash.event.places.PlacesDetailsClient.Coords;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -20,6 +21,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.LockConfiguration;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.core.SimpleLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +49,15 @@ public class TfnswOrchestrator {
     private final GuildRepository guilds;
     private final PlacesDetailsClient placesDetails;
     private final GtfsStopsIndex stopsIndex;
+    private final LockProvider lockProvider;
+
+    /**
+     * Maximum time we hold the per-channel ShedLock. Long enough for a slow Discord
+     * post + GTFS-R fetch, short enough that a dead worker can't deadlock the channel
+     * for very long. The {@code lockAtLeastFor} is zero — we always release in
+     * {@code finally}, so the lock disappears as soon as the work completes.
+     */
+    private static final Duration TFNSW_LOCK_AT_MOST_FOR = Duration.ofMinutes(5);
 
     @Transactional
     public void process(UUID eventId, boolean isWeekBeforeRecheck) {
@@ -54,6 +67,33 @@ public class TfnswOrchestrator {
         Guild guild = guilds.findById(event.getServerId()).orElse(null);
         if (guild == null || !guild.isTfnswEnabled()) return;
 
+        // Serialise per-channel: EventCreated listener and the daily week-before poller
+        // both reach this method, and the snapshot-based dedup is read-modify-write so two
+        // overlapping runs against the same channel can post the same item twice.
+        // Skipping when the lock is held is correct: the EventCreated path is a durable
+        // listener that re-fires, and the week-before poller runs again tomorrow.
+        Long channelId = event.getChannelId();
+        if (channelId == null || channelId == 0L) {
+            log.debug("Skipping TfNSW for event {} — no channel set", eventId);
+            return;
+        }
+        LockConfiguration lockCfg =
+                new LockConfiguration(Instant.now(), "tfnsw:" + channelId, TFNSW_LOCK_AT_MOST_FOR, Duration.ZERO);
+        Optional<SimpleLock> lock = lockProvider.lock(lockCfg);
+        if (lock.isEmpty()) {
+            // Throwing surfaces as a retry on the durable-listener path; the poller's
+            // loop catches and logs, so it'll get another chance on the next daily run.
+            throw new TfnswChannelBusyException(channelId);
+        }
+        try {
+            processLocked(event, isWeekBeforeRecheck);
+        } finally {
+            lock.get().unlock();
+        }
+    }
+
+    private void processLocked(Event event, boolean isWeekBeforeRecheck) {
+        UUID eventId = event.getId();
         Coords coords = resolveCoords(event);
         if (coords == null) {
             log.debug("Skipping TfNSW for event {} — no coords resolvable", eventId);

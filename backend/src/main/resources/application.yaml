@@ -66,7 +66,7 @@ spring:
     lazy-initialization: true
   cache:
     type: caffeine
-    cache-names: activeEvents,eventDetail,openContracts,rewind
+    cache-names: activeEvents,eventDetail,openContracts,rewind,guild,guildMembership
     caffeine:
       spec: maximumSize=500,expireAfterWrite=120s
   ai:
@@ -146,6 +146,12 @@ otel:
       enabled: false
     http-url-connection:
       enabled: false
+
+# datasource-micrometer creates spans for CONNECTION, QUERY, FETCH, KEYS. The FETCH
+# (result-set) spans add a child per query that's almost always zero-info — drop them
+# to keep the trace waterfall readable and reduce Tempo storage.
+jdbc:
+  includes: CONNECTION,QUERY
 
 resilience4j:
   circuitbreaker:
