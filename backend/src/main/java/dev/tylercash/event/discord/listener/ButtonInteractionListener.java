@@ -8,6 +8,7 @@ import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.DiscordUtil;
 import dev.tylercash.event.discord.EmbedService;
+import dev.tylercash.event.discord.JdaObservations;
 import dev.tylercash.event.event.AttendanceService;
 import dev.tylercash.event.event.EventService;
 import dev.tylercash.event.event.model.AttendanceStatus;
@@ -134,10 +135,10 @@ public class ButtonInteractionListener extends ListenerAdapter {
             }
 
             eventServiceProvider.getObject().populateAttendance(event);
-            buttonInteractionEvent
-                    .getHook()
-                    .editOriginalEmbeds(embedService.getMessage(event, clock))
-                    .queue();
+            JdaObservations.queue(
+                    buttonInteractionEvent.getHook().editOriginalEmbeds(embedService.getMessage(event, clock)),
+                    "discord.edit-original",
+                    observationRegistry);
 
             if (resolvedStatus != null) {
                 try {
