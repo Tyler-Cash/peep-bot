@@ -157,7 +157,7 @@ class ModalInteractionListenerTest {
 
         verify(evt).reply("Attendance is locked for this event.");
         verify(reply).setEphemeral(true);
-        verify(reply).queue();
+        verify(reply).queue(any(), any());
         verifyNoInteractions(attendanceService);
     }
 
@@ -178,7 +178,7 @@ class ModalInteractionListenerTest {
 
         verify(evt).reply("Attendance is locked for this event.");
         verify(reply).setEphemeral(true);
-        verify(reply).queue();
+        verify(reply).queue(any(), any());
         verifyNoInteractions(attendanceService);
         verify(eventService, never()).populateAttendance(any());
     }

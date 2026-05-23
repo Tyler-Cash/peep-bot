@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,23 +17,27 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class GuildCommandSyncService {
     private final FeatureFlagService featureFlagService;
+    private final ObservationRegistry observationRegistry;
 
     public void syncCommands(net.dv8tion.jda.api.entities.Guild jdaGuild) {
         long id = jdaGuild.getIdLong();
         List<CommandData> commands = buildCommandsFor(id);
         log.info("Syncing {} commands to guild '{}' ({})", commands.size(), jdaGuild.getName(), id);
-        jdaGuild.updateCommands()
-                .addCommands(commands)
-                .queue(
-                        ok -> log.debug("Synced {} commands for guild {}", commands.size(), id),
-                        err -> log.error("Failed to sync commands for guild {}: {}", id, err.getMessage(), err));
+        JdaObservations.queue(
+                jdaGuild.updateCommands().addCommands(commands),
+                "discord.commands.sync-guild.queue",
+                observationRegistry,
+                ok -> log.debug("Synced {} commands for guild {}", commands.size(), id),
+                err -> log.error("Failed to sync commands for guild {}: {}", id, err.getMessage(), err));
     }
 
     public void clearGlobalCommands(JDA jda) {
-        jda.updateCommands()
-                .queue(
-                        ok -> log.info("Cleared global Discord commands"),
-                        err -> log.error("Failed to clear global commands: {}", err.getMessage(), err));
+        JdaObservations.queue(
+                jda.updateCommands(),
+                "discord.commands.clear-global.queue",
+                observationRegistry,
+                ok -> log.info("Cleared global Discord commands"),
+                err -> log.error("Failed to clear global commands: {}", err.getMessage(), err));
     }
 
     private List<CommandData> buildCommandsFor(long guildId) {

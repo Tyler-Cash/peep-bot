@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class DiscordMessageService {
     private final JDA jda;
+    private final ObservationRegistry observationRegistry;
 
     @CircuitBreaker(name = "discord")
     @Observed(name = "discord.message.send")
@@ -36,7 +38,7 @@ public class DiscordMessageService {
             builder.addComponents(components);
         }
         Message message = channel.sendMessage(builder.build()).complete();
-        message.pin().queue();
+        JdaObservations.queue(message.pin(), "discord.message.pin.queue", observationRegistry);
         return message;
     }
 
@@ -56,7 +58,7 @@ public class DiscordMessageService {
         Message message = channel.sendMessage(builder.build())
                 .addFiles(FileUpload.fromData(data, filename))
                 .complete();
-        message.pin().queue();
+        JdaObservations.queue(message.pin(), "discord.message.pin.queue", observationRegistry);
         return message;
     }
 
@@ -65,20 +67,25 @@ public class DiscordMessageService {
             long channelId, long messageId, Collection<MessageEmbed> embeds, byte[] data, String filename) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel == null) return;
-        channel.editMessageById(
+        JdaObservations.queue(
+                channel.editMessageById(
                         messageId,
                         new MessageEditBuilder()
                                 .setEmbeds(embeds)
                                 .setFiles(FileUpload.fromData(data, filename))
-                                .build())
-                .queue();
+                                .build()),
+                "discord.message.edit-embed-with-attachment.queue",
+                observationRegistry);
     }
 
     @Observed(name = "discord.message.edit-embeds")
     public void editEmbeds(long channelId, long messageId, Collection<MessageEmbed> embeds) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel == null) return;
-        channel.editMessageEmbedsById(messageId, embeds).queue();
+        JdaObservations.queue(
+                channel.editMessageEmbedsById(messageId, embeds),
+                "discord.message.edit-embeds.queue",
+                observationRegistry);
     }
 
     @Observed(name = "discord.message.edit-components")
@@ -86,15 +93,23 @@ public class DiscordMessageService {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
         if (channel == null) return;
         if (components == null || components.isEmpty()) {
-            channel.editMessageComponentsById(messageId).queue();
+            JdaObservations.queue(
+                    channel.editMessageComponentsById(messageId),
+                    "discord.message.clear-components.queue",
+                    observationRegistry);
         } else {
-            channel.editMessageComponentsById(messageId, components).queue();
+            JdaObservations.queue(
+                    channel.editMessageComponentsById(messageId, components),
+                    "discord.message.edit-components.queue",
+                    observationRegistry);
         }
     }
 
     @Observed(name = "discord.message.delete")
     public void deleteMessage(long channelId, long messageId) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
-        if (channel != null) channel.deleteMessageById(messageId).queue();
+        if (channel != null)
+            JdaObservations.queue(
+                    channel.deleteMessageById(messageId), "discord.message.delete.queue", observationRegistry);
     }
 }

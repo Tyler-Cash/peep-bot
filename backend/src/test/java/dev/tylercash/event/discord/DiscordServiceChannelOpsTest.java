@@ -72,7 +72,8 @@ class DiscordServiceChannelOpsTest {
                 roleService,
                 authService,
                 mock(GuildEmojiResolver.class),
-                mock(GuildRepository.class));
+                mock(GuildRepository.class),
+                io.micrometer.observation.ObservationRegistry.NOOP);
     }
 
     private Event eventAt(ZonedDateTime dt, String name) {

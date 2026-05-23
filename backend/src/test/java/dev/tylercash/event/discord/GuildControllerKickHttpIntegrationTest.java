@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -79,7 +80,7 @@ class GuildControllerKickHttpIntegrationTest extends AbstractHttpIntegrationTest
                         .content("{\"confirmGuildName\":\"  porch pigeons  \"}"))
                 .andExpect(status().isNoContent());
 
-        verify(leaveAction).queue();
+        verify(leaveAction).queue(any(), any());
     }
 
     @Test

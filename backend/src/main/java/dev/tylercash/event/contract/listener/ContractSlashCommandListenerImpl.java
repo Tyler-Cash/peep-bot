@@ -8,6 +8,8 @@ import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.discord.DiscordAuthService;
 import dev.tylercash.event.discord.Feature;
 import dev.tylercash.event.discord.FeatureFlagService;
+import dev.tylercash.event.discord.JdaObservations;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -29,14 +31,17 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
     private final DiscordAuthService authService;
     private final ContractConfiguration contractConfig;
     private final FeatureFlagService featureFlagService;
+    private final ObservationRegistry observationRegistry;
 
     @Override
     public void handleSlashCommand(SlashCommandInteractionEvent event) {
         if (event.getGuild() == null
                 || !featureFlagService.isEnabled(event.getGuild().getIdLong(), Feature.CONTRACTS)) {
-            event.reply("Prediction contracts are not enabled in this server.")
-                    .setEphemeral(true)
-                    .queue();
+            JdaObservations.queue(
+                    event.reply("Prediction contracts are not enabled in this server.")
+                            .setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
@@ -55,21 +60,26 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                 case "resolve" -> handleResolve(event);
                 case "cancel" -> handleCancel(event);
                 case "list" -> handleList(event);
-                default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
+                default -> JdaObservations.queue(
+                        event.reply("Unknown subcommand.").setEphemeral(true),
+                        "discord.reply.queue",
+                        observationRegistry);
             }
         }
     }
 
     private void handleBalance(SlashCommandInteractionEvent event) {
         long balance = balanceService.getBalance(event.getUser().getId());
-        event.reply("Your balance: **" + balance + " "
-                        + contractConfig.getEmoji().getCoin() + " peep coins**")
-                .setEphemeral(true)
-                .queue();
+        JdaObservations.queue(
+                event.reply("Your balance: **" + balance + " "
+                                + contractConfig.getEmoji().getCoin() + " peep coins**")
+                        .setEphemeral(true),
+                "discord.reply.queue",
+                observationRegistry);
     }
 
     private void handleCreate(SlashCommandInteractionEvent event) {
-        event.deferReply(true).queue();
+        JdaObservations.queue(event.deferReply(true), "discord.defer-reply.queue", observationRegistry);
         try {
             String title = event.getOption("title").getAsString();
 
@@ -89,10 +99,16 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
             contractService.createContract(guildId, userId, title, null, outcomeLabels);
 
             String emoji = contractConfig.getEmoji().getSuccess();
-            event.getHook().sendMessage(emoji + " Prediction contract created!").queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage(emoji + " Prediction contract created!"),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         } catch (Exception e) {
             log.warn("Contract creation failed", e);
-            event.getHook().sendMessage("\u274C Error: " + e.getMessage()).queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage("❌ Error: " + e.getMessage()),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         }
     }
 
@@ -102,11 +118,14 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
         String amountStr = getOption(event, "amount");
 
         if (contractIdStr == null || outcomeIdStr == null || amountStr == null) {
-            event.reply("Missing required options.").setEphemeral(true).queue();
+            JdaObservations.queue(
+                    event.reply("Missing required options.").setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
-        event.deferReply(true).queue();
+        JdaObservations.queue(event.deferReply(true), "discord.defer-reply.queue", observationRegistry);
         try {
             Contract contract =
                     contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
@@ -125,32 +144,39 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                             "Trade placed! %s · Spent **%d** of **%d** %s (rounding to nearest coin)",
                             emoji, actualCost, amount, contractConfig.getEmoji().getCoin())
                     : "Trade placed! " + emoji;
-            event.getHook().sendMessage(reply).queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage(reply), "discord.hook.send-message.queue", observationRegistry);
         } catch (Exception e) {
             log.warn("Trade failed", e);
-            event.getHook()
-                    .sendMessage("Whoops, something went wrong. Please try again.")
-                    .queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage("Whoops, something went wrong. Please try again."),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         }
     }
 
     private void handleResolve(SlashCommandInteractionEvent event) {
         if (!authService.hasRole(
                 event.getGuild().getIdLong(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
-            event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
-                    .setEphemeral(true)
-                    .queue();
+            JdaObservations.queue(
+                    event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
+                            .setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
         String contractIdStr = getOption(event, "contract");
         String outcomeIdStr = getOption(event, "outcome");
         if (contractIdStr == null || outcomeIdStr == null) {
-            event.reply("Missing required options.").setEphemeral(true).queue();
+            JdaObservations.queue(
+                    event.reply("Missing required options.").setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
-        event.deferReply(true).queue();
+        JdaObservations.queue(event.deferReply(true), "discord.defer-reply.queue", observationRegistry);
         try {
             Contract contract =
                     contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
@@ -161,77 +187,88 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                     .orElseThrow(() -> new IllegalArgumentException("Outcome not found: " + outcomeIdStr));
             contractService.resolveContract(
                     contract.getId(), outcomeId, event.getUser().getId());
-            event.getHook()
-                    .sendMessage(contractConfig.getEmoji().getSuccess() + " Contract resolved!")
-                    .queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage(contractConfig.getEmoji().getSuccess() + " Contract resolved!"),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         } catch (Exception e) {
             log.warn("Resolve failed", e);
-            event.getHook()
-                    .sendMessage("Whoops, something went wrong. Please try again.")
-                    .queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage("Whoops, something went wrong. Please try again."),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         }
     }
 
     private void handleCancel(SlashCommandInteractionEvent event) {
         if (!authService.hasRole(
                 event.getGuild().getIdLong(), event.getUser().getIdLong(), contractConfig.getResolverRole())) {
-            event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
-                    .setEphemeral(true)
-                    .queue();
+            JdaObservations.queue(
+                    event.reply("You don't have the **" + contractConfig.getResolverRole() + "** role.")
+                            .setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
         String contractIdStr = getOption(event, "contract");
         if (contractIdStr == null) {
-            event.reply("Missing contract ID.").setEphemeral(true).queue();
+            JdaObservations.queue(
+                    event.reply("Missing contract ID.").setEphemeral(true), "discord.reply.queue", observationRegistry);
             return;
         }
 
-        event.deferReply(true).queue();
+        JdaObservations.queue(event.deferReply(true), "discord.defer-reply.queue", observationRegistry);
         try {
             Contract contract =
                     contractService.findOpenContractByTitle(event.getGuild().getIdLong(), contractIdStr);
             contractService.cancelContract(contract.getId(), event.getUser().getId());
-            event.getHook()
-                    .sendMessage("\u274C Contract cancelled. All trades refunded.")
-                    .queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage("❌ Contract cancelled. All trades refunded."),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         } catch (Exception e) {
             log.warn("Cancel failed", e);
-            event.getHook()
-                    .sendMessage("Whoops, something went wrong. Please try again.")
-                    .queue();
+            JdaObservations.queue(
+                    event.getHook().sendMessage("Whoops, something went wrong. Please try again."),
+                    "discord.hook.send-message.queue",
+                    observationRegistry);
         }
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
         List<Contract> open = contractService.listOpenContracts(event.getGuild().getIdLong());
         if (open.isEmpty()) {
-            event.reply("No open prediction contracts.").setEphemeral(true).queue();
+            JdaObservations.queue(
+                    event.reply("No open prediction contracts.").setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
         StringBuilder sb = new StringBuilder("**Open prediction contracts:**\n");
         for (Contract c : open) {
-            sb.append("\u2022 **")
+            sb.append("• **")
                     .append(c.getTitle())
-                    .append("** \u2014 ID: `")
+                    .append("** — ID: `")
                     .append(c.getId())
                     .append("`\n");
             for (ContractOutcome o : c.getOutcomes()) {
-                sb.append("  \u00B7 ")
+                sb.append("  · ")
                         .append(o.getLabel())
-                        .append(" \u2014 outcome ID: `")
+                        .append(" — outcome ID: `")
                         .append(o.getId())
                         .append("`\n");
             }
         }
-        event.reply(sb.toString()).setEphemeral(true).queue();
+        JdaObservations.queue(
+                event.reply(sb.toString()).setEphemeral(true), "discord.reply.queue", observationRegistry);
     }
 
     @Override
     public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
         if (event.getGuild() == null
                 || !featureFlagService.isEnabled(event.getGuild().getIdLong(), Feature.CONTRACTS)) {
-            event.replyChoices(List.of()).queue();
+            JdaObservations.queue(event.replyChoices(List.of()), "discord.reply-choices.queue", observationRegistry);
             return;
         }
         long guildId = event.getGuild().getIdLong();
@@ -243,13 +280,14 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                     .limit(25)
                     .map(s -> new Choice(s.title(), s.title()))
                     .toList();
-            event.replyChoices(choices).queue();
+            JdaObservations.queue(event.replyChoices(choices), "discord.reply-choices.queue", observationRegistry);
         } else if ("outcome".equals(focused.getName())) {
             String contractTitle = event.getOption("contract") != null
                     ? event.getOption("contract").getAsString()
                     : null;
             if (contractTitle == null || contractTitle.isBlank()) {
-                event.replyChoices(List.of()).queue();
+                JdaObservations.queue(
+                        event.replyChoices(List.of()), "discord.reply-choices.queue", observationRegistry);
                 return;
             }
             try {
@@ -258,12 +296,13 @@ public class ContractSlashCommandListenerImpl implements ContractSlashCommandLis
                                 .filter(o -> o.getLabel().toLowerCase().contains(typed))
                                 .map(o -> new Choice(o.getLabel(), o.getLabel()))
                                 .toList();
-                event.replyChoices(choices).queue();
+                JdaObservations.queue(event.replyChoices(choices), "discord.reply-choices.queue", observationRegistry);
             } catch (Exception e) {
-                event.replyChoices(List.of()).queue();
+                JdaObservations.queue(
+                        event.replyChoices(List.of()), "discord.reply-choices.queue", observationRegistry);
             }
         } else {
-            event.replyChoices(List.of()).queue();
+            JdaObservations.queue(event.replyChoices(List.of()), "discord.reply-choices.queue", observationRegistry);
         }
     }
 

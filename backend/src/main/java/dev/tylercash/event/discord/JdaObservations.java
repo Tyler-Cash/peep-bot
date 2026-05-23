@@ -2,6 +2,7 @@ package dev.tylercash.event.discord;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import java.util.function.Consumer;
 import net.dv8tion.jda.api.requests.RestAction;
 
 /**
@@ -30,13 +31,40 @@ public final class JdaObservations {
      * an {@code Observation.observe(...)} lambda or an offloaded listener body.
      */
     public static <T> void queue(RestAction<T> action, String spanName, ObservationRegistry registry) {
+        queue(action, spanName, registry, null, null);
+    }
+
+    /**
+     * Variant for call sites that already pass success / failure callbacks to
+     * {@code .queue(...)}. The user callbacks are invoked inside the observation scope so
+     * any further tracing they emit (e.g. a follow-up {@code sendMessage}) chains under
+     * the same span.
+     */
+    public static <T> void queue(
+            RestAction<T> action,
+            String spanName,
+            ObservationRegistry registry,
+            Consumer<? super T> onSuccess,
+            Consumer<? super Throwable> onError) {
         Observation observation =
                 Observation.createNotStarted(spanName, registry).start();
         try (Observation.Scope ignored = observation.openScope()) {
-            action.queue(success -> observation.stop(), error -> {
-                observation.error(error);
-                observation.stop();
-            });
+            action.queue(
+                    result -> {
+                        try (Observation.Scope inner = observation.openScope()) {
+                            if (onSuccess != null) onSuccess.accept(result);
+                        } finally {
+                            observation.stop();
+                        }
+                    },
+                    error -> {
+                        try (Observation.Scope inner = observation.openScope()) {
+                            observation.error(error);
+                            if (onError != null) onError.accept(error);
+                        } finally {
+                            observation.stop();
+                        }
+                    });
         }
     }
 }

@@ -69,7 +69,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
         this.executor = executor;
     }
 
-    private static void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
+    private void replyWithModal(@NonNull ButtonInteractionEvent buttonInteractionEvent) {
         TextInput plusOne = TextInput.create(PLUS_ONE_ID, TextInputStyle.SHORT)
                 .setPlaceholder(MODAL_PLACEHOLDER)
                 .setRequiredRange(3, 20)
@@ -78,7 +78,8 @@ public class ButtonInteractionListener extends ListenerAdapter {
         Modal modal = Modal.create(PLUS_ONE_ID, PLUS_ONE)
                 .addComponents(Label.of(PLUS_ONE, plusOne))
                 .build();
-        buttonInteractionEvent.replyModal(modal).queue();
+        JdaObservations.queue(
+                buttonInteractionEvent.replyModal(modal), "discord.reply-modal.queue", observationRegistry);
     }
 
     @Override
@@ -89,10 +90,12 @@ public class ButtonInteractionListener extends ListenerAdapter {
             return;
         }
         if (eventServiceProvider.getObject().isCompleted(event)) {
-            buttonInteractionEvent
-                    .reply("Attendance is locked for this event.")
-                    .setEphemeral(true)
-                    .queue();
+            JdaObservations.queue(
+                    buttonInteractionEvent
+                            .reply("Attendance is locked for this event.")
+                            .setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
         String customId = buttonInteractionEvent.getButton().getCustomId();
@@ -101,7 +104,7 @@ public class ButtonInteractionListener extends ListenerAdapter {
             return;
         }
 
-        buttonInteractionEvent.deferEdit().queue();
+        JdaObservations.queue(buttonInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
 
         executor.execute(() -> Observation.createNotStarted("discord.button-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "button")

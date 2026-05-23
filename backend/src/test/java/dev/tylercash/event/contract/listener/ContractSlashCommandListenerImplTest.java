@@ -46,7 +46,12 @@ class ContractSlashCommandListenerImplTest {
         featureFlagService = mock(FeatureFlagService.class);
         when(featureFlagService.isEnabled(anyLong(), eq(Feature.CONTRACTS))).thenReturn(true);
         listener = new ContractSlashCommandListenerImpl(
-                contractService, balanceService, authService, contractConfig, featureFlagService);
+                contractService,
+                balanceService,
+                authService,
+                contractConfig,
+                featureFlagService,
+                io.micrometer.observation.ObservationRegistry.NOOP);
 
         event = mock(SlashCommandInteractionEvent.class);
         deferAction = mock(ReplyCallbackAction.class);

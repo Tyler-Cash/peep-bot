@@ -1,5 +1,6 @@
 package dev.tylercash.event.discord;
 
+import io.micrometer.observation.ObservationRegistry;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.awt.Color;
@@ -30,6 +31,7 @@ public class GuildController {
     private final GuildMembershipService guildMembershipService;
     private final GuildRepository guildRepository;
     private final DiscordAuthService discordAuthService;
+    private final ObservationRegistry observationRegistry;
 
     @GetMapping
     public List<GuildDto> getGuilds(@AuthenticationPrincipal OAuth2User principal) {
@@ -64,7 +66,7 @@ public class GuildController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "guild name confirmation does not match");
         }
         log.info("AUDIT user {} kicking peepbot from guild {} ({})", snowflake, guildIdLong, expected);
-        jdaGuild.leave().queue();
+        JdaObservations.queue(jdaGuild.leave(), "discord.guild.leave.queue", observationRegistry);
         return ResponseEntity.noContent().build();
     }
 

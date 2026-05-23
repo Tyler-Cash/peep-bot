@@ -67,14 +67,16 @@ public class ModalInteractionListener extends ListenerAdapter {
         Event event = eventRepository.findByChannelId(
                 modalInteractionEvent.getChannel().getIdLong());
         if (event == null || eventServiceProvider.getObject().isCompleted(event)) {
-            modalInteractionEvent
-                    .reply("Attendance is locked for this event.")
-                    .setEphemeral(true)
-                    .queue();
+            JdaObservations.queue(
+                    modalInteractionEvent
+                            .reply("Attendance is locked for this event.")
+                            .setEphemeral(true),
+                    "discord.reply.queue",
+                    observationRegistry);
             return;
         }
 
-        modalInteractionEvent.deferEdit().queue();
+        JdaObservations.queue(modalInteractionEvent.deferEdit(), "discord.defer-edit.queue", observationRegistry);
 
         executor.execute(() -> Observation.createNotStarted("discord.modal-interaction", observationRegistry)
                 .lowCardinalityKeyValue("interaction.type", "modal")

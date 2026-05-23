@@ -13,6 +13,7 @@ import dev.tylercash.event.event.model.NotificationType;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
@@ -60,6 +61,7 @@ public class DiscordService {
     private final DiscordAuthService discordAuthService;
     private final GuildEmojiResolver guildEmojiResolver;
     private final GuildRepository guildRepository;
+    private final ObservationRegistry observationRegistry;
 
     @Observed(name = "discord.create-channel")
     public TextChannel createEventChannel(Event event) {
@@ -129,7 +131,7 @@ public class DiscordService {
      * still works without it.
      */
     private void pinSilently(Message message, String description) {
-        message.pin().queue(null, t -> {
+        JdaObservations.queue(message.pin(), "discord.message.pin-silently.queue", observationRegistry, null, t -> {
             if (t instanceof InsufficientPermissionException) {
                 log.warn(
                         "Skipping pin of {} in #{}: bot lacks PIN_MESSAGES.",
@@ -279,7 +281,10 @@ public class DiscordService {
             for (TextChannel orphan : withoutEvent) {
                 if (orphan.getTimeCreated().isBefore(cutoff)) {
                     log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
-                    orphan.getManager().setParent(archiveCategory).sync().queue();
+                    JdaObservations.queue(
+                            orphan.getManager().setParent(archiveCategory).sync(),
+                            "discord.channel.archive-orphan.queue",
+                            observationRegistry);
                 } else {
                     keptOrphans.add(orphan);
                 }
@@ -299,7 +304,10 @@ public class DiscordService {
         sorted.addAll(keptOrphans);
 
         for (int i = 0; i < sorted.size(); i++) {
-            sorted.get(i).getManager().setPosition(i).queue();
+            JdaObservations.queue(
+                    sorted.get(i).getManager().setPosition(i),
+                    "discord.channel.set-position.queue",
+                    observationRegistry);
         }
     }
 
@@ -342,7 +350,8 @@ public class DiscordService {
         // so the bot is deleting its own message — no MANAGE_MESSAGES needed.
         channel.getHistory().retrievePast(5).complete().stream()
                 .filter(m -> m.getType() == net.dv8tion.jda.api.entities.MessageType.CHANNEL_PINNED_ADD)
-                .forEach(m -> m.delete().queue());
+                .forEach(m ->
+                        JdaObservations.queue(m.delete(), "discord.message.delete-system.queue", observationRegistry));
     }
 
     @Observed(name = "discord.delete-private-channel")
@@ -375,7 +384,8 @@ public class DiscordService {
             log.warn("Cannot send embed to event {}: channel {} not found", event.getId(), event.getChannelId());
             return;
         }
-        channel.sendMessageEmbeds(embed).queue();
+        JdaObservations.queue(
+                channel.sendMessageEmbeds(embed), "discord.message.send-embed.queue", observationRegistry);
     }
 
     /** Sends a plain-content message to the event's Discord channel. Returns the new message snowflake. */

@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 @AllArgsConstructor
 public class DiscordChannelService {
     private final JDA jda;
+    private final ObservationRegistry observationRegistry;
 
     @Observed(name = "discord.channel.get-category")
     public Category getCategoryByName(long guildId, String name) {
@@ -67,20 +69,25 @@ public class DiscordChannelService {
     @Observed(name = "discord.channel.delete")
     public void deleteChannel(long channelId) {
         TextChannel channel = jda.getChannelById(TextChannel.class, channelId);
-        if (channel != null) channel.delete().queue();
+        if (channel != null)
+            JdaObservations.queue(channel.delete(), "discord.channel.delete.queue", observationRegistry);
     }
 
     @Observed(name = "discord.channel.rename")
     public void setChannelName(long channelId, String name) {
         TextChannel channel = getTextChannel(channelId);
         if (channel != null && !channel.getName().equals(name)) {
-            channel.getManager().setName(name).queue();
+            JdaObservations.queue(
+                    channel.getManager().setName(name), "discord.channel.rename.queue", observationRegistry);
         }
     }
 
     @Observed(name = "discord.channel.move-to-category")
     public void moveChannelToCategory(TextChannel channel, Category target) {
-        channel.getManager().setParent(target).sync().queue();
+        JdaObservations.queue(
+                channel.getManager().setParent(target).sync(),
+                "discord.channel.move-to-category.queue",
+                observationRegistry);
     }
 
     @Observed(name = "discord.channel.sort-by-name")
@@ -99,7 +106,10 @@ public class DiscordChannelService {
                 java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
 
         for (int i = 0; i < channels.size(); i++) {
-            channels.get(i).getManager().setPosition(i).queue();
+            JdaObservations.queue(
+                    channels.get(i).getManager().setPosition(i),
+                    "discord.channel.set-position.queue",
+                    observationRegistry);
         }
     }
 }

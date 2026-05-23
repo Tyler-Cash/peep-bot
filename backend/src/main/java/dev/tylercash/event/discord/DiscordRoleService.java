@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 @AllArgsConstructor
 public class DiscordRoleService {
     private final JDA jda;
+    private final ObservationRegistry observationRegistry;
 
     @CircuitBreaker(name = "discord")
     @Observed(name = "discord.role.create")
@@ -27,7 +29,7 @@ public class DiscordRoleService {
     public void deleteRole(Guild guild, Long roleId) {
         if (roleId == null) return;
         Role role = guild.getRoleById(roleId);
-        if (role != null) role.delete().queue();
+        if (role != null) JdaObservations.queue(role.delete(), "discord.role.delete.queue", observationRegistry);
     }
 
     @Observed(name = "discord.role.get-by-name")
@@ -43,7 +45,9 @@ public class DiscordRoleService {
     public void addRoleToMember(Guild guild, Member member, Long roleId) {
         if (roleId == null) return;
         Role role = guild.getRoleById(roleId);
-        if (role != null) guild.addRoleToMember(member, role).queue();
+        if (role != null)
+            JdaObservations.queue(
+                    guild.addRoleToMember(member, role), "discord.role.add-to-member.queue", observationRegistry);
     }
 
     @Observed(name = "discord.role.remove-from-member")
@@ -51,7 +55,10 @@ public class DiscordRoleService {
         if (roleId == null) return;
         Role role = guild.getRoleById(roleId);
         if (role != null && member.getRoles().contains(role)) {
-            guild.removeRoleFromMember(member, role).queue();
+            JdaObservations.queue(
+                    guild.removeRoleFromMember(member, role),
+                    "discord.role.remove-from-member.queue",
+                    observationRegistry);
         }
     }
 }

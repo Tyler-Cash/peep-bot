@@ -64,7 +64,8 @@ class DiscordServiceRoleAssignmentTest {
                 roleService,
                 mock(DiscordAuthService.class),
                 mock(GuildEmojiResolver.class),
-                mock(GuildRepository.class));
+                mock(GuildRepository.class),
+                io.micrometer.observation.ObservationRegistry.NOOP);
     }
 
     private Event event(String name) {
