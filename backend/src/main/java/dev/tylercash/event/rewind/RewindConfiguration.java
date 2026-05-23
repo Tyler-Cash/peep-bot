@@ -10,5 +10,6 @@ import org.springframework.context.annotation.Configuration;
 public class RewindConfiguration {
     private boolean enabled = true;
     private int backfillBatchSize = 20;
-    private java.util.List<String> categories = java.util.List.of("Food", "Movie", "Game", "Outdoor", "Trivia");
+    private java.util.List<String> categories = java.util.List.of(
+            "Food", "Social", "Movie", "Show", "Game", "Trivia", "Outdoor", "Market", "Trip", "Other");
 }
