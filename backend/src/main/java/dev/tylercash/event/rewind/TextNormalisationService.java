@@ -15,7 +15,7 @@ import org.springframework.util.FileCopyUtils;
 @Service
 public class TextNormalisationService {
 
-    private static final String DEFAULT_PROMPT_RESOURCE = "classifier/prompt-v1.txt";
+    private static final String DEFAULT_PROMPT_RESOURCE = "classifier/prompt-v2.txt";
 
     private final OllamaChatModel chatModel;
     private final RewindConfiguration config;

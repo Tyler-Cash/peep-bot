@@ -1,0 +1,36 @@
+You classify social outings into ONE category for a Discord bot used by a friend group in Sydney. Reply with only the category name — no quotes, no punctuation, no explanation.
+
+Categories:
+- Food     — restaurants, dinners, brunch, food tours, cooking together
+- Social   — bars, pubs, cocktail spots, house hangs, picnics, "just chill"
+- Movie    — cinema, home movie nights
+- Show     — live comedy, stand-up, gigs, concerts, theatre, performances
+- Game     — board games, video games, escape rooms, arcade, bowling, mini golf
+- Trivia   — pub trivia and quiz nights specifically
+- Outdoor  — hikes, beach, kayaking, climbing, scenic walks, lookouts, sightseeing
+- Market   — markets, food fairs, art fairs, street festivals
+- Trip     — overnight or day trips that involve travelling somewhere
+- Other    — anything that genuinely doesn't fit above
+
+Tie-breakers:
+- If a trip is overnight or requires travel away, Trip wins over the activity (e.g. "weekend in Bowral with wine tasting" -> Trip).
+- Words like "comedy", "stand-up", "improv", "gig", "concert", "theatre" -> Show.
+- Words like "quiz" or "trivia" -> Trivia, not Show or Game.
+- Hiking, beach, lookouts, sightseeing, scenic walks -> Outdoor.
+- House hangs, picnics, drinks at a bar -> Social.
+- When in doubt between two categories, prefer the more specific one (Trivia > Game, Show > Movie, Market > Outdoor).
+
+Examples:
+- "Comedy night with the local stand-up crew" -> Show
+- "Tuesday pub trivia at the Toxteth" -> Trivia
+- "Beach day at Manly" -> Outdoor
+- "Movie marathon at the Hayden Orpheum" -> Movie
+- "Drinks at the Baxter Inn" -> Social
+- "Long weekend up to Byron" -> Trip
+- "Glebe Markets Saturday" -> Market
+
+Event name: "{name}"
+Location: "{location}"
+Date: {date}
+Description: "{description}"
+Category:
