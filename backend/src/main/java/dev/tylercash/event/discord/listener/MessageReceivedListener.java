@@ -4,6 +4,8 @@ import dev.tylercash.event.db.repository.EventRepository;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.immich.ImmichConfiguration;
 import dev.tylercash.event.immich.ImmichService;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ public class MessageReceivedListener extends ListenerAdapter {
     private final EventRepository eventRepository;
     private final ImmichConfiguration immichConfiguration;
     private final ImmichService immichService;
+    private final ObservationRegistry observationRegistry;
     private final Executor executor;
 
     public MessageReceivedListener(
@@ -32,11 +35,13 @@ public class MessageReceivedListener extends ListenerAdapter {
             EventRepository eventRepository,
             ImmichConfiguration immichConfiguration,
             ImmichService immichService,
+            ObservationRegistry observationRegistry,
             @Qualifier("discordListenerExecutor") Executor executor) {
         this.clock = clock;
         this.eventRepository = eventRepository;
         this.immichConfiguration = immichConfiguration;
         this.immichService = immichService;
+        this.observationRegistry = observationRegistry;
         this.executor = executor;
     }
 
@@ -67,7 +72,23 @@ public class MessageReceivedListener extends ListenerAdapter {
             log.info("Event '{}' has not started yet — skipping attachment upload", dbEvent.getName());
             return;
         }
-        executor.execute(() -> uploadAttachments(dbEvent, attachments));
+        // Outer observation that parents the offloaded Immich upload work so each
+        // immich.upload-asset span hangs off a single discord.message-received root.
+        Observation parent = Observation.createNotStarted("discord.message-received", observationRegistry)
+                .lowCardinalityKeyValue("attachment.count", Integer.toString(attachments.size()))
+                .start();
+        try (Observation.Scope ignored = parent.openScope()) {
+            executor.execute(() -> {
+                try (Observation.Scope inner = parent.openScope()) {
+                    uploadAttachments(dbEvent, attachments);
+                } catch (RuntimeException e) {
+                    parent.error(e);
+                    throw e;
+                } finally {
+                    parent.stop();
+                }
+            });
+        }
     }
 
     private void uploadAttachments(Event dbEvent, List<Message.Attachment> attachments) {
