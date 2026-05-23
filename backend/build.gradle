@@ -11,15 +11,16 @@ apply plugin: 'application'
 apply plugin: 'io.spring.dependency-management'
 
 group = 'dev.tylercash'
-// Derive version from the latest semantic-release tag so OTel `service.version`
-// matches what's actually deployed. `git describe --tags --always --dirty`
-// gives:
-//   v3.51.1                              → tagged release  → "3.51.1"
-//   v3.51.1-23-gaac29d9                  → 23 commits past → "3.51.1-23-gaac29d9"
-//   v3.51.1-23-gaac29d9-dirty            → with local edits → ".+dirty"
-// Falls back to 0.0.1-SNAPSHOT if git is unavailable (e.g. CI builds from a
-// tarball with no .git directory) or no tags exist yet.
-version = providers
+// Version resolution order, so OTel `service.version` matches what's deployed:
+//   1. `-PreleaseVersion=X.Y.Z` from CI — populated from `semantic-release --dry-run`
+//      ahead of `bootBuildImage`, so the image embeds the marketing version that
+//      will tag it after publish.
+//   2. `git describe --tags --always --dirty` — commit-precise for ad-hoc and
+//      pre-release builds (e.g. "3.51.1-23-gaac29d9"), still useful for
+//      incident correlation even when no release is happening.
+//   3. "0.0.1-SNAPSHOT" — last-resort fallback for tarball-style builds with no
+//      .git directory and no -P override.
+version = project.findProperty('releaseVersion') ?: providers
         .exec {
             commandLine 'git', 'describe', '--tags', '--always', '--dirty'
             ignoreExitValue = true

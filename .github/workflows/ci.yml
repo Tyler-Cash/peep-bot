@@ -179,7 +179,53 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           check_name: E2E Tests
 
+  # Resolve the version that bootBuildImage should bake into the artifact.
+  # On main pushes we run semantic-release in dry-run mode to predict the next
+  # release tag; on PRs (and as a fallback) we use git describe so the build
+  # still gets a commit-precise identifier rather than "0.0.1-SNAPSHOT".
+  compute-version:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # Full history so semantic-release can analyse commits and `git describe`
+          # can find the most recent tag.
+          fetch-depth: 0
+
+      - name: Semantic-release dry-run
+        id: dry-run
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        with:
+          dry_run: true
+          extra_plugins: |
+            @semantic-release/exec
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve version
+        id: resolve
+        env:
+          # Pipe action output through env to keep the run: block free of `${{ }}`
+          # expansion in shell context (workflow-injection-safe pattern).
+          DRY_RUN_VERSION: ${{ steps.dry-run.outputs.new_release_version }}
+        run: |
+          if [ -n "${DRY_RUN_VERSION}" ]; then
+            VERSION="${DRY_RUN_VERSION}"
+          else
+            VERSION=$(git describe --tags --always --dirty | sed 's/^v//')
+            VERSION="${VERSION:-0.0.1-SNAPSHOT}"
+          fi
+          echo "Resolved build version: ${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
   backend-build:
+    needs: [compute-version]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -225,7 +271,10 @@ jobs:
           DEV_TYLERCASH_DISCORD_TOKEN: ${{ secrets.DEV_TYLERCASH_DISCORD_TOKEN }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_ID }}
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
-        run: ./gradlew bootBuildImage -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" -x test
+          # Bakes into build-info.properties → OTel service.version at runtime.
+          # See backend/build.gradle for the precedence rules.
+          RELEASE_VERSION: ${{ needs.compute-version.outputs.version }}
+        run: ./gradlew bootBuildImage -PreleaseVersion="${RELEASE_VERSION}" -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" -x test
         working-directory: ./backend
 
       - name: Push SHA-tagged image to GHCR
