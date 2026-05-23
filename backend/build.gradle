@@ -70,7 +70,7 @@ ext['tomcat.version'] = '10.1.55'
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.google.protobuf:protobuf-java:4.34.1'
+    implementation 'com.google.protobuf:protobuf-java:4.35.0'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.4.Final'
@@ -150,7 +150,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:4.34.1'
+        artifact = 'com.google.protobuf:protoc:4.35.0'
     }
 }
 
