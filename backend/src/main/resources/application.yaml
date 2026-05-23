@@ -167,16 +167,25 @@ management:
     resource-attributes:
       service.name: ${spring.application.name}
   otlp:
+    # Default to the homelab grafana-lgtm collector (reachable as the docker-compose service name
+    # on the `homelab_default` network shared by every peep-bot deploy). Spring Boot's native OTLP
+    # exporters do NOT read the standard OTEL_EXPORTER_OTLP_*_ENDPOINT env vars that the OTel
+    # Spring Boot starter used to honour; with the starter gone, baking the URL in here means prod
+    # + staging stacks need no observability env-vars at all. Override per signal via
+    # MANAGEMENT_OTLP_<SIGNAL>_(URL|ENDPOINT) if the collector moves.
     metrics:
       export:
         enabled: true
         step: 30s
+        url: http://grafana-lgtm:4318/v1/metrics
     tracing:
       export:
         enabled: true
+      endpoint: http://grafana-lgtm:4318/v1/traces
     logging:
       export:
         enabled: true
+      endpoint: http://grafana-lgtm:4318/v1/logs
   tracing:
     sampling:
       # Sample every request. The traffic profile (a hobby Discord bot fronted by
