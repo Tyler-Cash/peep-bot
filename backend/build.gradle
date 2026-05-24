@@ -126,6 +126,12 @@ dependencies {
     implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
     implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
+    // Pyroscope <-> OpenTelemetry span profiling: a SpanProcessor that tags the running
+    // Pyroscope profiler (the -javaagent, see portainer peepbot stack) with the active span id,
+    // so each span links to its own flame graph in Grafana. Non-shaded 2.0.x line; its
+    // io.pyroscope:agent:2.5.x dependency matches the deployed agent's v2 labels API. Wired in
+    // PyroscopeSpanProfilingConfiguration, which degrades to a no-op if the agent isn't present.
+    implementation 'io.pyroscope:otel:2.0.1'
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
