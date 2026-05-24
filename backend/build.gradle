@@ -58,12 +58,15 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-M7'
-        // Boot 4 no longer manages Testcontainers versions; pin via their BOM.
         // Boot 4 no longer manages Testcontainers versions; pin via their BOM. Stay on
         // the 1.21.x line — Testcontainers 2.x is a rewrite with API breaks.
         mavenBom 'org.testcontainers:testcontainers-bom:1.21.4'
     }
 }
+
+// Override Spring Boot 4.0.6's managed Tomcat (11.0.21) to pick up the fix for
+// GHSA-r29c-68gh-xp6x (critical). Remove once Spring Boot's BOM ships >= 11.0.22.
+ext['tomcat.version'] = '11.0.22'
 
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
