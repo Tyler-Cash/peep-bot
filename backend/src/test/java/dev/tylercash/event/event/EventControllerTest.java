@@ -77,7 +77,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -133,7 +134,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 limiter,
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
 
         assertThatThrownBy(() -> controller.createEvent(buildEventDto(), principal))
                 .isInstanceOf(ResponseStatusException.class)
@@ -262,7 +264,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
         EventDto eventDto = buildEventDto();
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
@@ -290,7 +293,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -401,7 +405,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -491,7 +496,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(true));
+                new EventCreationToggle(true),
+                io.micrometer.observation.ObservationRegistry.NOOP);
         return new EventControllerTestContext(
                 controller,
                 eventService,
@@ -615,7 +621,8 @@ class EventControllerTest {
                 discordUserCacheService,
                 guildMembershipService,
                 allowingCreateLimiter(),
-                new EventCreationToggle(false));
+                new EventCreationToggle(false),
+                io.micrometer.observation.ObservationRegistry.NOOP);
 
         assertThatThrownBy(() -> controller.createEvent(buildEventDto(), principal))
                 .isInstanceOf(ResponseStatusException.class)

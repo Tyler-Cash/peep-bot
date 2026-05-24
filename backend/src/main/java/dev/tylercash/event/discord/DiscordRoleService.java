@@ -22,18 +22,30 @@ public class DiscordRoleService {
     @CircuitBreaker(name = "discord")
     @Observed(name = "discord.role.create")
     public Role createRole(Guild guild, String name) {
+        tagCurrent("discord.role.name", name);
         return guild.createRole().setName(name).complete();
     }
 
     @Observed(name = "discord.role.delete")
     public void deleteRole(Guild guild, Long roleId) {
-        if (roleId == null) return;
+        if (roleId == null) {
+            tagOutcome("skipped-null-id");
+            return;
+        }
         Role role = guild.getRoleById(roleId);
-        if (role != null) JdaObservations.queue(role.delete(), "discord.role.delete.queue", observationRegistry);
+        if (role == null) {
+            tagCurrent("discord.role.id", Long.toString(roleId));
+            tagOutcome("skipped-not-found");
+            return;
+        }
+        tagRole(role);
+        tagOutcome("enqueued");
+        JdaObservations.queue(role.delete(), "discord.role.delete.queue", observationRegistry);
     }
 
     @Observed(name = "discord.role.get-by-name")
     public List<Role> getRolesByName(long guildId, String name) {
+        tagCurrent("discord.role.name", name);
         List<Role> roles = jda.getGuildById(guildId).getRolesByName(name, true);
         if (roles.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No roles found matching name " + name);
@@ -43,22 +55,63 @@ public class DiscordRoleService {
 
     @Observed(name = "discord.role.add-to-member")
     public void addRoleToMember(Guild guild, Member member, Long roleId) {
-        if (roleId == null) return;
+        if (roleId == null) {
+            tagOutcome("skipped-null-id");
+            return;
+        }
         Role role = guild.getRoleById(roleId);
-        if (role != null)
-            JdaObservations.queue(
-                    guild.addRoleToMember(member, role), "discord.role.add-to-member.queue", observationRegistry);
+        if (role == null) {
+            tagCurrent("discord.role.id", Long.toString(roleId));
+            tagOutcome("skipped-not-found");
+            return;
+        }
+        tagRole(role);
+        tagOutcome("enqueued");
+        JdaObservations.queue(
+                guild.addRoleToMember(member, role), "discord.role.add-to-member.queue", observationRegistry);
     }
 
     @Observed(name = "discord.role.remove-from-member")
     public void removeRoleFromMember(Guild guild, Member member, Long roleId) {
-        if (roleId == null) return;
-        Role role = guild.getRoleById(roleId);
-        if (role != null && member.getRoles().contains(role)) {
-            JdaObservations.queue(
-                    guild.removeRoleFromMember(member, role),
-                    "discord.role.remove-from-member.queue",
-                    observationRegistry);
+        if (roleId == null) {
+            tagOutcome("skipped-null-id");
+            return;
         }
+        Role role = guild.getRoleById(roleId);
+        if (role == null) {
+            tagCurrent("discord.role.id", Long.toString(roleId));
+            tagOutcome("skipped-not-found");
+            return;
+        }
+        tagRole(role);
+        if (!member.getRoles().contains(role)) {
+            tagOutcome("noop-not-assigned");
+            return;
+        }
+        tagOutcome("enqueued");
+        JdaObservations.queue(
+                guild.removeRoleFromMember(member, role), "discord.role.remove-from-member.queue", observationRegistry);
+    }
+
+    private void tagRole(Role role) {
+        tagCurrent("discord.role.id", role.getId());
+        tagCurrent("discord.role.name", role.getName());
+    }
+
+    private void tagOutcome(String outcome) {
+        tagCurrent("outcome", outcome);
+    }
+
+    /**
+     * Add a low-cardinality attribute to the {@code @Observed}-created span on the current
+     * thread. Silently does nothing when there is no current observation (covers tests that
+     * call these methods directly without an outer scope). Wrapped here because Spring's
+     * observation registry returns a Noop observation rather than null in that case, and we
+     * don't want to litter the call sites with the {@code if (obs != null && !obs.isNoop())}
+     * dance.
+     */
+    private void tagCurrent(String key, String value) {
+        var obs = observationRegistry.getCurrentObservation();
+        if (obs != null) obs.lowCardinalityKeyValue(key, value);
     }
 }

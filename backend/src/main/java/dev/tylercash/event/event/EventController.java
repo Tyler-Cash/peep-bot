@@ -7,6 +7,7 @@ import dev.tylercash.event.discord.GuildMembershipService;
 import dev.tylercash.event.discord.model.GuildMember;
 import dev.tylercash.event.event.model.*;
 import dev.tylercash.event.global.EventCreationToggle;
+import io.micrometer.observation.ObservationRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -44,6 +45,7 @@ public class EventController {
     private GuildMembershipService guildMembershipService;
     private EventCreateRateLimiter eventCreateRateLimiter;
     private EventCreationToggle eventCreationToggle;
+    private ObservationRegistry observationRegistry;
 
     @Operation(summary = "Create a new event", description = "Creates an event and its associated Discord channel")
     @ApiResponses({
@@ -222,6 +224,8 @@ public class EventController {
     public EventDetailDto rsvpEvent(
             @PathVariable UUID id, @RequestBody RsvpRequest request, @AuthenticationPrincipal OAuth2User principal) {
         String discordId = principal.getAttribute("id");
+        tagServerSpan("event.id", id.toString());
+        tagServerSpan("rsvp.action", request.status());
         log.info("User {} RSVPing to event id={} with status={}", discordId, id, request.status());
         Event event = eventService.getEvent(id);
         guildMembershipService.assertMember(discordId, event.getServerId());
@@ -370,5 +374,16 @@ public class EventController {
         }
         eventService.recategorizeEvent(id);
         return Map.of("message", "Recategorization triggered");
+    }
+
+    /**
+     * Tag the current HTTP server observation (Spring Boot's {@code ServerHttpObservationFilter})
+     * with a low-cardinality key. Adds the attribute to the top-level SERVER span so a trace
+     * waterfall is identifiable at a glance — without this every {@code POST /event/{id}/rsvp}
+     * span looks the same in Tempo.
+     */
+    private void tagServerSpan(String key, String value) {
+        var obs = observationRegistry.getCurrentObservation();
+        if (obs != null) obs.lowCardinalityKeyValue(key, value);
     }
 }

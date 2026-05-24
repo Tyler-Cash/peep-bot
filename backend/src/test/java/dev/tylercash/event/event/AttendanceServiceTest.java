@@ -30,7 +30,8 @@ class AttendanceServiceTest {
     void setUp() {
         attendanceRepository = mock(AttendanceRepository.class);
         featureToggles = new FeatureTogglesConfiguration();
-        service = new AttendanceService(attendanceRepository, featureToggles);
+        service = new AttendanceService(
+                attendanceRepository, featureToggles, io.micrometer.observation.ObservationRegistry.NOOP);
     }
 
     @Nested

@@ -5,6 +5,7 @@ import dev.tylercash.event.event.model.AttendanceRecord;
 import dev.tylercash.event.event.model.AttendanceStatus;
 import dev.tylercash.event.event.model.AttendanceSummary;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,11 +23,14 @@ import org.springframework.stereotype.Service;
 public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final FeatureTogglesConfiguration featureToggles;
+    private final ObservationRegistry observationRegistry;
 
     @Observed(name = "attendance.record")
     public void recordAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus status, String ownerSnowflake) {
         MDC.put("eventId", eventId.toString());
+        tagCurrent("event.id", eventId.toString());
+        tagCurrent("attendance.status", status.name());
         attendanceRepository.save(new AttendanceRecord(eventId, snowflake, name, status, ownerSnowflake));
     }
 
@@ -71,6 +75,8 @@ public class AttendanceService {
     public AttendanceStatus flipAttendance(
             UUID eventId, String snowflake, String name, AttendanceStatus requestedStatus) {
         MDC.put("eventId", eventId.toString());
+        tagCurrent("event.id", eventId.toString());
+        tagCurrent("attendance.requested", requestedStatus.name());
         log.info(
                 "Flipping attendance for event={} snowflake={} requestedStatus={}",
                 eventId,
@@ -88,6 +94,8 @@ public class AttendanceService {
         } else {
             newStatus = requestedStatus;
         }
+        tagCurrent("attendance.from", current != null ? current.getStatus().name() : "NONE");
+        tagCurrent("attendance.to", newStatus.name());
 
         log.info("Resolved attendance for event={} snowflake={} newStatus={}", eventId, snowflake, newStatus);
         recordAttendance(eventId, snowflake, name, newStatus, null);
@@ -134,5 +142,10 @@ public class AttendanceService {
             return snowflake.equals(record.getSnowflake());
         }
         return name != null && name.equals(record.getName());
+    }
+
+    private void tagCurrent(String key, String value) {
+        var obs = observationRegistry.getCurrentObservation();
+        if (obs != null) obs.lowCardinalityKeyValue(key, value);
     }
 }
