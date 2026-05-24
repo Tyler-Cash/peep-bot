@@ -115,13 +115,18 @@ jobs:
         run: ./gradlew spotlessCheck
         working-directory: ./backend
 
+      # Run test + jacocoTestReport in ONE Gradle invocation on shard 0 so
+      # jacoco aggregates the .exec from the sharded run. Calling
+      # jacocoTestReport in a separate `./gradlew` would re-execute the test
+      # task without the shard property and run every class again — adding
+      # ~170s to shard 0 (caught on the first sharded run).
       - name: Run sharded backend tests
-        run: ./gradlew test -Pshard.index=${{ matrix.shard }} -Pshard.count=2
-        working-directory: ./backend
-
-      - name: Generate JaCoCo coverage report
-        if: matrix.shard == 0 && (success() || failure())
-        run: ./gradlew jacocoTestReport
+        run: |
+          if [ "${{ matrix.shard }}" = "0" ]; then
+            ./gradlew test jacocoTestReport -Pshard.index=0 -Pshard.count=2
+          else
+            ./gradlew test -Pshard.index=${{ matrix.shard }} -Pshard.count=2
+          fi
         working-directory: ./backend
 
       - name: Verify openapi.json is up to date
