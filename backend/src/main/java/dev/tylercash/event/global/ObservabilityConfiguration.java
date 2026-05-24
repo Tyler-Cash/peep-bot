@@ -42,6 +42,31 @@ public class ObservabilityConfiguration {
     }
 
     /**
+     * Auto-instruments every public {@code @Controller}/{@code @RestController} method as a span
+     * (see {@link ControllerMethodObservationAspect}), so the request handler is named in the trace
+     * even when it talks to repositories directly. On by default; set
+     * {@code dev.tylercash.observability.instrument-controllers=false} to disable without a redeploy.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "dev.tylercash.observability.instrument-controllers", matchIfMissing = true)
+    ControllerMethodObservationAspect controllerMethodObservationAspect(ObservationRegistry observationRegistry) {
+        return new ControllerMethodObservationAspect(observationRegistry);
+    }
+
+    /**
+     * Auto-instruments every public Spring Data repository method as a span (see
+     * {@link RepositoryMethodObservationAspect}), grouping the {@code datasource-micrometer} SQL
+     * spans under the logical repository call. On by default; set
+     * {@code dev.tylercash.observability.instrument-repositories=false} to disable without a
+     * redeploy — this is the highest-volume layer.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "dev.tylercash.observability.instrument-repositories", matchIfMissing = true)
+    RepositoryMethodObservationAspect repositoryMethodObservationAspect(ObservationRegistry observationRegistry) {
+        return new RepositoryMethodObservationAspect(observationRegistry);
+    }
+
+    /**
      * Bridges the logback {@code OpenTelemetryAppender} (declared in {@code logback-spring.xml})
      * to the OpenTelemetry SDK so log records ship over OTLP. The appender is inert until
      * {@link OpenTelemetryAppender#install(OpenTelemetry)} hands it the SDK; it buffers early
