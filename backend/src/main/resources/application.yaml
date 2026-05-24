@@ -71,6 +71,18 @@ server:
 spring:
   main:
     lazy-initialization: true
+  http:
+    clients:
+      # Blocking RestClients (Immich, Places, TfNSW) default to the reactor-netty
+      # transport because spring-webflux is on the classpath for WebClient. reactor-netty
+      # does socket I/O + TLS in direct (off-heap) buffers, which the Paketo memory
+      # calculator caps at -XX:MaxDirectMemorySize=10M. Concurrent gallery thumbnail
+      # streaming exhausted that pool ("OutOfMemoryError: Cannot reserve ... direct buffer
+      # memory"). The JDK HttpClient transport uses heap buffers (against the 4G -Xmx)
+      # and streams response bodies via BodyHandlers.ofInputStream(), so the thumbnail
+      # exchange()/transferTo path stays streaming. Reactive WebClient is unaffected.
+      imperative:
+        factory: jdk
   cache:
     type: caffeine
     cache-names: activeEvents,eventDetail,openContracts,rewind,guild,guildMembership
