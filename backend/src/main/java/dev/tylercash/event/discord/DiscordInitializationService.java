@@ -4,6 +4,8 @@ import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_ARCHIVE_CAT
 import static dev.tylercash.event.discord.DiscordConfiguration.EVENT_CATEGORY;
 
 import dev.tylercash.event.contract.ContractConfiguration;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ public class DiscordInitializationService {
     private final GuildRegistrationService guildRegistrationService;
     private final GuildRepository guildRepository;
     private final GuildCommandSyncService guildCommandSyncService;
+    private final ObservationRegistry observationRegistry;
 
     public DiscordInitializationService(
             JDA jda,
@@ -36,7 +39,8 @@ public class DiscordInitializationService {
             FeatureFlagService featureFlagService,
             @Lazy GuildRegistrationService guildRegistrationService,
             GuildRepository guildRepository,
-            GuildCommandSyncService guildCommandSyncService) {
+            GuildCommandSyncService guildCommandSyncService,
+            ObservationRegistry observationRegistry) {
         this.jda = jda;
         this.discordChannelService = discordChannelService;
         this.contractConfig = contractConfig;
@@ -45,10 +49,24 @@ public class DiscordInitializationService {
         this.guildRegistrationService = guildRegistrationService;
         this.guildRepository = guildRepository;
         this.guildCommandSyncService = guildCommandSyncService;
+        this.observationRegistry = observationRegistry;
     }
 
+    /**
+     * Startup reconciliation runs on the {@link ApplicationReadyEvent} thread, which has no
+     * observation in scope. Without a top-level observation here, every downstream {@code @Observed}
+     * call (e.g. {@code discord.channel.get-or-create-category}) and every JDA REST round-trip
+     * ({@code discord.http}) starts its own detached root trace. Wrapping the whole reconciliation in
+     * a single {@code discord.startup} observation gives them a parent: the synchronous work nests
+     * directly, and the REST spans nest via the {@code ContextExecutorService}-wrapped JDA executors
+     * (see {@link ClientConfiguration}) that propagate the now-present context to the OkHttp thread.
+     */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+        Observation.createNotStarted("discord.startup", observationRegistry).observe(this::reconcileGuilds);
+    }
+
+    private void reconcileGuilds() {
         guildCommandSyncService.clearGlobalCommands(jda);
         List<net.dv8tion.jda.api.entities.Guild> liveGuilds = jda.getGuilds();
         log.info("Onboarding {} guilds on startup", liveGuilds.size());
@@ -83,24 +101,27 @@ public class DiscordInitializationService {
     private void syncGuildMembers(net.dv8tion.jda.api.entities.Guild guild) {
         log.info("Syncing members for guild '{}'...", guild.getName());
         try {
-            guild.loadMembers()
-                    .onSuccess(members -> {
-                        members.forEach(member -> discordUserCacheService.registerIfMissing(
-                                member.getId(),
-                                DiscordUtil.getUserDisplayName(member),
-                                member.getUser().getName(),
-                                guild.getIdLong()));
-                        Set<String> liveSnowflakes = members.stream()
-                                .map(net.dv8tion.jda.api.entities.Member::getId)
-                                .collect(Collectors.toSet());
-                        int removed = discordUserCacheService.pruneMembersNotIn(guild.getIdLong(), liveSnowflakes);
-                        log.info(
-                                "Synced {} members for guild '{}' (pruned {} stale rows)",
-                                members.size(),
-                                guild.getName(),
-                                removed);
-                    })
-                    .get();
+            // Process on the calling thread rather than in loadMembers().onSuccess(): that callback
+            // runs on JDA's WebSocket worker thread (outside the discord.startup observation), so the
+            // per-member registerIfMissing connection spans would orphan. get() already blocks until
+            // member chunking completes, so handling the result here is behaviour-equivalent and keeps
+            // the DB work inside the surrounding observation.
+            List<net.dv8tion.jda.api.entities.Member> members =
+                    guild.loadMembers().get();
+            members.forEach(member -> discordUserCacheService.registerIfMissing(
+                    member.getId(),
+                    DiscordUtil.getUserDisplayName(member),
+                    member.getUser().getName(),
+                    guild.getIdLong()));
+            Set<String> liveSnowflakes = members.stream()
+                    .map(net.dv8tion.jda.api.entities.Member::getId)
+                    .collect(Collectors.toSet());
+            int removed = discordUserCacheService.pruneMembersNotIn(guild.getIdLong(), liveSnowflakes);
+            log.info(
+                    "Synced {} members for guild '{}' (pruned {} stale rows)",
+                    members.size(),
+                    guild.getName(),
+                    removed);
         } catch (Exception e) {
             log.error("Failed to sync guild members", e);
         }

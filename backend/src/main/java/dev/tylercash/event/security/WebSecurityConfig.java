@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,7 +27,10 @@ import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHtt
 import org.springframework.session.jdbc.config.annotation.web.http.JdbcHttpSessionConfiguration;
 
 @Configuration
-@EnableJdbcHttpSession
+// cleanupCron = "-" disables Spring Session's private cleanup scheduler. That scheduler runs
+// outside any observation, so its DELETE FROM SPRING_SESSION produced orphan root traces in
+// Tempo. Cleanup is re-driven from SessionCleanupJob (an @Observed @Scheduled bean) instead.
+@EnableJdbcHttpSession(cleanupCron = Scheduled.CRON_DISABLED)
 @RequiredArgsConstructor
 public class WebSecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
@@ -99,8 +103,8 @@ public class WebSecurityConfig {
      * Wraps the JDBC repository with {@link AnonymousSkippingSessionRepository} so unauthenticated
      * requests cannot fill {@code SPRING_SESSION} (pentest finding F-002). The wrapper is the
      * primary {@code SessionRepository} bean that {@code SessionRepositoryFilter} resolves; the
-     * underlying {@link JdbcIndexedSessionRepository} stays in the context so its scheduled
-     * {@code cleanUpExpiredSessions} cron continues to run.
+     * underlying {@link JdbcIndexedSessionRepository} stays in the context as the cleanup target
+     * for {@link SessionCleanupJob} (its own cleanup cron is disabled — see the class annotation).
      */
     @Bean
     @Primary

@@ -59,6 +59,13 @@ public class ClientConfiguration {
                 ContextScheduledExecutorService.wrap(daemonScheduledPool(2, "JDA-RateLimit"), snapshotFactory);
         ExecutorService okhttpDispatcherExecutor =
                 ContextExecutorService.wrap(okhttpDefaultDispatcherExecutor(), snapshotFactory);
+        // The callback pool runs RestAction#queue success/failure consumers. Wrap it too so any DB
+        // work done in a queued callback inherits the submitting thread's observation rather than
+        // orphaning. NOTE: this does NOT cover Guild#loadMembers callbacks — those complete on JDA's
+        // internal WebSocket worker thread (GatewayTask uses CompletableFuture#thenAccept on a future
+        // completed in MemberChunkManager#handleChunk), which is not a JDABuilder-injectable pool.
+        ExecutorService callbackExecutor =
+                ContextExecutorService.wrap(daemonCachedPool("JDA-Callback"), snapshotFactory);
 
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .dispatcher(new Dispatcher(okhttpDispatcherExecutor))
@@ -69,6 +76,7 @@ public class ClientConfiguration {
                 .setHttpClient(httpClient)
                 .setRateLimitElastic(rateLimitElastic, true)
                 .setRateLimitScheduler(rateLimitScheduler, true)
+                .setCallbackPool(callbackExecutor, true)
                 .addEventListeners(buttonInteractionListener)
                 .addEventListeners(guildLifecycleListener)
                 .addEventListeners(modalInteractionListener)
@@ -95,6 +103,12 @@ public class ClientConfiguration {
                 TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
                 daemonThreadFactory("OkHttp-Dispatcher"));
+    }
+
+    /** Unbounded cached pool of daemon threads — mirrors JDA's default callback pool shape. */
+    private static ExecutorService daemonCachedPool(String namePrefix) {
+        return new ThreadPoolExecutor(
+                0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, new SynchronousQueue<>(), daemonThreadFactory(namePrefix));
     }
 
     private static ThreadFactory daemonThreadFactory(String namePrefix) {

@@ -1,11 +1,16 @@
 package dev.tylercash.event.discord;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import dev.tylercash.event.contract.ContractConfiguration;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -26,6 +31,7 @@ class DiscordInitializationServiceTest {
     private GuildRepository guildRepository;
     private GuildCommandSyncService guildCommandSyncService;
     private DiscordInitializationService service;
+    private List<String> startedObservations;
 
     @BeforeEach
     void setUp() {
@@ -42,6 +48,20 @@ class DiscordInitializationServiceTest {
         guildRepository = mock(GuildRepository.class);
         guildCommandSyncService = mock(GuildCommandSyncService.class);
 
+        startedObservations = new CopyOnWriteArrayList<>();
+        ObservationRegistry observationRegistry = ObservationRegistry.create();
+        observationRegistry.observationConfig().observationHandler(new ObservationHandler<>() {
+            @Override
+            public boolean supportsContext(Observation.Context context) {
+                return true;
+            }
+
+            @Override
+            public void onStart(Observation.Context context) {
+                startedObservations.add(context.getName());
+            }
+        });
+
         service = new DiscordInitializationService(
                 jda,
                 discordChannelService,
@@ -50,7 +70,23 @@ class DiscordInitializationServiceTest {
                 featureFlagService,
                 guildRegistrationService,
                 guildRepository,
-                guildCommandSyncService);
+                guildCommandSyncService,
+                observationRegistry);
+    }
+
+    @Test
+    @DisplayName("onApplicationReady wraps startup reconciliation in a discord.startup observation")
+    void onApplicationReady_opensStartupObservation() {
+        when(jda.getGuilds()).thenReturn(Collections.emptyList());
+        when(guildRepository.findAllByActiveTrue()).thenReturn(Collections.emptyList());
+
+        service.onApplicationReady();
+
+        // The top-level observation is what gives downstream @Observed calls (getOrCreateCategory)
+        // and JDA REST spans (discord.http) a parent instead of each starting its own root trace.
+        assertThat(startedObservations)
+                .as("startup reconciliation must run inside a discord.startup observation")
+                .contains("discord.startup");
     }
 
     @SuppressWarnings("unchecked")

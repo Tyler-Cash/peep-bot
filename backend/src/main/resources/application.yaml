@@ -100,7 +100,11 @@ spring:
   session:
     jdbc:
       initialize-schema: never
-      cleanup-cron: 0 */10 * * * *
+      # NOTE: cleanup-cron is intentionally not set here. With manual @EnableJdbcHttpSession
+      # (WebSecurityConfig), Boot's session auto-config backs off and never binds this property,
+      # so it was dead config. Spring Session's own cleanup scheduler is disabled
+      # (@EnableJdbcHttpSession(cleanupCron = "-")) and cleanup is re-driven, observed, every
+      # 10 minutes by SessionCleanupJob.
   datasource:
     driverClassName: org.postgresql.Driver
     hikari:
