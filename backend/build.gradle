@@ -446,6 +446,16 @@ tasks.bootBuildImage {
             "BP_OCI_SOURCE"          : "https://github.com/Tyler-Cash/peep-bot",
             "BP_OCI_URL"             : "https://github.com/Tyler-Cash/peep-bot",
             "BP_OCI_DESCRIPTION"     : "Peep Bot backend — Spring Boot Discord event management API",
-            "BPE_JAVA_TOOL_OPTIONS"  : "-Djava.awt.headless=true",
+            // APPEND (not set) so the Paketo Java memory calculator's own JAVA_TOOL_OPTIONS
+            // flags survive AND it sees our -XX:MaxDirectMemorySize and sizes -Xmx around it.
+            // The calculator otherwise pins direct memory at a hardcoded 10M regardless of
+            // container RAM, while handing ~25G to the heap — concurrent reactor-netty/JDA
+            // streaming exhausted that 10M direct pool, wedged every connection-holding thread,
+            // and hung the JVM (HikariPool "Connection is not available", total=25 active=25).
+            // 1G is ~0.004% of the heap budget here, so the heap rebalance is noise.
+            // ExitOnOutOfMemoryError cleanly recycles heap/metaspace OOMs (it does NOT fire on
+            // direct-buffer OOMs — those are thrown from JDK code and caught by Netty).
+            "BPE_APPEND_JAVA_TOOL_OPTIONS" : "-Djava.awt.headless=true -XX:MaxDirectMemorySize=1G -XX:+ExitOnOutOfMemoryError",
+            "BPE_DELIM_JAVA_TOOL_OPTIONS"  : " ",
     ])
 }
