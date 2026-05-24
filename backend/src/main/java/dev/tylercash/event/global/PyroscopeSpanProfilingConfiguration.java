@@ -38,13 +38,28 @@ public class PyroscopeSpanProfilingConfiguration {
                     .setRootSpanOnly(false) // per-span: tag every span, not just the request root
                     .setAddSpanName(true)
                     .build();
-            return new SafeSpanProcessor(new PyroscopeOtelSpanProcessor(config));
+            SpanProcessor processor = new SafeSpanProcessor(new PyroscopeOtelSpanProcessor(config));
+            logLabelsApiOrigin();
+            return processor;
         } catch (Throwable t) {
             // No Pyroscope agent on the classpath (e.g. local/dev runs without the -javaagent),
             // or an incompatible version — disable span profiling rather than fail startup.
             log.warn("Pyroscope span profiling disabled: {}", t.toString());
             return SpanProcessor.composite();
         }
+    }
+
+    /**
+     * Logs where the {@code io.pyroscope} labels API resolved from. Healthy: a {@code null} code
+     * source or {@code /agent/pyroscope.jar} (the {@code -javaagent}). Broken: a path into the app's
+     * {@code BOOT-INF/lib/agent-*.jar}, which means a bundled copy is shadowing the agent's registry.
+     */
+    private static void logLabelsApiOrigin() {
+        var source =
+                io.pyroscope.labels.v2.Pyroscope.class.getProtectionDomain().getCodeSource();
+        log.info(
+                "Pyroscope span profiling enabled; io.pyroscope labels API loaded from {}",
+                source == null ? "bootstrap/agent class loader (no code source)" : source.getLocation());
     }
 
     /**
