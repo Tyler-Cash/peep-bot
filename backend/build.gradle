@@ -61,6 +61,15 @@ dependencyManagement {
         // Boot 4 no longer manages Testcontainers versions; pin via their BOM. Stay on
         // the 1.21.x line — Testcontainers 2.x is a rewrite with API breaks.
         mavenBom 'org.testcontainers:testcontainers-bom:1.21.4'
+        // Manages the OTel *instrumentation* library modules (the logback appender below, etc.).
+        // Boot's BOM only manages OTel *core* (api/sdk, 1.55.0); the instrumentation artifacts are
+        // unmanaged, so without this they'd need a hand-pinned version each. Pin this BOM to the
+        // instrumentation release matching Boot 4.0.6's core 1.55.0 (the instrumentation stream is
+        // offset +34 from the core minor: core 1.55 -> 2.21). Keeping them aligned is what prevents
+        // the appender calling api methods absent from 1.55.0 — e.g. LogRecordBuilder.setException,
+        // added in api 1.61.0, which throws NoSuchMethodError on any WARN/ERROR log with a Throwable
+        // (Spring Boot #50251). Bump this in lockstep whenever Boot bumps its bundled OTel core.
+        mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.21.0-alpha'
     }
 }
 
@@ -109,16 +118,12 @@ dependencies {
     // so @Observed / ObservationRegistry spans still reach OTel through the bridge and Spring
     // Boot's ServerHttpObservationFilter remains the single HTTP-server-span source.
     implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
-    // Boot 4's OpenTelemetryLoggingAutoConfiguration provides the SdkLoggerProvider but does
-    // NOT install a logback bridge. logback-spring.xml's OpenTelemetryAppender comes from this
-    // alpha-classifier artefact, and ObservabilityConfiguration installs it on ApplicationReadyEvent.
-    // The version MUST track Boot 4.0.6's bundled OTel API line (1.55.0): the 2.x-alpha
-    // instrumentation stream is offset +34 from the core minor (core 1.55 -> 2.21), so 2.21.0-alpha
-    // is the matching release. Newer appenders (e.g. 2.28.0-alpha, core ~1.62) call
-    // LogRecordBuilder.setException(Throwable) — added only in opentelemetry-api 1.61.0 — which
-    // throws NoSuchMethodError on every WARN/ERROR log carrying a Throwable under 1.55.0
-    // (Spring Boot issue #50251). Re-check this whenever Boot bumps its OTel version.
-    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
+    // Boot 4's OpenTelemetryLoggingAutoConfiguration provides the SdkLoggerProvider but does NOT
+    // install a logback bridge. logback-spring.xml's OpenTelemetryAppender comes from this
+    // alpha-classifier artefact (ObservabilityConfiguration installs it on ApplicationReadyEvent).
+    // Version intentionally omitted — managed by opentelemetry-instrumentation-bom-alpha imported
+    // above, which keeps it aligned with Boot's bundled OTel core. See that BOM's comment.
+    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
     implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
     implementation("net.dv8tion:JDA:6.4.1") {
