@@ -11,20 +11,20 @@ beforeEach(() => {
   mockNext.mockClear();
 });
 
-describe("middleware", () => {
+describe("proxy", () => {
   it("passes through in live mode", async () => {
     process.env.NEXT_PUBLIC_API_MODE = "live";
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    middleware({} as any);
+    proxy({} as any);
     expect(mockNext).toHaveBeenCalledOnce();
   });
 
   it("passes through in mock mode", async () => {
     process.env.NEXT_PUBLIC_API_MODE = "mock";
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    middleware({} as any);
+    proxy({} as any);
     expect(mockNext).toHaveBeenCalledOnce();
   });
 });
