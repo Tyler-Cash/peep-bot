@@ -179,28 +179,52 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           check_name: E2E Tests
 
-  # Resolve the version that bootBuildImage should bake into the artifact.
-  # On main pushes we run semantic-release in dry-run mode to predict the next
-  # release tag; on PRs (and as a fallback) we use git describe so the build
-  # still gets a commit-precise identifier rather than "0.0.1-SNAPSHOT".
-  compute-version:
+  backend-build:
     runs-on: ubuntu-24.04
     # contents: write is required even in dry-run mode — semantic-release's
-    # verifyConditions step probes `git push --dry-run` against the remote
-    # and the GitHub-Actions bot needs push permission for the probe to pass.
-    # No actual writes happen because we pass dry_run: true to the action.
+    # verifyConditions step probes `git push --dry-run` against the remote and
+    # the GitHub-Actions bot needs push permission for the probe to pass. No
+    # actual writes happen because we pass dry_run: true to the action.
     permissions:
       contents: write
-    outputs:
-      version: ${{ steps.resolve.outputs.version }}
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # Full history so semantic-release can analyse commits and `git describe`
-          # can find the most recent tag.
+          # can find the most recent tag — needed for the version-resolve step.
           fetch-depth: 0
 
+      - name: Set up lowercase owner
+        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Cache ONNX model files
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: backend/src/main/resources/models
+          key: onnx-model-all-minilm-l6-v2
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+        working-directory: ./backend
+
+      # Resolve the version baked into the image. On main pushes we run
+      # semantic-release in dry-run mode to predict the next release tag; on PRs
+      # (and as a fallback) we use `git describe` so the build still gets a
+      # commit-precise identifier rather than "0.0.1-SNAPSHOT". Inlined into
+      # backend-build so version computation isn't a separate job.
       - name: Semantic-release dry-run
         id: dry-run
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -228,40 +252,6 @@ jobs:
           echo "Resolved build version: ${VERSION}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-  backend-build:
-    needs: [compute-version]
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Set up lowercase owner
-        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Set up Java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-
-      - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
-        with:
-          path: backend/src/main/resources/models
-          key: onnx-model-all-minilm-l6-v2
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-        working-directory: ./backend
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
@@ -277,7 +267,7 @@ jobs:
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET: ${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DISCORD_CLIENT_SECRET }}
           # Bakes into build-info.properties → OTel service.version at runtime.
           # See backend/build.gradle for the precedence rules.
-          RELEASE_VERSION: ${{ needs.compute-version.outputs.version }}
+          RELEASE_VERSION: ${{ steps.resolve.outputs.version }}
         run: ./gradlew bootBuildImage -PreleaseVersion="${RELEASE_VERSION}" -Pspring.boot.build-image.imageName="ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest" -x test
         working-directory: ./backend
 
@@ -353,7 +343,10 @@ jobs:
           category: backend
 
   backend-push:
-    needs: [backend-test, backend-e2etest, backend-build, backend-sbom]
+    # backend-e2etest no longer gates push — it hits real Discord and only
+    # blocks prod promotion. SBOM stays gating because Grype must clear before
+    # an image with a known critical CVE ever reaches the registry.
+    needs: [backend-test, backend-build, backend-sbom]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
@@ -421,7 +414,12 @@ jobs:
           # can't break the build. Production env vars live in Vercel.
           NEXT_PUBLIC_API_MODE: mock
 
-  frontend-e2e:
+  # Split from a single frontend-e2e job: previously did two sequential Next
+  # builds (mock + live) and ran two Playwright suites against them, costing
+  # ~2:12 wall clock. Running mock and live in parallel halves it; the setup
+  # overhead (node, npm ci, playwright install) is paid twice but they pay it
+  # concurrently. Both halves use the shared Playwright browser cache.
+  frontend-e2e-mock:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -461,22 +459,72 @@ jobs:
         run: npx playwright install-deps chromium
         working-directory: ./frontend
 
-      - name: Build frontend (mock mode for chromium e2e)
+      - name: Build frontend (mock mode)
         run: npm run build
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_API_MODE: mock
 
-      - name: Build frontend (live mode for live e2e)
+      - name: Run Playwright smoke suite (chromium against prod build)
+        run: npm run test:e2e
+        working-directory: ./frontend
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-report-mock
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  frontend-e2e-live:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI: '1'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: ./frontend
+
+      - name: Install Playwright system deps (cache hit path)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+        working-directory: ./frontend
+
+      - name: Build frontend (live mode)
         run: npm run build
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_API_MODE: live
           NEXT_DIST_DIR: .next-live
-
-      - name: Run Playwright smoke suite (chromium against prod build)
-        run: npm run test:e2e
-        working-directory: ./frontend
 
       - name: Run Playwright smoke suite (live)
         run: npm run test:e2e:live
@@ -486,7 +534,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: playwright-report
+          name: playwright-report-live
           path: |
             frontend/playwright-report/
             frontend/test-results/
@@ -567,7 +615,10 @@ jobs:
           GH_TOKEN: ${{ secrets.PORTAINER_DEPLOY_TOKEN }}
 
   deploy-staging-frontend:
-    needs: [release, deploy-staging-backend]
+    # Staging-frontend no longer gates on staging-backend — the two stacks deploy
+    # in parallel after release. Vercel's preview deploy is independent of the
+    # backend image rolling out in portainer.
+    needs: [release]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-24.04
     permissions:
@@ -617,7 +668,12 @@ jobs:
           echo "Staging now serving from: https://event-staging.tylercash.dev"
 
   deploy-prod-backend:
-    needs: [release, deploy-staging-backend, deploy-staging-frontend]
+    # backend-e2etest is the gate against prod for real-Discord regressions; it
+    # runs in parallel with the test / build / sbom lanes and is typically done
+    # well before deploy-staging-* finish, so this is rarely a wait in practice.
+    # Backend prod deploy doesn't gate on staging-frontend any more — backend and
+    # frontend deploy chains run as two independent staging→prod tracks.
+    needs: [release, deploy-staging-backend, backend-e2etest]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-24.04
     environment: production
@@ -679,7 +735,10 @@ jobs:
           GH_TOKEN: ${{ secrets.PORTAINER_DEPLOY_TOKEN }}
 
   deploy-prod-frontend:
-    needs: [deploy-prod-backend]
+    # Frontend prod gates on its own staging, not the backend chain. Backend and
+    # frontend deploy in parallel; if a prod release actually breaks the API
+    # contract between them, staging would have caught it first.
+    needs: [release, deploy-staging-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-24.04
     environment: production
@@ -768,7 +827,7 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-push, frontend-ci, frontend-e2e, frontend-sbom]
+    needs: [backend-push, frontend-ci, frontend-e2e-mock, frontend-e2e-live, frontend-sbom]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

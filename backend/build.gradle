@@ -183,7 +183,11 @@ tasks.named('test') {
         exceptionFormat = 'full'
         showStackTraces = true
     }
-    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    // Use every available core. Each fork owns its own Postgres testcontainer + Spring
+    // context (~2GB heap, ~500MB Postgres), so on a 4-core GHA ubuntu-24.04 runner this
+    // is ~10GB resident — well under the 16GB limit. Halved-CPU was the old default; the
+    // shared-Postgres setup makes per-fork resource use predictable enough to use all cores.
+    maxParallelForks = Runtime.runtime.availableProcessors()
     // 2GB heap so multiple cached Spring contexts (each holding ~45MB of HuggingFace ONNX
     // embedding weights) don't OOM the test JVM. Default gradle test heap is 512MB.
     maxHeapSize = '2g'
