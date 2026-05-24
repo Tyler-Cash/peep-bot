@@ -15,6 +15,7 @@ import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
 import { DocumentLoadInstrumentation } from "@opentelemetry/instrumentation-document-load";
 import { UserInteractionInstrumentation } from "@opentelemetry/instrumentation-user-interaction";
+import { SERVICE_NAME } from "@/lib/otel/service";
 
 let started = false;
 
@@ -48,7 +49,7 @@ export function initWebTracing(): void {
 
   const provider = new WebTracerProvider({
     resource: resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: "peep-bot-frontend",
+      [ATTR_SERVICE_NAME]: SERVICE_NAME,
       [ATTR_SERVICE_VERSION]: process.env.NEXT_PUBLIC_APP_VERSION ?? "dev",
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]:
         process.env.NEXT_PUBLIC_VERCEL_ENV ?? "production",
