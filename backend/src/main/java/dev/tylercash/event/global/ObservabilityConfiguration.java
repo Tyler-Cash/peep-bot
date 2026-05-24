@@ -13,6 +13,7 @@ import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppen
 import java.util.List;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,17 @@ public class ObservabilityConfiguration {
     @Bean
     ObservedAspect observedAspect(ObservationRegistry observationRegistry) {
         return new ObservedAspect(observationRegistry);
+    }
+
+    /**
+     * Auto-instruments every public {@code @Service} method as a span (see
+     * {@link ServiceMethodObservationAspect}). On by default; set
+     * {@code dev.tylercash.observability.instrument-services=false} to disable without a redeploy.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "dev.tylercash.observability.instrument-services", matchIfMissing = true)
+    ServiceMethodObservationAspect serviceMethodObservationAspect(ObservationRegistry observationRegistry) {
+        return new ServiceMethodObservationAspect(observationRegistry);
     }
 
     /**
