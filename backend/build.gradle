@@ -364,11 +364,12 @@ processResources.dependsOn("downloadModel")
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
-    // builder-jammy-base is ~500MB vs builder-jammy-full's ~2GB. It still ships the
-    // Java/Liberica/Spring Boot buildpacks this project needs; the `full` variant only
-    // matters for polyglot apps (Python + Node + …) that we don't have. The matching
-    // run image is fetched by Paketo automatically — no need to override.
-    builder = "paketobuildpacks/builder-jammy-base:latest"
+    // Stay on builder-jammy-full so the resulting run image (run-jammy-full) keeps
+    // its full Ubuntu userland. The docker-compose healthcheck shells out to `curl`,
+    // which is absent from the base/tiny run images. Switching to -base shaved
+    // ~50-60s off the build but broke the prod healthcheck (curl: not found, 10
+    // consecutive failures); the savings aren't worth the deploy outage.
+    builder = "paketobuildpacks/builder-jammy-full:latest"
     // Skip the builder-verification phase — we're pinning to an official Paketo image,
     // so the trust check just adds ~5s of no-op work per build.
     trustBuilder = true

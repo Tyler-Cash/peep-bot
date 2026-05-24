@@ -216,16 +216,15 @@ jobs:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
 
-      # Cache the Paketo builder + run images as a single tar so a cold-cache
-      # build doesn't have to re-pull ~700MB from Docker Hub. Key is constant
-      # because we follow `:latest`; restore-keys would pick up older variants
-      # if the key changed. Cold pull is ~60-90s; warm `docker load` is ~5s.
+      # Cache the Paketo builder image as a tar so a cold-cache build doesn't
+      # have to re-pull ~2GB from Docker Hub. Cold pull is ~60-90s; warm
+      # `docker load` is ~10s.
       - name: Cache Paketo images
         id: paketo-cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
         with:
           path: /tmp/paketo-images.tar
-          key: paketo-jammy-base-v1
+          key: paketo-jammy-full-v1
 
       - name: Restore Paketo images from cache
         if: steps.paketo-cache.outputs.cache-hit == 'true'
@@ -236,8 +235,8 @@ jobs:
         # Pull the builder upfront; Paketo will fetch the matching run image on demand
         # during the build itself. Caching just the builder keeps the tar small.
         run: |
-          docker pull paketobuildpacks/builder-jammy-base:latest
-          docker save paketobuildpacks/builder-jammy-base:latest -o /tmp/paketo-images.tar
+          docker pull paketobuildpacks/builder-jammy-full:latest
+          docker save paketobuildpacks/builder-jammy-full:latest -o /tmp/paketo-images.tar
 
       - name: Make gradlew executable
         run: chmod +x gradlew
