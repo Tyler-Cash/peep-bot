@@ -69,6 +69,14 @@ jobs:
         run: npm test
 
   backend-test:
+    # Sharded: each matrix job runs ~half the test classes against its own runner
+    # (own fork pool, own Postgres testcontainer). Per-fork sequential context
+    # startup is the dominant cost so cutting the class set per runner roughly
+    # halves the wall clock of the bottleneck job.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     runs-on: ubuntu-24.04
     permissions:
       checks: write
@@ -99,15 +107,27 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./backend
 
+      # Spotless + jacoco + PR coverage comment only on shard 0 — they need the
+      # full picture (or are a single-runner check) and don't benefit from running
+      # twice in the matrix. Sharded backend-test runs in both jobs.
       - name: Check code formatting
+        if: matrix.shard == 0
         run: ./gradlew spotlessCheck
         working-directory: ./backend
 
-      - name: Run unit and integration tests
-        run: ./gradlew test jacocoTestReport
+      - name: Run sharded backend tests
+        run: ./gradlew test -Pshard.index=${{ matrix.shard }} -Pshard.count=2
+        working-directory: ./backend
+
+      - name: Generate JaCoCo coverage report
+        if: matrix.shard == 0 && (success() || failure())
+        run: ./gradlew jacocoTestReport
         working-directory: ./backend
 
       - name: Verify openapi.json is up to date
+        # Runs on every shard. Whichever shard ran OpenApiSpecGenerationTest
+        # regenerates the file; the others compare an unchanged checkout to
+        # the committed version. Either way the diff should be clean.
         run: |
           if ! git diff --exit-code openapi.json; then
             echo "::error::backend/openapi.json is out of date. Run './gradlew generateOpenApiDocs' locally and commit the result."
@@ -121,15 +141,15 @@ jobs:
         with:
           report_paths: backend/build/test-results/test/TEST-*.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          check_name: Unit & Integration Tests
+          check_name: Unit & Integration Tests (shard ${{ matrix.shard }})
 
       - name: Report coverage on PR
-        if: github.event_name == 'pull_request'
+        if: matrix.shard == 0 && github.event_name == 'pull_request'
         uses: madrapps/jacoco-report@50d3aff4548aa991e6753342d9ba291084e63848 # v1.7.2
         with:
           paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: Backend Code Coverage
+          title: Backend Code Coverage (shard 0)
           update-comment: true
 
   backend-e2etest:
@@ -224,7 +244,7 @@ jobs:
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
         with:
           path: /tmp/paketo-images.tar
-          key: paketo-jammy-full-v1
+          key: paketo-jammy-base-v1
 
       - name: Restore Paketo images from cache
         if: steps.paketo-cache.outputs.cache-hit == 'true'
@@ -235,8 +255,8 @@ jobs:
         # Pull the builder upfront; Paketo will fetch the matching run image on demand
         # during the build itself. Caching just the builder keeps the tar small.
         run: |
-          docker pull paketobuildpacks/builder-jammy-full:latest
-          docker save paketobuildpacks/builder-jammy-full:latest -o /tmp/paketo-images.tar
+          docker pull paketobuildpacks/builder-jammy-base:latest
+          docker save paketobuildpacks/builder-jammy-base:latest -o /tmp/paketo-images.tar
 
       - name: Make gradlew executable
         run: chmod +x gradlew

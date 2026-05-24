@@ -179,6 +179,39 @@ tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'e2e', 'classifier-eval'
     }
+    // Optional CI shard filter. With `-Pshard.index=N -Pshard.count=K`, the task
+    // keeps only test classes whose class-name hashCode mod K equals N. CI invokes
+    // backend-test as a K-way matrix; each shard is a separate runner with its own
+    // fork pool and Postgres container, so the wall-clock bound becomes
+    // (total context starts / K / forks) instead of (total / forks).
+    def shardIndex = (project.findProperty('shard.index') ?: '0').toString().toInteger()
+    def shardCount = (project.findProperty('shard.count') ?: '1').toString().toInteger()
+    if (shardCount > 1) {
+        // Snapshot the test classes dirs as plain paths at configuration time —
+        // capturing the live FileCollection would break Gradle's configuration cache.
+        def testDirPaths = testClassesDirs.files.collect { it.absolutePath }
+        doFirst {
+            // Round-robin classes by alphabetical index: class i goes to shard
+            // (i mod shardCount). This guarantees the shard sizes differ by at most
+            // one class — hash bucketing left a 76/56 split, which wasted parallelism.
+            def allClasses = [] as TreeSet  // sorted, dedup
+            testDirPaths.each { dirPath ->
+                def dir = new File(dirPath)
+                if (!dir.exists()) return
+                dir.eachFileRecurse { f ->
+                    if (!f.name.endsWith('.class') || f.name.contains('$')) return
+                    def relPath = dir.toPath().relativize(f.toPath()).toString()
+                    allClasses << relPath.replace(File.separator, '.').replace('.class', '')
+                }
+            }
+            def included = []
+            allClasses.toList().eachWithIndex { className, idx ->
+                if (idx % shardCount == shardIndex) included << className
+            }
+            logger.lifecycle("Shard ${shardIndex + 1}/${shardCount}: running ${included.size()} of ${allClasses.size()} test classes")
+            included.each { filter.includeTestsMatching(it) }
+        }
+    }
     testLogging {
         exceptionFormat = 'full'
         showStackTraces = true
@@ -364,12 +397,12 @@ processResources.dependsOn("downloadModel")
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
-    // Stay on builder-jammy-full so the resulting run image (run-jammy-full) keeps
-    // its full Ubuntu userland. The docker-compose healthcheck shells out to `curl`,
-    // which is absent from the base/tiny run images. Switching to -base shaved
-    // ~50-60s off the build but broke the prod healthcheck (curl: not found, 10
-    // consecutive failures); the savings aren't worth the deploy outage.
-    builder = "paketobuildpacks/builder-jammy-full:latest"
+    // builder-jammy-base is ~500MB vs builder-jammy-full's ~2GB and ships the same
+    // Java/Liberica/Spring Boot buildpacks. The matching run image (run-jammy-base)
+    // lacks curl, but the portainer docker-compose healthcheck moved to a bash
+    // /dev/tcp probe in peepbot stacks (which works on any Paketo run image), so
+    // the curl dependency is gone and we can safely use the smaller builder.
+    builder = "paketobuildpacks/builder-jammy-base:latest"
     // Skip the builder-verification phase — we're pinning to an official Paketo image,
     // so the trust check just adds ~5s of no-op work per build.
     trustBuilder = true
