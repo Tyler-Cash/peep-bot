@@ -122,9 +122,11 @@ public class EventController {
         if (Objects.nonNull(eventDto.getLocationPlaceId())) {
             event.setLocationPlaceId(eventDto.getLocationPlaceId());
         }
-        eventDto.getAccepted()
-                .forEach(attendeeName -> attendanceService.recordAttendance(
-                        event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
+        if (Objects.nonNull(eventDto.getAccepted())) {
+            eventDto.getAccepted()
+                    .forEach(attendeeName -> attendanceService.recordAttendance(
+                            event.getId(), null, "[+1] " + attendeeName, AttendanceStatus.ACCEPTED, discordId));
+        }
         eventService.populateAttendance(event);
         eventService.updateEvent(event);
         log.info(

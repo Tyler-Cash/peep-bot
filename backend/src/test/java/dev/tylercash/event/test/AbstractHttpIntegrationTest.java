@@ -1,6 +1,5 @@
 package dev.tylercash.event.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.AvatarDownloadService;
 import dev.tylercash.event.discord.DiscordAuthService;
@@ -10,8 +9,8 @@ import dev.tylercash.event.immich.ImmichService;
 import net.dv8tion.jda.api.JDA;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -21,6 +20,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Shared boilerplate for HTTP-level integration tests. Each subclass implicitly gets:

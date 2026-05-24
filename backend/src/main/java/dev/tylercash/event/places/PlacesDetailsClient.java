@@ -1,11 +1,11 @@
 package dev.tylercash.event.places;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.micrometer.observation.annotation.Observed;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Resolves a Google Place ID to its lat/lng via Google Places API. Used by

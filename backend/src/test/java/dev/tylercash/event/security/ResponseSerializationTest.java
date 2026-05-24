@@ -2,9 +2,6 @@ package dev.tylercash.event.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.tylercash.event.discord.GuildDto;
 import dev.tylercash.event.discord.GuildSettingsDto;
 import dev.tylercash.event.discord.model.GuildMember;
@@ -33,7 +30,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +40,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * For every DTO returned from a controller, asserts the serialized JSON does
@@ -73,7 +71,9 @@ class ResponseSerializationTest {
             "avatarbytes" // GuildMember.avatarBytes must never escape via a JSON DTO
             );
 
-    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
+    // Jackson 3 has java.time support built-in; no JSR-310 module registration needed.
+    private static final ObjectMapper MAPPER =
+            tools.jackson.databind.json.JsonMapper.builder().build();
 
     /**
      * Population helpers — one per controller-returned DTO type. Anything new
@@ -250,9 +250,7 @@ class ResponseSerializationTest {
         while (!stack.isEmpty()) {
             JsonNode n = stack.pop();
             if (n.isObject()) {
-                Iterator<String> it = n.fieldNames();
-                while (it.hasNext()) {
-                    String k = it.next();
+                for (String k : n.propertyNames()) {
                     keys.add(k);
                     stack.push(n.get(k));
                 }

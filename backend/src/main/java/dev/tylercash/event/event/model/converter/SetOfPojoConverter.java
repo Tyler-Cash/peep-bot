@@ -1,26 +1,21 @@
 package dev.tylercash.event.event.model.converter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.persistence.AttributeConverter;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.SneakyThrows;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class SetOfPojoConverter<T> implements AttributeConverter<Set<T>, String> {
-    private static final ObjectMapper MAPPER = getMapper();
+    // Jackson 3 has java.time support built-in and defaults to ISO-8601 (not timestamps),
+    // so the JSR-310 module registration and WRITE_DATES_AS_TIMESTAMPS=false toggle from
+    // the Jackson 2 setup are no longer needed.
+    private static final ObjectMapper MAPPER = JsonMapper.builder().build();
     private final Class<T> type;
 
     public SetOfPojoConverter(Class<T> type) {
         this.type = type;
-    }
-
-    private static ObjectMapper getMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        return mapper;
     }
 
     @SneakyThrows

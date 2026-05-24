@@ -9,8 +9,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import java.time.Duration;
@@ -24,6 +22,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 class ImmichServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -55,7 +55,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("Successful album creation returns ID")
-    void createAlbumSuccess() throws JsonProcessingException {
+    void createAlbumSuccess() throws JacksonException {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://immich.example.com/api/albums"))
@@ -74,7 +74,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("Successful shared link creation returns key")
-    void createSharedLinkSuccess() throws JsonProcessingException {
+    void createSharedLinkSuccess() throws JacksonException {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://immich.example.com/api/shared-links"))
@@ -119,7 +119,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("Album name includes prefix when configured")
-    void createAlbumWithPrefix() throws JsonProcessingException {
+    void createAlbumWithPrefix() throws JacksonException {
         ImmichConfiguration config = enabledConfig();
         config.setAlbumNamePrefix("[DEV] ");
 
@@ -285,7 +285,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("getAlbumDetails: 200 response returns populated Optional")
-    void getAlbumDetailsSuccess() throws JsonProcessingException {
+    void getAlbumDetailsSuccess() throws JacksonException {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         ImmichAlbumResponse expected = new ImmichAlbumResponse("album-xyz", "My Album", "thumb-asset-id", 7);
@@ -333,7 +333,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("createSharedLink with description+expiry: body includes both fields")
-    void createSharedLinkWithDescriptionAndExpiry() throws JsonProcessingException {
+    void createSharedLinkWithDescriptionAndExpiry() throws JacksonException {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         java.time.Instant expiry = java.time.Instant.parse("2030-01-01T00:00:00Z");
@@ -358,7 +358,7 @@ class ImmichServiceTest {
 
     @Test
     @DisplayName("createSharedLink with blank description: body omits description field")
-    void createSharedLinkBlankDescriptionOmitsField() throws JsonProcessingException {
+    void createSharedLinkBlankDescriptionOmitsField() throws JacksonException {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://immich.example.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("https://immich.example.com/api/shared-links"))

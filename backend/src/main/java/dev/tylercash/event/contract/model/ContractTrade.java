@@ -1,6 +1,5 @@
 package dev.tylercash.event.contract.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -8,6 +7,7 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
+import tools.jackson.databind.JsonNode;
 
 @Data
 @Entity

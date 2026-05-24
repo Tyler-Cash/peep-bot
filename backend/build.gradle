@@ -2,7 +2,7 @@ plugins {
     id 'application'
     id 'jacoco'
     id 'com.diffplug.spotless' version '8.5.1'
-    id 'org.springframework.boot' version '3.5.14'
+    id 'org.springframework.boot' version '4.0.6'
     id 'org.cyclonedx.bom' version '3.2.4'
     id 'com.google.protobuf' version '0.10.0'
 }
@@ -49,23 +49,21 @@ configurations {
 
 repositories {
     mavenCentral()
+    // Spring AI 2.0 is the first line compatible with Spring Boot 4 / Framework 7; only
+    // milestone artefacts (2.0.0-Mx) are published as of the migration. Remove this entry
+    // once Spring AI 2.0 reaches GA on Maven Central.
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencyManagement {
     imports {
-        mavenBom 'org.springframework.ai:spring-ai-bom:1.1.6'
-        // Pins OTel SDK + exporter + instrumentation artefacts to a single coherent set.
-        // Spring Boot's BOM only manages a subset; the rest (e.g. opentelemetry-logback-appender)
-        // resolves through this one.
-        mavenBom 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.28.0'
+        mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-M7'
+        // Boot 4 no longer manages Testcontainers versions; pin via their BOM.
+        // Boot 4 no longer manages Testcontainers versions; pin via their BOM. Stay on
+        // the 1.21.x line — Testcontainers 2.x is a rewrite with API breaks.
+        mavenBom 'org.testcontainers:testcontainers-bom:1.21.4'
     }
 }
-
-// Override Spring Boot's managed Tomcat to a version that includes the fix for
-// GHSA-5m62-pw8w-7w9f (CVE-2026-43515, critical) — security constraints with
-// HTTP method limits on the same extension pattern were not all applied. Remove
-// once Spring Boot's BOM ships >= 10.1.55.
-ext['tomcat.version'] = '10.1.55'
 
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
@@ -73,11 +71,14 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java:4.35.0'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:7.3.5.Final'
-    implementation 'org.liquibase:liquibase-core'
+    implementation 'org.hibernate.orm:hibernate-community-dialects'
+    // Boot 4 modularised Liquibase autoconfig — pulling just liquibase-core no longer
+    // activates LiquibaseAutoConfiguration. The starter brings liquibase-core + the
+    // spring-boot-liquibase autoconfig jar.
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
     implementation 'org.postgresql:postgresql'
     implementation 'org.projectlombok:lombok'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -93,38 +94,29 @@ dependencies {
     // shared MeterRegistry — without this, the configured breakers exist but emit
     // nothing to Prometheus/OTLP and dashboards can't render their state.
     implementation 'io.github.resilience4j:resilience4j-micrometer:2.4.0'
-    implementation 'org.springframework.security:spring-security-oauth2-client'
+    // Boot 4 ships a dedicated starter that brings in spring-security-oauth2-client + the
+    // (now-modularised) OAuth2 client autoconfigure module containing OAuth2ClientProperties.
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
-    // Observability stack — Spring-native (Micrometer Observation API) bridged to OTel.
-    // The OTel Spring Boot starter is deliberately NOT used: combining it with the
-    // Micrometer bridge produced two competing SDKs, duplicate WebMVC instrumentation,
-    // and split service.name resources in Tempo. With the bridge alone, Spring Boot's
-    // own ServerHttpObservationFilter parents every per-request span, @Observed and
-    // ObservationRegistry calls reach OTel through one SDK, and config lives entirely
-    // under `management.*`.
-    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
-    // Trace + log OTLP exporter. Spring Boot's OtlpTracingAutoConfiguration and
-    // OpenTelemetryLoggingAutoConfiguration require this artefact on the classpath.
-    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
-    // Logback appender that ships LogRecords over the OTel SDK above; referenced by
-    // logback-spring.xml. Was transitive via the OTel starter; now declared directly.
-    // Lives under the *-alpha instrumentation BOM, so an explicit version is needed
-    // (the non-alpha BOM imported above does not manage it).
-    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.27.0-alpha'
-    // Metrics export path: Micrometer → OTLP. Configured via management.otlp.metrics.
-    implementation 'io.micrometer:micrometer-registry-otlp'
+    // Observability stack — Spring Boot 4's native OTel starter. Bundles
+    // micrometer-tracing-bridge-otel, opentelemetry-exporter-otlp, and micrometer-registry-otlp,
+    // so @Observed / ObservationRegistry spans still reach OTel through the bridge and Spring
+    // Boot's ServerHttpObservationFilter remains the single HTTP-server-span source.
+    implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
-    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:1.4.1'
+    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'org.springframework.retry:spring-retry'
+    // Boot 4 renamed spring-boot-starter-aop → spring-boot-starter-aspectj.
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+    // Boot 4's BOM no longer manages spring-retry — pin explicitly.
+    implementation 'org.springframework.retry:spring-retry:2.0.12'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.jfree:jfreechart:1.5.6'
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.15.2'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.2'
     implementation 'org.springframework.ai:spring-ai-starter-model-transformers'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 
@@ -138,6 +130,8 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers"
     testImplementation 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Boot 4 modularised test autoconfig — @AutoConfigureMockMvc now lives in this jar.
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:junit-jupiter'
@@ -189,6 +183,8 @@ tasks.named('test') {
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
     systemProperty 'management.otlp.tracing.export.enabled', 'false'
     systemProperty 'management.otlp.logging.export.enabled', 'false'
+    // Belt-and-braces for the Boot 4 OTel starter, which also reads otel.sdk.disabled.
+    systemProperty 'otel.sdk.disabled', 'true'
     // Disable the Ollama chat model in tests. CI has no route to ollama.tylercash.dev,
     // so every scheduled classify/backfill tick would otherwise spend ~30s retrying
     // and dump a SpringAiRetryAutoConfiguration stack trace. With chat=none the
@@ -344,9 +340,8 @@ tasks.register("downloadModel") {
 
 processResources.dependsOn("downloadModel")
 
-tasks.named("bootJar") {
-    launchScript()
-}
+// Spring Boot 4 removed BootJar.launchScript(). Deployment is via bootBuildImage (OCI),
+// not a fully-executable jar invoked by an init script, so this is a no-op loss.
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"

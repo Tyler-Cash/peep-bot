@@ -3,9 +3,6 @@ package dev.tylercash.event.openapi;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import dev.tylercash.event.PeepBotApplication;
 import dev.tylercash.event.discord.AvatarDownloadService;
 import dev.tylercash.event.discord.DiscordInitializationService;
@@ -19,14 +16,17 @@ import net.dv8tion.jda.api.JDA;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 @SpringBootTest(
         classes = PeepBotApplication.class,
@@ -89,9 +89,10 @@ class OpenApiSpecGenerationTest {
 
         // Pretty-print with sorted keys at every level so the output is
         // byte-stable across runs (and future Spring/Springdoc bumps).
-        ObjectMapper pretty = new ObjectMapper()
+        ObjectMapper pretty = tools.jackson.databind.json.JsonMapper.builder()
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
-                .enable(SerializationFeature.INDENT_OUTPUT);
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
         Object sorted = pretty.treeToValue(tree, Object.class);
         String formatted = pretty.writeValueAsString(sorted);
 

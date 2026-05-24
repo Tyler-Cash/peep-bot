@@ -1,7 +1,5 @@
 package dev.tylercash.event.tfnsw;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.TrafficEvent;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.TrafficEvent.Kind;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -15,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component

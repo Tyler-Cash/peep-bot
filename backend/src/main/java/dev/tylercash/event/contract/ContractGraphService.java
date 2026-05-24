@@ -1,6 +1,5 @@
 package dev.tylercash.event.contract;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.tylercash.event.contract.model.ContractOutcome;
 import dev.tylercash.event.contract.model.ContractTrade;
 import java.awt.*;
@@ -23,6 +22,7 @@ import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 @Service
