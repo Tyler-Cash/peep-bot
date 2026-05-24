@@ -16,6 +16,7 @@ import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
 import { DocumentLoadInstrumentation } from "@opentelemetry/instrumentation-document-load";
 import { UserInteractionInstrumentation } from "@opentelemetry/instrumentation-user-interaction";
 import { SERVICE_NAME } from "@/lib/otel/service";
+import { fetchSpanName } from "@/lib/otel/spanName";
 
 let started = false;
 
@@ -83,6 +84,32 @@ export function initWebTracing(): void {
           ? [new RegExp(escapeRegExp(backendOrigin))]
           : [],
         clearTimingResources: true,
+        // Rename the span from the default "HTTP GET" to "GET /api/event/{id}"
+        // so traces are identifiable in the list (and span_name stays low
+        // cardinality). updateName runs before the span ends, so the exported
+        // name — and the Tempo span metric — both pick it up.
+        applyCustomAttributesOnSpan: (span, request, result) => {
+          try {
+            const url =
+              result instanceof Response && result.url
+                ? result.url
+                : typeof request === "string"
+                  ? request
+                  : request instanceof Request
+                    ? request.url
+                    : undefined;
+            const method =
+              request instanceof Request
+                ? request.method
+                : (request as RequestInit | undefined)?.method;
+            if (url) {
+              const { pathname } = new URL(url, window.location.origin);
+              span.updateName(fetchSpanName(method, pathname));
+            }
+          } catch {
+            // keep the default span name
+          }
+        },
       }),
     ],
   });
