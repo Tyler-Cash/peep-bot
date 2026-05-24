@@ -5,6 +5,10 @@ export const preferredRegion = "syd1";
 
 const FORWARD_TIMEOUT_MS = 8000;
 
+// Telemetry ingest must never be cached. Overrides Next.js's default dynamic
+// header (public, max-age=0, must-revalidate) with explicit intent.
+const NO_STORE = { "Cache-Control": "no-store" };
+
 // Collector proxy for browser RUM spans. The browser exporter posts OTLP/HTTP
 // JSON here — same-origin, so no CORS and (crucially) no Tempo credential in the
 // client bundle. This server route forwards to the real collector with the
@@ -15,7 +19,7 @@ const FORWARD_TIMEOUT_MS = 8000;
 // auth header is missing or wrong — is diagnosable from the network tab.
 export async function POST(req: Request): Promise<Response> {
   const body = await req.arrayBuffer();
-  if (body.byteLength === 0) return new Response(null, { status: 204 });
+  if (body.byteLength === 0) return new Response(null, { status: 204, headers: { ...NO_STORE } });
 
   const target = `${otlpEndpoint()}/v1/traces`;
   const headers: Record<string, string> = {
@@ -32,7 +36,7 @@ export async function POST(req: Request): Promise<Response> {
       body,
       signal: controller.signal,
     });
-    if (upstream.ok) return new Response(null, { status: 204 });
+    if (upstream.ok) return new Response(null, { status: 204, headers: { ...NO_STORE } });
 
     const detail = (await upstream.text().catch(() => "")).slice(0, 300);
     console.error(
@@ -40,13 +44,13 @@ export async function POST(req: Request): Promise<Response> {
     );
     return new Response(null, {
       status: upstream.status,
-      headers: { "x-otlp-upstream-status": String(upstream.status) },
+      headers: { ...NO_STORE, "x-otlp-upstream-status": String(upstream.status) },
     });
   } catch (err) {
     console.error(`[otel-proxy] ${target} forward failed:`, err);
     return new Response(null, {
       status: 502,
-      headers: { "x-otlp-error": err instanceof Error ? err.name : "error" },
+      headers: { ...NO_STORE, "x-otlp-error": err instanceof Error ? err.name : "error" },
     });
   } finally {
     clearTimeout(timer);

@@ -26,6 +26,7 @@ describe("POST /api/traces (browser-span collector proxy)", () => {
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
     const res = await POST(spanPost());
     expect(res.status).toBe(204);
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(spy).toHaveBeenCalledOnce();
     const [url, init] = spy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${PUBLIC_OTLP_ENDPOINT}/v1/traces`);
