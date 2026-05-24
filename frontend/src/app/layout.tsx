@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { Providers } from "@/components/Providers";
+import { WebTracing } from "@/components/WebTracing";
 import "./globals.css";
 import {SpeedInsights} from "@vercel/speed-insights/next";
 import {Analytics} from "@vercel/analytics/next";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={spaceGrotesk.variable}>
       <body>
         <Providers>{children}</Providers>
+        <WebTracing />
         <SpeedInsights />
         <Analytics />
       </body>

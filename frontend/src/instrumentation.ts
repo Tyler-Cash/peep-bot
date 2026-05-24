@@ -1,12 +1,10 @@
 import { registerOTel } from "@vercel/otel";
+import { PUBLIC_OTLP_ENDPOINT } from "@/lib/otel/endpoint";
 
-// Public OTLP collector (Tempo, fronted by Traefik at otel.tylercash.dev). The
-// endpoint and protocol are not secret, so they live in source. The ONLY secret
-// is the ingest auth header (OTEL_EXPORTER_OTLP_HEADERS), set in the Vercel
-// project env. Defaults are applied on Vercel only, so a local `npm run dev`
-// doesn't ship traces unless you opt in by setting the env vars yourself.
-const PUBLIC_OTLP_ENDPOINT = "https://otel.tylercash.dev";
-
+// The OTLP endpoint and protocol are not secret, so they live in source. The
+// ONLY secret is the ingest auth header (OTEL_EXPORTER_OTLP_HEADERS), set in the
+// Vercel project env. Defaults are applied on Vercel only, so a local
+// `npm run dev` doesn't ship traces unless you opt in by setting the env vars.
 export function register() {
   if (process.env.VERCEL) {
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||= PUBLIC_OTLP_ENDPOINT;
