@@ -8,7 +8,7 @@ function getWindowLimiter(): Ratelimit {
   if (!windowLimiter) {
     windowLimiter = new Ratelimit({
       redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(1, "300 ms"),
+      limiter: Ratelimit.slidingWindow(10, "1 s"),
       prefix: "places:window",
     });
   }
@@ -28,7 +28,16 @@ function getHourlyLimiter(): Ratelimit {
 
 export type RateLimitResult =
   | { allowed: true }
-  | { allowed: false; retryAfter: number };
+  | { allowed: false; retryAfter: number; retryAfterMs: number };
+
+function blocked(reset: number): RateLimitResult {
+  const retryAfterMs = Math.max(50, reset - Date.now());
+  return {
+    allowed: false,
+    retryAfter: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+    retryAfterMs,
+  };
+}
 
 export async function checkPlacesRateLimit(
   sessionKey: string,
@@ -38,24 +47,8 @@ export async function checkPlacesRateLimit(
       getWindowLimiter().limit(sessionKey),
       getHourlyLimiter().limit(sessionKey),
     ]);
-    if (!windowResult.success) {
-      return {
-        allowed: false,
-        retryAfter: Math.max(
-          1,
-          Math.ceil((windowResult.reset - Date.now()) / 1000),
-        ),
-      };
-    }
-    if (!hourlyResult.success) {
-      return {
-        allowed: false,
-        retryAfter: Math.max(
-          1,
-          Math.ceil((hourlyResult.reset - Date.now()) / 1000),
-        ),
-      };
-    }
+    if (!windowResult.success) return blocked(windowResult.reset);
+    if (!hourlyResult.success) return blocked(hourlyResult.reset);
     return { allowed: true };
   } catch {
     return { allowed: true };

@@ -84,10 +84,16 @@ export async function GET(req: Request) {
   }
 
   const rateLimit = await checkPlacesRateLimit(sessionKey);
-  if ("retryAfter" in rateLimit) {
+  if (rateLimit.allowed === false) {
     return Response.json(
       { error: "rate limited" },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfter),
+          "Retry-After-Ms": String(rateLimit.retryAfterMs),
+        },
+      },
     );
   }
 

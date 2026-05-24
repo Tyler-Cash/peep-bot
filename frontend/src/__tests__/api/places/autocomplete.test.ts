@@ -49,7 +49,7 @@ describe("GET /api/places/autocomplete", () => {
   });
 
   it("returns 429 with Retry-After when rate limited", async () => {
-    mockRateLimit.mockResolvedValue({ allowed: false, retryAfter: 5 });
+    mockRateLimit.mockResolvedValue({ allowed: false, retryAfter: 5, retryAfterMs: 5000 });
     const res = await GET(AUTHED());
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("5");

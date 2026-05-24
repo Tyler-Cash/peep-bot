@@ -127,7 +127,7 @@ export async function searchPlaces(
   if (Date.now() < blockedUntil) {
     return {
       rateLimited: true,
-      retryAfter: Math.ceil((blockedUntil - Date.now()) / 1000),
+      retryAfter: Math.max(1, Math.ceil((blockedUntil - Date.now()) / 1000)),
     };
   }
 
@@ -140,9 +140,10 @@ export async function searchPlaces(
     const res = await fetch(`/api/places/autocomplete?${params}`, { signal });
 
     if (res.status === 429) {
-      const retryAfter = Number(res.headers.get("Retry-After") ?? "1");
-      blockedUntil = Date.now() + retryAfter * 1000;
-      return { rateLimited: true, retryAfter };
+      const retryAfterMs = Number(res.headers.get("Retry-After-Ms") ?? "0")
+        || Number(res.headers.get("Retry-After") ?? "1") * 1000;
+      blockedUntil = Date.now() + retryAfterMs;
+      return { rateLimited: true, retryAfter: Math.ceil(retryAfterMs / 1000) };
     }
 
     if (!res.ok) return [];
