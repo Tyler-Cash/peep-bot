@@ -863,13 +863,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag SHA image as :latest in registry
+        # Pure registry-side retag — no local docker pull/push needed. The
+        # semantic-release exec step (tag-and-push-images.sh) likewise uses
+        # imagetools to add the :VERSION tag, so the entire release job runs
+        # without ever pulling the ~200MB backend image to the runner.
         run: |
           SHA_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:sha-${{ github.sha }}"
           LATEST_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:latest"
           docker buildx imagetools create --tag "$LATEST_REF" "$SHA_REF"
-
-      - name: Pull latest backend image
-        run: docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
 
       - name: Semantic Release
         id: semantic-release
