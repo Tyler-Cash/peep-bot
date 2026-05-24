@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { isDevModeActive, deactivateDevMode } from "@/lib/devMode";
 import { api } from "@/lib/api";
 import { clearSwrCache } from "@/lib/swrCache";
 
-export function DevModeBanner() {
-  const [active, setActive] = useState(false);
+// Dev mode only flips via activate/deactivate, both of which reload the page,
+// so a no-op subscribe is sufficient. useSyncExternalStore reads the client
+// value while returning `false` for the server snapshot, keeping the initial
+// hydration render in sync without a set-state-in-effect.
+const subscribe = () => () => {};
 
-  useEffect(() => {
-    setActive(isDevModeActive());
-  }, []);
+export function DevModeBanner() {
+  const active = useSyncExternalStore(subscribe, isDevModeActive, () => false);
 
   if (!active) return null;
 

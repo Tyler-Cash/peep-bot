@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
@@ -43,17 +43,19 @@ export function EditEventForm({ id }: { id: string }) {
       ? { lat: guild.primaryLocationLat, lng: guild.primaryLocationLng }
       : undefined;
 
-  useEffect(() => {
-    if (data && !initialized) {
-      setName(data.name);
-      setDate(dateToLocalInput(new Date(data.dateTime)));
-      setLocation(data.location ?? "");
-      setLocationPlaceId(data.locationPlaceId ?? "");
-      setInfo(data.description ?? "");
-      setCapacity(data.capacity ?? 0);
-      setInitialized(true);
-    }
-  }, [data, initialized]);
+  // Seed the form from the fetched event exactly once. Initialising during
+  // render (guarded by `!initialized`, so it can't loop) keeps user edits from
+  // being clobbered by background refetches and avoids the extra render pass an
+  // effect would add (react-hooks/set-state-in-effect).
+  if (data && !initialized) {
+    setName(data.name);
+    setDate(dateToLocalInput(new Date(data.dateTime)));
+    setLocation(data.location ?? "");
+    setLocationPlaceId(data.locationPlaceId ?? "");
+    setInfo(data.description ?? "");
+    setCapacity(data.capacity ?? 0);
+    setInitialized(true);
+  }
 
   if (isLoading || !data) {
     return <div className="mx-auto max-w-[960px] p-8 text-mute">loading…</div>;

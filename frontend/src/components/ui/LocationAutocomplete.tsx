@@ -36,13 +36,18 @@ export function LocationAutocomplete({
   const googleEnabled = features ? features.googleAutocompleteEnabled : true;
 
   const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [searchResults, setSearchResults] = useState<PlaceSuggestion[]>([]);
   const [highlight, setHighlight] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"recent" | "search">("recent");
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const [locationUnavailable, setLocationUnavailable] = useState(false);
-  const sessionToken = useMemo(newPlacesSessionToken, []);
+  // Lazy useState initializer: create the session token once, stable for the
+  // component's lifetime (useMemo guarantees neither, and react-hooks/use-memo
+  // rejects a non-inline initializer).
+  const [sessionToken] = useState(newPlacesSessionToken);
+  // `mode` is fully derived from the query, so it never needs to live in state
+  // or be assigned inside the search effect (react-hooks/set-state-in-effect).
+  const mode: "recent" | "search" = value.trim() ? "search" : "recent";
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,6 +56,19 @@ export function LocationAutocomplete({
     () => (recent ?? []).map((title, i) => ({ id: `recent:${i}`, title })),
     [recent],
   );
+
+  // Displayed list is derived: recent spots when the query is empty, otherwise
+  // the search hits. This keeps the empty-query case out of the search effect.
+  const suggestions = mode === "recent" ? recentSuggestions : searchResults;
+
+  // Reset the keyboard highlight to the top whenever the query changes. The old
+  // effect reset it on every list refresh; doing it during render via a
+  // prev-value tracker avoids a set-state-in-effect.
+  const [highlightedQuery, setHighlightedQuery] = useState(value);
+  if (value !== highlightedQuery) {
+    setHighlightedQuery(value);
+    setHighlight(0);
+  }
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -63,18 +81,16 @@ export function LocationAutocomplete({
   useEffect(() => {
     if (!open || !googleEnabled) return;
     const q = value.trim();
-    if (!q) {
-      setMode("recent");
-      setSuggestions(recentSuggestions);
-      setHighlight(0);
-      setLoading(false);
-      return;
-    }
-    setMode("search");
+    // Empty query → recent mode, rendered from derived state; nothing to fetch.
+    if (!q) return;
     const ctrl = new AbortController();
-    setLoading(true);
 
     const t = setTimeout(async () => {
+      // Flip the spinner on inside the debounce callback (when the fetch
+      // actually starts) rather than synchronously in the effect body — keeps
+      // react-hooks/set-state-in-effect happy and avoids a spinner flash while
+      // the user is still typing.
+      setLoading(true);
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
@@ -83,7 +99,7 @@ export function LocationAutocomplete({
       const results = await searchPlaces(value, sessionToken, ctrl.signal, locationBias);
 
       if (Array.isArray(results)) {
-        setSuggestions(results);
+        setSearchResults(results);
         setHighlight(0);
         setLoading(false);
         setRateLimitWarning(false);
@@ -113,7 +129,7 @@ export function LocationAutocomplete({
 
         const retryResults = await searchPlaces(value, sessionToken, undefined, locationBias);
         if (Array.isArray(retryResults)) {
-          setSuggestions(retryResults);
+          setSearchResults(retryResults);
           setHighlight(0);
           setLoading(false);
         }
@@ -128,7 +144,7 @@ export function LocationAutocomplete({
       }
       ctrl.abort();
     };
-  }, [value, open, googleEnabled, sessionToken, recentSuggestions, onChange, locationBias]);
+  }, [value, open, googleEnabled, sessionToken, onChange, locationBias]);
 
   // When google autocomplete is disabled, render a plain text input
   if (!googleEnabled) {
@@ -189,7 +205,9 @@ export function LocationAutocomplete({
   };
 
   const popoverOpen =
-    !locationUnavailable && open && (suggestions.length > 0 || loading);
+    !locationUnavailable &&
+    open &&
+    (suggestions.length > 0 || (loading && mode === "search"));
 
   return (
     <div ref={containerRef} className={clsx("relative", className)}>
@@ -265,7 +283,7 @@ export function LocationAutocomplete({
               ⏱ too many searches — try again shortly
             </div>
           )}
-          {loading && suggestions.length === 0 && (
+          {loading && mode === "search" && suggestions.length === 0 && (
             <div className="px-3 py-2 text-[13px] text-mute">looking…</div>
           )}
           {suggestions.map((s, i) => {

@@ -78,24 +78,27 @@ export function ReplayModal({
   const stage = LIFECYCLE_STAGES.find((s) => s.id === stageId) ?? null;
   const suggested = suggestedStageFor(ev);
 
-  useEffect(() => {
-    if (!open) return;
-    setEventId(prefillEvent?.id ?? "");
-    setState({ phase: "idle" });
-    setQuery("");
-    setShowAllStages(false);
-    setStuckOnly(false);
-    // When opening without a prefilled event, drop straight into the picker so the
-    // search input is the first thing the admin sees — no extra click to start typing.
-    setPickerOpen(!prefillEvent);
-    // Pre-select the most likely stage: explicit prefill > the event's stuck/current stage.
-    if (prefillStage) {
-      setStageId(prefillStage.id);
-    } else {
-      const s = suggestedStageFor(prefillEvent);
-      setStageId(s?.id ?? "");
+  // Reset the picker whenever the modal opens (or the prefill target changes
+  // while open). Done during render via a signature tracker rather than an
+  // effect, which avoids the extra render pass react-hooks/set-state-in-effect
+  // warns about. `appliedInit` is null while closed.
+  const initSignature = open ? `${prefillEvent?.id ?? ""}|${prefillStage?.id ?? ""}` : null;
+  const [appliedInit, setAppliedInit] = useState<string | null>(null);
+  if (initSignature !== appliedInit) {
+    setAppliedInit(initSignature);
+    if (initSignature !== null) {
+      setEventId(prefillEvent?.id ?? "");
+      setState({ phase: "idle" });
+      setQuery("");
+      setShowAllStages(false);
+      setStuckOnly(false);
+      // When opening without a prefilled event, drop straight into the picker so the
+      // search input is the first thing the admin sees — no extra click to start typing.
+      setPickerOpen(!prefillEvent);
+      // Pre-select the most likely stage: explicit prefill > the event's stuck/current stage.
+      setStageId(prefillStage ? prefillStage.id : (suggestedStageFor(prefillEvent)?.id ?? ""));
     }
-  }, [open, prefillEvent, prefillStage]);
+  }
 
   useEffect(() => {
     if (pickerOpen) {

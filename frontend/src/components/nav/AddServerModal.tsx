@@ -10,11 +10,17 @@ export function AddServerModal({ open, onClose }: { open: boolean; onClose: () =
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const [launched, setLaunched] = useState(false);
 
+  // Reset the "launched" state when the modal closes. Done during render via a
+  // prev-prop tracker rather than in the focus effect below, which keeps
+  // `react-hooks/set-state-in-effect` happy.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setLaunched(false);
+  }
+
   useEffect(() => {
-    if (!open) {
-      setLaunched(false);
-      return;
-    }
+    if (!open) return;
     previouslyFocused.current = (document.activeElement as HTMLElement) ?? null;
     closeBtnRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {

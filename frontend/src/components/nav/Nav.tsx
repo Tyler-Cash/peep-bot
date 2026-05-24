@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import clsx from "@/lib/clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { useCurrentUser } from "@/lib/hooks";
@@ -21,10 +21,14 @@ export function Nav() {
   const adminMode = isAdminPath(pathname ?? "") && !!user?.admin;
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Auto-close the drawer whenever the route changes
-  useEffect(() => {
+  // Auto-close the drawer whenever the route changes. Tracking the path in state
+  // and resetting during render (instead of in an effect) avoids the extra
+  // render pass that `react-hooks/set-state-in-effect` warns about.
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (pathname !== menuPath) {
+    setMenuPath(pathname);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <>

@@ -84,13 +84,18 @@ export function DatePicker({ value, onChange }: Props) {
   const [viewYear, setViewYear] = useState(parsed?.getFullYear() ?? today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.getMonth() ?? today.getMonth());
 
-  useEffect(() => {
+  // Keep the visible month in sync with the selected value. Resetting during
+  // render via a prev-value tracker avoids the extra render pass an effect
+  // would incur (react-hooks/set-state-in-effect).
+  const [viewedValue, setViewedValue] = useState(value);
+  if (value !== viewedValue) {
+    setViewedValue(value);
     if (value) {
       const d = new Date(value);
       setViewYear(d.getFullYear());
       setViewMonth(d.getMonth());
     }
-  }, [value]);
+  }
 
   const label = parsed
     ? parsed

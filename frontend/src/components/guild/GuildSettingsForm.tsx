@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CategoriesArchiveCard } from "@/components/guild/settings/CategoriesArchiveCard";
 import { CreationThrottleCard } from "@/components/guild/settings/CreationThrottleCard";
@@ -53,37 +53,41 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
   const { data: settings, isLoading, error } = useGuildSettings(guildId);
   const { data: roles, isLoading: rolesLoading } = useGuildRoles(guildId);
   const { data: categories, isLoading: categoriesLoading } = useGuildCategories(guildId);
-  const sessionToken = useMemo(newPlacesSessionToken, []);
+  // Lazy useState initializer creates the token exactly once and keeps it
+  // stable for the component's lifetime (useMemo offers no such guarantee, and
+  // react-hooks/use-memo rejects a non-inline initializer anyway).
+  const [sessionToken] = useState(newPlacesSessionToken);
 
   const [state, setState] = useState<State | null>(null);
   const [initial, setInitial] = useState<State | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (settings && state === null) {
-      const snapshot: State = {
-        primaryLocation: settings.primaryLocationName ?? "",
-        primaryLocationPlaceId: settings.primaryLocationPlaceId ?? null,
-        primaryLocationLat: settings.primaryLocationLat ?? null,
-        primaryLocationLng: settings.primaryLocationLng ?? null,
-        notifRole: settings.eventsRole ?? "events",
-        organiserRole: settings.organiserRole ?? "event-organiser",
-        anyoneCanCreate: settings.anyoneCanCreate ?? true,
-        rateLimit:
-          settings.eventCreateRateLimitPerHour ??
-          settings.defaultEventCreateRateLimitPerHour ??
-          5,
-        plannedCategoryId: settings.plannedCategoryId ?? null,
-        archivedCategoryId: settings.archivedCategoryId ?? null,
-        archiveDays: (settings.archiveDays ?? 90) as 7 | 14 | 30 | 90,
-        emojiAccepted: settings.emojiAccepted ?? "✅",
-        emojiDeclined: settings.emojiDeclined ?? "❌",
-        emojiMaybe: settings.emojiMaybe ?? "❓",
-      };
-      setState(snapshot);
-      setInitial(snapshot);
-    }
-  }, [settings, state]);
+  // Seed the form from the loaded settings exactly once. Initialising during
+  // render (guarded by `state === null`, so it can't loop) avoids the extra
+  // render pass an effect would add (react-hooks/set-state-in-effect).
+  if (settings && state === null) {
+    const snapshot: State = {
+      primaryLocation: settings.primaryLocationName ?? "",
+      primaryLocationPlaceId: settings.primaryLocationPlaceId ?? null,
+      primaryLocationLat: settings.primaryLocationLat ?? null,
+      primaryLocationLng: settings.primaryLocationLng ?? null,
+      notifRole: settings.eventsRole ?? "events",
+      organiserRole: settings.organiserRole ?? "event-organiser",
+      anyoneCanCreate: settings.anyoneCanCreate ?? true,
+      rateLimit:
+        settings.eventCreateRateLimitPerHour ??
+        settings.defaultEventCreateRateLimitPerHour ??
+        5,
+      plannedCategoryId: settings.plannedCategoryId ?? null,
+      archivedCategoryId: settings.archivedCategoryId ?? null,
+      archiveDays: (settings.archiveDays ?? 90) as 7 | 14 | 30 | 90,
+      emojiAccepted: settings.emojiAccepted ?? "✅",
+      emojiDeclined: settings.emojiDeclined ?? "❌",
+      emojiMaybe: settings.emojiMaybe ?? "❓",
+    };
+    setState(snapshot);
+    setInitial(snapshot);
+  }
 
   useEffect(() => {
     if (user && !user.ownedGuildIds?.includes(guildId)) router.push("/");

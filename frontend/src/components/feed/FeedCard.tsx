@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import clsx from "@/lib/clsx";
 import { CatTag } from "@/components/ui/CatTag";
 import { CountdownChip } from "@/components/ui/CountdownChip";
@@ -22,7 +23,10 @@ export function FeedCard({ event, last }: { event: EventDto; last?: boolean }) {
   const cat = categoryMeta(event.category);
   const tileTilt = seededTilt(`tile-${event.id}`, 1.6);
   const rsvpTilt = seededTilt(`rsvp-${event.id}`, 2.5);
-  const rsvpClosed = new Date(event.dateTime).getTime() + 6 * 60 * 60 * 1000 < Date.now();
+  // Snapshot "now" once at mount via a lazy initializer — calling Date.now()
+  // directly in the render body is flagged as impure (react-hooks/purity).
+  const [now] = useState(() => Date.now());
+  const rsvpClosed = new Date(event.dateTime).getTime() + 6 * 60 * 60 * 1000 < now;
 
   const ds = detail ?? {
     accepted: [],

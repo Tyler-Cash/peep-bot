@@ -1,7 +1,7 @@
 import Image from "next/image";
 import clsx from "@/lib/clsx";
 import { initials, stringToColor } from "@/lib/format";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export type AvatarRef = {
   name?: string | null;
@@ -31,21 +31,16 @@ export function Avatar({
   const name = who.name ?? "";
   const bg = who.hue ?? (name ? stringToColor(name) : "hsl(0,0%,85%)");
 
-  useEffect(() => {
-    if (!who.avatarUrl) {
-      setImgLoaded(false);
-      setImgFailed(false);
-    } else if (loadedUrls.has(who.avatarUrl)) {
-      setImgLoaded(true);
-      setImgFailed(false);
-    } else if (failedUrls.has(who.avatarUrl)) {
-      setImgLoaded(false);
-      setImgFailed(true);
-    } else {
-      setImgLoaded(false);
-      setImgFailed(false);
-    }
-  }, [who.avatarUrl]);
+  // Re-sync load/fail state against the module-level caches whenever the avatar
+  // URL changes. Done during render via a prev-value tracker rather than an
+  // effect (react-hooks/set-state-in-effect), which also avoids a flash of the
+  // initials before the cached image state is reapplied.
+  const [trackedUrl, setTrackedUrl] = useState(who.avatarUrl);
+  if (who.avatarUrl !== trackedUrl) {
+    setTrackedUrl(who.avatarUrl);
+    setImgLoaded(!!who.avatarUrl && loadedUrls.has(who.avatarUrl));
+    setImgFailed(!!who.avatarUrl && failedUrls.has(who.avatarUrl));
+  }
 
   return (
     <span

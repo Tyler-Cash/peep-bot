@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SWRConfig } from "swr";
 import { localStorageProvider } from "@/lib/swrCache";
 import { isDevModeActive } from "@/lib/devMode";
@@ -12,26 +12,33 @@ function isAutomatedBrowser() {
   return typeof navigator !== "undefined" && navigator.webdriver === true;
 }
 
-export function Providers({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+// Whether the in-browser mock backend (MSW) must boot before we render children.
+// Dev mode only flips via a page reload, so a no-op subscribe is enough; the
+// server snapshot knows only the build-time MODE.
+const subscribeMock = () => () => {};
+const needsMockClient = () => MODE === "mock" || isDevModeActive();
+const needsMockServer = () => MODE === "mock";
 
+export function Providers({ children }: { children: ReactNode }) {
+  const needsMock = useSyncExternalStore(subscribeMock, needsMockClient, needsMockServer);
+  const [mockReady, setMockReady] = useState(false);
+
+  // `ready` is derived, not stored — the only state update is the async
+  // setMockReady inside .then(), which isn't a synchronous set-state-in-effect.
   useEffect(() => {
+    if (!needsMock) return;
     let cancelled = false;
-    const useMock = MODE === "mock" || isDevModeActive();
-    if (!useMock) {
-      setReady(true);
-      return;
-    }
     import("@/mocks/browser").then(({ worker }) =>
       worker.start({ onUnhandledRequest: "bypass" }).then(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelled) setMockReady(true);
       }),
     );
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [needsMock]);
 
+  const ready = !needsMock || mockReady;
   if (!ready) {
     return <div className="min-h-screen bg-paper" />;
   }

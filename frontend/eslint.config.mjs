@@ -25,15 +25,4 @@ export default [
     files: ["**/*.config.{js,mjs,ts}"],
     rules: { "import/no-anonymous-default-export": "off" },
   },
-  {
-    // react-hooks v7 (pulled in by eslint-config-next 16) adds stricter rules
-    // that flag pre-existing, working code. Keep the Next 16 upgrade
-    // behavior-preserving by surfacing these as warnings rather than hard
-    // errors; the flagged patterns can be refactored in a dedicated follow-up.
-    rules: {
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/use-memo": "warn",
-      "react-hooks/purity": "warn",
-    },
-  },
 ];
