@@ -9,6 +9,7 @@ export default [
     ignores: [
       "src/lib/api/generated/**",
       ".next/**",
+      ".next-live/**", // custom dist dir used by the live build (NEXT_DIST_DIR)
       "playwright-report/**",
       "test-results/**",
       "coverage/**",
