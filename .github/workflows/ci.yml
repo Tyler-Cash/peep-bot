@@ -231,18 +231,13 @@ jobs:
         if: steps.paketo-cache.outputs.cache-hit == 'true'
         run: docker load -i /tmp/paketo-images.tar
 
-      - name: Pre-pull Paketo images (cache miss path)
+      - name: Pre-pull Paketo builder image (cache miss path)
         if: steps.paketo-cache.outputs.cache-hit != 'true'
-        # Pull builder + run in parallel; save to a tar for next run's cache.
-        # Runs in the background so it overlaps with setup-java / setup-gradle.
+        # Pull the builder upfront; Paketo will fetch the matching run image on demand
+        # during the build itself. Caching just the builder keeps the tar small.
         run: |
-          docker pull paketobuildpacks/builder-jammy-base:latest &
-          docker pull paketobuildpacks/run-jammy-base-tiny:latest &
-          wait
-          docker save \
-            paketobuildpacks/builder-jammy-base:latest \
-            paketobuildpacks/run-jammy-base-tiny:latest \
-            -o /tmp/paketo-images.tar
+          docker pull paketobuildpacks/builder-jammy-base:latest
+          docker save paketobuildpacks/builder-jammy-base:latest -o /tmp/paketo-images.tar
 
       - name: Make gradlew executable
         run: chmod +x gradlew
