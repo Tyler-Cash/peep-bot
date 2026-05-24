@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import { POST } from "@/app/api/traces/route";
+import { GET, POST } from "@/app/api/traces/route";
 import { PUBLIC_OTLP_ENDPOINT } from "@/lib/otel/endpoint";
 
 const ENDPOINT = "http://localhost/api/traces";
@@ -85,5 +85,86 @@ describe("POST /api/traces (browser-span collector proxy)", () => {
     const res = await POST(spanPost(""));
     expect(res.status).toBe(204);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/traces (clock-sync time source)", () => {
+  it("returns the server epoch millis as a number, uncached", async () => {
+    const before = Date.now();
+    const res = await GET();
+    const after = Date.now();
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    const body = (await res.json()) as { now: number };
+    expect(typeof body.now).toBe("number");
+    expect(body.now).toBeGreaterThanOrEqual(before);
+    expect(body.now).toBeLessThanOrEqual(after);
+  });
+});
+
+describe("POST /api/traces clock-skew correction", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  type Span = {
+    startTimeUnixNano: string;
+    endTimeUnixNano: string;
+    events: { timeUnixNano: string }[];
+  };
+
+  function payloadWithOffset(offset?: string): string {
+    return JSON.stringify({
+      resourceSpans: [
+        {
+          scopeSpans: [
+            {
+              spans: [
+                {
+                  startTimeUnixNano: "1000000000000000000",
+                  endTimeUnixNano: "1000000000050000000",
+                  attributes:
+                    offset === undefined
+                      ? []
+                      : [{ key: "browser.clock.offset_ms", value: { intValue: offset } }],
+                  events: [{ timeUnixNano: "1000000000010000000" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  async function forwardedSpan(payload: string): Promise<Span> {
+    const spy = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await POST(spanPost(payload));
+    const [, init] = spy.mock.calls[0] as [string, RequestInit];
+    const parsed = JSON.parse(init.body as string) as {
+      resourceSpans: { scopeSpans: { spans: Span[] }[] }[];
+    };
+    return parsed.resourceSpans[0].scopeSpans[0].spans[0];
+  }
+
+  it("shifts span start/end and event times by browser.clock.offset_ms", async () => {
+    const span = await forwardedSpan(payloadWithOffset("200"));
+    expect(span.startTimeUnixNano).toBe("1000000000200000000");
+    expect(span.endTimeUnixNano).toBe("1000000000250000000");
+    expect(span.events[0].timeUnixNano).toBe("1000000000210000000");
+  });
+
+  it("handles a negative offset (browser clock ahead of server)", async () => {
+    const span = await forwardedSpan(payloadWithOffset("-150"));
+    expect(span.startTimeUnixNano).toBe("999999999850000000");
+  });
+
+  it("ignores an implausibly large offset", async () => {
+    const span = await forwardedSpan(payloadWithOffset(String(11 * 60 * 1000)));
+    expect(span.startTimeUnixNano).toBe("1000000000000000000");
+  });
+
+  it("forwards spans without an offset attribute untouched", async () => {
+    const span = await forwardedSpan(payloadWithOffset());
+    expect(span.startTimeUnixNano).toBe("1000000000000000000");
   });
 });

@@ -21,6 +21,17 @@ import { fetchSpanName } from "@/lib/otel/spanName";
 let started = false;
 
 /**
+ * Estimated browser→server clock offset in ms (server − browser), from {@link syncClock}.
+ * Stamped onto every span as `browser.clock.offset_ms`; the /api/traces proxy shifts span
+ * timestamps by it server-side so browser spans line up with backend spans despite an unsynced
+ * client clock. Stays 0 until the first sync resolves (and on failure) — i.e. a no-op.
+ */
+let clockOffsetMs = 0;
+
+/** Re-estimate the offset periodically so long-lived tabs track clock drift. */
+const CLOCK_RESYNC_MS = 5 * 60_000;
+
+/**
  * Real-user-monitoring tracing in the browser. Produces:
  *   - a span per backend/API fetch (timing, URL, status),
  *   - a document-load span (navigation + resource timing) per page, and
@@ -45,13 +56,22 @@ export function initWebTracing(): void {
   if (process.env.NEXT_PUBLIC_OTEL_BROWSER_ENABLED !== "1") return;
   started = true;
 
+  // Estimate browser↔server clock skew (see syncClock) so the proxy can align
+  // browser spans with backend spans. Fire-and-forget; resync on an interval to
+  // track drift on long-lived tabs.
+  void syncClock();
+  setInterval(() => void syncClock(), CLOCK_RESYNC_MS);
+
   const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
   const backendOrigin = safeOrigin(apiBase);
 
   const provider = new WebTracerProvider({
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: SERVICE_NAME,
-      [ATTR_SERVICE_VERSION]: process.env.NEXT_PUBLIC_APP_VERSION ?? "dev",
+      [ATTR_SERVICE_VERSION]:
+        process.env.NEXT_PUBLIC_APP_VERSION ??
+        process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ??
+        "dev",
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]:
         process.env.NEXT_PUBLIC_VERCEL_ENV ?? "production",
     }),
@@ -124,6 +144,11 @@ class SessionRouteProcessor implements SpanProcessor {
   onStart(span: Span): void {
     span.setAttribute("session.id", sessionId());
     span.setAttribute("page.route", window.location.pathname);
+    // Carries the clock-skew estimate so the /api/traces proxy can shift this
+    // span's timestamps into server time. Omitted while 0 (not yet synced / failed).
+    if (clockOffsetMs !== 0) {
+      span.setAttribute("browser.clock.offset_ms", clockOffsetMs);
+    }
   }
   onEnd(): void {}
   forceFlush(): Promise<void> {
@@ -151,6 +176,29 @@ function sessionId(): string {
   } catch {
     cachedSessionId = "unknown";
     return cachedSessionId;
+  }
+}
+
+/**
+ * Estimates the browser→server clock offset via a round trip to the same-origin
+ * /api/traces time endpoint (Cristian's algorithm): offset ≈ serverNow −
+ * (t0 + t1) / 2, with residual error bounded by RTT/2. The GET is excluded from
+ * fetch instrumentation (ignoreUrls), so it never produces a span itself.
+ */
+async function syncClock(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL("/api/traces", window.location.origin).toString();
+    const t0 = Date.now();
+    const res = await fetch(url, { method: "GET", cache: "no-store" });
+    const t1 = Date.now();
+    if (!res.ok) return;
+    const body = (await res.json()) as { now?: unknown };
+    if (typeof body.now === "number" && Number.isFinite(body.now)) {
+      clockOffsetMs = Math.round(body.now - (t0 + t1) / 2);
+    }
+  } catch {
+    // Best-effort: keep the previous offset (or 0).
   }
 }
 
