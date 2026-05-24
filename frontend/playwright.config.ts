@@ -78,20 +78,30 @@ export default defineConfig({
     video: "off",
   },
   projects,
+  // CI splits the mock and live e2e suites into separate jobs that each build
+  // only the variant they need (mock → .next, live → .next-live). Starting the
+  // unused webServer fails the build-not-found check for whichever directory
+  // wasn't built. In CI we run exactly one webServer per project; locally
+  // (where `next dev` compiles on demand) both still start so a single
+  // playwright invocation can hit both projects.
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined
     : [
-        {
-          command: MOCK_COMMAND,
-          url: BASE_URL,
-          timeout: 120_000,
-          reuseExistingServer: !IS_CI,
-          env: {
-            NEXT_PUBLIC_API_MODE: "mock",
-            NEXT_TELEMETRY_DISABLED: "1",
-          },
-        },
-        ...(E2E_LIVE || !IS_CI
+        ...(!IS_CI || !E2E_LIVE
+          ? [
+              {
+                command: MOCK_COMMAND,
+                url: BASE_URL,
+                timeout: 120_000,
+                reuseExistingServer: !IS_CI,
+                env: {
+                  NEXT_PUBLIC_API_MODE: "mock",
+                  NEXT_TELEMETRY_DISABLED: "1",
+                },
+              },
+            ]
+          : []),
+        ...(!IS_CI || E2E_LIVE
           ? [
               {
                 command: LIVE_COMMAND,
