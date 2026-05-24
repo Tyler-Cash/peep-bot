@@ -283,10 +283,14 @@ class AuthorizationFuzzIntegrationTest {
      */
     @Test
     void controllerScanIsNonEmpty() {
+        // Controllers are CGLIB-proxied by ControllerMethodObservationAspect, so context.getType()
+        // returns the proxy subclass — @RestController isn't @Inherited, so isAnnotationPresent is
+        // false on it. Unwrap to the user class before checking the stereotype.
         long restControllerBeans = Stream.of(context.getBeanNamesForAnnotation(RestController.class))
                 .map(context::getType)
-                .filter(t -> t != null && t.isAnnotationPresent(RequestMapping.class)
-                        || t != null && t.isAnnotationPresent(RestController.class))
+                .filter(java.util.Objects::nonNull)
+                .map(org.springframework.util.ClassUtils::getUserClass)
+                .filter(t -> t.isAnnotationPresent(RequestMapping.class) || t.isAnnotationPresent(RestController.class))
                 .count();
         assertThat(restControllerBeans).isGreaterThanOrEqualTo(8);
     }
