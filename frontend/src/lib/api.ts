@@ -8,9 +8,47 @@ const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 
 let csrfToken: string | null = null;
 
+/**
+ * The minimum a developer needs to find the exact failed request in logs/traces.
+ * `traceId` is the OpenTelemetry trace id the backend stamps onto every error body;
+ * it correlates directly to logs and traces in Grafana. It (and `status`) are absent
+ * for {@link BackendUnreachable}, which never reached the server.
+ */
+export type ErrorRef = {
+  traceId?: string;
+  status?: number;
+  method: string;
+  path: string;
+  timestamp: string;
+};
+
+function traceIdFromBody(body: unknown): string | undefined {
+  if (body && typeof body === "object") {
+    const v = (body as Record<string, unknown>).traceId;
+    if (typeof v === "string" && v && v !== "unknown") return v;
+  }
+  return undefined;
+}
+
+function timestampFromBody(body: unknown): string | undefined {
+  if (body && typeof body === "object") {
+    const v = (body as Record<string, unknown>).timestamp;
+    if (typeof v === "string" && v) return v;
+  }
+  return undefined;
+}
+
+type RequestRef = { method?: string; path?: string };
+
 export class BackendUnreachable extends Error {
-  constructor() {
+  readonly method: string;
+  readonly path: string;
+  readonly timestamp: string;
+  constructor(ref: RequestRef = {}) {
     super("backend unreachable");
+    this.method = ref.method ?? "GET";
+    this.path = ref.path ?? "";
+    this.timestamp = new Date().toISOString();
   }
 }
 
@@ -21,16 +59,26 @@ export class UnauthorizedError extends Error {
 }
 
 export class ApiError extends Error {
+  readonly traceId?: string;
+  readonly method: string;
+  readonly path: string;
+  readonly timestamp: string;
   constructor(
     public readonly status: number,
     public readonly body: unknown,
     message: string,
+    ref: RequestRef = {},
   ) {
     super(message);
+    this.method = ref.method ?? "GET";
+    this.path = ref.path ?? "";
+    this.traceId = traceIdFromBody(body);
+    this.timestamp = timestampFromBody(body) ?? new Date().toISOString();
   }
 }
 
 export class ResponseShapeError extends Error {
+  readonly timestamp: string;
   constructor(
     public readonly path: string,
     public readonly issues: unknown,
@@ -39,7 +87,61 @@ export class ResponseShapeError extends Error {
     super(
       `${path}: response shape did not match the expected schema. ${JSON.stringify(issues)}`,
     );
+    this.timestamp = new Date().toISOString();
   }
+}
+
+/** Pulls an {@link ErrorRef} off any known error type, or null for unknown errors. */
+export function errorRef(e: unknown): ErrorRef | null {
+  if (e instanceof ApiError) {
+    return {
+      traceId: e.traceId,
+      status: e.status,
+      method: e.method,
+      path: e.path,
+      timestamp: e.timestamp,
+    };
+  }
+  if (e instanceof BackendUnreachable) {
+    return { method: e.method, path: e.path, timestamp: e.timestamp };
+  }
+  if (e instanceof ResponseShapeError) {
+    return { method: "GET", path: e.path, timestamp: e.timestamp };
+  }
+  return null;
+}
+
+/**
+ * The single place that maps a thrown error to a user-facing message + trace ref.
+ * Callers that hit auth failures should `return` before reaching here — by the time an
+ * {@link UnauthorizedError} is thrown the api layer has already redirected to /login.
+ */
+export function describeError(e: unknown): { message: string; ref: ErrorRef | null } {
+  if (e instanceof BackendUnreachable) {
+    return {
+      message: "can't reach the server — check your connection and try again",
+      ref: errorRef(e),
+    };
+  }
+  if (e instanceof ResponseShapeError) {
+    return { message: "got an unexpected response from the server", ref: errorRef(e) };
+  }
+  if (e instanceof ApiError) {
+    if (e.status === 429) {
+      return {
+        message: "too many requests — please wait a moment and try again",
+        ref: errorRef(e),
+      };
+    }
+    if (e.status >= 500) {
+      return { message: "something went wrong — please try again", ref: errorRef(e) };
+    }
+    return { message: e.message, ref: errorRef(e) };
+  }
+  return {
+    message: e instanceof Error && e.message ? e.message : "something went wrong",
+    ref: null,
+  };
 }
 
 async function readErrorBody(res: Response): Promise<unknown> {
@@ -70,7 +172,7 @@ async function getCsrf(attempt = 0): Promise<string> {
   try {
     res = await fetch(`${API_BASE}/csrf`, { credentials: "include" });
   } catch {
-    throw new BackendUnreachable();
+    throw new BackendUnreachable({ method: "GET", path: "/csrf" });
   }
   if (res.status === 429 && attempt < 2) {
     const retrySec = Number(res.headers.get("Retry-After") ?? "1");
@@ -125,7 +227,7 @@ async function apiFetchInner<T>(
       credentials: "include",
     });
   } catch {
-    throw new BackendUnreachable();
+    throw new BackendUnreachable({ method, path });
   }
 
   if (res.status === 401 || res.status === 403) {
@@ -155,6 +257,7 @@ async function apiFetchInner<T>(
         429,
         body,
         messageFromBody(body, "too many requests, please try again shortly"),
+        { method, path },
       );
     }
     await new Promise((r) => setTimeout(r, retrySec * 1000));
@@ -166,6 +269,7 @@ async function apiFetchInner<T>(
       res.status,
       body,
       messageFromBody(body, `request failed (${res.status})`),
+      { method, path },
     );
   }
   if (res.status === 204) return undefined as T;

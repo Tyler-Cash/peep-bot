@@ -6,7 +6,14 @@ import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Stepper } from "@/components/ui/Stepper";
-import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
+import { InlineError } from "@/components/ui/InlineError";
+import {
+  ApiError,
+  UnauthorizedError,
+  describeError,
+  errorRef,
+  type ErrorRef as ErrorRefInfo,
+} from "@/lib/api";
 import { dateToLocalInput } from "@/lib/format";
 import { createEvent, useActiveGuild, useRecentLocations } from "@/lib/hooks";
 
@@ -28,6 +35,7 @@ export function CreateEventForm() {
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalErrorRef, setGlobalErrorRef] = useState<ErrorRefInfo | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const locationBias =
@@ -40,6 +48,7 @@ export function CreateEventForm() {
     if (!guild) return;
     setSubmitting(true);
     setGlobalError(null);
+    setGlobalErrorRef(null);
     setFieldErrors({});
     try {
       const created = await createEvent(guild.id, {
@@ -53,14 +62,17 @@ export function CreateEventForm() {
       router.push(`/events/${created.id}`);
     } catch (e) {
       if (e instanceof UnauthorizedError) return;
-      if (e instanceof BackendUnreachable) {
-        setGlobalError("can't reach the server — check your connection and try again");
-      } else if (e instanceof ApiError) {
+      // Only 400s carry per-field validation errors worth mapping to inputs; everything
+      // else (429, 5xx, unreachable) goes through the shared describeError mapping.
+      if (e instanceof ApiError && e.status === 400) {
         const { fieldErrors: fe, globalError: ge } = splitApiError(e);
         setFieldErrors(fe);
         setGlobalError(ge);
+        setGlobalErrorRef(ge ? errorRef(e) : null);
       } else {
-        setGlobalError("something went wrong posting this event");
+        const { message, ref } = describeError(e);
+        setGlobalError(message);
+        setGlobalErrorRef(ref);
       }
     } finally {
       setSubmitting(false);
@@ -125,14 +137,7 @@ export function CreateEventForm() {
           />
         </Field>
 
-        {globalError && (
-          <div
-            role="alert"
-            className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
-          >
-            {globalError}
-          </div>
-        )}
+        {globalError && <InlineError message={globalError} info={globalErrorRef} />}
 
         <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
           <Chunky type="submit" variant="leaf" disabled={submitting}>
@@ -144,40 +149,33 @@ export function CreateEventForm() {
   );
 }
 
+// Maps a 400 validation response onto visible inputs. Field errors the form has an input
+// for land next to that input; anything else falls through to the global error banner.
 function splitApiError(e: ApiError): {
   fieldErrors: Record<string, string>;
   globalError: string | null;
 } {
-  if (e.status === 429) {
-    return {
-      fieldErrors: {},
-      globalError:
-        "event creation is rate-limited for this server — please wait a moment and try again",
-    };
+  const body = e.body as { fieldErrors?: Array<Record<string, unknown>> } | null;
+  const raw = body?.fieldErrors ?? [];
+  const mapped: Record<string, string> = {};
+  const leftover: string[] = [];
+  for (const f of raw) {
+    const field = (f.field ?? f.path) as string | undefined;
+    const msg = (f.defaultMessage ?? f.message) as string | undefined;
+    if (!msg) continue;
+    if (field && FIELD_INPUTS.has(field)) {
+      mapped[field] = msg;
+    } else if (field) {
+      leftover.push(`${field}: ${msg}`);
+    } else {
+      leftover.push(msg);
+    }
   }
-  if (e.status === 400) {
-    const body = e.body as { fieldErrors?: Array<Record<string, unknown>> } | null;
-    const raw = body?.fieldErrors ?? [];
-    const mapped: Record<string, string> = {};
-    const leftover: string[] = [];
-    for (const f of raw) {
-      const field = (f.field ?? f.path) as string | undefined;
-      const msg = (f.defaultMessage ?? f.message) as string | undefined;
-      if (!msg) continue;
-      if (field && FIELD_INPUTS.has(field)) {
-        mapped[field] = msg;
-      } else if (field) {
-        leftover.push(`${field}: ${msg}`);
-      } else {
-        leftover.push(msg);
-      }
-    }
-    if (Object.keys(mapped).length > 0 || leftover.length > 0) {
-      return {
-        fieldErrors: mapped,
-        globalError: leftover.length > 0 ? leftover.join("; ") : null,
-      };
-    }
+  if (Object.keys(mapped).length > 0 || leftover.length > 0) {
+    return {
+      fieldErrors: mapped,
+      globalError: leftover.length > 0 ? leftover.join("; ") : null,
+    };
   }
   return { fieldErrors: {}, globalError: e.message };
 }

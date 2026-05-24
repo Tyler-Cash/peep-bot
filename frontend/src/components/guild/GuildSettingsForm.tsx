@@ -19,7 +19,9 @@ import {
   useGuildSettings,
   useGuilds,
 } from "@/lib/hooks";
-import { UnauthorizedError } from "@/lib/api";
+import { UnauthorizedError, errorRef } from "@/lib/api";
+import { toastError } from "@/lib/toast";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import {
   fetchPlaceDetails,
   geocodePlace,
@@ -102,6 +104,11 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
             ? "You don't have permission to view server settings."
             : "Something went wrong. Try refreshing the page."}
         </p>
+        {!isUnauthorized && (
+          <div className="mx-auto mt-4 max-w-[360px] text-left">
+            <ErrorRef info={errorRef(error)} />
+          </div>
+        )}
         <Link
           href="/"
           className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink"
@@ -152,13 +159,21 @@ export function GuildSettingsForm({ guildId }: { guildId: string }) {
         archiveDays: state.archiveDays,
       });
       setInitial(state);
+    } catch (e) {
+      // No inline slot once the sticky save bar scrolls out of view — toast it.
+      toastError(e);
     } finally {
       setSubmitting(false);
     }
   };
 
   const onKick = async (confirmGuildName: string) => {
-    await kickBotFromGuild(guildId, confirmGuildName);
+    try {
+      await kickBotFromGuild(guildId, confirmGuildName);
+    } catch (e) {
+      toastError(e);
+      return;
+    }
     router.push("/");
   };
 

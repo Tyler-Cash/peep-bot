@@ -7,6 +7,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { categoryMeta } from "@/lib/categories";
 import { dateStamp } from "@/lib/format";
 import { useRewind } from "@/lib/hooks";
+import { errorRef } from "@/lib/api";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import type { AttendeeStatDto, EventCategoryDto } from "@/lib/types";
 import { SocialGraph } from "@/components/rewind/SocialGraph";
 
@@ -15,7 +17,7 @@ const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satu
 export function Rewind() {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const [year, setYear] = useState<number | null>(currentYear);
-  const { data } = useRewind(year);
+  const { data, error } = useRewind(year);
 
   const ranges: { label: string; value: number | null }[] = [
     { label: String(currentYear), value: currentYear },
@@ -57,7 +59,16 @@ export function Rewind() {
         </div>
       </div>
 
-      {!data && (
+      {error && !data && (
+        <div className="py-4">
+          <p className="text-mute text-[14px]">can&apos;t load rewind right now.</p>
+          <div className="mt-2 max-w-[360px]">
+            <ErrorRef info={errorRef(error)} />
+          </div>
+        </div>
+      )}
+
+      {!error && !data && (
         <div className="text-mute py-4">loading rewind…</div>
       )}
 

@@ -7,7 +7,12 @@ import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { Stepper } from "@/components/ui/Stepper";
-import { ApiError, BackendUnreachable, UnauthorizedError } from "@/lib/api";
+import { InlineError } from "@/components/ui/InlineError";
+import {
+  UnauthorizedError,
+  describeError,
+  type ErrorRef as ErrorRefInfo,
+} from "@/lib/api";
 import { dateToLocalInput } from "@/lib/format";
 import {
   updateEvent,
@@ -31,6 +36,7 @@ export function EditEventForm({ id }: { id: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ErrorRefInfo | null>(null);
 
   const locationBias =
     guild?.primaryLocationLat != null && guild?.primaryLocationLng != null
@@ -58,6 +64,7 @@ export function EditEventForm({ id }: { id: string }) {
     if (!guild) return;
     setSubmitting(true);
     setError(null);
+    setErrorInfo(null);
     try {
       await updateEvent(guild.id, data.id, {
         name,
@@ -70,13 +77,9 @@ export function EditEventForm({ id }: { id: string }) {
       router.push(`/events/${id}`);
     } catch (e) {
       if (e instanceof UnauthorizedError) return;
-      if (e instanceof BackendUnreachable) {
-        setError("can't reach the server — check your connection and try again");
-      } else if (e instanceof ApiError) {
-        setError(e.message);
-      } else {
-        setError("something went wrong saving these changes");
-      }
+      const { message, ref } = describeError(e);
+      setError(message);
+      setErrorInfo(ref);
     } finally {
       setSubmitting(false);
     }
@@ -146,14 +149,7 @@ export function EditEventForm({ id }: { id: string }) {
           />
         </Field>
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-chip border-[1.5px] border-ink bg-rose-50 text-ink px-[14px] py-2.5 text-[14.5px] font-semibold leading-[1.4]"
-          >
-            {error}
-          </div>
-        )}
+        {error && <InlineError message={error} info={errorInfo} />}
 
         <div className="flex items-center justify-end gap-3 pt-1.5 mt-1 border-t border-dashed border-ink/20">
           <Link

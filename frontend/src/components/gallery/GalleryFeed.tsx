@@ -2,6 +2,8 @@
 
 import { PeepoSleep } from "@/components/Peepo";
 import { useGallery } from "@/lib/hooks";
+import { errorRef } from "@/lib/api";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import { GalleryCard } from "./GalleryCard";
 
 export function GalleryFeed() {
@@ -20,6 +22,9 @@ export function GalleryFeed() {
       <div className="mx-auto max-w-[980px] px-5 py-6 flex flex-col items-center gap-3 text-center">
         <PeepoSleep size={90} />
         <p className="text-mute text-[14px]">can&apos;t load gallery right now.</p>
+        <div className="w-full max-w-[360px] text-left">
+          <ErrorRef info={errorRef(error)} />
+        </div>
       </div>
     );
   }

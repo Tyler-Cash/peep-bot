@@ -116,7 +116,8 @@ describe("EditEventForm", () => {
 
     await user.click(screen.getByRole("button", { name: /save changes/i }));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toMatch(/boom/i);
+    // 5xx messages are intentionally generic — we don't leak server error text.
+    expect(alert.textContent).toMatch(/something went wrong/i);
 
     await user.click(screen.getByRole("button", { name: /save changes/i }));
 

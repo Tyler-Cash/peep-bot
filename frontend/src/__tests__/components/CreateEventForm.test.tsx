@@ -150,6 +150,27 @@ describe("CreateEventForm", () => {
     expect(btn.disabled).toBe(false);
   });
 
+  it("shows a generic message plus the trace ref for a 500", async () => {
+    const { ApiError } = await import("@/lib/api");
+    mockCreateEvent.mockRejectedValueOnce(
+      new ApiError(500, { error: "leak", traceId: "trace-xyz-789" }, "leak", {
+        method: "POST",
+        path: "/event",
+      }),
+    );
+    const user = userEvent.setup();
+    render(<CreateEventForm />);
+
+    await user.type(screen.getByPlaceholderText(/trivia at the dog/i), "Pub Quiz");
+    await user.click(screen.getByRole("button", { name: /post event/i }));
+
+    const alert = await screen.findByRole("alert");
+    // Raw server message is hidden; the trace ref is shown for a dev to follow up.
+    expect(alert.textContent).toMatch(/something went wrong/i);
+    expect(alert.textContent).not.toMatch(/leak/);
+    expect(alert.textContent).toMatch(/trace-xy/);
+  });
+
   it("renders a friendly error when the backend is unreachable", async () => {
     const { BackendUnreachable } = await import("@/lib/api");
     mockCreateEvent.mockRejectedValueOnce(new BackendUnreachable());

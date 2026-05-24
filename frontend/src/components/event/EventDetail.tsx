@@ -25,7 +25,9 @@ import {
   useEvent,
 } from "@/lib/hooks";
 import type { Attendee, RsvpStatus } from "@/lib/types";
-import { ApiError } from "@/lib/api";
+import { ApiError, errorRef } from "@/lib/api";
+import { toastError } from "@/lib/toast";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import { PencilIcon } from "@/components/icons/PencilIcon";
 
 // Discord snowflakes encode their creation time in the high bits, with epoch
@@ -102,6 +104,8 @@ export function EventDetail({ id }: { id: string }) {
     setIsRecategorizing(true);
     try {
       await recategorizeEvent(guild.id, id);
+    } catch (e) {
+      toastError(e);
     } finally {
       setIsRecategorizing(false);
     }
@@ -123,6 +127,11 @@ export function EventDetail({ id }: { id: string }) {
             ? "This event doesn't exist or may have been removed."
             : "Something went wrong. Try refreshing the page."}
         </p>
+        {!is404 && (
+          <div className="mx-auto mt-4 max-w-[360px] text-left">
+            <ErrorRef info={errorRef(error)} />
+          </div>
+        )}
         <Link href="/" className="mt-6 inline-block text-[16px] font-semibold text-mute hover:text-ink">
           ← back to events
         </Link>
@@ -192,7 +201,13 @@ export function EventDetail({ id }: { id: string }) {
       },
       { revalidate: false },
     );
-    await submitRsvp(guild.id, data.id, status);
+    try {
+      await submitRsvp(guild.id, data.id, status);
+    } catch (e) {
+      // The optimistic update above is now wrong — revalidate to snap back to server truth.
+      mutate();
+      toastError(e);
+    }
   };
 
   const isAdmin = me?.organiserGuildIds?.includes(guild?.id ?? "") ?? false;
@@ -217,19 +232,35 @@ export function EventDetail({ id }: { id: string }) {
       },
       { revalidate: false },
     );
-    await removeAttendee(guild.id, data.id, attendee.snowflake, attendee.name);
+    try {
+      await removeAttendee(guild.id, data.id, attendee.snowflake, attendee.name);
+    } catch (e) {
+      // Optimistic removal failed — revalidate to restore the attendee, then surface it.
+      mutate();
+      toastError(e);
+    }
   };
 
   const handleCancel = async () => {
     if (!guild) return;
-    await cancelEvent(guild.id, data.id);
+    try {
+      await cancelEvent(guild.id, data.id);
+    } catch (e) {
+      toastError(e);
+      return;
+    }
     setShowCancelModal(false);
     router.push("/");
   };
 
   const handleCreatePrivateChannel = async () => {
     if (!guild) return;
-    await createPrivateChannel(guild.id, data.id);
+    try {
+      await createPrivateChannel(guild.id, data.id);
+    } catch (e) {
+      toastError(e);
+      return;
+    }
     setShowPrivateChannelModal(false);
   };
 

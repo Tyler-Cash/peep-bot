@@ -8,6 +8,8 @@ import { AddServerModal } from "@/components/nav/AddServerModal";
 import { PeepoSleep } from "@/components/Peepo";
 import { monthKey, monthLabel } from "@/lib/format";
 import { useEvents, useGuilds } from "@/lib/hooks";
+import { errorRef } from "@/lib/api";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import { FeedCard } from "./FeedCard";
 import { EventDto } from "@/lib/types";
 
@@ -82,6 +84,9 @@ export function EventsFeed() {
           <p className="text-mute text-[14px]">
             can&apos;t reach the backend. showing whatever we had cached.
           </p>
+          <div className="w-full max-w-[360px] text-left">
+            <ErrorRef info={errorRef(error)} />
+          </div>
         </div>
       )}
 

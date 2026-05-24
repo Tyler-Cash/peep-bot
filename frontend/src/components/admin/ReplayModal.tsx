@@ -19,13 +19,15 @@ import {
   type LifecycleStage,
 } from "./lifecycle";
 import type { AdminEventHistoryEntry } from "@/lib/hooks";
+import { describeError, type ErrorRef as ErrorRefInfo } from "@/lib/api";
+import { ErrorRef } from "@/components/ui/ErrorRef";
 import clsx from "@/lib/clsx";
 
 type ReplayState =
   | { phase: "idle" }
   | { phase: "running" }
   | { phase: "done"; message: string; listeners: string[] }
-  | { phase: "error"; message: string };
+  | { phase: "error"; message: string; info: ErrorRefInfo | null };
 
 const REPLAYABLE_STAGES = LIFECYCLE_STAGES.filter(
   (s) => s.kind === "transition" || s.kind === "side",
@@ -141,10 +143,8 @@ export function ReplayModal({
       });
       setState({ phase: "done", message: result.message, listeners: result.listeners });
     } catch (e) {
-      setState({
-        phase: "error",
-        message: e instanceof Error ? e.message : "replay failed",
-      });
+      const { message, ref } = describeError(e);
+      setState({ phase: "error", message, info: ref });
     }
   }
 
@@ -308,6 +308,7 @@ export function ReplayModal({
             {state.phase === "error" && (
               <div className="px-3 py-2 border-[1.5px] border-[#991B1B] rounded-chip bg-[#FFE5E5] text-[#991B1B] text-[13px] font-bold">
                 {state.message}
+                <ErrorRef info={state.info} />
               </div>
             )}
 
