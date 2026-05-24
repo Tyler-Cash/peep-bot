@@ -359,7 +359,14 @@ processResources.dependsOn("downloadModel")
 
 tasks.bootBuildImage {
     imageName = "ghcr.io/tyler-cash/peep-bot-backend:latest"
-    builder = "paketobuildpacks/builder-jammy-full:latest"
+    // builder-jammy-base is ~500MB vs builder-jammy-full's ~2GB. It still ships the
+    // Java/Liberica/Spring Boot buildpacks this project needs; the `full` variant only
+    // matters for polyglot apps (Python + Node + …) that we don't have.
+    builder = "paketobuildpacks/builder-jammy-base:latest"
+    runImage = "paketobuildpacks/run-jammy-base-tiny:latest"
+    // Skip the builder-verification phase — we're pinning to an official Paketo image,
+    // so the trust check just adds ~5s of no-op work per build.
+    trustBuilder = true
     environment.putAll([
             "BP_OCI_SOURCE"          : "https://github.com/Tyler-Cash/peep-bot",
             "BP_OCI_URL"             : "https://github.com/Tyler-Cash/peep-bot",

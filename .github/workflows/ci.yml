@@ -216,6 +216,34 @@ jobs:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
 
+      # Cache the Paketo builder + run images as a single tar so a cold-cache
+      # build doesn't have to re-pull ~700MB from Docker Hub. Key is constant
+      # because we follow `:latest`; restore-keys would pick up older variants
+      # if the key changed. Cold pull is ~60-90s; warm `docker load` is ~5s.
+      - name: Cache Paketo images
+        id: paketo-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: /tmp/paketo-images.tar
+          key: paketo-jammy-base-v1
+
+      - name: Restore Paketo images from cache
+        if: steps.paketo-cache.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/paketo-images.tar
+
+      - name: Pre-pull Paketo images (cache miss path)
+        if: steps.paketo-cache.outputs.cache-hit != 'true'
+        # Pull builder + run in parallel; save to a tar for next run's cache.
+        # Runs in the background so it overlaps with setup-java / setup-gradle.
+        run: |
+          docker pull paketobuildpacks/builder-jammy-base:latest &
+          docker pull paketobuildpacks/run-jammy-base-tiny:latest &
+          wait
+          docker save \
+            paketobuildpacks/builder-jammy-base:latest \
+            paketobuildpacks/run-jammy-base-tiny:latest \
+            -o /tmp/paketo-images.tar
+
       - name: Make gradlew executable
         run: chmod +x gradlew
         working-directory: ./backend
@@ -341,33 +369,6 @@ jobs:
         with:
           sarif_file: backend/grype-backend.sarif
           category: backend
-
-  backend-push:
-    # backend-e2etest no longer gates push — it hits real Discord and only
-    # blocks prod promotion. SBOM stays gating because Grype must clear before
-    # an image with a known critical CVE ever reaches the registry.
-    needs: [backend-test, backend-build, backend-sbom]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Set up lowercase owner
-        run: echo "OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag SHA image as :latest in registry
-        run: |
-          SHA_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:sha-${{ github.sha }}"
-          LATEST_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:latest"
-          docker buildx imagetools create --tag "$LATEST_REF" "$SHA_REF"
 
   frontend-ci:
     runs-on: ubuntu-24.04
@@ -668,12 +669,10 @@ jobs:
           echo "Staging now serving from: https://event-staging.tylercash.dev"
 
   deploy-prod-backend:
-    # backend-e2etest is the gate against prod for real-Discord regressions; it
-    # runs in parallel with the test / build / sbom lanes and is typically done
-    # well before deploy-staging-* finish, so this is rarely a wait in practice.
-    # Backend prod deploy doesn't gate on staging-frontend any more — backend and
-    # frontend deploy chains run as two independent staging→prod tracks.
-    needs: [release, deploy-staging-backend, backend-e2etest]
+    # backend-e2etest is now gated at the `release` job — nothing downstream of
+    # release runs unless the real-Discord smoke passed. Backend prod deploy
+    # therefore only needs its own staging deploy to finish.
+    needs: [release, deploy-staging-backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-24.04
     environment: production
@@ -827,7 +826,21 @@ jobs:
 
   release:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-push, frontend-ci, frontend-e2e-mock, frontend-e2e-live, frontend-sbom]
+    # backend-push was folded into this job — the SHA→:latest retag now lives
+    # at "Tag SHA image as :latest". backend-e2etest gates here too: if the
+    # real-Discord smoke fails, we don't update :latest, don't tag a release,
+    # and nothing deploys.
+    needs:
+      [
+        backend-test,
+        backend-build,
+        backend-sbom,
+        backend-e2etest,
+        frontend-ci,
+        frontend-e2e-mock,
+        frontend-e2e-live,
+        frontend-sbom,
+      ]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -848,6 +861,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag SHA image as :latest in registry
+        run: |
+          SHA_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:sha-${{ github.sha }}"
+          LATEST_REF="ghcr.io/${OWNER_LOWERCASE}/peep-bot-backend:latest"
+          docker buildx imagetools create --tag "$LATEST_REF" "$SHA_REF"
 
       - name: Pull latest backend image
         run: docker pull "ghcr.io/${{ env.OWNER_LOWERCASE }}/peep-bot-backend:latest"
