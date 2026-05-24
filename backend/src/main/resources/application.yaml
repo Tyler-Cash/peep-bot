@@ -166,32 +166,38 @@ management:
   opentelemetry:
     resource-attributes:
       service.name: ${spring.application.name}
+    # Boot 4 renamed the OTLP tracing/logging endpoint keys with level=error
+    # deprecations on the old `management.otlp.tracing.endpoint` /
+    # `management.otlp.logging.endpoint` names — Spring Boot refuses to bind those
+    # now. Metrics keys (management.otlp.metrics.*) are NOT renamed and stay below.
+    tracing:
+      export:
+        otlp:
+          endpoint: http://grafana-lgtm:4318/v1/traces
+    logging:
+      export:
+        otlp:
+          endpoint: http://grafana-lgtm:4318/v1/logs
   otlp:
-    # Default to the homelab grafana-lgtm collector (reachable as the docker-compose service name
-    # on the `homelab_default` network shared by every peep-bot deploy). Spring Boot's native OTLP
-    # exporters do NOT read the standard OTEL_EXPORTER_OTLP_*_ENDPOINT env vars that the OTel
-    # Spring Boot starter used to honour; with the starter gone, baking the URL in here means prod
-    # + staging stacks need no observability env-vars at all. Override per signal via
-    # MANAGEMENT_OTLP_<SIGNAL>_(URL|ENDPOINT) if the collector moves.
+    # Metrics still use the management.otlp.metrics.* namespace in Boot 4.
     metrics:
       export:
         enabled: true
         step: 30s
         url: http://grafana-lgtm:4318/v1/metrics
-    tracing:
-      export:
-        enabled: true
-      endpoint: http://grafana-lgtm:4318/v1/traces
-    logging:
-      export:
-        enabled: true
-      endpoint: http://grafana-lgtm:4318/v1/logs
   tracing:
     sampling:
       # Sample every request. The traffic profile (a hobby Discord bot fronted by
       # traefik) is low enough that head sampling at the default 10% would drop
       # most incident-relevant traces. Revisit if the trace volume becomes a cost.
       probability: 1.0
+  # Boot 4 renamed `management.otlp.logging.export.enabled` →
+  # `management.logging.export.otlp.enabled`; tracing has only the global
+  # `management.tracing.export.enabled` boolean now (defaults to true).
+  logging:
+    export:
+      otlp:
+        enabled: true
 
 # datasource-micrometer creates spans for CONNECTION, QUERY, FETCH, KEYS. The FETCH
 # (result-set) spans add a child per query that's almost always zero-info — drop them

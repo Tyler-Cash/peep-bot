@@ -109,6 +109,11 @@ dependencies {
     // so @Observed / ObservationRegistry spans still reach OTel through the bridge and Spring
     // Boot's ServerHttpObservationFilter remains the single HTTP-server-span source.
     implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
+    // Boot 4's OpenTelemetryLoggingAutoConfiguration provides the SdkLoggerProvider but does
+    // NOT install a logback bridge. logback-spring.xml's OpenTelemetryAppender comes from this
+    // alpha-classifier artefact, and ObservabilityConfiguration installs it on
+    // ApplicationReadyEvent. Bumped to 2.28.0 to match Boot 4.0.6's bundled OTel SDK (1.55.x).
+    implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.28.0-alpha'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
     implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
     implementation("net.dv8tion:JDA:6.4.1") {
@@ -183,10 +188,11 @@ tasks.named('test') {
     // embedding weights) don't OOM the test JVM. Default gradle test heap is 512MB.
     maxHeapSize = '2g'
     // Disable OTLP exporters in tests — there is no collector listening, so each
-    // scheduled push spams the log with ConnectException stack traces.
+    // scheduled push spams the log with ConnectException stack traces. Boot 4 renamed
+    // tracing/logging OTLP enable keys; metrics key (management.otlp.metrics.*) stayed.
     systemProperty 'management.otlp.metrics.export.enabled', 'false'
-    systemProperty 'management.otlp.tracing.export.enabled', 'false'
-    systemProperty 'management.otlp.logging.export.enabled', 'false'
+    systemProperty 'management.tracing.export.enabled', 'false'
+    systemProperty 'management.logging.export.otlp.enabled', 'false'
     // Belt-and-braces for the Boot 4 OTel starter, which also reads otel.sdk.disabled.
     systemProperty 'otel.sdk.disabled', 'true'
     // Disable the Ollama chat model in tests. CI has no route to ollama.tylercash.dev,
