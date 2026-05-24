@@ -107,14 +107,10 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./backend
 
-      # Spotless + jacoco + PR coverage comment only on shard 0 — they need the
-      # full picture (or are a single-runner check) and don't benefit from running
-      # twice in the matrix. Sharded backend-test runs in both jobs.
-      - name: Check code formatting
-        if: matrix.shard == 0
-        run: ./gradlew spotlessCheck
-        working-directory: ./backend
-
+      # jacoco + PR coverage comment + openapi diff check only on shard 0:
+      # shard 0 always owns OpenApiSpecGenerationTest (pinned in build.gradle), so
+      # it's the only shard where the openapi.json on disk reflects a fresh run.
+      # Spotless moved to backend-build (it's build hygiene, not test concern).
       # Run test + jacocoTestReport in ONE Gradle invocation on shard 0 so
       # jacoco aggregates the .exec from the sharded run. Calling
       # jacocoTestReport in a separate `./gradlew` would re-execute the test
@@ -133,9 +129,7 @@ jobs:
         working-directory: ./backend
 
       - name: Verify openapi.json is up to date
-        # Runs on every shard. Whichever shard ran OpenApiSpecGenerationTest
-        # regenerates the file; the others compare an unchanged checkout to
-        # the committed version. Either way the diff should be clean.
+        if: matrix.shard == 0
         run: |
           if ! git diff --exit-code openapi.json; then
             echo "::error::backend/openapi.json is out of date. Run './gradlew generateOpenApiDocs' locally and commit the result."
@@ -268,6 +262,13 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x gradlew
+        working-directory: ./backend
+
+      # Spotless lives here (not in backend-test) because formatting is build
+      # hygiene — failing it should short-circuit before we spend 3 min on
+      # Paketo. ~10s on warm Gradle cache.
+      - name: Check code formatting
+        run: ./gradlew spotlessCheck
         working-directory: ./backend
 
       # Resolve the version baked into the image. On main pushes we run

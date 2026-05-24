@@ -204,11 +204,18 @@ tasks.named('test') {
                     allClasses << relPath.replace(File.separator, '.').replace('.class', '')
                 }
             }
+            // OpenApiSpecGenerationTest is pinned to shard 0 — it regenerates
+            // backend/openapi.json, and CI's `git diff openapi.json` check runs
+            // on shard 0, so the test that produces the file must run there too.
+            // Remove from the round-robin pool and let it ride shard 0 explicitly.
+            def pinnedClass = 'dev.tylercash.event.openapi.OpenApiSpecGenerationTest'
+            allClasses.remove(pinnedClass)
             def included = []
+            if (shardIndex == 0) included << pinnedClass
             allClasses.toList().eachWithIndex { className, idx ->
                 if (idx % shardCount == shardIndex) included << className
             }
-            logger.lifecycle("Shard ${shardIndex + 1}/${shardCount}: running ${included.size()} of ${allClasses.size()} test classes")
+            logger.lifecycle("Shard ${shardIndex + 1}/${shardCount}: running ${included.size()} test classes")
             included.each { filter.includeTestsMatching(it) }
         }
     }
