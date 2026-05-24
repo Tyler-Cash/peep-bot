@@ -8,10 +8,13 @@ export const PUBLIC_OTLP_ENDPOINT = "https://otel.tylercash.dev";
 /**
  * Base OTLP endpoint. Defaults to the public collector but honors
  * OTEL_EXPORTER_OTLP_ENDPOINT so a self-hosted deploy can point at an internal
- * collector (e.g. http://grafana-lgtm:4318) with no auth.
+ * collector (e.g. http://grafana-lgtm:4318) with no auth. Trailing slashes and a
+ * trailing `/v1/traces` are stripped so the caller can always append the signal
+ * path without risking a doubled `/v1/traces/v1/traces`.
  */
 export function otlpEndpoint(): string {
-  return process.env.OTEL_EXPORTER_OTLP_ENDPOINT || PUBLIC_OTLP_ENDPOINT;
+  const raw = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || PUBLIC_OTLP_ENDPOINT;
+  return raw.replace(/\/+$/, "").replace(/\/v1\/traces$/, "").replace(/\/+$/, "");
 }
 
 /**

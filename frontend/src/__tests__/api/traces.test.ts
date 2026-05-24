@@ -54,6 +54,25 @@ describe("POST /api/traces (browser-span collector proxy)", () => {
     expect(url).toBe("http://grafana-lgtm:4318/v1/traces");
   });
 
+  it("normalizes an endpoint that already includes /v1/traces (no doubled path)", async () => {
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT = "https://otel.tylercash.dev/v1/traces/";
+    const spy = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await POST(spanPost());
+    const [url] = spy.mock.calls[0] as [string];
+    expect(url).toBe("https://otel.tylercash.dev/v1/traces");
+  });
+
+  it("surfaces a non-2xx upstream status (e.g. 401 auth) instead of a generic 502", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response("unauthorized", { status: 401 }),
+    );
+    const res = await POST(spanPost());
+    expect(res.status).toBe(401);
+    expect(res.headers.get("x-otlp-upstream-status")).toBe("401");
+  });
+
   it("returns 502 when the collector is unreachable (never throws into the page)", async () => {
     vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("down"));
     const res = await POST(spanPost());
