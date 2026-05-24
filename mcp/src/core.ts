@@ -237,7 +237,7 @@ export function buildRule(opts: {
   if (opts.nameRegex !== undefined) {
     lines.push(`  has:`);
     lines.push(`    field: name`);
-    lines.push(`    regex: "${opts.nameRegex.replace(/"/g, '\\"')}"`);
+    lines.push(`    regex: ${JSON.stringify(opts.nameRegex)}`);
   }
   return lines.join("\n");
 }

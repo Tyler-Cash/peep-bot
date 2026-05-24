@@ -27,7 +27,7 @@ export function SocialGraph({ graph }: { graph: SocialGraphDto }) {
     const container = containerRef.current;
     if (!container || graph.nodes.length === 0) return;
 
-    const uid = Math.random().toString(36).slice(2, 8);
+    const uid = crypto.randomUUID().slice(0, 6);
     const width = container.clientWidth || 600;
     const height = SVG_HEIGHT;
     let bgColor = "#ffffff";

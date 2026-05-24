@@ -76,6 +76,19 @@ dependencyManagement {
 // Override Spring Boot 4.0.6's managed Tomcat (11.0.21) to pick up the fix for
 // GHSA-r29c-68gh-xp6x (critical). Remove once Spring Boot's BOM ships >= 11.0.22.
 ext['tomcat.version'] = '11.0.22'
+// Override Spring Boot's managed Netty (4.2.12.Final) — pulled in transitively via
+// spring-ai-starter-model-ollama -> spring-boot-starter-webclient -> reactor-netty.
+// 4.2.13.Final patches the November 2025 batch: HTTP request smuggling
+// (GHSA-57rv-r2g8-2cj3), HTTP/2 decompression bomb (GHSA-f6hv-jmp6-3vwv), HTTP/3
+// QPACK unbounded allocation (GHSA-2c5c-chwr-9hqw), Lz4FrameDecoder resource
+// exhaustion (GHSA-mj4r-2hfc-f8p6), DNS codec validation bypass
+// (GHSA-cm33-6792-r9fm), epoll half-closed RST DoS (GHSA-rwm7-x88c-3g2p), and
+// handler-proxy CVE (GHSA-45q3-82m4-75jr). Remove once Boot's BOM ships >= 4.2.13.
+ext['netty.version'] = '4.2.13.Final'
+// Override Spring Boot's managed pgjdbc to fix GHSA-98qh-xjc8-98pq — unbounded
+// PBKDF2 iterations during SCRAM auth allow a hostile server to exhaust client CPU.
+// Remove once Boot's BOM ships >= 42.7.11.
+ext['postgresql.version'] = '42.7.11'
 
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
