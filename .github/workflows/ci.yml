@@ -69,14 +69,14 @@ jobs:
         run: npm test
 
   backend-test:
-    # Sharded: each matrix job runs ~half the test classes against its own runner
-    # (own fork pool, own Postgres testcontainer). Per-fork sequential context
-    # startup is the dominant cost so cutting the class set per runner roughly
-    # halves the wall clock of the bottleneck job.
+    # Sharded on main pushes (4 shards) to minimise time-to-prod; single
+    # un-sharded run on PRs so the PR's coverage report covers the full suite
+    # and the test-result check-run UI stays clean. The fromJson()s let the
+    # matrix size flex at workflow-resolve time.
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1]
+        shard: ${{ fromJson(github.event_name == 'push' && '[0, 1, 2, 3]' || '[0]') }}
     runs-on: ubuntu-24.04
     permissions:
       checks: write
@@ -118,14 +118,17 @@ jobs:
       # Run test + jacocoTestReport in ONE Gradle invocation on shard 0 so
       # jacoco aggregates the .exec from the sharded run. Calling
       # jacocoTestReport in a separate `./gradlew` would re-execute the test
-      # task without the shard property and run every class again — adding
-      # ~170s to shard 0 (caught on the first sharded run).
+      # task without the shard property and run every class again. Shard count
+      # is 4 on main pushes, 1 on PRs (matches matrix size above); when
+      # SHARD_COUNT=1 the Gradle filter is a no-op and the full suite runs.
       - name: Run sharded backend tests
+        env:
+          SHARD_COUNT: ${{ github.event_name == 'push' && '4' || '1' }}
         run: |
           if [ "${{ matrix.shard }}" = "0" ]; then
-            ./gradlew test jacocoTestReport -Pshard.index=0 -Pshard.count=2
+            ./gradlew test jacocoTestReport -Pshard.index=0 -Pshard.count=$SHARD_COUNT
           else
-            ./gradlew test -Pshard.index=${{ matrix.shard }} -Pshard.count=2
+            ./gradlew test -Pshard.index=${{ matrix.shard }} -Pshard.count=$SHARD_COUNT
           fi
         working-directory: ./backend
 
