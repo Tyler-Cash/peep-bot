@@ -30,12 +30,16 @@ export async function resolveDiscordIdFromSession(
       headers: { cookie: `SESSION=${sessionKey}` },
       cache: "no-store",
     });
-  } catch {
+  } catch (e) {
+    console.warn("[userResolver] backend fetch threw:", (e as Error).message);
     return { status: 502 };
   }
 
   if (res.status === 401) return { status: 401 };
-  if (!res.ok) return { status: 502 };
+  if (!res.ok) {
+    console.warn("[userResolver] backend returned", res.status, "for /auth/is-logged-in");
+    return { status: 502 };
+  }
 
   const body = (await res.json().catch(() => null)) as
     | { discordId?: string }

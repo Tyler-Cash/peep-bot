@@ -84,12 +84,20 @@ export async function GET(req: Request) {
     return Response.json([]);
   }
 
+  // See staticmap route.ts: fall back to session-keyed rate limit on backend-resolver failure
+  // (a budget cap, not a security boundary). 401 still propagates.
   const resolved = await resolveDiscordIdFromSession(sessionKey);
-  if ("status" in resolved) {
-    return Response.json({ error: "unauthorized" }, { status: resolved.status });
+  let rateLimitKey: string;
+  if ("discordId" in resolved) {
+    rateLimitKey = resolved.discordId;
+  } else if (resolved.status === 401) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  } else {
+    console.warn("[autocomplete] falling back to session-keyed rate limit");
+    rateLimitKey = sessionKey;
   }
 
-  const rateLimit = await checkPlacesRateLimit(resolved.discordId);
+  const rateLimit = await checkPlacesRateLimit(rateLimitKey);
   if (rateLimit.allowed === false) {
     return Response.json(
       { error: "rate limited" },

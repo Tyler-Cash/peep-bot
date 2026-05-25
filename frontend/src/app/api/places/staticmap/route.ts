@@ -36,12 +36,23 @@ export async function GET(req: Request) {
   }
   const zoom = Math.max(10, Math.min(18, parseInt(zoomParam, 10) || 15));
 
+  // Resolve sessionKey -> discordId for relog-proof rate limiting. If the resolver fails because
+  // the backend is unreachable (502), fall back to using the sessionKey itself rather than 502ing
+  // the image — the rate-limit is a budget cap, not a security boundary, and a transient backend
+  // blip shouldn't break every map thumbnail in the app. A 401 from the resolver does propagate:
+  // that means the session is actually invalid.
   const resolved = await resolveDiscordIdFromSession(sessionKey);
-  if ("status" in resolved) {
-    return new Response(null, { status: resolved.status });
+  let rateLimitKey: string;
+  if ("discordId" in resolved) {
+    rateLimitKey = resolved.discordId;
+  } else if (resolved.status === 401) {
+    return new Response(null, { status: 401 });
+  } else {
+    console.warn("[staticmap] falling back to session-keyed rate limit");
+    rateLimitKey = sessionKey;
   }
 
-  const rateLimit = await checkStaticMapRateLimit(resolved.discordId);
+  const rateLimit = await checkStaticMapRateLimit(rateLimitKey);
   if (rateLimit.allowed === false) {
     return new Response(null, {
       status: 429,
