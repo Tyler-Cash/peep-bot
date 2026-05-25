@@ -1,16 +1,21 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 vi.mock("@/lib/rateLimiter");
+vi.mock("@/lib/userResolver", () => ({
+  resolveDiscordIdFromSession: vi.fn(),
+}));
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
 
 import { cookies } from "next/headers";
 import { checkPlacesRateLimit } from "@/lib/rateLimiter";
+import { resolveDiscordIdFromSession } from "@/lib/userResolver";
 import { GET } from "@/app/api/places/autocomplete/route";
 
 const mockRateLimit = vi.mocked(checkPlacesRateLimit);
 const mockCookies = vi.mocked(cookies);
+const mockResolve = vi.mocked(resolveDiscordIdFromSession);
 
 function req(url: string, cookie?: string): Request {
   return new Request(url, { headers: cookie ? { Cookie: cookie } : {} });
@@ -24,6 +29,8 @@ describe("GET /api/places/autocomplete", () => {
   beforeEach(() => {
     mockRateLimit.mockReset();
     mockCookies.mockReset();
+    mockResolve.mockReset();
+    mockResolve.mockResolvedValue({ discordId: "123456" });
     delete process.env.GOOGLE_MAPS_KEY;
     setCookie("test-sess");
   });

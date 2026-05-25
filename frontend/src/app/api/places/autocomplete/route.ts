@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { checkPlacesRateLimit } from "@/lib/rateLimiter";
+import { resolveDiscordIdFromSession } from "@/lib/userResolver";
 
 export const runtime = "nodejs";
 export const preferredRegion = "syd1";
@@ -83,7 +84,12 @@ export async function GET(req: Request) {
     return Response.json([]);
   }
 
-  const rateLimit = await checkPlacesRateLimit(sessionKey);
+  const resolved = await resolveDiscordIdFromSession(sessionKey);
+  if ("status" in resolved) {
+    return Response.json({ error: "unauthorized" }, { status: resolved.status });
+  }
+
+  const rateLimit = await checkPlacesRateLimit(resolved.discordId);
   if (rateLimit.allowed === false) {
     return Response.json(
       { error: "rate limited" },

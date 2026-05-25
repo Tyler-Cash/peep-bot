@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { checkStaticMapRateLimit } from "@/lib/rateLimiter";
+import { resolveDiscordIdFromSession } from "@/lib/userResolver";
 
 export const runtime = "nodejs";
 export const preferredRegion = "syd1";
@@ -35,7 +36,12 @@ export async function GET(req: Request) {
   }
   const zoom = Math.max(10, Math.min(18, parseInt(zoomParam, 10) || 15));
 
-  const rateLimit = await checkStaticMapRateLimit(sessionKey);
+  const resolved = await resolveDiscordIdFromSession(sessionKey);
+  if ("status" in resolved) {
+    return new Response(null, { status: resolved.status });
+  }
+
+  const rateLimit = await checkStaticMapRateLimit(resolved.discordId);
   if (rateLimit.allowed === false) {
     return new Response(null, {
       status: 429,
