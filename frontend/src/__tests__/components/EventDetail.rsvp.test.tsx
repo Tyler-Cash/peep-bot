@@ -41,6 +41,7 @@ vi.mock("@/lib/hooks", () => ({
   useEvent: () => ({ data: eventData, mutate: mockMutate, isLoading: false, error: undefined }),
   useCurrentUser: () => ({ data: { discordId: "u1", username: "Me" } }),
   useActiveGuild: () => ({ id: "g1", name: "Guild" }),
+  useGuildFeatures: () => ({ data: { googleAutocompleteEnabled: false } }),
   submitRsvp: (...args: unknown[]) => mockSubmitRsvp(...args),
   cancelEvent: vi.fn(),
   createPrivateChannel: vi.fn(),
