@@ -55,6 +55,11 @@ public class ServiceConfiguration {
     }
 
     @Bean
+    public RestClient mapsStaticRestClient(RestClient.Builder builder) {
+        return builder.baseUrl("https://maps.googleapis.com").build();
+    }
+
+    @Bean
     public RestClient immichRestClient(RestClient.Builder builder, ImmichConfiguration immichConfiguration) {
         return builder.baseUrl(immichConfiguration.getBaseUrl() != null ? immichConfiguration.getBaseUrl() : "")
                 .defaultHeader(
