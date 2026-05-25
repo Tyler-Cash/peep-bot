@@ -10,6 +10,7 @@ import {
   type PlaceSuggestion,
 } from "@/lib/places";
 import { useActiveGuild, useGuildFeatures } from "@/lib/hooks";
+import { StaticMapThumb } from "@/components/ui/StaticMapThumb";
 
 export function LocationAutocomplete({
   value,
@@ -23,7 +24,11 @@ export function LocationAutocomplete({
 }: {
   value: string;
   onChange: (value: string) => void;
-  onPick?: (placeId: string, displayValue: string) => void;
+  onPick?: (
+    placeId: string,
+    displayValue: string,
+    suggestion: PlaceSuggestion,
+  ) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
@@ -177,7 +182,7 @@ export function LocationAutocomplete({
     onChange(displayValue);
     fetchPlaceDetails(s.id, sessionToken);
     if (onPick && !s.id.startsWith("recent:")) {
-      onPick(s.id, displayValue);
+      onPick(s.id, displayValue, s);
     }
     setOpen(false);
     inputRef.current?.blur();
@@ -288,6 +293,7 @@ export function LocationAutocomplete({
           )}
           {suggestions.map((s, i) => {
             const selected = i === highlight;
+            const isRecent = s.id.startsWith("recent:");
             return (
               <button
                 key={s.id}
@@ -297,7 +303,7 @@ export function LocationAutocomplete({
                 onMouseEnter={() => setHighlight(i)}
                 onClick={() => pick(s)}
                 className={clsx(
-                  "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors",
+                  "w-full text-left px-3.5 py-2.5 flex items-center gap-3 transition-colors",
                   selected ? "bg-[#FFF0A6]" : "bg-white hover:bg-paper",
                 )}
                 style={
@@ -306,8 +312,12 @@ export function LocationAutocomplete({
                     : undefined
                 }
               >
-                <span aria-hidden className="shrink-0 text-[16px]">📍</span>
-                <span className="flex flex-col min-w-0 gap-[2px]">
+                {isRecent ? (
+                  <span aria-hidden className="shrink-0 text-[16px] w-[52px] h-[52px] flex items-center justify-center">📍</span>
+                ) : (
+                  <StaticMapThumb placeId={s.id} size={52} />
+                )}
+                <span className="flex flex-col min-w-0 gap-[2px] flex-1">
                   <span className="text-[15px] font-extrabold text-ink tracking-[-0.01em] leading-[1.15] truncate">
                     {s.title}
                   </span>
@@ -317,6 +327,14 @@ export function LocationAutocomplete({
                     </span>
                   )}
                 </span>
+                {selected && (
+                  <span
+                    aria-hidden
+                    className="shrink-0 text-[11px] font-extrabold tracking-[0.12em] text-mute uppercase"
+                  >
+                    ↵
+                  </span>
+                )}
               </button>
             );
           })}

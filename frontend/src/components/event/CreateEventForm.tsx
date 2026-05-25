@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Chunky } from "@/components/ui/Chunky";
 import { DatePicker, TimePicker } from "@/components/ui/DateTimePicker";
 import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
+import { PickedLocationCard } from "@/components/ui/PickedLocationCard";
+import type { PlaceSuggestion } from "@/lib/places";
 import { Stepper } from "@/components/ui/Stepper";
 import { InlineError } from "@/components/ui/InlineError";
 import {
@@ -31,6 +33,7 @@ export function CreateEventForm() {
   );
   const [location, setLocation] = useState("");
   const [locationPlaceId, setLocationPlaceId] = useState("");
+  const [pickedPlace, setPickedPlace] = useState<PlaceSuggestion | null>(null);
   const [info, setInfo] = useState("");
   const [capacity, setCapacity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -113,14 +116,28 @@ export function CreateEventForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-3">
           <Field label="where" error={fieldErrors.location}>
-            <LocationAutocomplete
-              value={location}
-              onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
-              onPick={(placeId) => setLocationPlaceId(placeId)}
-              placeholder="search venues…"
-              recent={recentVenues}
-              locationBias={locationBias}
-            />
+            {pickedPlace ? (
+              <PickedLocationCard
+                place={pickedPlace}
+                onClear={() => {
+                  setPickedPlace(null);
+                  setLocationPlaceId("");
+                }}
+              />
+            ) : (
+              <LocationAutocomplete
+                value={location}
+                onChange={(v) => { setLocation(v); setLocationPlaceId(""); }}
+                onPick={(placeId, displayValue, suggestion) => {
+                  setLocationPlaceId(placeId);
+                  setLocation(displayValue);
+                  setPickedPlace(suggestion);
+                }}
+                placeholder="search venues…"
+                recent={recentVenues}
+                locationBias={locationBias}
+              />
+            )}
           </Field>
           <Field label="cap" error={fieldErrors.capacity}>
             <Stepper value={capacity} onChange={setCapacity} />

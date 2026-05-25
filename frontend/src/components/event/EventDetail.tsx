@@ -29,6 +29,8 @@ import { ApiError, errorRef } from "@/lib/api";
 import { toastError } from "@/lib/toast";
 import { ErrorRef } from "@/components/ui/ErrorRef";
 import { PencilIcon } from "@/components/icons/PencilIcon";
+import { SidebarMapCard } from "@/components/ui/SidebarMapCard";
+import { useGuildFeatures } from "@/lib/hooks";
 
 // Discord snowflakes encode their creation time in the high bits, with epoch
 // 2015-01-01. We use that to derive the host post's "posted at" timestamp
@@ -94,6 +96,7 @@ export function EventDetail({ id }: { id: string }) {
   const { data, mutate, isLoading, error } = useEvent(id);
   const { data: me } = useCurrentUser();
   const guild = useActiveGuild();
+  const { data: guildFeatures } = useGuildFeatures(guild?.id);
   const [pendingRemove, setPendingRemove] = useState<Attendee | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPrivateChannelModal, setShowPrivateChannelModal] = useState(false);
@@ -452,6 +455,13 @@ export function EventDetail({ id }: { id: string }) {
                 </Chunky>
               </a>
             </div>
+
+            {guildFeatures?.googleAutocompleteEnabled && data.location && data.locationPlaceId && (
+              <SidebarMapCard
+                location={data.location}
+                placeId={data.locationPlaceId}
+              />
+            )}
 
             {isAdmin && !isCancelled && (
               <div className="rounded-card border-[1.5px] border-ink bg-paper2 p-5 shadow-rest flex flex-col gap-2">
