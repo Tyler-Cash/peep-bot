@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { checkStaticMapRateLimit } from "@/lib/rateLimiter";
 
 export const runtime = "nodejs";
 export const preferredRegion = "syd1";
@@ -34,6 +35,17 @@ export async function GET(req: Request) {
   }
   const zoom = Math.max(10, Math.min(18, parseInt(zoomParam, 10) || 15));
 
+  const rateLimit = await checkStaticMapRateLimit(sessionKey);
+  if (rateLimit.allowed === false) {
+    return new Response(null, {
+      status: 429,
+      headers: {
+        "Retry-After": String(rateLimit.retryAfter),
+        "Retry-After-Ms": String(rateLimit.retryAfterMs),
+      },
+    });
+  }
+
   const key = process.env.GOOGLE_MAPS_KEY;
   if (!key) return new Response(null, { status: 503 });
 
@@ -50,7 +62,11 @@ export async function GET(req: Request) {
   try {
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`,
-      { cache: "no-store" },
+      {
+        // Server-side data cache keyed by URL: two users requesting the same
+        // place/size/zoom share one upstream call for 7 days.
+        next: { revalidate: 60 * 60 * 24 * 7, tags: ["staticmap"] },
+      },
     );
     if (!res.ok) return new Response(null, { status: 502 });
     const buf = await res.arrayBuffer();
@@ -58,9 +74,10 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": res.headers.get("Content-Type") ?? "image/png",
-        // Edge + browser caching: Google's tile cache is on by default,
-        // but adding our own cache header keeps repeat thumbs free for the user.
-        "Cache-Control": "private, max-age=86400",
+        // placeId+size+zoom fully determines the image, so it's safe to mark
+        // immutable. Long max-age means the browser never re-fetches the same
+        // thumb after the first render.
+        "Cache-Control": "private, max-age=604800, immutable",
       },
     });
   } catch {

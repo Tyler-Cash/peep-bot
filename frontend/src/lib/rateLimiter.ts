@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 
 let windowLimiter: Ratelimit | undefined;
 let hourlyLimiter: Ratelimit | undefined;
+let staticMapDailyLimiter: Ratelimit | undefined;
 
 function getWindowLimiter(): Ratelimit {
   if (!windowLimiter) {
@@ -37,6 +38,29 @@ function blocked(reset: number): RateLimitResult {
     retryAfter: Math.max(1, Math.ceil(retryAfterMs / 1000)),
     retryAfterMs,
   };
+}
+
+function getStaticMapDailyLimiter(): Ratelimit {
+  if (!staticMapDailyLimiter) {
+    staticMapDailyLimiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.fixedWindow(50, "1 d"),
+      prefix: "staticmap:daily",
+    });
+  }
+  return staticMapDailyLimiter;
+}
+
+export async function checkStaticMapRateLimit(
+  sessionKey: string,
+): Promise<RateLimitResult> {
+  try {
+    const result = await getStaticMapDailyLimiter().limit(sessionKey);
+    if (!result.success) return blocked(result.reset);
+    return { allowed: true };
+  } catch {
+    return { allowed: true };
+  }
 }
 
 export async function checkPlacesRateLimit(
