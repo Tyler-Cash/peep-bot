@@ -3,6 +3,8 @@ package dev.tylercash.event.discord;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.JDA;
@@ -10,6 +12,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -92,24 +95,31 @@ public class DiscordChannelService {
 
     @Observed(name = "discord.channel.sort-by-name")
     public void sortChannelsByChannelName(Category category) {
-        java.util.Locale locale = java.util.Locale.ENGLISH;
-        java.time.format.DateTimeFormatter monthParser = new java.time.format.DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern("MMM")
-                .toFormatter(locale);
+        reorderChannels(category, ChannelOrdering.byChannelName());
+    }
 
-        List<TextChannel> channels = new java.util.ArrayList<>(category.getTextChannels());
-        // nullsLast: foreign channels (system channels, manually-created ones, anything that
-        // doesn't match the dd-MMM-name convention) sort to the end instead of crashing the sort.
-        channels.sort(java.util.Comparator.comparing(
-                channel -> dev.tylercash.event.discord.DiscordUtil.getMonthDayFromChannelName(channel, monthParser),
-                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
+    /**
+     * Apply {@code order} to a category's text channels with a single bulk reorder, skipping the
+     * Discord round-trip entirely when the channels are already in the desired order.
+     *
+     * <p>Replaces the previous per-channel {@code setPosition} loop, which issued one PATCH per
+     * channel on every run regardless of whether anything had actually moved.
+     */
+    @Observed(name = "discord.channel.reorder")
+    public void reorderChannels(Category category, Comparator<GuildChannel> order) {
+        List<TextChannel> current = category.getTextChannels();
+        List<TextChannel> desired = new ArrayList<>(current);
+        desired.sort(order);
 
-        for (int i = 0; i < channels.size(); i++) {
-            JdaObservations.queue(
-                    channels.get(i).getManager().setPosition(i),
-                    "discord.channel.set-position.queue",
-                    observationRegistry);
+        List<Long> currentIds = current.stream().map(TextChannel::getIdLong).toList();
+        List<Long> desiredIds = desired.stream().map(TextChannel::getIdLong).toList();
+        if (currentIds.equals(desiredIds)) {
+            return;
         }
+
+        JdaObservations.queue(
+                category.modifyTextChannelPositions().sortOrder(order),
+                "discord.channel.reorder.queue",
+                observationRegistry);
     }
 }

@@ -12,7 +12,7 @@ import java.util.Locale;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,7 @@ public class DiscordUtil {
      * {@code Comparator.nullsLast(...)} rather than crashing the whole sort.
      */
     @Nullable
-    public static MonthDay getMonthDayFromChannelName(TextChannel channel, DateTimeFormatter monthParser) {
+    public static MonthDay getMonthDayFromChannelName(GuildChannel channel, DateTimeFormatter monthParser) {
         String[] split =
                 channel.getName().replaceAll("(?<=\\d)(st|nd|rd|th)", "").split("-");
         if (split.length < 2) return null;

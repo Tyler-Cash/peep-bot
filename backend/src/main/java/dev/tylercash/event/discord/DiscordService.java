@@ -226,89 +226,46 @@ public class DiscordService {
 
     public void sortChannelsByEventDate(Category eventCategory, String separator, long guildId) {
         List<TextChannel> channels = eventCategory.getTextChannels();
+        List<Long> channelIds = channels.stream().map(TextChannel::getIdLong).toList();
 
-        int separatorIndex = -1;
-        for (int i = 0; i < channels.size(); i++) {
-            if (channels.get(i).getName().equalsIgnoreCase(separator)) {
-                separatorIndex = i;
-                break;
-            }
-        }
-
-        List<TextChannel> before;
-        List<TextChannel> toSort;
-        if (separatorIndex != -1) {
-            before = channels.subList(0, separatorIndex + 1);
-            toSort = channels.subList(separatorIndex + 1, channels.size());
-        } else {
-            before = List.of();
-            toSort = channels;
-        }
-
-        List<Long> channelIds = toSort.stream().map(TextChannel::getIdLong).toList();
         Map<Long, ZonedDateTime> channelDateMap = eventRepository.findByChannelIdIn(channelIds).stream()
                 .collect(Collectors.toMap(Event::getChannelId, Event::getDateTime));
         Map<Long, Long> privateToMainChannelId = eventRepository.findByPrivateChannelIdIn(channelIds).stream()
                 .filter(e -> e.getPrivateChannelId() != null)
                 .collect(Collectors.toMap(Event::getPrivateChannelId, Event::getChannelId));
 
-        List<TextChannel> mainEventChannels = new ArrayList<>();
-        List<TextChannel> privateEventChannels = new ArrayList<>();
-        List<TextChannel> withoutEvent = new ArrayList<>();
-        for (TextChannel ch : toSort) {
-            if (channelDateMap.containsKey(ch.getIdLong())) {
-                mainEventChannels.add(ch);
-            } else if (privateToMainChannelId.containsKey(ch.getIdLong())) {
-                privateEventChannels.add(ch);
-            } else {
-                withoutEvent.add(ch);
-            }
-        }
+        // Orphans: channels with no associated event. The guild's separator channel also has no
+        // event, but it is a permanent divider — exclude it so it is never archived. In the
+        // ordering itself the separator is treated like any other orphan and floats to the front.
+        List<TextChannel> orphans = channels.stream()
+                .filter(ch -> !channelDateMap.containsKey(ch.getIdLong()))
+                .filter(ch -> !privateToMainChannelId.containsKey(ch.getIdLong()))
+                .filter(ch -> !ch.getName().equalsIgnoreCase(separator))
+                .toList();
 
-        mainEventChannels.sort(Comparator.comparing(ch -> channelDateMap.get(ch.getIdLong())));
-
-        if (!withoutEvent.isEmpty()) {
+        if (!orphans.isEmpty()) {
             log.warn(
                     "Found {} orphaned channel(s) in events category with no matching event: {}",
-                    withoutEvent.size(),
-                    withoutEvent.stream().map(TextChannel::getName).toList());
+                    orphans.size(),
+                    orphans.stream().map(TextChannel::getName).toList());
         }
 
-        List<TextChannel> keptOrphans = new ArrayList<>();
         if (featureToggles.isArchiveOrphanedChannels()) {
             OffsetDateTime cutoff = OffsetDateTime.now(clock).minusDays(ORPHAN_AGE_DAYS);
             Category archiveCategory = resolveArchivedCategory(guildId);
-            for (TextChannel orphan : withoutEvent) {
+            for (TextChannel orphan : orphans) {
                 if (orphan.getTimeCreated().isBefore(cutoff)) {
                     log.info("Archiving orphaned channel '{}' (created {})", orphan.getName(), orphan.getTimeCreated());
                     JdaObservations.queue(
                             orphan.getManager().setParent(archiveCategory).sync(),
                             "discord.channel.archive-orphan.queue",
                             observationRegistry);
-                } else {
-                    keptOrphans.add(orphan);
                 }
             }
-        } else {
-            keptOrphans.addAll(withoutEvent);
         }
 
-        List<TextChannel> sorted = new ArrayList<>(before);
-        for (TextChannel mainCh : mainEventChannels) {
-            sorted.add(mainCh);
-            privateEventChannels.stream()
-                    .filter(pc -> Objects.equals(privateToMainChannelId.get(pc.getIdLong()), mainCh.getIdLong()))
-                    .findFirst()
-                    .ifPresent(sorted::add);
-        }
-        sorted.addAll(keptOrphans);
-
-        for (int i = 0; i < sorted.size(); i++) {
-            JdaObservations.queue(
-                    sorted.get(i).getManager().setPosition(i),
-                    "discord.channel.set-position.queue",
-                    observationRegistry);
-        }
+        discordChannelService.reorderChannels(
+                eventCategory, ChannelOrdering.byEventDate(channelDateMap, privateToMainChannelId));
     }
 
     public void sortChannelsByChannelName(Category category) {

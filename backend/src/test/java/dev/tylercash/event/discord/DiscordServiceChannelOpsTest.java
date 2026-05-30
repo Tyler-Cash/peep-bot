@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,14 +19,20 @@ import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.global.FeatureTogglesConfiguration;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import java.time.Clock;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.web.server.ResponseStatusException;
 
 class DiscordServiceChannelOpsTest {
@@ -74,6 +82,68 @@ class DiscordServiceChannelOpsTest {
                 mock(GuildEmojiResolver.class),
                 mock(GuildRepository.class),
                 io.micrometer.observation.ObservationRegistry.NOOP);
+    }
+
+    private static TextChannel channel(long id) {
+        TextChannel channel = mock(TextChannel.class);
+        lenient().when(channel.getIdLong()).thenReturn(id);
+        return channel;
+    }
+
+    private static TextChannel named(long id, String name) {
+        TextChannel channel = channel(id);
+        lenient().when(channel.getName()).thenReturn(name);
+        return channel;
+    }
+
+    @Test
+    @DisplayName("sortChannelsByEventDate reorders by event date, floating orphans (incl. the separator) to the front")
+    void sortChannelsByEventDate_delegatesOrphanFirstReorder() {
+        TextChannel event = channel(100);
+        TextChannel separator = named(200, "===");
+        TextChannel orphan = named(300, "random");
+        Category category = mock(Category.class);
+        when(category.getTextChannels()).thenReturn(List.of(event, separator, orphan));
+
+        Event eventEntity = eventAt(ZonedDateTime.parse("2026-06-10T10:00:00Z"), "Brunch");
+        eventEntity.setChannelId(100L);
+        when(eventRepository.findByChannelIdIn(any())).thenReturn(List.of(eventEntity));
+        when(eventRepository.findByPrivateChannelIdIn(any())).thenReturn(List.of());
+        when(featureToggles.isArchiveOrphanedChannels()).thenReturn(false);
+
+        service.sortChannelsByEventDate(category, "===", GUILD_ID);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Comparator<GuildChannel>> captor = ArgumentCaptor.forClass(Comparator.class);
+        verify(channelService).reorderChannels(eq(category), captor.capture());
+
+        List<TextChannel> resorted = new ArrayList<>(List.of(event, separator, orphan));
+        resorted.sort(captor.getValue());
+        assertThat(resorted.stream().map(TextChannel::getIdLong).toList()).containsExactly(200L, 300L, 100L);
+    }
+
+    @Test
+    @DisplayName("sortChannelsByEventDate never archives the separator channel, even when archiving orphans")
+    void sortChannelsByEventDate_separatorNeverArchived() {
+        OffsetDateTime old = OffsetDateTime.now(clock).minusDays(30);
+        TextChannel separator = named(200, "===");
+        lenient().when(separator.getTimeCreated()).thenReturn(old);
+        TextChannel orphan = mock(TextChannel.class, RETURNS_DEEP_STUBS);
+        lenient().when(orphan.getIdLong()).thenReturn(300L);
+        lenient().when(orphan.getName()).thenReturn("random");
+        lenient().when(orphan.getTimeCreated()).thenReturn(old);
+
+        Category category = mock(Category.class);
+        when(category.getTextChannels()).thenReturn(List.of(separator, orphan));
+        when(eventRepository.findByChannelIdIn(any())).thenReturn(List.of());
+        when(eventRepository.findByPrivateChannelIdIn(any())).thenReturn(List.of());
+        when(featureToggles.isArchiveOrphanedChannels()).thenReturn(true);
+        when(channelService.getCategoryByName(eq(GUILD_ID), anyString())).thenReturn(mock(Category.class));
+
+        service.sortChannelsByEventDate(category, "===", GUILD_ID);
+
+        verify(separator, never()).getManager();
+        verify(orphan).getManager();
     }
 
     private Event eventAt(ZonedDateTime dt, String name) {
