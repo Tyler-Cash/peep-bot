@@ -22,6 +22,12 @@ export default [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
+    // eslint-plugin-react 7.37.x (pulled in via eslint-config-next) detects the
+    // React version through the removed-in-ESLint-10 context.getFilename() API,
+    // which throws under ESLint 10. Pinning the version skips auto-detection.
+    settings: { react: { version: "19.2" } },
+  },
+  {
     // Config files legitimately use anonymous default exports.
     files: ["**/*.config.{js,mjs,ts}"],
     rules: { "import/no-anonymous-default-export": "off" },
