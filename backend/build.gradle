@@ -57,7 +57,7 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-M7'
+        mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-M8'
         // Boot 4 no longer manages Testcontainers versions; pin via their BOM. Stay on
         // the 1.21.x line — Testcontainers 2.x is a rewrite with API breaks.
         mavenBom 'org.testcontainers:testcontainers-bom:1.21.4'
