@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 public interface TfnswEventSnapshotRepository extends JpaRepository<TfnswEventSnapshot, UUID> {
     /**
      * Returns the IDs of events whose date falls in [from, to) AND whose guild has tfnsw_enabled=true.
-     * Used by the week-before recheck poller.
+     * Used by the pre-event follow-up poller.
      */
     @Query(
             """
@@ -19,5 +19,5 @@ public interface TfnswEventSnapshotRepository extends JpaRepository<TfnswEventSn
           AND g.tfnswEnabled = true
           AND e.dateTime >= :from AND e.dateTime < :to
         """)
-    List<UUID> findEventIdsForWeekBeforeCheck(@Param("from") ZonedDateTime from, @Param("to") ZonedDateTime to);
+    List<UUID> findEventIdsForFollowUpCheck(@Param("from") ZonedDateTime from, @Param("to") ZonedDateTime to);
 }

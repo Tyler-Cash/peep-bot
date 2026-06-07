@@ -63,21 +63,26 @@ keep-signal in `isCosmeticHeadline` ("buses replace", "do not run", "closed", "s
 into a shared helper used by both methods. `NEAREST_STATION` and `MAJOR_STATION` now require
 `disruptiveEnough`. `CITYWIDE_LINE` is unchanged (already requires `isDisruptive()`).
 
-**Global open-ended guard.** After a reason is assigned, drop the item when every overlapping
-active period is open-ended *and* the alert is not `disruptiveEnough`. A period is
-"open-ended" when its end is more than `standingHorizonDays` (config, default **90**) past the
-event date — this catches the `now + 365d` default and genuinely unbounded standing notices,
-while keeping real long-running closures (which are `disruptiveEnough`). Applied to both rail
-and traffic items so the protection survives future rule changes.
+**Stale-standing guard.** With the disruption gate above, a *non*-disruptive open-ended alert
+is already dropped on content, so a guard conditioned on "non-disruptive + open-ended" would be
+redundant dead code. To give the open-ended suppression independent, safe value it is instead a
+**stale-standing** rule applied at the overlap step: an alert is dropped when *every* overlapping
+period is both open-ended (ends ≥ `standingHorizonDays` after the event — i.e. carries no
+genuine end, e.g. the `now + 365d` default) **and** started more than `standingHorizonDays`
+before the event. That is the fingerprint of a never-closed notice. It fires regardless of
+effect, so even a disruptive-tagged but months-stale standing alert is dropped, while a real
+bounded closure (real end) and a *recent* indefinite disruption are both kept.
 
 New config on `TfnswConfiguration`: `standingHorizonDays` (default 90).
 
 ### 2. Display — `TfnswReportingService.clusterTimeWindow`
 
-Add each period's **end** date (Sydney-local) to the date set in addition to the start,
-skipping any end at/beyond the far-future horizon so a synthetic 2027 date is never printed.
-With (1) removing the open-ended junk, survivors have bounded windows and render honest
-ranges.
+The reported "Fri 15 May, 3PM–4:46PM" had two parts: the date was the (correct) start, but the
+"4:46PM" was the time-of-day of the synthetic far-future end. The date set is intentionally
+labelled by **start** night (overnight trackwork reads as the night it begins, not the next
+morning), so the fix is narrow: skip open-ended ends (period longer than 180 days) from the
+end-of-window time. When all of a cluster's ends are open-ended the banner renders
+"… from 9:40PM" instead of inventing a synthetic end time.
 
 ### 3. Follow-up timing — replace 7 with 3
 
@@ -111,9 +116,9 @@ informational ones removed by (1). Confirm via tests rather than add link-scrubb
 - The strong-language gate keys off headline wording, so a genuine disruption with an `OTHER`
   effect and bland headline could be dropped. Judged a rare, acceptable miss versus constant
   noise.
-- The open-ended guard is largely subsumed by the gate for rail items; kept deliberately to
-  harden the traffic path and any future rule, and because it directly prevents stale-date
-  rendering.
+- The stale-standing guard fires regardless of effect, so a genuinely disruptive but
+  months-old never-closed alert is dropped. That is the intended behaviour — such an alert is
+  almost always a TfNSW data artifact — and recent indefinite disruptions are still kept.
 
 ## Testing
 

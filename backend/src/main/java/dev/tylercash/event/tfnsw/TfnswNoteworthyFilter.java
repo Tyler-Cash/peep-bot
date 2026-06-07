@@ -52,16 +52,28 @@ public class TfnswNoteworthyFilter {
         List<NoteworthyItem> out = new ArrayList<>();
         Instant dayStart = eventDate.atStartOfDay(SYDNEY).toInstant();
         Instant dayEnd = eventDate.plusDays(1).atStartOfDay(SYDNEY).toInstant();
+        Instant staleStartBefore = eventDate
+                .minusDays(cfg.getStandingHorizonDays())
+                .atStartOfDay(SYDNEY)
+                .toInstant();
+        Instant openEndedAfter = eventDate
+                .plusDays(cfg.getStandingHorizonDays())
+                .atStartOfDay(SYDNEY)
+                .toInstant();
         Set<String> majorIds = stopsIndex.majorStopIds();
 
         for (RailAlert a : railAlerts) {
-            if (!overlapsAnyPeriod(a.startTimes(), a.endTimes(), dayStart, dayEnd)) continue;
+            if (!hasMeaningfulOverlap(a.startTimes(), a.endTimes(), dayStart, dayEnd, staleStartBefore, openEndedAfter))
+                continue;
             if (isCosmeticHeadline(a.headline())) continue;
             Reason reason = null;
+            // Station rules surface an alert on location alone, so they must also
+            // confirm something is actually disrupted — otherwise informational
+            // "Station Update" notices at a major/nearest station leak through.
             if (nearestStationId != null && a.affectedStopIds().contains(nearestStationId)) {
-                reason = Reason.NEAREST_STATION;
+                if (disruptiveEnough(a)) reason = Reason.NEAREST_STATION;
             } else if (!Collections.disjoint(a.affectedStopIds(), majorIds)) {
-                reason = Reason.MAJOR_STATION;
+                if (disruptiveEnough(a)) reason = Reason.MAJOR_STATION;
             } else if (BackboneRoutes.touches(a.affectedRouteIds())
                     && a.effect().isDisruptive()) {
                 reason = Reason.CITYWIDE_LINE;
@@ -114,14 +126,65 @@ public class TfnswNoteworthyFilter {
         return !aStart.isAfter(bEnd) && !aEnd.isBefore(bStart);
     }
 
-    /** True if any of the alert's active periods overlaps the event-day window. */
-    private static boolean overlapsAnyPeriod(
-            List<Instant> startTimes, List<Instant> endTimes, Instant dayStart, Instant dayEnd) {
-        if (startTimes.isEmpty()) return false;
+    /**
+     * True if at least one active period overlaps the event-day window with a
+     * period that isn't "stale standing". A period is stale standing when it is
+     * both open-ended — ending on/after {@code openEndedAfter}, i.e. carrying no
+     * genuine end (TfNSW defaults a missing end to ~a year out) — and started
+     * before {@code staleStartBefore}. That combination is the fingerprint of a
+     * never-closed informational notice that would otherwise attach to every
+     * event in its open window.
+     */
+    private static boolean hasMeaningfulOverlap(
+            List<Instant> startTimes,
+            List<Instant> endTimes,
+            Instant dayStart,
+            Instant dayEnd,
+            Instant staleStartBefore,
+            Instant openEndedAfter) {
         for (int i = 0; i < startTimes.size(); i++) {
-            if (overlaps(startTimes.get(i), endTimes.get(i), dayStart, dayEnd)) return true;
+            Instant start = startTimes.get(i);
+            Instant end = endTimes.get(i);
+            if (!overlaps(start, end, dayStart, dayEnd)) continue;
+            boolean openEnded = !end.isBefore(openEndedAfter);
+            boolean staleStart = start.isBefore(staleStartBefore);
+            if (openEnded && staleStart) continue;
+            return true;
         }
         return false;
+    }
+
+    /**
+     * Strong-disruption keywords: their presence in a headline means the rider
+     * experience is materially affected (replacements, closures, cancellations,
+     * suspensions, truncations), regardless of the GTFS {@code effect} field —
+     * which TfNSW often leaves UNKNOWN. Used both to keep an alert that the
+     * cosmetic filter would otherwise drop and to satisfy the station-rule
+     * disruption gate.
+     */
+    private static final List<String> STRONG_LANGUAGE = List.of(
+            "do not run",
+            "buses replace",
+            " only",
+            "start and end",
+            "no service",
+            "delays",
+            "cancelled",
+            "closed",
+            "suspended",
+            "between ");
+
+    static boolean hasStrongDisruptionLanguage(String headline) {
+        if (headline == null) return false;
+        String lower = headline.toLowerCase().strip();
+        for (String keyword : STRONG_LANGUAGE) {
+            if (lower.contains(keyword)) return true;
+        }
+        return false;
+    }
+
+    private static boolean disruptiveEnough(RailAlert a) {
+        return a.effect().isDisruptive() || hasStrongDisruptionLanguage(a.headline());
     }
 
     /**
@@ -140,16 +203,7 @@ public class TfnswNoteworthyFilter {
         if (headline == null) return false;
         String lower = headline.toLowerCase().strip();
         if (lower.isEmpty()) return false;
-        if (lower.contains("do not run")
-                || lower.contains("buses replace")
-                || lower.contains(" only")
-                || lower.contains("start and end")
-                || lower.contains("no service")
-                || lower.contains("delays")
-                || lower.contains("cancelled")
-                || lower.contains("closed")
-                || lower.contains("suspended")
-                || lower.contains("between ")) return false;
+        if (hasStrongDisruptionLanguage(lower)) return false;
         return lower.startsWith("some trains make extra stops")
                 || lower.startsWith("trains make extra stops")
                 || lower.startsWith("trains run to a changed timetable");

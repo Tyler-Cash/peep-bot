@@ -60,9 +60,10 @@ class TfnswNoteworthyFilterTest {
     }
 
     @Test
-    void railAlertOnNearestStationMatches() {
+    void disruptiveRailAlertOnNearestStationMatches() {
         var items = filter.filter(
-                List.of(alert("a1", Set.of("TOWN_HALL"), Set.of(), RailAlert.Severity.WARNING)),
+                List.of(alert(
+                        "a1", Set.of("TOWN_HALL"), Set.of(), RailAlert.Severity.WARNING, RailAlert.Effect.NO_SERVICE)),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,
@@ -72,14 +73,114 @@ class TfnswNoteworthyFilterTest {
     }
 
     @Test
-    void railAlertOnMajorStationMatches() {
+    void disruptiveRailAlertOnMajorStationMatches() {
         var items = filter.filter(
-                List.of(alert("a2", Set.of("CENTRAL"), Set.of(), RailAlert.Severity.WARNING)),
+                List.of(alert(
+                        "a2", Set.of("CENTRAL"), Set.of(), RailAlert.Severity.WARNING, RailAlert.Effect.NO_SERVICE)),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,
                 "ZZZ_NOT_MAJOR",
                 EVENT_DATE);
+        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
+    }
+
+    @Test
+    void informationalAlertOnMajorStationIsDropped() {
+        // "Station Update - Central": non-disruptive effect, no strong language.
+        // Qualifies for MAJOR_STATION on location alone today; must now be gated
+        // out because nothing is actually disrupted.
+        RailAlert info = new RailAlert(
+                "station-update",
+                "Station Update - Central",
+                "Detail",
+                "",
+                Set.of("CENTRAL"),
+                Set.of("APS_1a"),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.OTHER,
+                RailAlert.Cause.OTHER,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
+        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void informationalAlertOnNearestStationIsDropped() {
+        RailAlert info = new RailAlert(
+                "lift-out",
+                "Lift maintenance at Town Hall",
+                "Detail",
+                "",
+                Set.of("TOWN_HALL"),
+                Set.of(),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.UNKNOWN,
+                RailAlert.Cause.OTHER,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
+        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "TOWN_HALL", EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void strongLanguageAlertOnMajorStationIsKeptEvenWithoutDisruptiveEffect() {
+        // TfNSW leaves effect UNKNOWN but the headline makes the impact clear.
+        RailAlert strong = new RailAlert(
+                "buses-central",
+                "Buses replace trains at Central",
+                "Detail",
+                "https://transportnsw.info/alerts/buses-central",
+                Set.of("CENTRAL"),
+                Set.of(),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.UNKNOWN,
+                RailAlert.Cause.MAINTENANCE,
+                List.of(atDate(EVENT_DATE, 0)),
+                List.of(atDate(EVENT_DATE, 24)));
+        var items = filter.filter(List.of(strong), List.of(), VENUE_LAT, VENUE_LNG, "ZZZ_NOT_MAJOR", EVENT_DATE);
+        assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
+    }
+
+    @Test
+    void staleStandingAlertIsDroppedEvenWhenDisruptive() {
+        // Open-ended (no real end → far-future default) alert that started long
+        // before the event is a stale, never-closed notice. Drop it even though
+        // its effect is disruptive and it touches a major station.
+        RailAlert stale = new RailAlert(
+                "stale-standing",
+                "Reduced service at Central",
+                "Detail",
+                "",
+                Set.of("CENTRAL"),
+                Set.of(),
+                RailAlert.Severity.WARNING,
+                RailAlert.Effect.REDUCED_SERVICE,
+                RailAlert.Cause.OTHER,
+                List.of(atDate(EVENT_DATE.minusDays(200), 0)),
+                List.of(atDate(EVENT_DATE.plusDays(400), 0)));
+        var items = filter.filter(List.of(stale), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void recentOpenEndedDisruptiveAlertIsKept() {
+        // Indefinite (open-ended) but freshly started disruption near the event
+        // is real and must be surfaced — the stale-standing rule must not catch it.
+        RailAlert recent = new RailAlert(
+                "recent-indefinite",
+                "No service at Central until further notice",
+                "Detail",
+                "",
+                Set.of("CENTRAL"),
+                Set.of(),
+                RailAlert.Severity.SEVERE,
+                RailAlert.Effect.NO_SERVICE,
+                RailAlert.Cause.WEATHER,
+                List.of(atDate(EVENT_DATE.minusDays(5), 0)),
+                List.of(atDate(EVENT_DATE.plusDays(400), 0)));
+        var items = filter.filter(List.of(recent), List.of(), VENUE_LAT, VENUE_LNG, "ZZZ_NOT_MAJOR", EVENT_DATE);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
     }
 
@@ -309,7 +410,8 @@ class TfnswNoteworthyFilterTest {
     void noNearestStationStillRunsRailRules() {
         // When nearestStationId is null, major-station + severe-citywide rules still apply.
         var items = filter.filter(
-                List.of(alert("a6", Set.of("CENTRAL"), Set.of(), RailAlert.Severity.WARNING)),
+                List.of(alert(
+                        "a6", Set.of("CENTRAL"), Set.of(), RailAlert.Severity.WARNING, RailAlert.Effect.NO_SERVICE)),
                 List.of(),
                 VENUE_LAT,
                 VENUE_LNG,

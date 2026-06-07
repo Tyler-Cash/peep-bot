@@ -306,6 +306,93 @@ class TfnswOrchestratorTest {
     }
 
     @Test
+    void firstRunPinsTheNotice() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1")));
+        when(reporter.post(eq(e), any())).thenReturn(555L);
+
+        sut.process(id, false);
+
+        verify(reporter).pin(eq(e), eq(555L));
+    }
+
+    @Test
+    void followUpPinsAnchorEvenWithNoNewItems() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+
+        sut.process(id, true);
+
+        verify(reporter).pin(eq(e), eq(555L));
+        verify(reporter, never()).post(any(), any());
+        verify(reporter, never()).postUpdate(any(), anyLong(), any());
+    }
+
+    @Test
+    void followUpPinsReanchoredMessageWhenReplyTargetMissing() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1"), item("trains-2")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+        when(reporter.postUpdate(eq(e), eq(555L), any())).thenReturn(false);
+        when(reporter.post(eq(e), any())).thenReturn(777L);
+
+        sut.process(id, true);
+
+        verify(reporter).pin(eq(e), eq(777L));
+    }
+
+    @Test
+    void retriedFirstRunDoesNotPin() {
+        UUID id = UUID.randomUUID();
+        Event e = event(id, 1L, "pid");
+        e.setLocationLat(-33.0);
+        e.setLocationLng(151.0);
+        when(events.findById(id)).thenReturn(Optional.of(e));
+        when(guilds.findById(1L)).thenReturn(Optional.of(guild(1L, true)));
+        when(filter.filter(any(), any(), anyDouble(), anyDouble(), any(), any()))
+                .thenReturn(List.of(item("metro-1")));
+
+        TfnswEventSnapshot prev = new TfnswEventSnapshot();
+        prev.setEventId(id);
+        prev.setOriginalMessageId(555L);
+        prev.setPostedAlertIds("metro-1");
+        when(snapshots.findById(id)).thenReturn(Optional.of(prev));
+
+        sut.process(id, false);
+
+        verify(reporter, never()).pin(any(), anyLong());
+    }
+
+    @Test
     void disabledConfigSkipsEverything() {
         cfg.setApiKey("");
         UUID id = UUID.randomUUID();

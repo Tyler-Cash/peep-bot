@@ -12,31 +12,33 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Daily 06:00 (Australia/Sydney) sweep of events occurring 7 days from now;
- * re-runs the TfNSW noteworthy check and posts an "Update:" embed only when
- * the snapshot hash differs from the original create-time check.
+ * Daily 06:00 (Australia/Sydney) sweep of events occurring {@code followUpLeadDays}
+ * from now; re-runs the TfNSW noteworthy check, replies with any newly-noteworthy
+ * items, and pins the notice so it's prominent in the run-up to the event.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TfnswWeekBeforePoller {
+public class TfnswFollowUpPoller {
     private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
 
     private final TfnswEventSnapshotRepository snapshots;
     private final TfnswOrchestrator orchestrator;
+    private final TfnswConfiguration cfg;
 
     @Scheduled(cron = "0 0 6 * * *", zone = "Australia/Sydney")
-    @SchedulerLock(name = "tfnswWeekBeforePoller", lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = "tfnswFollowUpPoller", lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
     public void run() {
-        ZonedDateTime from = LocalDate.now(SYDNEY).plusDays(7).atStartOfDay(SYDNEY);
+        ZonedDateTime from =
+                LocalDate.now(SYDNEY).plusDays(cfg.getFollowUpLeadDays()).atStartOfDay(SYDNEY);
         ZonedDateTime to = from.plusDays(1);
-        List<UUID> ids = snapshots.findEventIdsForWeekBeforeCheck(from, to);
-        log.info("TfNSW week-before poller processing {} events for {}", ids.size(), from.toLocalDate());
+        List<UUID> ids = snapshots.findEventIdsForFollowUpCheck(from, to);
+        log.info("TfNSW follow-up poller processing {} events for {}", ids.size(), from.toLocalDate());
         for (UUID id : ids) {
             try {
                 orchestrator.process(id, true);
             } catch (Exception e) {
-                log.warn("TfNSW week-before failed for event {}: {}", id, e.getMessage());
+                log.warn("TfNSW follow-up failed for event {}: {}", id, e.getMessage());
             }
         }
     }

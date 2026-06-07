@@ -30,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Coordinates the TfNSW noteworthy-disruption flow for a single event:
  * resolve coords, fetch alerts + traffic, filter, post if anything is
- * noteworthy, persist a snapshot for hash-diff suppression on the
- * week-before recheck.
+ * noteworthy, persist a snapshot for additive-update dedup on the
+ * pre-event follow-up recheck.
  */
 @Service
 @RequiredArgsConstructor
@@ -60,18 +60,18 @@ public class TfnswOrchestrator {
     private static final Duration TFNSW_LOCK_AT_MOST_FOR = Duration.ofMinutes(5);
 
     @Transactional
-    public void process(UUID eventId, boolean isWeekBeforeRecheck) {
+    public void process(UUID eventId, boolean isFollowUpRecheck) {
         if (!cfg.isEnabled()) return;
         Event event = events.findById(eventId).orElse(null);
         if (event == null) return;
         Guild guild = guilds.findById(event.getServerId()).orElse(null);
         if (guild == null || !guild.isTfnswEnabled()) return;
 
-        // Serialise per-channel: EventCreated listener and the daily week-before poller
+        // Serialise per-channel: EventCreated listener and the daily follow-up poller
         // both reach this method, and the snapshot-based dedup is read-modify-write so two
         // overlapping runs against the same channel can post the same item twice.
         // Skipping when the lock is held is correct: the EventCreated path is a durable
-        // listener that re-fires, and the week-before poller runs again tomorrow.
+        // listener that re-fires, and the follow-up poller runs again tomorrow.
         Long channelId = event.getChannelId();
         if (channelId == null || channelId == 0L) {
             log.debug("Skipping TfNSW for event {} — no channel set", eventId);
@@ -86,13 +86,13 @@ public class TfnswOrchestrator {
             throw new TfnswChannelBusyException(channelId);
         }
         try {
-            processLocked(event, isWeekBeforeRecheck);
+            processLocked(event, isFollowUpRecheck);
         } finally {
             lock.get().unlock();
         }
     }
 
-    private void processLocked(Event event, boolean isWeekBeforeRecheck) {
+    private void processLocked(Event event, boolean isFollowUpRecheck) {
         UUID eventId = event.getId();
         Coords coords = resolveCoords(event);
         if (coords == null) {
@@ -134,7 +134,7 @@ public class TfnswOrchestrator {
                 items.stream().filter(i -> !previouslyPosted.contains(i.id())).toList();
 
         // Idempotency: if we've never posted for this event, do the first-run post.
-        // Otherwise (whether this is the week-before recheck or a retried EventCreated
+        // Otherwise (whether this is the follow-up recheck or a retried EventCreated
         // delivery from the outbox) treat it as an additive update — only post items
         // we haven't already posted, so a transient failure after Discord delivery
         // can't double-post on retry.
@@ -145,30 +145,34 @@ public class TfnswOrchestrator {
                 snap.setPostedAlertIds(serialisePostedIds(
                         items.stream().map(NoteworthyItem::id).toList()));
                 snap.setLastPostedAt(Instant.now());
+                reporter.pin(event, messageId);
             }
             snapshots.save(snap);
             return;
         }
 
-        if (newItems.isEmpty()) {
-            snapshots.save(snap);
-            return;
-        }
-
-        boolean posted = Boolean.TRUE.equals(reporter.postUpdate(event, snap.getOriginalMessageId(), newItems));
-        if (!posted) {
-            // Reply target missing or never recorded — send fresh and re-anchor.
-            Long messageId = reporter.post(event, newItems);
-            if (messageId != null) {
-                snap.setOriginalMessageId(messageId);
-                posted = true;
+        if (!newItems.isEmpty()) {
+            boolean posted = Boolean.TRUE.equals(reporter.postUpdate(event, snap.getOriginalMessageId(), newItems));
+            if (!posted) {
+                // Reply target missing or never recorded — send fresh and re-anchor.
+                Long messageId = reporter.post(event, newItems);
+                if (messageId != null) {
+                    snap.setOriginalMessageId(messageId);
+                    posted = true;
+                }
+            }
+            if (posted) {
+                List<String> merged = new ArrayList<>(previouslyPosted);
+                for (NoteworthyItem n : newItems) merged.add(n.id());
+                snap.setPostedAlertIds(serialisePostedIds(merged));
+                snap.setLastPostedAt(Instant.now());
             }
         }
-        if (posted) {
-            List<String> merged = new ArrayList<>(previouslyPosted);
-            for (NoteworthyItem n : newItems) merged.add(n.id());
-            snap.setPostedAlertIds(serialisePostedIds(merged));
-            snap.setLastPostedAt(Instant.now());
+
+        // On the pre-event follow-up, (re)pin the notice so it's prominent in the
+        // run-up to the event, even when there was nothing new to post.
+        if (isFollowUpRecheck && snap.getOriginalMessageId() != null) {
+            reporter.pin(event, snap.getOriginalMessageId());
         }
         snapshots.save(snap);
     }
