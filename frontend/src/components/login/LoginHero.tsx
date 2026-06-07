@@ -7,6 +7,7 @@ import { mutate } from "swr";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useCurrentUser } from "@/lib/hooks";
+import { isBackendReachable } from "@/lib/api";
 import { activateDevMode } from "@/lib/devMode";
 import { isAuthLoopTripped, noteAuthSuccess } from "@/lib/authLoopGuard";
 
@@ -47,7 +48,7 @@ export function LoginHero() {
     };
   }, []);
 
-  const onContinue = () => {
+  const onContinue = async () => {
     if (loading) return;
     setAuthError(null);
     setLoading(true);
@@ -58,6 +59,14 @@ export function LoginHero() {
       // Clear the mock logout flag so the user is logged in
       window.localStorage.removeItem("mock-auth-logged-out");
       setTimeout(() => router.push("/"), 700);
+      return;
+    }
+    // The OAuth popup loads the backend origin directly, so if the service is
+    // down the user would get Traefik's raw 502/503 inside the popup — unbranded
+    // and unreadable across origins. Probe first and surface our own modal.
+    if (!(await isBackendReachable())) {
+      setLoading(false);
+      setAuthError({ code: "service_unavailable", cid: null });
       return;
     }
     const oauthUrl = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
@@ -265,6 +274,18 @@ export function LoginHero() {
   );
 }
 
+const ERROR_COPY: Record<string, { title: string; body: string }> = {
+  service_unavailable: {
+    title: "peepbot is dead 💀",
+    body: "maybe poke it a few more times 👉",
+  },
+};
+
+const DEFAULT_ERROR_COPY = {
+  title: "Sign-in failed",
+  body: "sorry, the login failed for some reason. if it keeps happening, share this error:",
+};
+
 function AuthErrorModal({
   error,
   onClose,
@@ -272,6 +293,7 @@ function AuthErrorModal({
   error: { code: string; cid: string | null };
   onClose: () => void;
 }) {
+  const copy = ERROR_COPY[error.code] ?? DEFAULT_ERROR_COPY;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -300,7 +322,7 @@ function AuthErrorModal({
             id="auth-error-title"
             className="flex-1 text-[19px] font-extrabold tracking-[-0.02em] leading-tight"
           >
-            Sign-in failed
+            {copy.title}
           </h2>
           <button
             type="button"
@@ -312,9 +334,7 @@ function AuthErrorModal({
           </button>
         </div>
         <div className="px-5 py-4">
-          <p className="text-[14px] text-ink2 leading-[1.5]">
-            sorry, the login failed for some reason. if it keeps happening, share this error:
-          </p>
+          <p className="text-[14px] text-ink2 leading-[1.5]">{copy.body}</p>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px] font-mono rounded-card border-[1.5px] border-ink/15 bg-paper2 px-3 py-2.5">
             <dt className="text-mute">code</dt>
             <dd className="text-ink break-all">{error.code}</dd>

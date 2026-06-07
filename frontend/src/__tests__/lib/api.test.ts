@@ -224,6 +224,51 @@ describe("apiFetch", () => {
   });
 });
 
+describe("isBackendReachable", () => {
+  it("probes /auth/is-logged-in and returns true on 200", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ id: "1" }));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(true);
+    expect(mockFetch.mock.calls[0][0]).toBe("/api/auth/is-logged-in");
+  });
+
+  it("returns true on 401 — server is up, user just isn't logged in", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 401 }));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(true);
+  });
+
+  it("returns true on 403", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 403 }));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(true);
+  });
+
+  it("returns false on 502 (Traefik bad gateway)", async () => {
+    mockFetch.mockResolvedValueOnce(new Response("bad gateway", { status: 502 }));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(false);
+  });
+
+  it("returns false on 503 (service unavailable)", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(false);
+  });
+
+  it("returns false when fetch itself rejects (network/DNS down)", async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError("network down"));
+    const { isBackendReachable } = await import("@/lib/api");
+
+    expect(await isBackendReachable()).toBe(false);
+  });
+});
+
 describe("apiFetch in mock mode", () => {
   it("swallows CSRF fetch failures and proceeds with mutation", async () => {
     process.env.NEXT_PUBLIC_API_MODE = "mock";
