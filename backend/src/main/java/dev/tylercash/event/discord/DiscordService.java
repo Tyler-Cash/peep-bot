@@ -412,21 +412,6 @@ public class DiscordService {
         }
     }
 
-    @CircuitBreaker(name = "discord")
-    @Observed(name = "discord.send-album-link")
-    public void sendAlbumLink(Event event, String albumUrl) {
-        if (event.getNotifications().contains(new Notification(NotificationType.ALBUM_LINK))) {
-            return;
-        }
-        TextChannel channel = getChannel(event);
-        Message message = channel.sendMessage("[Post photos of the event in the album!](" + albumUrl + ")")
-                .complete();
-        pinSilently(message, "album link");
-        event.getNotifications()
-                .add(new Notification(
-                        NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
-    }
-
     @Observed(name = "discord.create-event-roles")
     public void createEventRoles(Event event) {
         Guild guild = jda.getGuildById(event.getServerId());
