@@ -26,7 +26,6 @@ public class EmbedRenderer {
     private final Event event;
     private final Clock clock;
     private final String frontendUrl;
-    private final String albumUrl;
     private final GuildEmojiResolver.ResolvedEmoji emoji;
     private final String coverImageUrl;
 
@@ -56,9 +55,6 @@ public class EmbedRenderer {
         if (event.getId() != null) {
             String editUrl = frontendUrl + "events/" + event.getId();
             links.append(" | [Edit event](").append(editUrl).append(")");
-        }
-        if (albumUrl != null) {
-            links.append(" | [Photo album](").append(albumUrl).append(")");
         }
         embed.addField("Links", links.toString(), false);
         populateAttendeeSection(event, embed);

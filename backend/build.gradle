@@ -145,11 +145,11 @@ dependencies {
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
     // satisfies compilation; testRuntimeOnly keeps @SpringBootTest quiet. Pin to the deployed agent
     // version. Wired in PyroscopeSpanProfilingConfiguration.
-    implementation('io.pyroscope:otel:2.0.1') {
+    implementation('io.pyroscope:otel:2.0.3') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
-    compileOnly 'io.pyroscope:agent:2.5.2'
-    testRuntimeOnly 'io.pyroscope:agent:2.5.2'
+    compileOnly 'io.pyroscope:agent:2.5.4'
+    testRuntimeOnly 'io.pyroscope:agent:2.5.4'
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude module: 'opus-java'
     }
@@ -159,7 +159,7 @@ dependencies {
     implementation 'org.springframework.retry:spring-retry:2.0.12'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.jfree:jfreechart:1.5.6'
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.2'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.3'
     implementation 'org.springframework.ai:spring-ai-starter-model-transformers'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 

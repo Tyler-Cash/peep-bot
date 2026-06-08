@@ -39,6 +39,53 @@ class TfnswReportingServiceTest {
                 List.of());
     }
 
+    private static NoteworthyItem railWithPeriods(String id, List<Instant> starts, List<Instant> ends) {
+        return new NoteworthyItem(
+                Source.RAIL_METRO,
+                id,
+                "Title",
+                "Detail",
+                "",
+                Reason.MAJOR_STATION,
+                Set.of("T1"),
+                Cause.MAINTENANCE,
+                starts,
+                ends);
+    }
+
+    @Test
+    void clusterTimeWindowRendersFromStartWhenEndIsOpenEnded() {
+        // An open-ended period (TfNSW defaults a missing end to ~a year out) must
+        // not render its synthetic end as a real time-of-day. Fri 2026-05-15
+        // 15:00 Sydney start, far-future end → "Fri 15 May, from 3PM".
+        Instant start = Instant.parse("2026-05-15T05:00:00Z");
+        Instant farFuture = Instant.parse("2027-06-01T06:46:00Z");
+        var a = railWithPeriods("a", List.of(start), List.of(farFuture));
+        var b = railWithPeriods("b", List.of(start), List.of(farFuture));
+
+        String window = TfnswReportingService.clusterTimeWindow(List.of(a, b));
+
+        assertThat(window).contains("Fri 15 May");
+        assertThat(window).contains("from 3PM");
+        assertThat(window).doesNotContain("–");
+        assertThat(window).doesNotContain("2027");
+        assertThat(window).doesNotContain("4:46");
+    }
+
+    @Test
+    void clusterTimeWindowRendersRangeForBoundedOvernightPeriod() {
+        // Mon 2026-05-18 21:40 Sydney → Tue 01:30 Sydney. Labelled by the night
+        // it starts (Mon 18), with a real end time.
+        Instant start = Instant.parse("2026-05-18T11:40:00Z");
+        Instant end = Instant.parse("2026-05-18T15:30:00Z");
+        var a = railWithPeriods("a", List.of(start), List.of(end));
+        var b = railWithPeriods("b", List.of(start), List.of(end));
+
+        String window = TfnswReportingService.clusterTimeWindow(List.of(a, b));
+
+        assertThat(window).isEqualTo("Mon 18 May, 9:40PM–1:30AM");
+    }
+
     @Test
     void firstPostFormatsBulletsWithHumanLineNamesAndReturnsMessageId() {
         Event event = new Event();
@@ -72,6 +119,27 @@ class TfnswReportingServiceTest {
                 + "([details](https://transportnsw.info/alerts/trains-1))\n"
                 + "  Buses replace trains";
         assertThat(captor.getValue()).isEqualTo(expected);
+    }
+
+    @Test
+    void pinDelegatesToDiscordService() {
+        Event event = new Event();
+        event.setChannelId(1L);
+
+        reporter.pin(event, 4242L);
+
+        verify(discord).pinMessageInEventChannel(event, 4242L);
+    }
+
+    @Test
+    void pinSwallowsDiscordFailures() {
+        Event event = new Event();
+        event.setChannelId(1L);
+        org.mockito.Mockito.doThrow(new RuntimeException("boom"))
+                .when(discord)
+                .pinMessageInEventChannel(any(), org.mockito.ArgumentMatchers.anyLong());
+
+        reporter.pin(event, 4242L); // must not throw
     }
 
     @Test

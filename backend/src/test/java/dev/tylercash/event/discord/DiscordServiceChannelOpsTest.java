@@ -146,6 +146,56 @@ class DiscordServiceChannelOpsTest {
         verify(orphan).getManager();
     }
 
+    @Test
+    @DisplayName("pinMessageInEventChannel retrieves the message by id and pins it")
+    void pinMessageInEventChannel_retrievesAndPins() {
+        Event event = eventAt(ZonedDateTime.now(clock), "anything");
+        event.setChannelId(CHANNEL_ID);
+
+        TextChannel channel = channel(CHANNEL_ID);
+        net.dv8tion.jda.api.entities.Message message = mock(net.dv8tion.jda.api.entities.Message.class);
+        @SuppressWarnings("unchecked")
+        net.dv8tion.jda.api.requests.RestAction<net.dv8tion.jda.api.entities.Message> retrieve =
+                mock(net.dv8tion.jda.api.requests.RestAction.class);
+        when(channelService.getTextChannel(CHANNEL_ID)).thenReturn(channel);
+        when(channel.retrieveMessageById(4242L)).thenReturn(retrieve);
+        when(retrieve.complete()).thenReturn(message);
+        when(message.pin()).thenReturn(mock(net.dv8tion.jda.api.requests.restaction.AuditableRestAction.class));
+
+        service.pinMessageInEventChannel(event, 4242L);
+
+        verify(message).pin();
+    }
+
+    @Test
+    @DisplayName("pinMessageInEventChannel is a silent no-op when the channel is missing")
+    void pinMessageInEventChannel_noopWhenChannelMissing() {
+        Event event = eventAt(ZonedDateTime.now(clock), "anything");
+        event.setChannelId(CHANNEL_ID);
+        when(channelService.getTextChannel(CHANNEL_ID)).thenReturn(null);
+
+        service.pinMessageInEventChannel(event, 4242L); // must not throw
+    }
+
+    @Test
+    @DisplayName("pinMessageInEventChannel swallows a missing-message error")
+    void pinMessageInEventChannel_swallowsMissingMessage() {
+        Event event = eventAt(ZonedDateTime.now(clock), "anything");
+        event.setChannelId(CHANNEL_ID);
+
+        TextChannel channel = channel(CHANNEL_ID);
+        @SuppressWarnings("unchecked")
+        net.dv8tion.jda.api.requests.RestAction<net.dv8tion.jda.api.entities.Message> retrieve =
+                mock(net.dv8tion.jda.api.requests.RestAction.class);
+        net.dv8tion.jda.api.exceptions.ErrorResponseException err =
+                mock(net.dv8tion.jda.api.exceptions.ErrorResponseException.class);
+        when(channelService.getTextChannel(CHANNEL_ID)).thenReturn(channel);
+        when(channel.retrieveMessageById(4242L)).thenReturn(retrieve);
+        when(retrieve.complete()).thenThrow(err);
+
+        service.pinMessageInEventChannel(event, 4242L); // must not throw
+    }
+
     private Event eventAt(ZonedDateTime dt, String name) {
         Event e = new Event();
         e.setName(name);

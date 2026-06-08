@@ -284,6 +284,25 @@ async function apiFetchInner<T>(
   return data as T;
 }
 
+/**
+ * Probes whether the backend is actually serving requests before we hand the
+ * user off to the OAuth popup. The popup loads `/api/oauth2/...` on the backend
+ * origin, so when the service is down the user gets Traefik's raw 502/503 — a
+ * page we can neither brand nor read across the origin boundary. A 401/403 still
+ * means the server is up (the user just isn't logged in yet), so only a
+ * transport failure or a 5xx counts as unreachable.
+ */
+export async function isBackendReachable(): Promise<boolean> {
+  try {
+    await apiFetch("/auth/is-logged-in");
+    return true;
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return true;
+    if (e instanceof ApiError) return e.status < 500;
+    return false;
+  }
+}
+
 export const api = {
   mode: MODE as "mock" | "live",
   base: API_BASE,

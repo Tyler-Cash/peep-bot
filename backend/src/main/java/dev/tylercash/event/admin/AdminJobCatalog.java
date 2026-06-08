@@ -77,10 +77,8 @@ public class AdminJobCatalog {
             new CatalogEntry("event-cancel-listener", "EventCancelListener", "(reactive)", "EventCancelled", null),
             new CatalogEntry("event-delete-listener", "EventDeleteListener", "(reactive)", "EventDeleted", null),
             new CatalogEntry("immich-album-prep-listener", "ImmichAlbumPrepListener", "(reactive)", "—", null),
-            new CatalogEntry("immich-album-post-listener", "ImmichAlbumPostListener", "(reactive)", "—", null),
             new CatalogEntry("tfnsw-event-created-listener", "TfnswEventCreatedListener", "(reactive)", "—", null),
-            new CatalogEntry(
-                    "tfnsw-week-before", "TfnswWeekBeforePoller", "0 0 6 * * *", "—", "tfnswWeekBeforePoller"));
+            new CatalogEntry("tfnsw-follow-up", "TfnswFollowUpPoller", "0 0 6 * * *", "—", "tfnswFollowUpPoller"));
 
     private final JdbcTemplate jdbc;
 

@@ -382,19 +382,34 @@ public class DiscordService {
         }
     }
 
+    /**
+     * Pins an existing message in the event's channel by id. Best effort: a
+     * missing channel or message is logged and ignored, and the pin itself is
+     * queued via {@link #pinSilently} which tolerates a missing
+     * {@code PIN_MESSAGES} permission.
+     */
     @CircuitBreaker(name = "discord")
-    @Observed(name = "discord.send-album-link")
-    public void sendAlbumLink(Event event, String albumUrl) {
-        if (event.getNotifications().contains(new Notification(NotificationType.ALBUM_LINK))) {
+    public void pinMessageInEventChannel(Event event, long messageId) {
+        TextChannel channel = discordChannelService.getTextChannel(event.getChannelId());
+        if (channel == null) {
+            log.warn(
+                    "Cannot pin message {} for event {}: channel {} not found",
+                    messageId,
+                    event.getId(),
+                    event.getChannelId());
             return;
         }
-        TextChannel channel = getChannel(event);
-        Message message = channel.sendMessage("[Post photos of the event in the album!](" + albumUrl + ")")
-                .complete();
-        pinSilently(message, "album link");
-        event.getNotifications()
-                .add(new Notification(
-                        NotificationType.ALBUM_LINK, ZonedDateTime.now(clock).toInstant(), message.getIdLong()));
+        try {
+            Message message = channel.retrieveMessageById(messageId).complete();
+            pinSilently(message, "TfNSW notice");
+        } catch (ErrorResponseException e) {
+            log.info(
+                    "TfNSW pin target {} missing in channel {} for event {}: {}",
+                    messageId,
+                    event.getChannelId(),
+                    event.getId(),
+                    e.getMeaning());
+        }
     }
 
     @Observed(name = "discord.create-event-roles")

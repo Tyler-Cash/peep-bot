@@ -3,6 +3,7 @@ package dev.tylercash.event.tfnsw;
 import dev.tylercash.event.discord.DiscordService;
 import dev.tylercash.event.event.model.Event;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert.Cause;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -51,6 +52,19 @@ public class TfnswReportingService {
         } catch (Exception e) {
             log.warn("Failed to post TfNSW notice to event {}: {}", event.getId(), e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Pins the notice so it stays prominent in the run-up to the event. Best
+     * effort — pinning is a UX nicety, so any failure is logged and swallowed
+     * rather than aborting the surrounding snapshot save.
+     */
+    public void pin(Event event, long messageId) {
+        try {
+            discordService.pinMessageInEventChannel(event, messageId);
+        } catch (Exception e) {
+            log.warn("Failed to pin TfNSW notice {} for event {}: {}", messageId, event.getId(), e.getMessage());
         }
     }
 
@@ -195,8 +209,11 @@ public class TfnswReportingService {
 
     /**
      * Banner time window for a cluster, e.g. "Mon 18 / Tue 19 May, 9:20PM–1:30AM".
-     * Date list is the distinct Sydney-local calendar dates of all period starts;
-     * times are the earliest start-of-day and latest end-of-day across the cluster.
+     * Dates are labelled by the Sydney-local night each period starts (overnight
+     * trackwork reads as the night it begins, not the next morning). Open-ended
+     * periods — those with no genuine end, where TfNSW defaulted the end to ~a
+     * year out — contribute their start but not their end, so the window renders
+     * "from 9:40PM" rather than a synthetic end time.
      */
     static String clusterTimeWindow(List<NoteworthyItem> cluster) {
         TreeSet<LocalDate> dates = new TreeSet<>();
@@ -207,12 +224,13 @@ public class TfnswReportingService {
             List<Instant> ends = item.endTimes();
             for (int i = 0; i < starts.size(); i++) {
                 var startZdt = starts.get(i).atZone(SYDNEY);
-                var endZdt = ends.get(i).atZone(SYDNEY);
                 dates.add(startZdt.toLocalDate());
                 LocalTime st = startZdt.toLocalTime();
-                LocalTime et = endZdt.toLocalTime();
                 if (earliestStart == null || st.isBefore(earliestStart)) earliestStart = st;
-                if (latestEnd == null || et.isAfter(latestEnd)) latestEnd = et;
+                if (!isOpenEnded(starts.get(i), ends.get(i))) {
+                    LocalTime et = ends.get(i).atZone(SYDNEY).toLocalTime();
+                    if (latestEnd == null || et.isAfter(latestEnd)) latestEnd = et;
+                }
             }
         }
         StringBuilder sb = new StringBuilder();
@@ -228,9 +246,24 @@ public class TfnswReportingService {
             sb.append(' ').append(dates.last().getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH));
         }
         if (earliestStart != null) {
-            sb.append(", ").append(formatTimeOfDay(earliestStart)).append('–').append(formatTimeOfDay(latestEnd));
+            sb.append(", ");
+            if (latestEnd != null) {
+                sb.append(formatTimeOfDay(earliestStart)).append('–').append(formatTimeOfDay(latestEnd));
+            } else {
+                sb.append("from ").append(formatTimeOfDay(earliestStart));
+            }
         }
         return sb.toString();
+    }
+
+    /**
+     * A period with no genuine end — TfNSW defaults a missing GTFS end time to
+     * roughly a year out, so any period running more than 180 days is treated as
+     * open-ended for rendering. Real trackwork windows are hours or, at most, a
+     * handful of days.
+     */
+    private static boolean isOpenEnded(Instant start, Instant end) {
+        return end.isAfter(start.plus(Duration.ofDays(180)));
     }
 
     /** Twelve-hour clock, no leading zero on hour, lowercase am/pm dropped in favour of AM/PM. */

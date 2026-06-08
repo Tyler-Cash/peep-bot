@@ -67,7 +67,7 @@ class EventLifecycleSagaIntegrationTest {
 
     /**
      * Run dispatcher tasks on the caller's thread instead of the {@code event-bus-N} pool. The
-     * listener chain (EventCreated → EventChannelReady → … → Immich Album Post) becomes a deep
+     * listener chain (EventCreated → EventChannelReady → … → Event Archive) becomes a deep
      * synchronous recursion driven by Spring's AFTER_COMMIT handler, which lets each
      * {@code awaitOutboxSuccess} resolve in milliseconds instead of polling for seconds.
      */
@@ -356,9 +356,6 @@ class EventLifecycleSagaIntegrationTest {
         emitTick();
         awaitOutboxSuccess(id, "EventCompletionDue", "Event Complete");
         awaitState(id, EventState.POST_COMPLETED);
-
-        // Immich is disabled, so ImmichAlbumPostListener short-circuits to SUCCESS.
-        awaitOutboxSuccess(id, "EventCompleted", "Immich Album Post");
 
         // ── Step 5: archival ─────────────────────────────────────────────────────
         // Archive timing = 10:00 (event zone) on completion-date + 2 days. Constant for all
