@@ -302,7 +302,8 @@ function formatDiagnostics(path: string, diags: Diagnostic[]): string {
     const where = `${d.range.start.line + 1}:${d.range.start.character + 1}`;
     const code = d.code !== undefined ? ` [${d.code}]` : "";
     const src = d.source ? ` (${d.source})` : "";
-    lines.push(`  ${sev}${code}${src} at ${where}: ${d.message.split("\n")[0].slice(0, 240)}`);
+    const msg = typeof d.message === "string" ? d.message : d.message.value;
+    lines.push(`  ${sev}${code}${src} at ${where}: ${msg.split("\n")[0].slice(0, 240)}`);
   }
   return lines.join("\n");
 }
