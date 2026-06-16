@@ -93,7 +93,7 @@ ext['postgresql.version'] = '42.7.11'
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.google.protobuf:protobuf-java:4.35.0'
+    implementation 'com.google.protobuf:protobuf-java:4.35.1'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
@@ -186,7 +186,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:4.35.0'
+        artifact = 'com.google.protobuf:protoc:4.35.1'
     }
 }
 
