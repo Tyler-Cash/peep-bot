@@ -94,7 +94,7 @@ ext['postgresql.version'] = '42.7.11'
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.google.protobuf:protobuf-java:4.35.0'
+    implementation 'com.google.protobuf:protobuf-java:4.35.1'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
@@ -156,7 +156,7 @@ dependencies {
     // Boot 4 renamed spring-boot-starter-aop → spring-boot-starter-aspectj.
     implementation 'org.springframework.boot:spring-boot-starter-aspectj'
     // Boot 4's BOM no longer manages spring-retry — pin explicitly.
-    implementation 'org.springframework.retry:spring-retry:2.0.12'
+    implementation 'org.springframework.retry:spring-retry:2.0.13'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.jfree:jfreechart:1.5.6'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.3'
@@ -186,7 +186,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:4.35.0'
+        artifact = 'com.google.protobuf:protoc:4.35.1'
     }
 }
 
