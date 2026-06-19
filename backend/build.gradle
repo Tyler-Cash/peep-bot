@@ -144,7 +144,7 @@ dependencies {
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
     // satisfies compilation; testRuntimeOnly keeps @SpringBootTest quiet. Pin to the deployed agent
     // version. Wired in PyroscopeSpanProfilingConfiguration.
-    implementation('io.pyroscope:otel:2.0.5') {
+    implementation('io.pyroscope:otel:2.0.6') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
     compileOnly 'io.pyroscope:agent:2.5.4'
