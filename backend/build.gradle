@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'jacoco'
-    id 'com.diffplug.spotless' version '8.6.0'
+    id 'com.diffplug.spotless' version '8.7.0'
     id 'org.springframework.boot' version '4.0.6'
     id 'org.cyclonedx.bom' version '3.2.4'
     id 'com.google.protobuf' version '0.10.0'
@@ -58,9 +58,10 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom 'org.springframework.ai:spring-ai-bom:2.0.0-RC1'
-        // Boot 4 no longer manages Testcontainers versions; pin via their BOM. Stay on
-        // the 1.21.x line — Testcontainers 2.x is a rewrite with API breaks.
-        mavenBom 'org.testcontainers:testcontainers-bom:1.21.4'
+        // Boot 4 no longer manages Testcontainers versions; pin via their BOM. The 2.x
+        // line renamed the module artifacts (org.testcontainers:junit-jupiter →
+        // testcontainers-junit-jupiter, postgresql → testcontainers-postgresql).
+        mavenBom 'org.testcontainers:testcontainers-bom:2.0.5'
         // Manages the OTel *instrumentation* library modules (the logback appender below, etc.).
         // Boot's BOM only manages OTel *core* (api/sdk, 1.55.0); the instrumentation artifacts are
         // unmanaged, so without this they'd need a hand-pinned version each. Pin this BOM to the
@@ -144,11 +145,11 @@ dependencies {
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
     // satisfies compilation; testRuntimeOnly keeps @SpringBootTest quiet. Pin to the deployed agent
     // version. Wired in PyroscopeSpanProfilingConfiguration.
-    implementation('io.pyroscope:otel:2.0.5') {
+    implementation('io.pyroscope:otel:2.0.6') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
-    compileOnly 'io.pyroscope:agent:2.5.4'
-    testRuntimeOnly 'io.pyroscope:agent:2.5.4'
+    compileOnly 'io.pyroscope:agent:2.6.0'
+    testRuntimeOnly 'io.pyroscope:agent:2.6.0'
     implementation("net.dv8tion:JDA:6.4.2") {
         exclude module: 'opus-java'
     }
@@ -176,9 +177,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
