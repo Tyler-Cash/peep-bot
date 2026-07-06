@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'jacoco'
-    id 'com.diffplug.spotless' version '8.7.0'
+    id 'com.diffplug.spotless' version '8.8.0'
     id 'org.springframework.boot' version '4.0.6'
     id 'org.cyclonedx.bom' version '3.2.4'
     id 'com.google.protobuf' version '0.10.0'
@@ -145,7 +145,7 @@ dependencies {
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
     // satisfies compilation; testRuntimeOnly keeps @SpringBootTest quiet. Pin to the deployed agent
     // version. Wired in PyroscopeSpanProfilingConfiguration.
-    implementation('io.pyroscope:otel:2.0.6') {
+    implementation('io.pyroscope:otel:2.1.0') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
     compileOnly 'io.pyroscope:agent:2.6.0'
