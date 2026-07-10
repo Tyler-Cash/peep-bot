@@ -150,7 +150,7 @@ dependencies {
     }
     compileOnly 'io.pyroscope:agent:2.6.0'
     testRuntimeOnly 'io.pyroscope:agent:2.6.0'
-    implementation("net.dv8tion:JDA:6.4.2") {
+    implementation("net.dv8tion:JDA:6.5.0") {
         exclude module: 'opus-java'
     }
     // Boot 4 renamed spring-boot-starter-aop → spring-boot-starter-aspectj.
