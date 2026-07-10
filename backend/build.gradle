@@ -148,8 +148,8 @@ dependencies {
     implementation('io.pyroscope:otel:2.1.0') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
-    compileOnly 'io.pyroscope:agent:2.6.0'
-    testRuntimeOnly 'io.pyroscope:agent:2.6.0'
+    compileOnly 'io.pyroscope:agent:2.8.0'
+    testRuntimeOnly 'io.pyroscope:agent:2.8.0'
     implementation("net.dv8tion:JDA:6.5.0") {
         exclude module: 'opus-java'
     }
