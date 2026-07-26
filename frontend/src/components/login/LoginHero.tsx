@@ -15,6 +15,15 @@ const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 const SHOW_DEV_PANEL = MODE !== "live";
 
+/**
+ * True when this device should run OAuth as a full-page redirect rather than a
+ * popup. Touch devices (coarse pointer) open `window.open` as a background tab
+ * and don't give us a usable popup handle, so the popup path is unreliable there.
+ */
+export function prefersFullPageLogin(win: Window = window): boolean {
+  return typeof win.matchMedia === "function" && win.matchMedia("(pointer: coarse)").matches;
+}
+
 const features = [
   { emoji: "📅", title: "one thread", body: "all your plans live in #outings, off the main chat." },
   { emoji: "✅", title: "react to RSVP", body: "✅ 🤔 ❌ — peepbot tallies it for you." },
@@ -55,35 +64,64 @@ export function LoginHero() {
     // User is explicitly trying to log in — clear any prior bounce-loop state
     // so a successful auth ends at /, not stuck on /login.
     noteAuthSuccess();
-    if (MODE === "mock") {
+    // Read the mode at call time (Next inlines NEXT_PUBLIC_* literally) so the
+    // launch branch is testable without re-importing the module.
+    const mode = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
+    if (mode === "mock") {
       // Clear the mock logout flag so the user is logged in
       window.localStorage.removeItem("mock-auth-logged-out");
       setTimeout(() => router.push("/"), 700);
       return;
     }
-    // The OAuth popup loads the backend origin directly, so if the service is
-    // down the user would get Traefik's raw 502/503 inside the popup — unbranded
-    // and unreadable across origins. Probe first and surface our own modal.
-    if (!(await isBackendReachable())) {
-      setLoading(false);
-      setAuthError({ code: "service_unavailable", cid: null });
+    const oauthUrl = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+
+    // Touch devices: a single full-page navigation. window.open there opens a
+    // background tab we can't drive, and after the reachability await below the
+    // popup gesture is spent — the old code then also fired window.location as a
+    // fallback, so /oauth2/authorization/discord was hit twice and the two
+    // authorization requests clobbered each other's `state`, yielding
+    // authorization_request_not_found on the callback. Navigation needs no
+    // gesture, so probing first is safe here.
+    if (prefersFullPageLogin()) {
+      if (!(await isBackendReachable())) {
+        setLoading(false);
+        setAuthError({ code: "service_unavailable", cid: null });
+        return;
+      }
+      window.location.assign(oauthUrl);
       return;
     }
-    const oauthUrl = `${API_BASE.replace(/\/api$/, "")}/api/oauth2/authorization/discord`;
+
+    // Desktop: open a blank popup synchronously (before any await) so the click
+    // gesture still counts, then probe and steer the same window. The backend
+    // origin is loaded directly, so a raw Traefik 502/503 inside the popup would
+    // be unbranded and cross-origin — we close the popup and show our own modal.
     const w = 520;
     const h = 720;
     const left = window.screenX + (window.outerWidth - w) / 2;
     const top = window.screenY + (window.outerHeight - h) / 2;
     const popup = window.open(
-      oauthUrl,
+      "",
       "peepbot-discord-login",
       `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no`,
     );
     if (!popup) {
-      // Popup blocked — fall back to full-page redirect.
-      window.location.href = oauthUrl;
+      // Popup blocked even on desktop — fall back to a single full-page redirect.
+      if (!(await isBackendReachable())) {
+        setLoading(false);
+        setAuthError({ code: "service_unavailable", cid: null });
+        return;
+      }
+      window.location.assign(oauthUrl);
       return;
     }
+    if (!(await isBackendReachable())) {
+      popup.close();
+      setLoading(false);
+      setAuthError({ code: "service_unavailable", cid: null });
+      return;
+    }
+    popup.location.replace(oauthUrl);
     popupRef.current = popup;
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
