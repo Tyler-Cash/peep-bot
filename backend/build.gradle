@@ -125,8 +125,8 @@ dependencies {
     // (now-modularised) OAuth2 client autoconfigure module containing OAuth2ClientProperties.
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
-    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
-    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.9.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.9.0'
     // Observability stack — Spring Boot 4's native OTel starter. Bundles
     // micrometer-tracing-bridge-otel, opentelemetry-exporter-otlp, and micrometer-registry-otlp,
     // so @Observed / ObservationRegistry spans still reach OTel through the bridge and Spring
