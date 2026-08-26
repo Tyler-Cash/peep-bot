@@ -1,9 +1,9 @@
 plugins {
     id 'application'
     id 'jacoco'
-    id 'com.diffplug.spotless' version '8.9.0'
+    id 'com.diffplug.spotless' version '8.10.0'
     id 'org.springframework.boot' version '4.0.6'
-    id 'org.cyclonedx.bom' version '3.3.0'
+    id 'org.cyclonedx.bom' version '3.4.1'
     id 'com.google.protobuf' version '0.10.0'
 }
 
@@ -94,7 +94,7 @@ ext['postgresql.version'] = '42.7.11'
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.google.protobuf:protobuf-java:4.35.1'
+    implementation 'com.google.protobuf:protobuf-java:4.36.0'
     implementation 'com.ibm.icu:icu4j:78.3'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
@@ -125,8 +125,8 @@ dependencies {
     // (now-modularised) OAuth2 client autoconfigure module containing OAuth2ClientProperties.
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.session:spring-session-jdbc'
-    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
-    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.9.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.9.0'
     // Observability stack — Spring Boot 4's native OTel starter. Bundles
     // micrometer-tracing-bridge-otel, opentelemetry-exporter-otlp, and micrometer-registry-otlp,
     // so @Observed / ObservationRegistry spans still reach OTel through the bridge and Spring
@@ -145,11 +145,11 @@ dependencies {
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
     // satisfies compilation; testRuntimeOnly keeps @SpringBootTest quiet. Pin to the deployed agent
     // version. Wired in PyroscopeSpanProfilingConfiguration.
-    implementation('io.pyroscope:otel:2.1.0') {
+    implementation('io.pyroscope:otel:2.1.2') {
         exclude group: 'io.pyroscope', module: 'agent'
     }
-    compileOnly 'io.pyroscope:agent:2.9.0'
-    testRuntimeOnly 'io.pyroscope:agent:2.9.0'
+    compileOnly 'io.pyroscope:agent:2.9.1'
+    testRuntimeOnly 'io.pyroscope:agent:2.9.1'
     implementation("net.dv8tion:JDA:6.5.0") {
         exclude module: 'opus-java'
     }
@@ -159,7 +159,7 @@ dependencies {
     implementation 'org.springframework.retry:spring-retry:2.0.13'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.jfree:jfreechart:1.5.6'
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.4'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-73:3.15.5'
     implementation 'org.springframework.ai:spring-ai-starter-model-transformers'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 
@@ -186,7 +186,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:4.35.1'
+        artifact = 'com.google.protobuf:protoc:4.36.0'
     }
 }
 
