@@ -92,7 +92,7 @@ ext['netty.version'] = '4.2.13.Final'
 ext['postgresql.version'] = '42.7.11'
 
 dependencies {
-    implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.20.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.google.protobuf:protobuf-java:4.36.0'
     implementation 'com.ibm.icu:icu4j:78.3'
