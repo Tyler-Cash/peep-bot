@@ -139,7 +139,7 @@ dependencies {
     // above, which keeps it aligned with Boot's bundled OTel core. See that BOM's comment.
     implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0'
     // Auto-instruments every JDBC call (repository finders, Liquibase, session JDBC) with a span per query.
-    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
+    implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.3.0'
     // Pyroscope <-> OpenTelemetry span profiling. Exclude the transitively-bundled agent (2.5.1) so
     // it can't shadow the deployed -javaagent's labels registry (2.5.2) — the skew silently breaks
     // span↔profile correlation. Only the -javaagent provides io.pyroscope.* at runtime; compileOnly
