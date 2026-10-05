@@ -37,7 +37,7 @@ class ClassifierEvalTest {
         OllamaApi ollamaApi = OllamaApi.builder().baseUrl(baseUrl).build();
         OllamaChatModel chatModel = OllamaChatModel.builder()
                 .ollamaApi(ollamaApi)
-                .defaultOptions(OllamaChatOptions.builder()
+                .options(OllamaChatOptions.builder()
                         .model(modelName)
                         .numPredict(15)
                         .build())
