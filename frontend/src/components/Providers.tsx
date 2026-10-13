@@ -29,7 +29,7 @@ export function Providers({ children }: { children: ReactNode }) {
     if (!needsMock) return;
     let cancelled = false;
     import("@/mocks/browser").then(({ worker }) =>
-      worker.start({ onUnhandledRequest: "bypass" }).then(() => {
+      worker.start({ onUnhandledFrame: "bypass" }).then(() => {
         if (!cancelled) setMockReady(true);
       }),
     );
