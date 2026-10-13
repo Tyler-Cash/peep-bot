@@ -254,4 +254,72 @@ class TfnswReportingServiceTest {
         assertThat(body).contains("• T1 separate trackwork");
         assertThat(body).contains("  Wed 20 May — Nightly from 9:40PM to 2:00AM,");
     }
+
+    private static NoteworthyItem busReplacement(String id, String title, String detail, String route, String end) {
+        return new NoteworthyItem(
+                Source.RAIL_METRO,
+                id,
+                title,
+                detail,
+                "https://transportnsw.info/alerts/" + id,
+                Reason.CITYWIDE_LINE,
+                Set.of(route),
+                Cause.UNKNOWN,
+                List.of(Instant.parse("2026-10-16T16:30:00Z")),
+                List.of(Instant.parse(end)));
+    }
+
+    @Test
+    void sameHeadlineAcrossLinesCollapsesIntoOneBullet() {
+        // TfNSW publishes the same job once per line. Sat 2026-10-17 3:30AM
+        // Sydney (UTC+11) start; the two lines differ only in their end time,
+        // so the merged bullet takes its window from the combined periods.
+        Event event = new Event();
+        event.setChannelId(1L);
+        when(discord.sendContentToEventChannel(eq(event), any(String.class))).thenReturn(1L);
+
+        String penrith = "Buses replace trains between Penrith and St Marys";
+        var bmt = busReplacement(
+                "bmt",
+                penrith,
+                "Saturday 17 October\nFrom 3:30AM to 8:00AM, buses replace trains between Penrith and St Marys.",
+                "BMT_1",
+                "2026-10-16T21:00:00Z");
+        var wst = busReplacement(
+                "wst",
+                penrith,
+                "Saturday 17 October\nFrom 3:30AM to 8:20AM, buses replace trains between Penrith and St Marys.",
+                "WST_1a",
+                "2026-10-16T21:20:00Z");
+        String waterfall = "Buses replace trains between Waterfall and Sutherland";
+        String waterfallDetail =
+                "Saturday 17 October\nFrom 3:30AM to 11:30AM, buses replace trains between Waterfall and Sutherland.";
+        var sco = busReplacement("sco", waterfall, waterfallDetail, "SCO_1", "2026-10-17T00:30:00Z");
+        var esi = busReplacement("esi", waterfall, waterfallDetail, "ESI_1a", "2026-10-17T00:30:00Z");
+
+        reporter.post(event, List.of(bmt, wst, sco, esi));
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(discord).sendContentToEventChannel(eq(event), captor.capture());
+        String expected = "🚧 Transport notice — trackwork or disruption may affect travel to this event:\n"
+                + "• Blue Mountains Line, Western Line — " + penrith
+                + " ([details](https://transportnsw.info/alerts/bmt))\n"
+                + "  Sat 17 Oct, 3:30AM–8:20AM\n"
+                + "• Eastern Suburbs & Illawarra Line, South Coast Line — " + waterfall
+                + " ([details](https://transportnsw.info/alerts/sco))\n"
+                + "  Saturday 17 October — From 3:30AM to 11:30AM";
+        assertThat(captor.getValue()).isEqualTo(expected);
+    }
+
+    @Test
+    void summariseTimingDropsRestatedHeadline() {
+        assertThat(TfnswReportingService.summariseTiming(
+                        "Saturday 17 October\nFrom 3:00AM to 11:30AM, buses replace trains between Waterfall and Sutherland.",
+                        "Buses replace trains between Waterfall and Sutherland"))
+                .isEqualTo("Saturday 17 October — From 3:00AM to 11:30AM");
+        assertThat(TfnswReportingService.summariseTiming(
+                        "Mon 18 and Tue 19 May\nNightly from 9:40PM to 1:30AM, trains run to a changed timetable.",
+                        "Trains run between Hornsby and Central"))
+                .isEqualTo("Mon 18 and Tue 19 May — Nightly from 9:40PM to 1:30AM, trains run to a changed timetable");
+    }
 }

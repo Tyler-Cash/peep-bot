@@ -9,8 +9,6 @@ import dev.tylercash.event.places.PlacesDetailsClient.Coords;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -37,8 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class TfnswOrchestrator {
-    private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
-
     private final TfnswConfiguration cfg;
     private final TfnswAlertsClient alertsClient;
     private final LiveTrafficClient liveTrafficClient;
@@ -108,13 +104,12 @@ public class TfnswOrchestrator {
         trafficEvents.addAll(liveTrafficClient.fetchMajorEvents());
         trafficEvents.addAll(liveTrafficClient.fetchHazards());
 
-        LocalDate eventDate = event.getDateTime().withZoneSameInstant(SYDNEY).toLocalDate();
         String nearestStationId = stopsIndex
                 .findNearest(coords.lat(), coords.lng(), cfg.getNearestStationRadiusKm())
                 .map(GtfsStopsIndex.Stop::stopId)
                 .orElse(null);
         List<NoteworthyItem> items =
-                filter.filter(rail, trafficEvents, coords.lat(), coords.lng(), nearestStationId, eventDate);
+                filter.filter(rail, trafficEvents, coords.lat(), coords.lng(), nearestStationId, event.getDateTime());
 
         Optional<TfnswEventSnapshot> prior = snapshots.findById(eventId);
         TfnswEventSnapshot snap = prior.orElseGet(() -> {

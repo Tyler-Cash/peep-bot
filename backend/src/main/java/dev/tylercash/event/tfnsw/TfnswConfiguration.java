@@ -23,13 +23,29 @@ public class TfnswConfiguration {
     private double closureRadiusKm = 2.0;
 
     /**
-     * Days either side of the event used to detect "stale standing" rail alerts:
-     * an alert whose only overlap with the event comes from an open-ended period
-     * (ending more than this many days after the event — i.e. no genuine end)
-     * that also started more than this many days before it. Such alerts are
-     * never-closed informational notices and are dropped.
+     * Hours before the event start that still count as "travelling to it". An
+     * alert must be active inside the travel window to be relevant.
+     */
+    private int travelLeadHours = 3;
+
+    /**
+     * Hours after the event start that still count as "travelling home". Events
+     * have no end time, so this covers both the event and the trip back.
+     */
+    private int travelTailHours = 10;
+
+    /**
+     * Days after the event beyond which an alert period's end is treated as
+     * open-ended — i.e. it carries no genuine end (TfNSW defaults a missing end
+     * to ~a year out).
      */
     private int standingHorizonDays = 90;
+
+    /**
+     * Open-ended alerts are live incidents or never-closed notices, so they only
+     * count when they started within this many hours of the travel window.
+     */
+    private int openEndedLeadHours = 24;
 
     /** Days before an event that the daily follow-up poller re-checks and pins. */
     private int followUpLeadDays = 3;

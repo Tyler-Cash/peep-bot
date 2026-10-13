@@ -10,10 +10,13 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,10 @@ import org.springframework.stereotype.Service;
  * event. Week-before deltas are sent as a reply to the original post; if the
  * original message is missing, the caller is expected to fall back to a fresh
  * {@link #post(Event, List)}.
+ *
+ * <p>TfNSW publishes one alert per line for the same piece of work, so items
+ * with an identical headline are first merged into a single bullet listing
+ * every affected line.
  *
  * <p>Rail/metro items that share both a GTFS {@code cause} (e.g. MAINTENANCE)
  * and an identical sorted list of active-period end-times are bucketed under a
@@ -39,6 +46,9 @@ public class TfnswReportingService {
     private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
     private static final String FIRST_HEADER =
             "🚧 Transport notice — trackwork or disruption may affect travel to this event:";
+    /** Line names shown before a headline before the rest collapse into "+N more". */
+    private static final int MAX_LINE_NAMES = 3;
+
     private static final String UPDATE_HEADER = "⚠️ Update — additional disruption since the previous notice:";
 
     private final DiscordService discordService;
@@ -83,7 +93,7 @@ public class TfnswReportingService {
     private static String formatBody(List<NoteworthyItem> items) {
         // Preserve original ordering of clusters by first-occurrence of each key.
         Map<String, List<NoteworthyItem>> clusters = new LinkedHashMap<>();
-        for (NoteworthyItem item : items) {
+        for (NoteworthyItem item : mergeSameHeadline(items)) {
             clusters.computeIfAbsent(clusterKey(item), k -> new ArrayList<>()).add(item);
         }
         StringBuilder sb = new StringBuilder();
@@ -98,6 +108,79 @@ public class TfnswReportingService {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Collapses items carrying the same headline (the same work, reported once
+     * per affected line) into one item covering every line and active period.
+     * The per-line descriptions usually differ only in their end time, so when
+     * they disagree the merged item takes its timing from the combined periods.
+     */
+    static List<NoteworthyItem> mergeSameHeadline(List<NoteworthyItem> items) {
+        Map<String, List<NoteworthyItem>> groups = new LinkedHashMap<>();
+        for (NoteworthyItem item : items) {
+            String headline = item.title() == null ? "" : item.title().strip();
+            String key = headline.isEmpty()
+                    ? "solo:" + item.id()
+                    : item.source() + ":" + headline.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+        }
+        List<NoteworthyItem> out = new ArrayList<>();
+        for (List<NoteworthyItem> group : groups.values()) {
+            out.add(group.size() == 1 ? group.get(0) : merge(group));
+        }
+        return out;
+    }
+
+    private static NoteworthyItem merge(List<NoteworthyItem> group) {
+        NoteworthyItem first = group.get(0);
+        Set<String> routeIds = new TreeSet<>();
+        Set<String> timings = new LinkedHashSet<>();
+        String url = null;
+        List<Instant> starts = new ArrayList<>();
+        List<Instant> ends = new ArrayList<>();
+        Set<String> seenPeriods = new HashSet<>();
+        for (NoteworthyItem item : group) {
+            routeIds.addAll(item.routeIds());
+            timings.add(String.valueOf(summariseTiming(item.detail(), item.title())));
+            if (url == null && item.url() != null && !item.url().isBlank()) url = item.url();
+            for (int i = 0; i < item.startTimes().size(); i++) {
+                Instant start = item.startTimes().get(i);
+                Instant end = item.endTimes().get(i);
+                if (seenPeriods.add(start + "/" + end)) {
+                    starts.add(start);
+                    ends.add(end);
+                }
+            }
+        }
+        String detail = timings.size() == 1 || starts.isEmpty()
+                ? first.detail()
+                : clusterTimeWindow(List.of(withPeriods(first, starts, ends)));
+        return new NoteworthyItem(
+                first.source(),
+                first.id(),
+                first.title(),
+                detail,
+                url,
+                first.reason(),
+                routeIds,
+                first.cause(),
+                starts,
+                ends);
+    }
+
+    private static NoteworthyItem withPeriods(NoteworthyItem item, List<Instant> starts, List<Instant> ends) {
+        return new NoteworthyItem(
+                item.source(),
+                item.id(),
+                item.title(),
+                item.detail(),
+                item.url(),
+                item.reason(),
+                item.routeIds(),
+                item.cause(),
+                starts,
+                ends);
     }
 
     /**
@@ -132,36 +215,41 @@ public class TfnswReportingService {
     }
 
     private static String renderBullet(NoteworthyItem item) {
-        String headline = item.title() == null ? "" : item.title().strip();
-        String lineLabel =
-                LineNames.distinctNames(item.routeIds()).stream().findFirst().orElse(null);
-        StringBuilder sb = new StringBuilder("• ");
-        if (lineLabel != null && !headlineNamesLine(headline, lineLabel)) {
-            sb.append(lineLabel).append(" — ");
-        }
-        sb.append(headline);
-        if (item.url() != null && !item.url().isBlank()) {
-            sb.append(" ([details](").append(item.url()).append("))");
-        }
-        String timing = summariseTiming(item.detail());
+        StringBuilder sb = new StringBuilder("• ").append(renderHeadline(item));
+        String timing = summariseTiming(item.detail(), item.title());
         if (timing != null) sb.append("\n  ").append(timing);
         return sb.toString();
     }
 
     /** Cluster children skip the per-alert time subline — the parent banner already shows it. */
     private static String renderSubBullet(NoteworthyItem item) {
+        return renderHeadline(item);
+    }
+
+    private static String renderHeadline(NoteworthyItem item) {
         String headline = item.title() == null ? "" : item.title().strip();
-        String lineLabel =
-                LineNames.distinctNames(item.routeIds()).stream().findFirst().orElse(null);
         StringBuilder sb = new StringBuilder();
-        if (lineLabel != null && !headlineNamesLine(headline, lineLabel)) {
-            sb.append(lineLabel).append(" — ");
-        }
+        String lines = lineLabel(item, headline);
+        if (lines != null) sb.append(lines).append(" — ");
         sb.append(headline);
         if (item.url() != null && !item.url().isBlank()) {
             sb.append(" ([details](").append(item.url()).append("))");
         }
         return sb.toString();
+    }
+
+    /**
+     * Affected line names to prefix the headline with, or null when there are
+     * none or the headline already names its line.
+     */
+    private static String lineLabel(NoteworthyItem item, String headline) {
+        List<String> names = List.copyOf(LineNames.distinctNames(item.routeIds()));
+        if (names.isEmpty()) return null;
+        for (String name : names) {
+            if (headlineNamesLine(headline, name)) return null;
+        }
+        if (names.size() <= MAX_LINE_NAMES) return String.join(", ", names);
+        return String.join(", ", names.subList(0, MAX_LINE_NAMES)) + " +" + (names.size() - MAX_LINE_NAMES) + " more";
     }
 
     /**
@@ -185,8 +273,11 @@ public class TfnswReportingService {
      * 19 May") followed by a sentence describing the active window ("Nightly
      * from 9:40PM to 1:30AM, ..."). Both are useful context; the rest tends
      * to be boilerplate ("Trackwork on the City Circle may also affect...").
+     * The window sentence often ends by restating the headline ("From 3:30AM to
+     * 8:00AM, buses replace trains between Penrith and St Marys"); that tail is
+     * dropped since the bullet already carries it.
      */
-    static String summariseTiming(String detail) {
+    static String summariseTiming(String detail, String headline) {
         if (detail == null) return null;
         String dateLine = null;
         String timeLine = null;
@@ -198,13 +289,22 @@ public class TfnswReportingService {
                 continue;
             }
             int dot = s.indexOf('.');
-            timeLine = (dot > 0 ? s.substring(0, dot) : s).strip();
+            timeLine = stripHeadlineTail((dot > 0 ? s.substring(0, dot) : s).strip(), headline);
             break;
         }
         if (dateLine == null) return null;
         String joined = timeLine == null ? dateLine : dateLine + " — " + timeLine;
         if (joined.length() > 220) joined = joined.substring(0, 217) + "…";
         return joined;
+    }
+
+    private static String stripHeadlineTail(String timeLine, String headline) {
+        if (headline == null || headline.isBlank()) return timeLine;
+        String tail = ", " + headline.strip().toLowerCase(Locale.ROOT);
+        if (timeLine.toLowerCase(Locale.ROOT).endsWith(tail)) {
+            return timeLine.substring(0, timeLine.length() - tail.length()).strip();
+        }
+        return timeLine;
     }
 
     /**

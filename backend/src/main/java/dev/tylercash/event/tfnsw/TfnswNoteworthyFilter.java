@@ -2,19 +2,25 @@ package dev.tylercash.event.tfnsw;
 
 import dev.tylercash.event.tfnsw.NoteworthyItem.Reason;
 import dev.tylercash.event.tfnsw.NoteworthyItem.Source;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
  * Pure function that decides which TfNSW alerts and live-traffic events are
  * noteworthy enough to post for a given Discord event.
+ *
+ * <p>Everything is first gated on time: an alert only counts if one of its
+ * active periods overlaps the event's travel window ({@code travelLeadHours}
+ * before the start to {@code travelTailHours} after it), so early-morning
+ * trackwork doesn't attach to an evening event on the same calendar day.
  *
  * <p>Rail/Metro rules (any one matches):
  * <ul>
@@ -29,15 +35,16 @@ import org.springframework.stereotype.Component;
  *
  * <p>Traffic rules (any one matches):
  * <ul>
- *   <li>Major event geometry within {@code majorEventRadiusKm} of the venue, time-overlapping</li>
+ *   <li>Major event geometry within {@code majorEventRadiusKm} of the venue</li>
  *   <li>Road closure on a motorway/arterial/sub-arterial within {@code closureRadiusKm} of the venue</li>
  * </ul>
  */
 @Component
 @RequiredArgsConstructor
 public class TfnswNoteworthyFilter {
-    private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
     private static final Set<String> ARTERIAL_CLASSES = Set.of("motorway", "arterial", "sub-arterial");
+    /** "Some trains make extra stops", "Trains make an extra stop at Ashfield", ... */
+    private static final Pattern EXTRA_STOPS = Pattern.compile("^(some )?trains make (an )?extra stops?\\b");
 
     private final TfnswConfiguration cfg;
     private final GtfsStopsIndex stopsIndex;
@@ -48,23 +55,18 @@ public class TfnswNoteworthyFilter {
             double venueLat,
             double venueLng,
             String nearestStationId,
-            LocalDate eventDate) {
+            ZonedDateTime eventStart) {
         List<NoteworthyItem> out = new ArrayList<>();
-        Instant dayStart = eventDate.atStartOfDay(SYDNEY).toInstant();
-        Instant dayEnd = eventDate.plusDays(1).atStartOfDay(SYDNEY).toInstant();
-        Instant staleStartBefore = eventDate
-                .minusDays(cfg.getStandingHorizonDays())
-                .atStartOfDay(SYDNEY)
-                .toInstant();
-        Instant openEndedAfter = eventDate
-                .plusDays(cfg.getStandingHorizonDays())
-                .atStartOfDay(SYDNEY)
-                .toInstant();
+        Instant start = eventStart.toInstant();
+        Instant windowStart = start.minus(Duration.ofHours(cfg.getTravelLeadHours()));
+        Instant windowEnd = start.plus(Duration.ofHours(cfg.getTravelTailHours()));
+        Instant staleStartBefore = windowStart.minus(Duration.ofHours(cfg.getOpenEndedLeadHours()));
+        Instant openEndedAfter = start.plus(Duration.ofDays(cfg.getStandingHorizonDays()));
         Set<String> majorIds = stopsIndex.majorStopIds();
 
         for (RailAlert a : railAlerts) {
-            if (!hasMeaningfulOverlap(a.startTimes(), a.endTimes(), dayStart, dayEnd, staleStartBefore, openEndedAfter))
-                continue;
+            if (!hasMeaningfulOverlap(
+                    a.startTimes(), a.endTimes(), windowStart, windowEnd, staleStartBefore, openEndedAfter)) continue;
             if (isCosmeticHeadline(a.headline())) continue;
             Reason reason = null;
             // Station rules surface an alert on location alone, so they must also
@@ -94,7 +96,7 @@ public class TfnswNoteworthyFilter {
         }
 
         for (TrafficEvent t : trafficEvents) {
-            if (!overlaps(t.start(), t.end(), dayStart, dayEnd)) continue;
+            if (!overlaps(t.start(), t.end(), windowStart, windowEnd)) continue;
             double dKm = haversineKm(venueLat, venueLng, t.lat(), t.lng());
             Reason reason = null;
             if (t.kind() == TrafficEvent.Kind.MAJOR_EVENT && dKm <= cfg.getMajorEventRadiusKm()) {
@@ -127,25 +129,26 @@ public class TfnswNoteworthyFilter {
     }
 
     /**
-     * True if at least one active period overlaps the event-day window with a
+     * True if at least one active period overlaps the travel window with a
      * period that isn't "stale standing". A period is stale standing when it is
      * both open-ended — ending on/after {@code openEndedAfter}, i.e. carrying no
      * genuine end (TfNSW defaults a missing end to ~a year out) — and started
-     * before {@code staleStartBefore}. That combination is the fingerprint of a
-     * never-closed informational notice that would otherwise attach to every
-     * event in its open window.
+     * before {@code staleStartBefore}. An open-ended alert is either a live
+     * incident, which says nothing about travel days from now, or a
+     * never-closed notice; both would otherwise attach to every event in the
+     * open window, so they only count when the event is imminent.
      */
     private static boolean hasMeaningfulOverlap(
             List<Instant> startTimes,
             List<Instant> endTimes,
-            Instant dayStart,
-            Instant dayEnd,
+            Instant windowStart,
+            Instant windowEnd,
             Instant staleStartBefore,
             Instant openEndedAfter) {
         for (int i = 0; i < startTimes.size(); i++) {
             Instant start = startTimes.get(i);
             Instant end = endTimes.get(i);
-            if (!overlaps(start, end, dayStart, dayEnd)) continue;
+            if (!overlaps(start, end, windowStart, windowEnd)) continue;
             boolean openEnded = !end.isBefore(openEndedAfter);
             boolean staleStart = start.isBefore(staleStartBefore);
             if (openEnded && staleStart) continue;
@@ -204,9 +207,7 @@ public class TfnswNoteworthyFilter {
         String lower = headline.toLowerCase().strip();
         if (lower.isEmpty()) return false;
         if (hasStrongDisruptionLanguage(lower)) return false;
-        return lower.startsWith("some trains make extra stops")
-                || lower.startsWith("trains make extra stops")
-                || lower.startsWith("trains run to a changed timetable");
+        return EXTRA_STOPS.matcher(lower).find() || lower.startsWith("trains run to a changed timetable");
     }
 
     public static double haversineKm(double lat1, double lng1, double lat2, double lng2) {

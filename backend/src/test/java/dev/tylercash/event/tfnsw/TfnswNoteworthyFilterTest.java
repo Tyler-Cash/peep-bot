@@ -7,7 +7,9 @@ import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.RailAlert;
 import dev.tylercash.event.tfnsw.TfnswNoteworthyFilter.TrafficEvent;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -15,7 +17,10 @@ import org.junit.jupiter.api.Test;
 class TfnswNoteworthyFilterTest {
     private static final double VENUE_LAT = -33.8688;
     private static final double VENUE_LNG = 151.2093;
+    private static final ZoneId SYDNEY = ZoneId.of("Australia/Sydney");
     private static final LocalDate EVENT_DATE = LocalDate.of(2026, 5, 17);
+    // 6PM Sydney start → default travel window 3PM Sun – 4AM Mon (05:00Z–18:00Z).
+    private static final ZonedDateTime EVENT_START = EVENT_DATE.atTime(18, 0).atZone(SYDNEY);
 
     private final TfnswConfiguration cfg = defaultCfg();
     private final GtfsStopsIndex stopsIndex = indexWithMajors("CENTRAL", "TOWN_HALL");
@@ -68,7 +73,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 "TOWN_HALL",
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.NEAREST_STATION);
     }
 
@@ -81,7 +86,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 "ZZZ_NOT_MAJOR",
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
     }
 
@@ -102,7 +107,7 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.OTHER,
                 List.of(atDate(EVENT_DATE, 0)),
                 List.of(atDate(EVENT_DATE, 24)));
-        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -120,7 +125,7 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.OTHER,
                 List.of(atDate(EVENT_DATE, 0)),
                 List.of(atDate(EVENT_DATE, 24)));
-        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "TOWN_HALL", EVENT_DATE);
+        var items = filter.filter(List.of(info), List.of(), VENUE_LAT, VENUE_LNG, "TOWN_HALL", EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -139,7 +144,7 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.MAINTENANCE,
                 List.of(atDate(EVENT_DATE, 0)),
                 List.of(atDate(EVENT_DATE, 24)));
-        var items = filter.filter(List.of(strong), List.of(), VENUE_LAT, VENUE_LNG, "ZZZ_NOT_MAJOR", EVENT_DATE);
+        var items = filter.filter(List.of(strong), List.of(), VENUE_LAT, VENUE_LNG, "ZZZ_NOT_MAJOR", EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
     }
 
@@ -160,16 +165,13 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.OTHER,
                 List.of(atDate(EVENT_DATE.minusDays(200), 0)),
                 List.of(atDate(EVENT_DATE.plusDays(400), 0)));
-        var items = filter.filter(List.of(stale), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        var items = filter.filter(List.of(stale), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_START);
         assertThat(items).isEmpty();
     }
 
-    @Test
-    void recentOpenEndedDisruptiveAlertIsKept() {
-        // Indefinite (open-ended) but freshly started disruption near the event
-        // is real and must be surfaced — the stale-standing rule must not catch it.
-        RailAlert recent = new RailAlert(
-                "recent-indefinite",
+    private static RailAlert openEndedFrom(Instant start) {
+        return new RailAlert(
+                "indefinite",
                 "No service at Central until further notice",
                 "Detail",
                 "",
@@ -178,10 +180,74 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Severity.SEVERE,
                 RailAlert.Effect.NO_SERVICE,
                 RailAlert.Cause.WEATHER,
-                List.of(atDate(EVENT_DATE.minusDays(5), 0)),
+                List.of(start),
                 List.of(atDate(EVENT_DATE.plusDays(400), 0)));
-        var items = filter.filter(List.of(recent), List.of(), VENUE_LAT, VENUE_LNG, "ZZZ_NOT_MAJOR", EVENT_DATE);
+    }
+
+    @Test
+    void openEndedAlertStartedJustBeforeTheEventIsKept() {
+        // A live, indefinite incident that began the morning of the event is
+        // exactly what attendees need to know about.
+        var items = filter.filter(
+                List.of(openEndedFrom(EVENT_START.minusHours(12).toInstant())),
+                List.of(),
+                VENUE_LAT,
+                VENUE_LNG,
+                "ZZZ_NOT_MAJOR",
+                EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
+    }
+
+    @Test
+    void openEndedAlertStartedDaysBeforeTheEventIsDropped() {
+        // The 3-day follow-up sees incidents that started that morning with no
+        // end time. They say nothing about travel three days later.
+        var items = filter.filter(
+                List.of(openEndedFrom(EVENT_START.minusDays(3).toInstant())),
+                List.of(),
+                VENUE_LAT,
+                VENUE_LNG,
+                "ZZZ_NOT_MAJOR",
+                EVENT_START);
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    void alertOutsideTravelWindowOnEventDayIsDropped() {
+        // Saturday 3:30AM–8AM bus replacement vs a 6PM event the same day.
+        RailAlert earlyMorning = new RailAlert(
+                "early",
+                "Buses replace trains between Penrith and St Marys",
+                "Detail",
+                "",
+                Set.of(),
+                Set.of("WST_1a"),
+                RailAlert.Severity.UNKNOWN,
+                RailAlert.Effect.NO_SERVICE,
+                RailAlert.Cause.MAINTENANCE,
+                List.of(EVENT_DATE.atTime(3, 30).atZone(SYDNEY).toInstant()),
+                List.of(EVENT_DATE.atTime(8, 0).atZone(SYDNEY).toInstant()));
+        assertThat(filter.filter(List.of(earlyMorning), List.of(), VENUE_LAT, VENUE_LNG, null, EVENT_START))
+                .isEmpty();
+        // The same alert is relevant to a 9AM event.
+        assertThat(filter.filter(
+                        List.of(earlyMorning),
+                        List.of(),
+                        VENUE_LAT,
+                        VENUE_LNG,
+                        null,
+                        EVENT_DATE.atTime(9, 0).atZone(SYDNEY)))
+                .hasSize(1);
+    }
+
+    @Test
+    void singularExtraStopHeadlineIsCosmetic() {
+        assertThat(TfnswNoteworthyFilter.isCosmeticHeadline("Trains make an extra stop at Ashfield"))
+                .isTrue();
+        assertThat(TfnswNoteworthyFilter.isCosmeticHeadline("Some trains make extra stops"))
+                .isTrue();
+        assertThat(TfnswNoteworthyFilter.isCosmeticHeadline("Buses replace trains between Waterfall and Sutherland"))
+                .isFalse();
     }
 
     @Test
@@ -200,7 +266,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 null,
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.CITYWIDE_LINE);
     }
 
@@ -213,7 +279,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 null,
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -230,7 +296,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 null,
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -252,7 +318,7 @@ class TfnswNoteworthyFilterTest {
                 doonsideLat,
                 doonsideLng,
                 null,
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).singleElement().satisfies(i -> {
             assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
             assertThat(i.id()).isEqualTo("metro-saturday");
@@ -277,7 +343,7 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.MAINTENANCE,
                 List.of(atDate(EVENT_DATE, 0)),
                 List.of(atDate(EVENT_DATE, 24)));
-        var items = filter.filter(List.of(cosmetic), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        var items = filter.filter(List.of(cosmetic), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -298,7 +364,7 @@ class TfnswNoteworthyFilterTest {
                 RailAlert.Cause.MAINTENANCE,
                 List.of(atDate(EVENT_DATE, 0)),
                 List.of(atDate(EVENT_DATE, 24)));
-        var items = filter.filter(List.of(real), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_DATE);
+        var items = filter.filter(List.of(real), List.of(), VENUE_LAT, VENUE_LNG, "CENTRAL", EVENT_START);
         assertThat(items).hasSize(1);
     }
 
@@ -310,7 +376,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 "OTHER",
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -334,7 +400,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 "ZZZ",
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -351,7 +417,7 @@ class TfnswNoteworthyFilterTest {
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24),
                 null);
-        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_DATE);
+        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_EVENT_NEAR_VENUE);
     }
 
@@ -368,7 +434,7 @@ class TfnswNoteworthyFilterTest {
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24),
                 null);
-        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_DATE);
+        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -385,7 +451,7 @@ class TfnswNoteworthyFilterTest {
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24),
                 "arterial");
-        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_DATE);
+        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.CLOSURE_NEAR_VENUE);
     }
 
@@ -402,7 +468,7 @@ class TfnswNoteworthyFilterTest {
                 atDate(EVENT_DATE, 0),
                 atDate(EVENT_DATE, 24),
                 "local");
-        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_DATE);
+        var items = filter.filter(List.of(), List.of(t), VENUE_LAT, VENUE_LNG, "X", EVENT_START);
         assertThat(items).isEmpty();
     }
 
@@ -416,7 +482,7 @@ class TfnswNoteworthyFilterTest {
                 VENUE_LAT,
                 VENUE_LNG,
                 null,
-                EVENT_DATE);
+                EVENT_START);
         assertThat(items).extracting(NoteworthyItem::reason).containsExactly(Reason.MAJOR_STATION);
     }
 
@@ -429,9 +495,9 @@ class TfnswNoteworthyFilterTest {
         double doonsideLat = -33.7693;
         double doonsideLng = 150.8722;
         // The fixture's metro alert is active Sat 2026-05-16 02:00 AEST → Mon 02:00 AEST.
-        LocalDate eventDate = LocalDate.of(2026, 5, 16);
+        ZonedDateTime eventStart = LocalDate.of(2026, 5, 16).atTime(18, 0).atZone(SYDNEY);
 
-        var items = filter.filter(alerts, List.of(), doonsideLat, doonsideLng, null, eventDate);
+        var items = filter.filter(alerts, List.of(), doonsideLat, doonsideLng, null, eventStart);
 
         assertThat(items).anySatisfy(i -> {
             assertThat(i.reason()).isEqualTo(Reason.CITYWIDE_LINE);
