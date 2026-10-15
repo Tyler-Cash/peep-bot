@@ -81,7 +81,7 @@ dependencyManagement {
 ext['tomcat.version'] = '11.0.27'
 
 dependencies {
-    implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.google.protobuf:protobuf-java:4.36.2'
     implementation 'com.ibm.icu:icu4j:78.3'
