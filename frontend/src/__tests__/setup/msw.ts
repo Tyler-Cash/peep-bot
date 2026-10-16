@@ -6,6 +6,6 @@ import { server } from "@/mocks/server";
 // only when the test's code paths actually fetch).
 // "bypass" lets unhandled requests fall through to whatever global.fetch is —
 // this keeps existing node-environment tests that stub fetch manually working.
-beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
+beforeAll(() => server.listen({ onUnhandledFrame: "bypass" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
