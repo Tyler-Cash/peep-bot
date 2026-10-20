@@ -9,6 +9,7 @@ public record AdminGuildDto(
         boolean rewindEnabled,
         boolean contractsEnabled,
         boolean tfnswEnabled,
+        boolean tarotEnabled,
         Integer memberCount,
         String channelName,
         String locationName,

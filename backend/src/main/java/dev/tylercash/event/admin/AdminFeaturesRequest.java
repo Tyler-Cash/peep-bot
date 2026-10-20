@@ -5,4 +5,5 @@ public record AdminFeaturesRequest(
         Boolean googleAutocompleteEnabled,
         Boolean rewindEnabled,
         Boolean contractsEnabled,
-        Boolean tfnswEnabled) {}
+        Boolean tfnswEnabled,
+        Boolean tarotEnabled) {}

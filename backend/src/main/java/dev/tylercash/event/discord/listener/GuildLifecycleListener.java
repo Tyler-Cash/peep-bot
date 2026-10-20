@@ -2,10 +2,12 @@ package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.discord.DiscordUserCacheService;
 import dev.tylercash.event.discord.GuildRegistrationService;
+import dev.tylercash.event.tarot.TarotService;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.util.concurrent.Executor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
@@ -18,16 +20,19 @@ import org.springframework.stereotype.Component;
 public class GuildLifecycleListener extends ListenerAdapter {
     private final GuildRegistrationService guildRegistrationService;
     private final DiscordUserCacheService discordUserCacheService;
+    private final TarotService tarotService;
     private final ObservationRegistry observationRegistry;
     private final Executor executor;
 
     public GuildLifecycleListener(
             GuildRegistrationService guildRegistrationService,
             DiscordUserCacheService discordUserCacheService,
+            TarotService tarotService,
             ObservationRegistry observationRegistry,
             @Qualifier("discordListenerExecutor") Executor executor) {
         this.guildRegistrationService = guildRegistrationService;
         this.discordUserCacheService = discordUserCacheService;
+        this.tarotService = tarotService;
         this.observationRegistry = observationRegistry;
         this.executor = executor;
     }
@@ -67,6 +72,12 @@ public class GuildLifecycleListener extends ListenerAdapter {
         String guildName = event.getGuild().getName();
         log.info("Bot left guild '{}' ({})", guildName, guildId);
         offload("discord.guild-leave", () -> guildRegistrationService.deactivate(guildId));
+    }
+
+    @Override
+    public void onChannelDelete(ChannelDeleteEvent event) {
+        long channelId = event.getChannel().getIdLong();
+        offload("discord.channel-delete", () -> tarotService.forgetChannel(channelId));
     }
 
     /**

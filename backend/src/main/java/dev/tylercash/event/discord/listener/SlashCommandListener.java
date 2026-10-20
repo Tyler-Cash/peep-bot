@@ -1,6 +1,7 @@
 package dev.tylercash.event.discord.listener;
 
 import dev.tylercash.event.contract.listener.ContractSlashCommandListener;
+import dev.tylercash.event.tarot.TarotSlashCommandHandler;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class SlashCommandListener extends ListenerAdapter {
     private final ObjectProvider<ContractSlashCommandListener> contractListenerProvider;
+    private final ObjectProvider<TarotSlashCommandHandler> tarotHandlerProvider;
     private final ObservationRegistry observationRegistry;
 
     @Override
@@ -30,6 +32,11 @@ public class SlashCommandListener extends ListenerAdapter {
                     .lowCardinalityKeyValue(
                             "command.subcommand", event.getSubcommandName() == null ? "" : event.getSubcommandName())
                     .observe(() -> contractListenerProvider.getObject().handleSlashCommand(event));
+        } else if (TarotSlashCommandHandler.COMMAND.equals(name)) {
+            Observation.createNotStarted("discord.slash-command", observationRegistry)
+                    .lowCardinalityKeyValue("command.name", name)
+                    .lowCardinalityKeyValue("command.subcommand", "")
+                    .observe(() -> tarotHandlerProvider.getObject().handle(event));
         }
     }
 

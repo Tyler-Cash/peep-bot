@@ -1,6 +1,7 @@
 package dev.tylercash.event.admin;
 
 import dev.tylercash.event.db.repository.EventRepository;
+import dev.tylercash.event.discord.DirectoryEntry;
 import dev.tylercash.event.discord.Guild;
 import dev.tylercash.event.discord.GuildCommandSyncService;
 import dev.tylercash.event.discord.GuildRepository;
@@ -8,9 +9,11 @@ import dev.tylercash.event.event.model.EventState;
 import dev.tylercash.event.global.EventCreationToggle;
 import dev.tylercash.event.lifecycle.ListenerInvocationRepository;
 import dev.tylercash.event.security.BotAdminService;
+import dev.tylercash.event.tarot.TarotService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +43,7 @@ public class AdminController {
     private final JDA jda;
     private final EventCreationToggle eventCreationToggle;
     private final GuildCommandSyncService guildCommandSyncService;
+    private final TarotService tarotService;
 
     @GetMapping("/guilds")
     public List<AdminGuildDto> listGuilds(@AuthenticationPrincipal OAuth2User principal) {
@@ -65,6 +69,7 @@ public class AdminController {
                 row.isRewindEnabled(),
                 row.isContractsEnabled(),
                 row.isTfnswEnabled(),
+                row.isTarotEnabled(),
                 memberCount,
                 row.getSeparatorChannel(),
                 row.getPrimaryLocationName(),
@@ -88,12 +93,14 @@ public class AdminController {
         boolean oldRewind = row.isRewindEnabled();
         boolean oldContracts = row.isContractsEnabled();
         boolean oldTfnsw = row.isTfnswEnabled();
+        boolean oldTarot = row.isTarotEnabled();
         if (request.immichEnabled() != null) row.setImmichEnabled(request.immichEnabled());
         if (request.googleAutocompleteEnabled() != null)
             row.setGoogleAutocompleteEnabled(request.googleAutocompleteEnabled());
         if (request.rewindEnabled() != null) row.setRewindEnabled(request.rewindEnabled());
         if (request.contractsEnabled() != null) row.setContractsEnabled(request.contractsEnabled());
         if (request.tfnswEnabled() != null) row.setTfnswEnabled(request.tfnswEnabled());
+        if (request.tarotEnabled() != null) row.setTarotEnabled(request.tarotEnabled());
         guildRepository.save(row);
         String snowflake = principal.getAttribute("id");
         if (request.immichEnabled() != null && oldImmich != row.isImmichEnabled()) {
@@ -136,11 +143,83 @@ public class AdminController {
                     oldTfnsw,
                     row.isTfnswEnabled());
         }
+        boolean tarotChanged = request.tarotEnabled() != null && oldTarot != row.isTarotEnabled();
+        if (tarotChanged) {
+            log.info(
+                    "AUDIT bot-admin {} flipped guild {} TAROT {} -> {}",
+                    snowflake,
+                    id,
+                    oldTarot,
+                    row.isTarotEnabled());
+        }
+        boolean contractsChanged = request.contractsEnabled() != null && oldContracts != row.isContractsEnabled();
         var jdaGuild = jda.getGuildById(id);
-        if (request.contractsEnabled() != null && oldContracts != row.isContractsEnabled() && jdaGuild != null) {
+        if ((contractsChanged || tarotChanged) && jdaGuild != null) {
             guildCommandSyncService.syncCommands(jdaGuild);
         }
         return toDto(row, Instant.now().minus(24, ChronoUnit.HOURS));
+    }
+
+    @GetMapping("/guilds/{guildId}/tarot")
+    public AdminTarotSettingsDto getTarotSettings(
+            @PathVariable String guildId, @AuthenticationPrincipal OAuth2User principal) {
+        requireBotAdmin(principal);
+        return tarotSettings(requireGuild(guildId).getGuildId());
+    }
+
+    @PutMapping("/guilds/{guildId}/tarot/channels")
+    public AdminTarotSettingsDto updateTarotChannels(
+            @PathVariable String guildId,
+            @RequestBody AdminTarotChannelsRequest request,
+            @AuthenticationPrincipal OAuth2User principal) {
+        requireBotAdmin(principal);
+        long id = requireGuild(guildId).getGuildId();
+        List<Long> channelIds = (request.channelIds() == null ? List.<String>of() : request.channelIds())
+                .stream().map(AdminController::parseSnowflake).distinct().toList();
+        var jdaGuild = jda.getGuildById(id);
+        if (jdaGuild != null) {
+            for (long channelId : channelIds) {
+                if (jdaGuild.getTextChannelById(channelId) == null) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Channel " + channelId + " is not a text channel in this guild");
+                }
+            }
+        }
+        tarotService.replaceAllowedChannels(id, channelIds);
+        log.info(
+                "AUDIT bot-admin {} set guild {} TAROT channels to {}",
+                (String) principal.getAttribute("id"),
+                id,
+                channelIds.isEmpty() ? "all" : channelIds);
+        return tarotSettings(id);
+    }
+
+    private AdminTarotSettingsDto tarotSettings(long guildId) {
+        var jdaGuild = jda.getGuildById(guildId);
+        List<DirectoryEntry> available = jdaGuild == null
+                ? List.of()
+                : jdaGuild.getTextChannels().stream()
+                        .sorted(Comparator.comparingInt(c -> c.getPositionRaw()))
+                        .map(c -> new DirectoryEntry(c.getId(), c.getName()))
+                        .toList();
+        List<String> allowed = tarotService.allowedChannelIds(guildId).stream()
+                .map(String::valueOf)
+                .toList();
+        return new AdminTarotSettingsDto(available, allowed, tarotService.drawsSince(guildId, 7));
+    }
+
+    private Guild requireGuild(String guildId) {
+        return guildRepository
+                .findById(parseSnowflake(guildId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Guild not found"));
+    }
+
+    private static long parseSnowflake(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid id: " + value);
+        }
     }
 
     @GetMapping("/event-creation")

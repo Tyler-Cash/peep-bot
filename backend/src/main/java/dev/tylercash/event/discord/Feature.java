@@ -5,4 +5,5 @@ public enum Feature {
     GOOGLE_AUTOCOMPLETE,
     REWIND,
     CONTRACTS,
+    TAROT,
 }

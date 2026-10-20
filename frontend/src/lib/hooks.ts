@@ -339,6 +339,7 @@ export type AdminGuild = {
   rewindEnabled: boolean;
   contractsEnabled: boolean;
   tfnswEnabled: boolean;
+  tarotEnabled: boolean;
   // Extended fields populated by the admin panel — nullable so older mocks/tests still type-check.
   memberCount?: number | null;
   channelName?: string | null;
@@ -364,6 +365,7 @@ export async function updateGuildFeatures(
     rewindEnabled: boolean;
     contractsEnabled: boolean;
     tfnswEnabled: boolean;
+    tarotEnabled: boolean;
   }>,
 ) {
   const updated = await apiFetch<AdminGuild>(`/admin/guilds/${guildId}/features`, {
@@ -379,6 +381,30 @@ export async function updateGuildFeatures(
       current?.map((g) => (g.guildId === guildId ? { ...g, ...updated } : g)),
     { revalidate: true },
   );
+}
+
+export type AdminTarotSettings = {
+  availableChannels: Array<{ id: string; name: string }>;
+  // Empty means /tarot works in every channel.
+  allowedChannelIds: string[];
+  drawsLast7Days: number;
+};
+
+export function useAdminTarot(guildId: string | null | undefined) {
+  const { data: user } = useCurrentUser();
+  return useSWR<AdminTarotSettings>(
+    user?.admin && guildId ? `/admin/guilds/${guildId}/tarot` : null,
+    fetcher,
+  );
+}
+
+export async function updateTarotChannels(guildId: string, channelIds: string[]) {
+  const updated = await apiFetch<AdminTarotSettings>(`/admin/guilds/${guildId}/tarot/channels`, {
+    method: "PUT",
+    body: JSON.stringify({ channelIds }),
+  });
+  await globalMutate(`/admin/guilds/${guildId}/tarot`, updated, { revalidate: false });
+  return updated;
 }
 
 // ---------- admin monitor & lifecycle hooks ----------------------------------

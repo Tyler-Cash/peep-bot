@@ -42,6 +42,7 @@ const adminGuilds: AdminGuild[] = [
     rewindEnabled: true,
     contractsEnabled: false,
     tfnswEnabled: false,
+    tarotEnabled: true,
     memberCount: 24,
     channelName: "#outings",
     locationName: "Melbourne, VIC",
@@ -51,6 +52,17 @@ const adminGuilds: AdminGuild[] = [
   },
   ...adminGuildsStore.filter((g) => g.guildId !== guild.id),
 ];
+
+// Shared across guilds in mock mode — enough to exercise the channel picker.
+const tarotSettings = {
+  availableChannels: [
+    { id: "900000000000000001", name: "general" },
+    { id: "900000000000000002", name: "oracle" },
+    { id: "900000000000000003", name: "off-topic" },
+  ],
+  allowedChannelIds: ["900000000000000002"],
+  drawsLast7Days: 17,
+};
 
 const API = (path: string) => new RegExp(`(^|/api)${path}$`);
 
@@ -357,6 +369,20 @@ export const handlers = [
       if (!row) return new HttpResponse(null, { status: 404 });
       Object.assign(row, body);
       return HttpResponse.json(row);
+    }),
+  ),
+
+  http.get(
+    API("/admin/guilds/[^/]+/tarot"),
+    requireAuth(() => HttpResponse.json(tarotSettings)),
+  ),
+
+  http.put(
+    API("/admin/guilds/[^/]+/tarot/channels"),
+    requireAuth(async ({ request }) => {
+      const body = (await request.json()) as { channelIds: string[] };
+      tarotSettings.allowedChannelIds = [...new Set(body.channelIds)];
+      return HttpResponse.json(tarotSettings);
     }),
   ),
 

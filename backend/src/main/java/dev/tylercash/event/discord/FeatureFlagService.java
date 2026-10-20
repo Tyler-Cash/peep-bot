@@ -16,6 +16,7 @@ public class FeatureFlagService {
                     case GOOGLE_AUTOCOMPLETE -> g.isGoogleAutocompleteEnabled();
                     case REWIND -> g.isRewindEnabled();
                     case CONTRACTS -> g.isContractsEnabled();
+                    case TAROT -> g.isTarotEnabled();
                 })
                 .orElse(false);
     }

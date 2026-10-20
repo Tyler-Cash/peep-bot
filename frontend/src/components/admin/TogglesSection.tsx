@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Slab } from "@/components/ui/Slab";
+import { TarotChannelsPanel } from "./TarotChannelsPanel";
 import {
   setEventCreationEnabled,
   updateGuildFeatures,
@@ -14,7 +15,8 @@ type FeatureKey =
   | "googleAutocompleteEnabled"
   | "rewindEnabled"
   | "contractsEnabled"
-  | "tfnswEnabled";
+  | "tfnswEnabled"
+  | "tarotEnabled";
 
 type FeatureDef = {
   key: FeatureKey;
@@ -40,6 +42,12 @@ export const FEATURES: FeatureDef[] = [
     key: "tfnswEnabled",
     label: "tfnsw transport notices",
     desc: "posts noteworthy Sydney transport + traffic disruptions in event channels",
+    group: "content",
+  },
+  {
+    key: "tarotEnabled",
+    label: "daily tarot",
+    desc: "/tarot draws one card per member per day, resetting at midnight in the guild's timezone",
     group: "content",
   },
   {
@@ -134,6 +142,11 @@ export function TogglesSection({ activeGuild }: { activeGuild: AdminGuild | null
                   busy={pending === f.key}
                   onChange={(v) => flip(f.key, v)}
                 />
+                {f.key === "tarotEnabled" && activeGuild.tarotEnabled && (
+                  <div className="col-span-2 rounded-lg border-[1.5px] border-ink/15 bg-paper2 px-3.5 py-3">
+                    <TarotChannelsPanel guildId={activeGuild.guildId} />
+                  </div>
+                )}
               </div>
             ))}
           </Slab>
