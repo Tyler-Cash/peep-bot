@@ -1,0 +1,123 @@
+name: Scheduled dependency scan
+
+# CI's backend-sbom / frontend-sbom jobs only run on push and PR, so an advisory published
+# against an unchanged `main` goes unnoticed until the next commit. This re-runs the same
+# critical-only Grype gates daily against main and refreshes the code-scanning alerts under
+# the same SARIF categories. A failed run is the alert: GitHub emails the workflow owner.
+# Keep the steps in sync with ci.yml's backend-sbom and frontend-sbom jobs.
+
+on:
+  schedule:
+    # 06:17 Australia/Sydney (AEST); off the hour to avoid the top-of-hour cron rush.
+    - cron: '17 20 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          cache-read-only: true
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+        working-directory: ./backend
+
+      - name: Generate SBOM
+        run: ./gradlew cyclonedxBom
+        working-directory: ./backend
+
+      - name: Scan SBOM with Grype
+        id: grype
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7
+        with:
+          sbom: backend/build/reports/application.cdx.json
+          output-file: backend/grype-backend.sarif
+          severity-cutoff: critical
+          fail-build: true
+
+      - name: Print Grype results
+        if: always()
+        run: |
+          cat backend/grype-backend.sarif | jq '.runs[].results[] | {ruleId, message: .message.text}'
+
+      - name: Manually correct SARIF paths
+        if: always()
+        run: |
+          SARIF_FILE="backend/grype-backend.sarif"
+          TMP_SARIF_FILE="${SARIF_FILE}.tmp"
+          jq '(.runs[].results[].locations[].physicalLocation.artifactLocation.uri |= "backend/" + .)' "$SARIF_FILE" > "$TMP_SARIF_FILE"
+          mv "$TMP_SARIF_FILE" "$SARIF_FILE"
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        if: always()
+        with:
+          sarif_file: backend/grype-backend.sarif
+          category: backend
+
+  frontend:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Generate SBOM
+        id: sbom
+        uses: anchore/sbom-action@57aae528053a48a3f6235f2d9461b05fbcb7366d # v0
+        with:
+          path: ./frontend
+          format: cyclonedx-json
+          output-file: frontend/sbom-frontend.cdx.json
+
+      - name: Scan SBOM with Grype
+        id: grype
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7
+        with:
+          sbom: frontend/sbom-frontend.cdx.json
+          output-file: frontend/grype-frontend.sarif
+          source-root: ./frontend
+          severity-cutoff: critical
+          fail-build: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        if: always()
+        with:
+          sarif_file: frontend/grype-frontend.sarif
+          category: frontend

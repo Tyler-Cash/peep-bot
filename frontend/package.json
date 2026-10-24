@@ -39,7 +39,7 @@
     "react-dom": "^19.2.6",
     "sonner": "^2.0.7",
     "swr": "^2.2.5",
-    "zod": "^4.4.1"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.99.0",
@@ -63,6 +63,12 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^6.0.0",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "@hey-api/json-schema-ref-parser": {
+      "js-yaml": "^4.3.2"
+    },
+    "brace-expansion@^1": "^1.1.21"
   },
   "msw": {
     "workerDirectory": [
