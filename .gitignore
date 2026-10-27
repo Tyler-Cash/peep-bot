@@ -57,6 +57,7 @@ bin/
 *.json
 !.releaserc.json
 !backend/openapi.json
+!backend/src/main/resources/tarot/cards.json
 !backend/src/test/resources/tfnsw/*.json
 !backend/src/test/resources/classifier-eval/*.yaml
 *.csv

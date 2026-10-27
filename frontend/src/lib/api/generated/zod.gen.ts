@@ -19,6 +19,7 @@ export const zAdminFeaturesRequest = z.object({
     googleAutocompleteEnabled: z.boolean().nullable().optional(),
     immichEnabled: z.boolean().nullable().optional(),
     rewindEnabled: z.boolean().nullable().optional(),
+    tarotEnabled: z.boolean().nullable().optional(),
     tfnswEnabled: z.boolean().nullable().optional()
 });
 
@@ -34,6 +35,7 @@ export const zAdminGuildDto = z.object({
     memberCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     name: z.string().nullable().optional(),
     rewindEnabled: z.boolean().nullable().optional(),
+    tarotEnabled: z.boolean().nullable().optional(),
     tfnswEnabled: z.boolean().nullable().optional(),
     totalEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     upcomingEventCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional()
@@ -59,6 +61,16 @@ export const zAdminReplayRequest = z.object({
 export const zAdminReplayResponse = z.object({
     listeners: z.array(z.string()).nullable().optional(),
     message: z.string().nullable().optional()
+});
+
+export const zAdminTarotChannelsRequest = z.object({
+    channelIds: z.array(z.string()).nullable().optional()
+});
+
+export const zAdminTarotSettingsDto = z.object({
+    allowedChannelIds: z.array(z.string()).nullable().optional(),
+    availableChannels: z.array(zDirectoryEntry).nullable().optional(),
+    drawsLast7Days: z.number().nullable().optional()
 });
 
 export const zAttendeeDto = z.object({
@@ -375,6 +387,26 @@ export const zUpdateFeaturesPath = z.object({
  * OK
  */
 export const zUpdateFeaturesResponse = zAdminGuildDto;
+
+export const zGetTarotSettingsPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zGetTarotSettingsResponse = zAdminTarotSettingsDto;
+
+export const zUpdateTarotChannelsBody = zAdminTarotChannelsRequest;
+
+export const zUpdateTarotChannelsPath = z.object({
+    guildId: z.string()
+});
+
+/**
+ * OK
+ */
+export const zUpdateTarotChannelsResponse = zAdminTarotSettingsDto;
 
 /**
  * OK

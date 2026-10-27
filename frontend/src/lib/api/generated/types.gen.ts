@@ -37,6 +37,7 @@ export type AdminFeaturesRequest = {
     googleAutocompleteEnabled?: boolean;
     immichEnabled?: boolean;
     rewindEnabled?: boolean;
+    tarotEnabled?: boolean;
     tfnswEnabled?: boolean;
 };
 
@@ -52,6 +53,7 @@ export type AdminGuildDto = {
     memberCount?: number;
     name?: string;
     rewindEnabled?: boolean;
+    tarotEnabled?: boolean;
     tfnswEnabled?: boolean;
     totalEventCount?: number;
     upcomingEventCount?: number;
@@ -85,6 +87,16 @@ export type AdminReplayRequest = {
 export type AdminReplayResponse = {
     listeners?: Array<string>;
     message?: string;
+};
+
+export type AdminTarotChannelsRequest = {
+    channelIds?: Array<string>;
+};
+
+export type AdminTarotSettingsDto = {
+    allowedChannelIds?: Array<string>;
+    availableChannels?: Array<DirectoryEntry>;
+    drawsLast7Days?: number;
 };
 
 export type AttendeeDto = {
@@ -537,6 +549,64 @@ export type UpdateFeaturesResponses = {
 };
 
 export type UpdateFeaturesResponse = UpdateFeaturesResponses[keyof UpdateFeaturesResponses];
+
+export type GetTarotSettingsData = {
+    body?: never;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/admin/guilds/{guildId}/tarot';
+};
+
+export type GetTarotSettingsErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetTarotSettingsError = GetTarotSettingsErrors[keyof GetTarotSettingsErrors];
+
+export type GetTarotSettingsResponses = {
+    /**
+     * OK
+     */
+    200: AdminTarotSettingsDto;
+};
+
+export type GetTarotSettingsResponse = GetTarotSettingsResponses[keyof GetTarotSettingsResponses];
+
+export type UpdateTarotChannelsData = {
+    body: AdminTarotChannelsRequest;
+    path: {
+        guildId: string;
+    };
+    query?: never;
+    url: '/admin/guilds/{guildId}/tarot/channels';
+};
+
+export type UpdateTarotChannelsErrors = {
+    /**
+     * Not Found
+     */
+    404: {
+        [key: string]: unknown;
+    };
+};
+
+export type UpdateTarotChannelsError = UpdateTarotChannelsErrors[keyof UpdateTarotChannelsErrors];
+
+export type UpdateTarotChannelsResponses = {
+    /**
+     * OK
+     */
+    200: AdminTarotSettingsDto;
+};
+
+export type UpdateTarotChannelsResponse = UpdateTarotChannelsResponses[keyof UpdateTarotChannelsResponses];
 
 export type HealthData = {
     body?: never;

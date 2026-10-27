@@ -102,6 +102,9 @@
           "rewindEnabled" : {
             "type" : "boolean"
           },
+          "tarotEnabled" : {
+            "type" : "boolean"
+          },
           "tfnswEnabled" : {
             "type" : "boolean"
           }
@@ -143,6 +146,9 @@
             "type" : "string"
           },
           "rewindEnabled" : {
+            "type" : "boolean"
+          },
+          "tarotEnabled" : {
             "type" : "boolean"
           },
           "tfnswEnabled" : {
@@ -233,6 +239,38 @@
           },
           "message" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminTarotChannelsRequest" : {
+        "properties" : {
+          "channelIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminTarotSettingsDto" : {
+        "properties" : {
+          "allowedChannelIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "availableChannels" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DirectoryEntry"
+            },
+            "type" : "array"
+          },
+          "drawsLast7Days" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -1226,6 +1264,90 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AdminGuildDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/guilds/{guildId}/tarot" : {
+      "get" : {
+        "operationId" : "getTarotSettings",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminTarotSettingsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : { },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "tags" : [ "Bot admin" ]
+      }
+    },
+    "/admin/guilds/{guildId}/tarot/channels" : {
+      "put" : {
+        "operationId" : "updateTarotChannels",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "guildId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminTarotChannelsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminTarotSettingsDto"
                 }
               }
             },

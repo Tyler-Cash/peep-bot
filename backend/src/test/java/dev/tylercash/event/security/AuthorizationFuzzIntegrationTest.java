@@ -490,6 +490,20 @@ class AuthorizationFuzzIntegrationTest {
                         true),
                 new EndpointCase(
                         "GET",
+                        "/admin/guilds/{guildId}/tarot",
+                        () -> MockMvcRequestBuilders.get("/admin/guilds/" + GUILD_1 + "/tarot"),
+                        false,
+                        true),
+                new EndpointCase(
+                        "PUT",
+                        "/admin/guilds/{guildId}/tarot/channels",
+                        () -> MockMvcRequestBuilders.put("/admin/guilds/" + GUILD_1 + "/tarot/channels")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content("{\"channelIds\":[]}"),
+                        false,
+                        true),
+                new EndpointCase(
+                        "GET",
                         "/admin/event-creation",
                         () -> MockMvcRequestBuilders.get("/admin/event-creation"),
                         false,
