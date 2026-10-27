@@ -66,9 +66,12 @@ class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/admin/guilds").with(authedAs(BOT_ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].guildId").value(String.valueOf(GUILD_A)))
-                .andExpect(jsonPath("$[0].immichEnabled").value(false))
-                .andExpect(jsonPath("$[0].rewindEnabled").value(false));
+                // Other test classes share the database, so look the guild up by id, not position.
+                .andExpect(jsonPath("$[?(@.guildId == '%s')]", GUILD_A).isNotEmpty())
+                .andExpect(jsonPath("$[?(@.guildId == '%s')].immichEnabled", GUILD_A)
+                        .value(org.hamcrest.Matchers.contains(false)))
+                .andExpect(jsonPath("$[?(@.guildId == '%s')].rewindEnabled", GUILD_A)
+                        .value(org.hamcrest.Matchers.contains(false)));
     }
 
     @Test
