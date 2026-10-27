@@ -80,6 +80,16 @@ dependencyManagement {
 // critical, all fixed in 11.0.25. Remove once Spring Boot's BOM ships >= 11.0.25.
 ext['tomcat.version'] = '11.0.27'
 
+// Override Spring Boot 4.0.8's managed Jackson (3.1.5 / 2.21.5) to pick up the fixes for
+// GHSA-7hhh-6rmp-j9qf (unbounded error-token length), GHSA-p6pp-m3f8-5c89 (number-parse
+// ReDoS), GHSA-cxp5-3px4-pw24 (quadratic forward-reference completion), GHSA-q4xh-88c3-wmh7
+// (Duration parse DoS) and GHSA-wv8q-qhhj-9h54 (unbounded unknown type-ID retention) — all
+// high, all reachable from any unauthenticated JSON request body. Fixed in 3.1.7 / 2.21.7.
+// Both lines are on the classpath: Boot 4 uses tools.jackson 3.x, 2.x comes in transitively.
+// Remove once Spring Boot's BOM ships >= 3.1.7 / 2.21.7.
+ext['jackson-bom.version'] = '3.1.8'
+ext['jackson-2-bom.version'] = '2.21.8'
+
 dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
@@ -397,23 +407,56 @@ tasks.named('compileJava').configure { dependsOn('installGitHooks') }
 def modelDir = file("src/main/resources/models")
 def tokenizerFile = file("src/main/resources/models/tokenizer.json")
 def modelFile = file("src/main/resources/models/model.onnx")
-def tokenizerUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
-def modelUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
+// Pinned to an immutable Hugging Face commit (not `main`) and verified by SHA-256, so a
+// compromised or force-pushed upstream repo can't swap the bundled model under us. To
+// upgrade: bump the commit, re-download, and update both hashes (`sha256sum` the files;
+// for LFS files like model.onnx the hash also appears as X-Linked-ETag on the resolve URL).
+def modelRepoCommit = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+def modelRepoBase = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/${modelRepoCommit}"
+def modelArtifacts = [
+        [file: tokenizerFile, url: "${modelRepoBase}/tokenizer.json", sizeHint: "~0.5MB",
+         sha256: "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037"],
+        [file: modelFile, url: "${modelRepoBase}/onnx/model.onnx", sizeHint: "~90MB",
+         sha256: "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452"],
+]
 
 tasks.register("downloadModel") {
     description = "Downloads all-MiniLM-L6-v2 ONNX model files into src/main/resources/models/ for classpath bundling."
     group = "build"
+    // Declaring the pins as inputs means bumping a commit or hash re-runs the task.
+    inputs.property("modelPins", modelArtifacts.collect { "${it.url}@${it.sha256}" }.join(","))
     outputs.files(tokenizerFile, modelFile)
-    onlyIf { !modelFile.exists() || !tokenizerFile.exists() }
     doLast {
-        modelDir.mkdirs()
-        if (!tokenizerFile.exists()) {
-            logger.lifecycle("Downloading tokenizer.json (~0.5MB)...")
-            new URL(tokenizerUrl).withInputStream { ins -> tokenizerFile.bytes = ins.bytes }
+        def sha256Of = { File f ->
+            def digest = java.security.MessageDigest.getInstance("SHA-256")
+            f.withInputStream { ins ->
+                byte[] buf = new byte[1 << 16]
+                int n
+                while ((n = ins.read(buf)) > 0) {
+                    digest.update(buf, 0, n)
+                }
+            }
+            digest.digest().encodeHex().toString()
         }
-        if (!modelFile.exists()) {
-            logger.lifecycle("Downloading model.onnx (~23MB)...")
-            new URL(modelUrl).withInputStream { ins -> modelFile.bytes = ins.bytes }
+        modelDir.mkdirs()
+        modelArtifacts.each { a ->
+            File target = a.file
+            // Re-verify files already on disk too: a stale or tampered local copy is as bad as a bad download.
+            if (target.exists() && sha256Of(target) == a.sha256) {
+                return
+            }
+            logger.lifecycle("Downloading ${target.name} (${a.sizeHint})...")
+            def tmp = new File(target.parentFile, "${target.name}.part")
+            new URL(a.url).withInputStream { ins -> tmp.withOutputStream { out -> out << ins } }
+            def actual = sha256Of(tmp)
+            if (actual != a.sha256) {
+                tmp.delete()
+                throw new GradleException("SHA-256 mismatch for ${target.name}: expected ${a.sha256}, got ${actual}")
+            }
+            target.delete()
+            if (!tmp.renameTo(target)) {
+                throw new GradleException("Could not move ${tmp} to ${target}")
+            }
         }
         logger.lifecycle("Model files ready in ${modelDir}")
     }
