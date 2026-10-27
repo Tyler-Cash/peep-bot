@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SWRConfig } from "swr";
 import { localStorageProvider } from "@/lib/swrCache";
+import { SwrMutateBridge } from "@/lib/swrMutate";
 import { isDevModeActive } from "@/lib/devMode";
 import { Toaster } from "@/components/ui/Toaster";
 
@@ -56,6 +57,7 @@ export function Providers({ children }: { children: ReactNode }) {
         dedupingInterval: 2000,
       }}
     >
+      <SwrMutateBridge />
       {children}
       <Toaster />
     </SWRConfig>

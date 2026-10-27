@@ -2,6 +2,7 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { SWRConfig } from "swr";
 import { vi } from "vitest";
+import { SwrMutateBridge } from "@/lib/swrMutate";
 
 /**
  * Render a UI tree with the same provider stack the app uses, but with a
@@ -17,6 +18,7 @@ export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
         revalidateOnReconnect: false,
       }}
     >
+      <SwrMutateBridge />
       {ui}
     </SWRConfig>,
     options,

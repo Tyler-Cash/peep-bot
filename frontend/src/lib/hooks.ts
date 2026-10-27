@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
+import { mutate as globalMutate } from "@/lib/swrMutate";
 import { z } from "zod";
 import { apiFetch, api } from "./api";
 import { clearSwrCache } from "./swrCache";

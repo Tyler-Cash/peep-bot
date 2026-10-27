@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { mutate } from "swr";
 import { DiscordGlyph } from "@/components/icons/DiscordGlyph";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useCurrentUser } from "@/lib/hooks";
+import { mutate } from "@/lib/swrMutate";
 import { isBackendReachable } from "@/lib/api";
 import { activateDevMode } from "@/lib/devMode";
 import { isAuthLoopTripped, noteAuthSuccess } from "@/lib/authLoopGuard";
