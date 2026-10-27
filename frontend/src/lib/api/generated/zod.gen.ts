@@ -67,12 +67,6 @@ export const zAdminTarotChannelsRequest = z.object({
     channelIds: z.array(z.string()).nullable().optional()
 });
 
-export const zAdminTarotSettingsDto = z.object({
-    allowedChannelIds: z.array(z.string()).nullable().optional(),
-    availableChannels: z.array(zDirectoryEntry).nullable().optional(),
-    drawsLast7Days: z.number().nullable().optional()
-});
-
 export const zAttendeeDto = z.object({
     avatarUrl: z.string().nullable().optional(),
     instant: z.iso.datetime().nullable().optional(),
@@ -108,6 +102,12 @@ export const zCsrfToken = z.object({
 export const zDirectoryEntry = z.object({
     id: z.string().nullable().optional(),
     name: z.string().nullable().optional()
+});
+
+export const zAdminTarotSettingsDto = z.object({
+    allowedChannelIds: z.array(z.string()).nullable().optional(),
+    availableChannels: z.array(zDirectoryEntry).nullable().optional(),
+    drawsLast7Days: z.number().nullable().optional()
 });
 
 export const zEventCategoryDto = z.object({
