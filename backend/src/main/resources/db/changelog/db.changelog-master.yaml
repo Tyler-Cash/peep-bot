@@ -1365,3 +1365,114 @@ databaseChangeLog:
               - column:
                   name: posted_alert_ids
                   type: text
+
+  - changeSet:
+      id: add tarot_enabled and timezone to guild
+      author: tyler
+      comment: >
+        Per-guild opt-in for the /tarot daily draw (default off), plus the
+        guild's IANA timezone, which decides when the daily draw resets.
+      changes:
+        - addColumn:
+            tableName: guild
+            columns:
+              - column:
+                  name: tarot_enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timezone
+                  type: text
+                  defaultValue: Australia/Sydney
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create tarot_channel table
+      author: tyler
+      comment: >
+        Channels /tarot may be used in, per guild. No rows for a guild means
+        the command works in every channel.
+      changes:
+        - createTable:
+            tableName: tarot_channel
+            columns:
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tarot_channel_guild
+                    references: guild(guild_id)
+                    deleteCascade: true
+              - column:
+                  name: channel_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: tarot_channel
+            columnNames: guild_id, channel_id
+            constraintName: pk_tarot_channel
+
+  - changeSet:
+      id: create tarot_draw table
+      author: tyler
+      comment: >
+        One row per daily /tarot draw. The unique (guild, user, draw_date)
+        constraint is the daily limit; draw_date is the calendar date in the
+        guild's timezone at draw time.
+      changes:
+        - createTable:
+            tableName: tarot_draw
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: guild_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_snowflake
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: draw_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: card_id
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reversed
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: drawn_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: tarot_draw
+            columnNames: guild_id, user_snowflake, draw_date
+            constraintName: uq_tarot_draw_daily
+        - createIndex:
+            tableName: tarot_draw
+            indexName: idx_tarot_draw_guild_date
+            columns:
+              - column:
+                  name: guild_id
+              - column:
+                  name: draw_date

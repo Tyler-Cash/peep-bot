@@ -143,4 +143,61 @@ class AdminControllerHttpIntegrationTest extends AbstractHttpIntegrationTest {
                 .andExpect(jsonPath("$.tfnswEnabled").value(true))
                 .andExpect(jsonPath("$.immichEnabled").value(false));
     }
+
+    @Test
+    void botAdmin_updateFeatures_flipsTarotFlag() throws Exception {
+        fixtures.registerMember(BOT_ADMIN, GUILD_A, "BotAdmin", "botadmin");
+        seedGuild(GUILD_A);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/admin/guilds/{guildId}/features", GUILD_A)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tarotEnabled\":true}")
+                        .with(authedAs(BOT_ADMIN))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tarotEnabled").value(true))
+                .andExpect(jsonPath("$.contractsEnabled").value(false));
+    }
+
+    @Test
+    void botAdmin_tarotChannels_roundTrip() throws Exception {
+        fixtures.registerMember(BOT_ADMIN, GUILD_A, "BotAdmin", "botadmin");
+        seedGuild(GUILD_A);
+        String channel = TestIds.nextSnowflake();
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/admin/guilds/{guildId}/tarot", GUILD_A)
+                        .with(authedAs(BOT_ADMIN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.allowedChannelIds").isEmpty())
+                .andExpect(jsonPath("$.drawsLast7Days").value(0));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/admin/guilds/{guildId}/tarot/channels", GUILD_A)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"channelIds\":[\"" + channel + "\"]}")
+                        .with(authedAs(BOT_ADMIN))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.allowedChannelIds[0]").value(channel));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/admin/guilds/{guildId}/tarot/channels", GUILD_A)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"channelIds\":[]}")
+                        .with(authedAs(BOT_ADMIN))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.allowedChannelIds").isEmpty());
+    }
+
+    @Test
+    void nonBotAdmin_tarotChannels_returns403() throws Exception {
+        fixtures.registerMember(REGULAR_MEMBER, GUILD_A, "Regular", "regular");
+        seedGuild(GUILD_A);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/admin/guilds/{guildId}/tarot/channels", GUILD_A)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"channelIds\":[]}")
+                        .with(authedAs(REGULAR_MEMBER))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
 }

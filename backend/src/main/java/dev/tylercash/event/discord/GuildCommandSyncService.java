@@ -64,6 +64,9 @@ public class GuildCommandSyncService {
                                     .addOption(OptionType.STRING, "contract", "Contract name", true, true),
                             new SubcommandData("list", "List open prediction contracts")));
         }
+        if (featureFlagService.isEnabled(guildId, Feature.TAROT)) {
+            commands.add(Commands.slash("tarot", "Draw your daily tarot card"));
+        }
         return commands;
     }
 }

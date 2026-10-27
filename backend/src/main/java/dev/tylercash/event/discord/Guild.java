@@ -71,6 +71,13 @@ public class Guild {
     @Column(name = "tfnsw_enabled", nullable = false)
     private boolean tfnswEnabled;
 
+    @Column(name = "tarot_enabled", nullable = false)
+    private boolean tarotEnabled;
+
+    /** IANA zone id; decides when per-day features (the /tarot daily draw) reset. */
+    @Column(name = "timezone", nullable = false)
+    private String timezone;
+
     @Column(name = "event_create_rate_limit_per_hour")
     private Integer eventCreateRateLimitPerHour;
 
@@ -101,6 +108,8 @@ public class Guild {
         g.setRewindEnabled(false);
         g.setContractsEnabled(false);
         g.setTfnswEnabled(false);
+        g.setTarotEnabled(false);
+        g.setTimezone("Australia/Sydney");
         g.setArchiveDays(90);
         g.setAnyoneCanCreate(true);
         return g;

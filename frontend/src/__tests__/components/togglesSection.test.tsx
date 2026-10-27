@@ -5,4 +5,8 @@ describe("TogglesSection feature catalog", () => {
   it("includes tfnsw toggle", () => {
     expect(FEATURES.some((f) => f.key === "tfnswEnabled")).toBe(true);
   });
+
+  it("includes tarot toggle", () => {
+    expect(FEATURES.some((f) => f.key === "tarotEnabled")).toBe(true);
+  });
 });
