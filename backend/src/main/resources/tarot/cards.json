@@ -5,8 +5,21 @@
     "arcana": "major",
     "suit": null,
     "number": 0,
-    "upright": "Folly, mania, extravagance, intoxication, delirium, frenzy, bewrayment.",
-    "reversed": "Negligence, absence, distribution, carelessness, apathy, nullity, vanity."
+    "keywords": [
+      "beginnings",
+      "trust",
+      "spontaneity"
+    ],
+    "upright": [
+      "Something new is asking for a yes before you've worked out the how. Today favours the first step over the full map.",
+      "Travel light today. Leave the \"what ifs\" at the door and let curiosity lead; you'll learn more by starting than by planning.",
+      "A small leap of faith goes further than you expect. Say yes to the invitation, the idea, or the detour."
+    ],
+    "reversed": [
+      "Check the ground before you jump. Enthusiasm is great; skipping the boring details isn't.",
+      "You might be holding back from something new out of fear of looking foolish. Everyone's a beginner once, so give yourself permission to be one.",
+      "Pause before the impulse buy, the hot take, or the 2am decision. Tomorrow-you will thank you."
+    ]
   },
   {
     "id": "major_01",
@@ -14,8 +27,21 @@
     "arcana": "major",
     "suit": null,
     "number": 1,
-    "upright": "Skill, diplomacy, address, subtlety; sickness, pain, loss, disaster, snares of enemies; self-confidence, will; the Querent, if male.",
-    "reversed": "Physician, Magus, mental disease, disgrace, disquiet."
+    "keywords": [
+      "skill",
+      "focus",
+      "making it happen"
+    ],
+    "upright": [
+      "You already have everything you need on the table. Today's about putting it to work, not waiting for more.",
+      "Your words carry extra weight today. Pitch the idea, send the message, make the case.",
+      "Focus turns intention into results. Pick one thing and give it your full attention."
+    ],
+    "reversed": [
+      "Talent without direction just spins its wheels. Get clear on what you actually want before you start.",
+      "Watch for smooth talk, from others or from yourself. If something sounds too slick, look under the hood.",
+      "You might be underselling what you can do. Try the thing you're quietly sure you'd be good at."
+    ]
   },
   {
     "id": "major_02",
@@ -23,8 +49,21 @@
     "arcana": "major",
     "suit": null,
     "number": 2,
-    "upright": "Secrets, mystery, the future as yet unrevealed; the woman who interests the Querent, if male; the Querent herself, if female; silence, tenacity; mystery, wisdom, science.",
-    "reversed": "Passion, moral or physical ardour, conceit, surface knowledge."
+    "keywords": [
+      "intuition",
+      "stillness",
+      "hidden knowledge"
+    ],
+    "upright": [
+      "Your gut already knows. Today, listen more than you talk and notice what keeps coming back to you.",
+      "Not everything needs to be said out loud yet. Sit with what you know and let it settle.",
+      "Pay attention to dreams, hunches and small coincidences today. Quiet signals are worth tuning into."
+    ],
+    "reversed": [
+      "You're second-guessing an instinct you'd normally trust. Turn the noise down and check in with yourself.",
+      "Something's being kept under wraps. You don't need to dig, but don't ignore the feeling that there's more to it.",
+      "Too much time in your own head can blur things. Talk it through with someone you trust."
+    ]
   },
   {
     "id": "major_03",
@@ -32,8 +71,21 @@
     "arcana": "major",
     "suit": null,
     "number": 3,
-    "upright": "Fruitfulness, action, initiative, length of days; the unknown, clandestine; also difficulty, doubt, ignorance.",
-    "reversed": "Light, truth, the unravelling of involved matters, public rejoicings; according to another reading, vacillation."
+    "keywords": [
+      "abundance",
+      "nurture",
+      "creativity"
+    ],
+    "upright": [
+      "Today is good for making things grow: a project, a friendship, a pot plant. Give it a bit of care and watch it respond.",
+      "Lean into comfort and good things. A nice meal, a walk outside or time with people you love is well spent.",
+      "Creativity flows easily right now. Make something just for the joy of making it."
+    ],
+    "reversed": [
+      "You've been pouring into everyone else's cup. Save some of that care for yourself today.",
+      "A creative block isn't a dead end; it's a sign to rest the soil. Step away and come back fresh.",
+      "Watch for smothering, whether giving it or receiving it. Support works best with a little breathing room."
+    ]
   },
   {
     "id": "major_04",
@@ -41,8 +93,21 @@
     "arcana": "major",
     "suit": null,
     "number": 4,
-    "upright": "Stability, power, protection, realization; a great person; aid, reason, conviction; also authority and will.",
-    "reversed": "Benevolence, compassion, credit; also confusion to enemies, obstruction, immaturity."
+    "keywords": [
+      "structure",
+      "stability",
+      "leadership"
+    ],
+    "upright": [
+      "A bit of structure goes a long way today. Make the list, set the boundary, build the routine.",
+      "Someone may look to you to take charge. Step up calmly; steady beats loud.",
+      "Solid foundations now mean freedom later. Do the unglamorous groundwork."
+    ],
+    "reversed": [
+      "Control is tempting, but rigidity cracks under pressure. Leave room for other people's ideas.",
+      "If rules feel stifling today, ask which ones actually matter and let the rest go.",
+      "Things feel a bit chaotic. Pick one area to bring order to and start there."
+    ]
   },
   {
     "id": "major_05",
@@ -50,8 +115,21 @@
     "arcana": "major",
     "suit": null,
     "number": 5,
-    "upright": "Marriage, alliance, captivity, servitude; by another account, mercy and goodness; inspiration; the man to whom the Querent has recourse.",
-    "reversed": "Society, good understanding, concord, overkindness, weakness."
+    "keywords": [
+      "tradition",
+      "learning",
+      "shared values"
+    ],
+    "upright": [
+      "There's wisdom in the tried-and-true today. Ask someone who's been there, or lean on a routine that works.",
+      "A good day for learning, teaching or swapping knowledge. Share what you know with someone who needs it.",
+      "Community and shared rituals ground you. Show up to the regular thing."
+    ],
+    "reversed": [
+      "\"That's how it's always been done\" isn't a reason. Question the habit that no longer fits.",
+      "You don't have to follow the crowd on this one. Trust your own read.",
+      "Breaking from convention is fine, but do it on purpose, not just to be contrary."
+    ]
   },
   {
     "id": "major_06",
@@ -59,8 +137,21 @@
     "arcana": "major",
     "suit": null,
     "number": 6,
-    "upright": "Attraction, love, beauty, trials overcome.",
-    "reversed": "Failure, foolish designs. Another account speaks of marriage frustrated and contrarieties of all kinds."
+    "keywords": [
+      "connection",
+      "choices",
+      "alignment"
+    ],
+    "upright": [
+      "Connection is the theme today. Lean into the people who feel like home.",
+      "A choice is in front of you. Pick the option that matches who you actually are, not who you think you should be.",
+      "Harmony comes easily when you're honest. Say the warm thing you've been meaning to say."
+    ],
+    "reversed": [
+      "Something feels out of sync, maybe with someone else or with your own values. Notice it before patching it over.",
+      "You're torn between two paths. Sleeping on it is allowed.",
+      "Don't let a disagreement turn into a standoff. Meet halfway where you can."
+    ]
   },
   {
     "id": "major_07",
@@ -68,8 +159,21 @@
     "arcana": "major",
     "suit": null,
     "number": 7,
-    "upright": "Succour, providence also war, triumph, presumption, vengeance, trouble.",
-    "reversed": "Riot, quarrel, dispute, litigation, defeat."
+    "keywords": [
+      "momentum",
+      "willpower",
+      "direction"
+    ],
+    "upright": [
+      "Full steam ahead. You have the drive today; point it somewhere specific and go.",
+      "Opposing pulls can still move you forward if you keep a firm grip on the reins.",
+      "Determination beats talent today. Keep showing up and the win follows."
+    ],
+    "reversed": [
+      "You're pushing hard but going in circles. Stop, check the map, then go again.",
+      "Too many directions at once means none of them get finished. Pick one.",
+      "Forcing it isn't working. Ease off the accelerator and let things line up."
+    ]
   },
   {
     "id": "major_08",
@@ -77,8 +181,21 @@
     "arcana": "major",
     "suit": null,
     "number": 8,
-    "upright": "Power, energy, action, courage, magnanimity; also complete success and honours.",
-    "reversed": "Despotism, abuse if power, weakness, discord, sometimes even disgrace."
+    "keywords": [
+      "courage",
+      "patience",
+      "inner strength"
+    ],
+    "upright": [
+      "Quiet strength beats brute force today. Stay calm and steady and the hard thing softens.",
+      "Be gentle with whatever is snarling, in someone else or in yourself. Patience tames more than pressure does.",
+      "You're braver than you feel. Do the slightly scary thing."
+    ],
+    "reversed": [
+      "Running low on reserves? Rest is part of strength, not the opposite of it.",
+      "Self-doubt is louder than usual today. Don't let it make your decisions.",
+      "Frustration may get the better of you. Count to ten before you reply."
+    ]
   },
   {
     "id": "major_09",
@@ -86,8 +203,21 @@
     "arcana": "major",
     "suit": null,
     "number": 9,
-    "upright": "Prudence, circumspection; also and especially treason, dissimulation, roguery, corruption.",
-    "reversed": "Concealment, disguise, policy, fear, unreasoned caution."
+    "keywords": [
+      "reflection",
+      "solitude",
+      "guidance"
+    ],
+    "upright": [
+      "A little alone time does wonders today. Step back from the noise and see what's really important.",
+      "The answers you want are found inward, not online. Take a walk with your thoughts.",
+      "Someone may come to you for advice. Your hard-won perspective is worth sharing."
+    ],
+    "reversed": [
+      "Solitude is good; isolation isn't. Reach back out to your people.",
+      "You've been overthinking in circles. Bring someone else's perspective in.",
+      "Don't shut the door completely. A short check-in with a friend could lighten things."
+    ]
   },
   {
     "id": "major_10",
@@ -95,8 +225,21 @@
     "arcana": "major",
     "suit": null,
     "number": 10,
-    "upright": "Destiny, fortune, success, elevation, luck, felicity.",
-    "reversed": "Increase, abundance, superfluity."
+    "keywords": [
+      "cycles",
+      "luck",
+      "turning points"
+    ],
+    "upright": [
+      "The wheel is turning in your favour. Be ready to catch a lucky break when it arrives.",
+      "Things are shifting. What felt stuck may suddenly start moving, so go with it.",
+      "Notice the pattern: what goes around comes around. A good day to put good things out there."
+    ],
+    "reversed": [
+      "A run of bad luck is a phase, not a forecast. Hold steady; it turns.",
+      "You can't control every outcome today. Focus on what you can.",
+      "Resisting change makes it bumpier. Loosen up and let the wheel roll."
+    ]
   },
   {
     "id": "major_11",
@@ -104,8 +247,21 @@
     "arcana": "major",
     "suit": null,
     "number": 11,
-    "upright": "Equity, rightness, probity, executive; triumph of the deserving side in law.",
-    "reversed": "Law in all its departments, legal complications, bigotry, bias, excessive severity."
+    "keywords": [
+      "fairness",
+      "truth",
+      "accountability"
+    ],
+    "upright": [
+      "Fairness matters today. Be straight with people and expect the same back.",
+      "A decision benefits from a clear head. Weigh it up honestly, pros and cons.",
+      "What you put in comes back. A good day to own your part in things."
+    ],
+    "reversed": [
+      "Something feels unfair. Speak up calmly instead of stewing.",
+      "Be honest with yourself about your own role. It's easier to fix what you admit.",
+      "Avoid snap judgements, especially about people you don't know well."
+    ]
   },
   {
     "id": "major_12",
@@ -113,8 +269,21 @@
     "arcana": "major",
     "suit": null,
     "number": 12,
-    "upright": "Wisdom, circumspection, discernment, trials, sacrifice, intuition, divination, prophecy.",
-    "reversed": "Selfishness, the crowd, body politic."
+    "keywords": [
+      "pause",
+      "new perspective",
+      "surrender"
+    ],
+    "upright": [
+      "Things are on hold, and that's okay. Use the pause to see the situation from a new angle.",
+      "Letting go of control might get you further today than pushing.",
+      "Try flipping your view. What looks like a delay may be a gift of time."
+    ],
+    "reversed": [
+      "You're stalling on something that needs a decision. Waiting isn't a plan.",
+      "Stop sacrificing yourself for something that isn't giving back.",
+      "Restlessness is high. Small action beats more waiting."
+    ]
   },
   {
     "id": "major_13",
@@ -122,8 +291,21 @@
     "arcana": "major",
     "suit": null,
     "number": 13,
-    "upright": "End, mortality, destruction, corruption also, for a man, the loss of a benefactor for a woman, many contrarieties; for a maid, failure of marriage projects.",
-    "reversed": "Inertia, sleep, lethargy, petrifaction, somnambulism; hope destroyed."
+    "keywords": [
+      "endings",
+      "transformation",
+      "making room"
+    ],
+    "upright": [
+      "Something is wrapping up, and that's what makes space for what comes next. Let it close gracefully.",
+      "Shed the old habit, the old story or the old clutter. Lighter suits you.",
+      "Change is in the air. It's less about loss and more about turning the page."
+    ],
+    "reversed": [
+      "You're holding on to something that's already over. Letting go is kinder in the end.",
+      "Fear of change is keeping you stuck. Try one small shift today.",
+      "A transition is dragging on. A clear decision could speed it along."
+    ]
   },
   {
     "id": "major_14",
@@ -131,8 +313,21 @@
     "arcana": "major",
     "suit": null,
     "number": 14,
-    "upright": "Economy, moderation, frugality, management, accommodation.",
-    "reversed": "Things connected with churches, religions, sects, the priesthood, sometimes even the priest who will marry the Querent; also disunion, unfortunate combinations, competing interests."
+    "keywords": [
+      "balance",
+      "moderation",
+      "patience"
+    ],
+    "upright": [
+      "Balance is your superpower today. A little of this, a little of that, nothing to excess.",
+      "Blend different ideas or people together; the mix works better than either alone.",
+      "Slow and steady wins. Don't rush what's quietly coming together."
+    ],
+    "reversed": [
+      "Something's out of balance: too much work, too little rest, or the other way round. Adjust the recipe.",
+      "Impatience could tip things over. Breathe and pace yourself.",
+      "You're overdoing it somewhere. Dial it back a notch."
+    ]
   },
   {
     "id": "major_15",
@@ -140,8 +335,21 @@
     "arcana": "major",
     "suit": null,
     "number": 15,
-    "upright": "Ravage, violence, vehemence, extraordinary efforts, force, fatality; that which is predestined but is not for this reason evil.",
-    "reversed": "Evil fatality, weakness, pettiness, blindness."
+    "keywords": [
+      "temptation",
+      "habits",
+      "attachment"
+    ],
+    "upright": [
+      "Notice what has a grip on you today: a habit, a scroll, a craving. Awareness is the first step to loosening it.",
+      "Indulgence is fine; just make sure you're choosing it, not the other way round.",
+      "Some chains are looser than they look. What's actually stopping you?"
+    ],
+    "reversed": [
+      "You're ready to break a pattern that's held you back. Start small.",
+      "Freedom feels closer today. Say no to the thing that drains you.",
+      "Honesty with yourself about a bad habit takes away half its power."
+    ]
   },
   {
     "id": "major_16",
@@ -149,8 +357,21 @@
     "arcana": "major",
     "suit": null,
     "number": 16,
-    "upright": "Misery, distress, indigence, adversity, calamity, disgrace, deception, ruin. It is a card in particular of unforeseen catastrophe.",
-    "reversed": "According to one account, the same in a lesser degree also oppression, imprisonment, tyranny."
+    "keywords": [
+      "upheaval",
+      "revelation",
+      "breakthrough"
+    ],
+    "upright": [
+      "Something that wasn't working is about to make that very obvious. It's unsettling, but it clears space for something truer.",
+      "A sudden realisation could flip your perspective today. Let it; the old view was built on shaky ground.",
+      "Plans may get shaken up. Roll with the chaos where you can; what falls away probably needed to."
+    ],
+    "reversed": [
+      "You can feel a change coming and you're bracing against it. Loosening your grip now might soften the landing.",
+      "A narrow escape or a warning sign: take the hint while it's still a small fix.",
+      "Not every shake-up is a collapse. Today's disruption is more of a nudge; adjust and carry on."
+    ]
   },
   {
     "id": "major_17",
@@ -158,8 +379,21 @@
     "arcana": "major",
     "suit": null,
     "number": 17,
-    "upright": "Loss, theft, privation, abandonment; another reading says-hope and bright prospects,",
-    "reversed": "Arrogance, haughtiness, impotence."
+    "keywords": [
+      "hope",
+      "renewal",
+      "inspiration"
+    ],
+    "upright": [
+      "Hope is back on the menu. Let yourself believe things can get better, because they can.",
+      "A calm, refreshing day. Recharge, reflect and enjoy feeling a bit lighter.",
+      "Inspiration finds you when you slow down. Look up, literally or otherwise."
+    ],
+    "reversed": [
+      "Running on empty? Do something small that refills your tank.",
+      "Discouragement is temporary. Remind yourself of one thing that's going right.",
+      "You've lost sight of the bigger picture. Reconnect with why you started."
+    ]
   },
   {
     "id": "major_18",
@@ -167,8 +401,21 @@
     "arcana": "major",
     "suit": null,
     "number": 18,
-    "upright": "Hidden enemies, danger, calumny, darkness, terror, deception, occult forces, error.",
-    "reversed": "Instability, inconstancy, silence, lesser degrees of deception and error."
+    "keywords": [
+      "intuition",
+      "uncertainty",
+      "imagination"
+    ],
+    "upright": [
+      "Not everything is as it seems today. Trust your instincts when the facts are fuzzy.",
+      "Dreams and imagination run vivid. Great for creative work, less great for big decisions.",
+      "It's okay not to have it all figured out. Feel your way forward one step at a time."
+    ],
+    "reversed": [
+      "The fog is lifting. Something confusing is about to make more sense.",
+      "Anxiety is painting worst-case scenarios. Check them against reality.",
+      "A truth comes to light. Better to know than to keep guessing."
+    ]
   },
   {
     "id": "major_19",
@@ -176,8 +423,21 @@
     "arcana": "major",
     "suit": null,
     "number": 19,
-    "upright": "Material happiness, fortunate marriage, contentment.",
-    "reversed": "The same in a lesser sense."
+    "keywords": [
+      "joy",
+      "success",
+      "warmth"
+    ],
+    "upright": [
+      "A bright day. Lean into the good vibes and share them around.",
+      "Things are going your way. Celebrate the wins, however small.",
+      "Be yourself, loudly. Your energy is contagious today."
+    ],
+    "reversed": [
+      "The sun's still there behind the clouds. Find one thing to feel good about.",
+      "You're dimming yourself to fit in. Don't.",
+      "Optimism is great; just keep a little realism handy too."
+    ]
   },
   {
     "id": "major_20",
@@ -185,8 +445,21 @@
     "arcana": "major",
     "suit": null,
     "number": 20,
-    "upright": "Change of position, renewal, outcome. Another account specifies total loss though lawsuit.",
-    "reversed": "Weakness, pusillanimity, simplicity; also deliberation, decision, sentence."
+    "keywords": [
+      "awakening",
+      "reckoning",
+      "fresh start"
+    ],
+    "upright": [
+      "A wake-up call, the good kind. You're seeing clearly what you want next.",
+      "Time to answer a calling you've been putting off. Rise to it.",
+      "Reflect on how far you've come, then take the next step with confidence."
+    ],
+    "reversed": [
+      "Being too hard on yourself isn't the same as being honest. Ease up.",
+      "Ignoring the call won't make it go away. Listen to what keeps resurfacing.",
+      "Self-doubt is blocking a fresh start. You're more ready than you think."
+    ]
   },
   {
     "id": "major_21",
@@ -194,8 +467,21 @@
     "arcana": "major",
     "suit": null,
     "number": 21,
-    "upright": "Assured success, recompense, voyage, route, emigration, flight, change of place.",
-    "reversed": "Inertia, fixity, stagnation, permanence."
+    "keywords": [
+      "completion",
+      "wholeness",
+      "achievement"
+    ],
+    "upright": [
+      "Something comes full circle. Take a moment to enjoy the finish line.",
+      "You've earned this. Celebrate the milestone before chasing the next one.",
+      "Everything clicks into place today. A great day to wrap things up neatly."
+    ],
+    "reversed": [
+      "So close. Tie up the loose ends before declaring it done.",
+      "Don't skip the celebration. Acknowledge what you've achieved.",
+      "Something feels unfinished. One last push gets it over the line."
+    ]
   },
   {
     "id": "wands_01",
@@ -203,8 +489,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 1,
-    "upright": "Creation, invention, enterprise, the powers which result in these; principle, beginning, source; birth, family, origin, and in a sense the virility which is behind them; the starting point of enterprises; according to another account, money, fortune, inheritance.",
-    "reversed": "Fall, decadence, ruin, perdition, to perish also a certain clouded joy."
+    "keywords": [
+      "spark",
+      "inspiration",
+      "new venture"
+    ],
+    "upright": [
+      "A spark of an idea lands today. Grab it while it's hot and do something with it.",
+      "Energy and enthusiasm are high. Start the thing you've been itching to start.",
+      "Say yes to the opportunity that excites you, even if it's not fully formed yet."
+    ],
+    "reversed": [
+      "The spark is there but the motivation isn't. Do five minutes and see if it catches.",
+      "An exciting idea might fizzle if you don't act soon. Write it down at least.",
+      "Too many sparks, not enough fuel. Pick the one that matters most."
+    ]
   },
   {
     "id": "wands_02",
@@ -212,8 +511,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 2,
-    "upright": "Between the alternative readings there is no marriage possible; on the one hand, riches, fortune, magnificence; on the other, physical suffering, disease, chagrin, sadness, mortification. The design gives one suggestion; here is a lord overlooking his dominion and alternately contemplating a globe; it looks like the malady, the mortification, the sadness of Alexander amidst the grandeur of this world's wealth.",
-    "reversed": "Surprise, wonder, enchantment, emotion, trouble, fear."
+    "keywords": [
+      "planning",
+      "vision",
+      "next steps"
+    ],
+    "upright": [
+      "You're looking out at the horizon. Map out where you want to be and how you'll get there.",
+      "A good day for bigger-picture planning. Think beyond next week.",
+      "You've got a foothold; now decide where to go from here."
+    ],
+    "reversed": [
+      "Fear of the unknown is keeping you close to shore. Take one small step out.",
+      "Plans without action stay plans. Commit to one move.",
+      "You're overplanning. At some point, you just have to go."
+    ]
   },
   {
     "id": "wands_03",
@@ -221,8 +533,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 3,
-    "upright": "He symbolizes established strength, enterprise, effort, trade, commerce, discovery; those are his ships, bearing his merchandise, which are sailing over the sea. The card also signifies able co-operation in business, as if the successful merchant prince were looking from his side towards yours with a view to help you.",
-    "reversed": "The end of troubles, suspension or cessation of adversity, toil and disappointment."
+    "keywords": [
+      "expansion",
+      "foresight",
+      "progress"
+    ],
+    "upright": [
+      "Your efforts are starting to come back to you. Keep an eye out for good news.",
+      "Think bigger today. Your plans have room to grow.",
+      "Progress is happening, even if it's not all visible yet. Stay the course."
+    ],
+    "reversed": [
+      "Delays are frustrating, but they're not a no. Be patient a little longer.",
+      "You might be playing it too safe. Stretch a little further.",
+      "Plans hit a snag. Revisit the route, not the destination."
+    ]
   },
   {
     "id": "wands_04",
@@ -230,8 +555,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 4,
-    "upright": "They are for once almost on the surface--country life, haven of refuge, a species of domestic harvest-home, repose, concord, harmony, prosperity, peace, and the perfected work of these.",
-    "reversed": "The meaning remains unaltered; it is prosperity, increase, felicity, beauty, embellishment."
+    "keywords": [
+      "celebration",
+      "home",
+      "milestones"
+    ],
+    "upright": [
+      "Something worth celebrating. Gather your people and mark the moment.",
+      "Home feels especially good today. Enjoy your space and the people in it.",
+      "A small milestone deserves a small party. Don't skip it."
+    ],
+    "reversed": [
+      "Tension at home or with friends? A little effort to reconnect goes a long way.",
+      "The celebration feels muted. Find your own way to mark the win.",
+      "Feeling unsettled? Make your space a little cosier today."
+    ]
   },
   {
     "id": "wands_05",
@@ -239,8 +577,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 5,
-    "upright": "Imitation, as, for example, sham fight, but also the strenuous competition and struggle of the search after riches and fortune. In this sense it connects with the battle of life. Hence some attributions say that it is a card of gold, gain, opulence.",
-    "reversed": "Litigation, disputes, trickery, contradiction."
+    "keywords": [
+      "competition",
+      "friction",
+      "debate"
+    ],
+    "upright": [
+      "Friendly competition gets the energy up. Bring your A-game, but keep it fun.",
+      "Lots of voices, lots of opinions. A bit of friction can spark better ideas.",
+      "You may need to hold your ground today. Stay firm without getting personal."
+    ],
+    "reversed": [
+      "Not every argument needs winning. Walk away from the pointless ones.",
+      "Tension is easing. A good moment to clear the air.",
+      "Avoiding conflict is keeping things stuck. Have the honest conversation."
+    ]
   },
   {
     "id": "wands_06",
@@ -248,8 +599,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 6,
-    "upright": "The card has been so designed that it can cover several significations; on the surface, it is a victor triumphing, but it is also great news, such as might be carried in state by the King's courier; it is expectation crowned with its own desire, the crown of hope, and so forth.",
-    "reversed": "Apprehension, fear, as of a victorious enemy at the gate; treachery, disloyalty, as of gates being opened to the enemy; also indefinite delay."
+    "keywords": [
+      "recognition",
+      "victory",
+      "confidence"
+    ],
+    "upright": [
+      "Your hard work gets noticed today. Take the compliment.",
+      "A win is coming your way. Enjoy the moment in the spotlight.",
+      "Confidence looks good on you. Walk in like you belong there."
+    ],
+    "reversed": [
+      "Recognition is slow to come. Remember you're not doing it only for applause.",
+      "Don't let one setback knock your confidence. You've won before.",
+      "Pride before a fall: stay humble about today's success."
+    ]
   },
   {
     "id": "wands_07",
@@ -257,8 +621,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 7,
-    "upright": "It is a card of valour, for, on the surface, six are attacking one, who has, however, the vantage position. On the intellectual plane, it signifies discussion, wordy strife; in business--negotiations, war of trade, barter, competition. It is further a card of success, for the combatant is on the top and his enemies may be unable to reach him.",
-    "reversed": "Perplexity, embarrassments, anxiety. It is also a caution against indecision."
+    "keywords": [
+      "standing firm",
+      "perseverance",
+      "defence"
+    ],
+    "upright": [
+      "Stand your ground on what matters. You have the high ground here.",
+      "Pressure is coming from a few directions. Keep calm and hold your position.",
+      "Believe in your idea, even if others don't yet."
+    ],
+    "reversed": [
+      "You're feeling overwhelmed by pushback. Pick your battles.",
+      "Being defensive is exhausting. Not everyone is against you.",
+      "It might be time to give a little ground instead of holding every line."
+    ]
   },
   {
     "id": "wands_08",
@@ -266,8 +643,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 8,
-    "upright": "Activity in undertakings, the path of such activity, swiftness, as that of an express messenger; great haste, great hope, speed towards an end which promises assured felicity; generally, that which is on the move; also the arrows of love.",
-    "reversed": "Arrows of jealousy, internal dispute, stingings of conscience, quarrels; and domestic disputes for persons who are married."
+    "keywords": [
+      "speed",
+      "movement",
+      "momentum"
+    ],
+    "upright": [
+      "Things are moving fast. Messages, plans and opportunities are all flying in. Keep up!",
+      "A good day for quick decisions and fast action. Strike while it's hot.",
+      "Momentum is on your side. Ride the wave."
+    ],
+    "reversed": [
+      "Everything's moving too fast. Slow down before something gets dropped.",
+      "Delays and crossed wires today. Double-check before you hit send.",
+      "Rushing will cost you. A pause now saves time later."
+    ]
   },
   {
     "id": "wands_09",
@@ -275,8 +665,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 9,
-    "upright": "The card signifies strength in opposition. If attacked, the person will meet an onslaught boldly; and his build shews, that he may prove a formidable antagonist. With this main significance there are all its possible adjuncts--delay, suspension, adjournment.",
-    "reversed": "Obstacles, adversity, calamity."
+    "keywords": [
+      "resilience",
+      "persistence",
+      "last stretch"
+    ],
+    "upright": [
+      "You're tired, but you're nearly there. One last push.",
+      "You've learned a lot from what got you here. Trust your experience.",
+      "Resilience is your strength today. Keep going."
+    ],
+    "reversed": [
+      "Running on fumes? It's okay to rest before the final stretch.",
+      "You're guarding against threats that may not be real. Lower the shield a little.",
+      "Ask for help. You don't have to carry the whole load alone."
+    ]
   },
   {
     "id": "wands_10",
@@ -284,8 +687,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 10,
-    "upright": "A card of many significances, and some of the readings cannot be harmonized. I set aside that which connects it with honour and good faith. The chief meaning is oppression simply, but it is also fortune, gain, any kind of success, and then it is the oppression of these things. It is also a card of false-seeming, disguise, perfidy. The place which the figure is approaching may suffer from the rods that he carries. Success is stultified if the Nine of Swords follows, and if it is a question of a lawsuit, there will be certain loss.",
-    "reversed": "Contrarieties, difficulties, intrigues, and their analogies."
+    "keywords": [
+      "burden",
+      "responsibility",
+      "overload"
+    ],
+    "upright": [
+      "You're carrying a lot. Today's about getting the essentials done and dropping the rest.",
+      "Hard work pays off, but check you're not taking on everyone else's load too.",
+      "The finish line is close. Just don't take on anything new until you're there."
+    ],
+    "reversed": [
+      "Time to put something down. Not everything needs to be yours to carry.",
+      "Delegate, decline or delay. Your energy is finite.",
+      "You're close to burnout. A proper break is not optional."
+    ]
   },
   {
     "id": "wands_11",
@@ -293,8 +709,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 11,
-    "upright": "Dark young man, faithful, a lover, an envoy, a postman. Beside a man, he will bear favourable testimony concerning him. A dangerous rival, if followed by the Page of Cups. Has the chief qualities of his suit. He may signify family intelligence.",
-    "reversed": "Anecdotes, announcements, evil news. Also indecision and the instability which accompanies it."
+    "keywords": [
+      "curiosity",
+      "enthusiasm",
+      "exploration"
+    ],
+    "upright": [
+      "Be curious today. Try something new just to see what happens.",
+      "Good news or an exciting message may pop up. Follow the lead.",
+      "Let yourself be a beginner. Enthusiasm beats expertise today."
+    ],
+    "reversed": [
+      "Lots of ideas, not much follow-through. Finish one before starting another.",
+      "Feeling uninspired? Change your scenery and see what sparks.",
+      "Don't let a setback dim your enthusiasm. Try again."
+    ]
   },
   {
     "id": "wands_12",
@@ -302,8 +731,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 12,
-    "upright": "Departure, absence, flight, emigration. A dark young man, friendly. Change of residence.",
-    "reversed": "Rupture, division, interruption, discord."
+    "keywords": [
+      "action",
+      "adventure",
+      "boldness"
+    ],
+    "upright": [
+      "Go for it. Boldness is rewarded today.",
+      "Adventure is calling. Even a small detour from routine counts.",
+      "Channel your energy into one clear target and charge."
+    ],
+    "reversed": [
+      "Impulsiveness could backfire. Look before you leap.",
+      "You're rushing ahead without a plan. Slow it down a gear.",
+      "Frustration is boiling over. Burn it off with something physical."
+    ]
   },
   {
     "id": "wands_13",
@@ -311,8 +753,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 13,
-    "upright": "A dark woman, countrywoman, friendly, chaste, loving, honourable. If the card beside her signifies a man, she is well disposed towards him; if a woman, she is interested in the Querent. Also, love of money, or a certain success in business.",
-    "reversed": "Good, economical, obliging, serviceable. Signifies also--but in certain positions and in the neighbourhood of other cards tending in such directions--opposition, jealousy, even deceit and infidelity."
+    "keywords": [
+      "confidence",
+      "warmth",
+      "charisma"
+    ],
+    "upright": [
+      "Your confidence is magnetic today. Let it shine.",
+      "Warmth and determination make you a natural leader. Others will follow your lead.",
+      "Back yourself. You know what you're doing."
+    ],
+    "reversed": [
+      "Self-doubt is creeping in. Remind yourself of what you've already pulled off.",
+      "You're spreading yourself thin trying to please everyone. Prioritise you.",
+      "Jealousy or comparison is draining you. Focus on your own lane."
+    ]
   },
   {
     "id": "wands_14",
@@ -320,8 +775,21 @@
     "arcana": "minor",
     "suit": "wands",
     "number": 14,
-    "upright": "Dark man, friendly, countryman, generally married, honest and conscientious. The card always signifies honesty, and may mean news concerning an unexpected heritage to fall in before very long.",
-    "reversed": "Good, but severe; austere, yet tolerant."
+    "keywords": [
+      "leadership",
+      "vision",
+      "bold decisions"
+    ],
+    "upright": [
+      "Think big and lead the way. People are ready to follow your vision.",
+      "A great day to make the bold call. Trust your experience.",
+      "Inspire someone today, just by doing your thing well."
+    ],
+    "reversed": [
+      "Leading isn't the same as controlling. Let others contribute.",
+      "Big vision, shaky execution. Get the details sorted.",
+      "Impatience with others could cause friction. Lead with encouragement."
+    ]
   },
   {
     "id": "cups_01",
@@ -329,8 +797,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 1,
-    "upright": "House of the true heart, joy, content, abode, nourishment, abundance, fertility; Holy Table, felicity hereof.",
-    "reversed": "House of the false heart, mutation, instability, revolution."
+    "keywords": [
+      "new feelings",
+      "openness",
+      "compassion"
+    ],
+    "upright": [
+      "Your heart is wide open today. Let the good feelings in.",
+      "A new connection or creative feeling is bubbling up. Follow it.",
+      "Kindness flows easily, both giving and receiving. Spread it around."
+    ],
+    "reversed": [
+      "You're holding your feelings in. Let a little out to someone you trust.",
+      "Your cup feels empty. Fill it before you try to pour for others.",
+      "An emotional block is in the way. Journaling or a chat might help."
+    ]
   },
   {
     "id": "cups_02",
@@ -338,8 +819,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 2,
-    "upright": "Love, passion, friendship, affinity, union, concord, sympathy, the interrelation of the sexes, and--as a suggestion apart from all offices of divination--that desire which is not in Nature, but by which Nature is sanctified.",
-    "reversed": "Lust, cupidity, jealousy, wish, desire, but the card may also give, says W., \"that desire which is not in nature, but by which nature is sanctified.\""
+    "keywords": [
+      "partnership",
+      "mutual respect",
+      "connection"
+    ],
+    "upright": [
+      "A one-on-one connection shines today. Make time for someone who matters.",
+      "A great day for teaming up. Two heads (and hearts) are better than one.",
+      "Mutual respect makes everything easier. Meet people halfway."
+    ],
+    "reversed": [
+      "Something's off between you and someone close. A gentle check-in helps.",
+      "Balance the give and take. Is it one-sided right now?",
+      "Misunderstandings are likely. Say what you mean, kindly."
+    ]
   },
   {
     "id": "cups_03",
@@ -347,8 +841,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 3,
-    "upright": "The conclusion of any matter in plenty, perfection and merriment; happy issue, victory, fulfilment, solace, healing,",
-    "reversed": "Expedition, dispatch, achievement, end. It signifies also the side of excess in physical enjoyment, and the pleasures of the senses."
+    "keywords": [
+      "friendship",
+      "celebration",
+      "community"
+    ],
+    "upright": [
+      "Your people are your luck today. Reach out, make plans, or just send the meme; connection is the point.",
+      "There's something worth celebrating, even if it's small. Raise a glass (or a mug) with someone who gets it.",
+      "Collaboration beats going solo today. Shared joy multiplies, so bring others into whatever you're excited about."
+    ],
+    "reversed": [
+      "Too much of a good thing is still too much. Enjoy yourself, but know when to call it a night.",
+      "Watch the group-chat drama. Not every conversation needs your input, especially the ones about people who aren't there.",
+      "Feeling on the outside of things? A one-on-one catch-up might mean more today than a crowd."
+    ]
   },
   {
     "id": "cups_04",
@@ -356,8 +863,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 4,
-    "upright": "Weariness, disgust, aversion, imaginary vexations, as if the wine of this world had caused satiety only; another wine, as if a fairy gift, is now offered the wastrel, but he sees no consolation therein. This is also a card of blended pleasure.",
-    "reversed": "Novelty, presage, new instruction, new relations."
+    "keywords": [
+      "contemplation",
+      "apathy",
+      "missed offers"
+    ],
+    "upright": [
+      "Feeling a bit meh? Take some quiet time, but don't miss what's being offered right in front of you.",
+      "A good day to reflect on what you actually want, not just what's on offer.",
+      "Boredom can be a signal. What's missing?"
+    ],
+    "reversed": [
+      "You're coming out of a funk. Say yes to the next good thing.",
+      "Something you overlooked deserves a second look.",
+      "Motivation is returning. Ride it while it's here."
+    ]
   },
   {
     "id": "cups_05",
@@ -365,8 +885,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 5,
-    "upright": "A dark, cloaked figure, looking sideways at three prone cups two others stand upright behind him; a bridge is in the background, leading to a small keep or holding. Divanatory Meanings: It is a card of loss, but something remains over; three have been taken, but two are left; it is a card of inheritance, patrimony, transmission, but not corresponding to expectations; with some interpreters it is a card of marriage, but not without bitterness or frustration.",
-    "reversed": "News, alliances, affinity, consanguinity, ancestry, return, false projects."
+    "keywords": [
+      "disappointment",
+      "regret",
+      "what remains"
+    ],
+    "upright": [
+      "Something didn't go to plan. It's okay to feel it, but don't forget the cups still standing.",
+      "Let yourself be sad about it, then look at what's still good.",
+      "Regret is a teacher, not a life sentence. Take the lesson and move on."
+    ],
+    "reversed": [
+      "You're starting to move past a disappointment. That's growth.",
+      "Forgiveness, of yourself or others, lightens the load today.",
+      "Turn around and notice the support that's been there all along."
+    ]
   },
   {
     "id": "cups_06",
@@ -374,8 +907,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 6,
-    "upright": "A card of the past and of memories, looking back, as--for example--on childhood; happiness, enjoyment, but coming rather from the past; things that have vanished. Another reading reverses this, giving new relations, new knowledge, new environment, and then the children are disporting in an unfamiliar precinct.",
-    "reversed": "The future, renewal, that which will come to pass presently."
+    "keywords": [
+      "nostalgia",
+      "kindness",
+      "simple joys"
+    ],
+    "upright": [
+      "Nostalgia hits sweetly today. Reconnect with an old friend or a favourite memory.",
+      "Simple pleasures are the best ones. Do something that makes you feel like a kid.",
+      "A small act of kindness, given or received, makes the day."
+    ],
+    "reversed": [
+      "Living too much in the past? Bring that warmth into the present.",
+      "Rose-tinted glasses can hide the full picture. Remember things as they were.",
+      "Time to let go of an old pattern you've outgrown."
+    ]
   },
   {
     "id": "cups_07",
@@ -383,8 +929,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 7,
-    "upright": "Fairy favours, images of reflection, sentiment, imagination, things seen in the glass of contemplation; some attainment in these degrees, but nothing permanent or substantial is suggested.",
-    "reversed": "Desire, will, determination, project."
+    "keywords": [
+      "options",
+      "daydreams",
+      "choices"
+    ],
+    "upright": [
+      "Lots of options, all shiny. Daydream all you like, but pick one to actually pursue.",
+      "Your imagination is running wild today. Great for ideas, less so for decisions.",
+      "Not everything that glitters is gold. Look closely before you choose."
+    ],
+    "reversed": [
+      "Clarity is arriving. You know which option is real.",
+      "Stop waiting for the perfect choice. Good enough is good enough.",
+      "You're overwhelmed by choices. Cross a few off."
+    ]
   },
   {
     "id": "cups_08",
@@ -392,8 +951,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 8,
-    "upright": "The card speaks for itself on the surface, but other readings are entirely antithetical--giving joy, mildness, timidity, honour, modesty. In practice, it is usually found that the card shews the decline of a matter, or that a matter which has been thought to be important is really of slight consequence--either for good or evil.",
-    "reversed": "Great joy, happiness, feasting."
+    "keywords": [
+      "moving on",
+      "seeking more",
+      "walking away"
+    ],
+    "upright": [
+      "It's okay to walk away from something that no longer fulfils you.",
+      "You're looking for deeper meaning. Follow that pull.",
+      "Leaving isn't failing. Sometimes it's the bravest move."
+    ],
+    "reversed": [
+      "You're not sure whether to stay or go. Give it a bit more time.",
+      "Fear of the unknown is keeping you somewhere you've outgrown.",
+      "Maybe it's not about leaving, but about changing how you're showing up."
+    ]
   },
   {
     "id": "cups_09",
@@ -401,8 +973,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 9,
-    "upright": "Concord, contentment, physical bien-être; also victory, success, advantage; satisfaction for the Querent or person for whom the consultation is made.",
-    "reversed": "Truth, loyalty, liberty; but the readings vary and include mistakes, imperfections, etc."
+    "keywords": [
+      "contentment",
+      "wishes",
+      "satisfaction"
+    ],
+    "upright": [
+      "Wish card! Things are looking good. Enjoy the satisfaction.",
+      "Treat yourself today. You've earned some comfort.",
+      "Count your blessings, literally. There are more than you think."
+    ],
+    "reversed": [
+      "Something you wanted isn't quite hitting the spot. What would actually satisfy you?",
+      "Don't let smugness creep in. Stay grateful.",
+      "Happiness isn't another thing to buy. Look inward."
+    ]
   },
   {
     "id": "cups_10",
@@ -410,8 +995,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 10,
-    "upright": "Contentment, repose of the entire heart; the perfection of that state; also perfection of human love and friendship; if with several picture-cards, a person who is taking charge of the Querent's interests; also the town, village or country inhabited by the Querent.",
-    "reversed": "Repose of the false heart, indignation, violence."
+    "keywords": [
+      "harmony",
+      "belonging",
+      "happiness"
+    ],
+    "upright": [
+      "Harmony with the people you love. Enjoy this moment together.",
+      "Home, in whatever form, feels like a safe harbour today.",
+      "Everything feels aligned. Soak it in."
+    ],
+    "reversed": [
+      "Family or friendship tension? Patience and a kind word help.",
+      "Your idea of a perfect life may need updating. That's okay.",
+      "Disconnection at home. Make time for real conversation."
+    ]
   },
   {
     "id": "cups_11",
@@ -419,8 +1017,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 11,
-    "upright": "Fair young man, one impelled to render service and with whom the Querent will be connected; a studious youth; news, message; application, reflection, meditation; also these things directed to business.",
-    "reversed": "Taste, inclination, attachment, seduction, deception, artifice."
+    "keywords": [
+      "creativity",
+      "intuition",
+      "gentle messages"
+    ],
+    "upright": [
+      "A sweet surprise or creative idea floats your way. Stay open.",
+      "Let your inner child out to play today.",
+      "Trust the soft little intuitive nudge."
+    ],
+    "reversed": [
+      "Emotional immaturity, yours or someone else's, could cause hiccups. Take a breath.",
+      "Creative block? Play without pressure.",
+      "Don't take a small thing too personally today."
+    ]
   },
   {
     "id": "cups_12",
@@ -428,8 +1039,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 12,
-    "upright": "Arrival, approach--sometimes that of a messenger; advances, proposition, demeanour, invitation, incitement.",
-    "reversed": "Trickery, artifice, subtlety, swindling, duplicity, fraud."
+    "keywords": [
+      "romance",
+      "charm",
+      "following your heart"
+    ],
+    "upright": [
+      "Follow your heart today. It knows where it wants to go.",
+      "Charm and creativity are on your side. Use them.",
+      "An invitation or offer could sweep you off your feet. Enjoy it."
+    ],
+    "reversed": [
+      "Moodiness could get the better of you. Keep it light.",
+      "Don't promise more than you can deliver.",
+      "Big feelings, little action. Make a move or let it go."
+    ]
   },
   {
     "id": "cups_13",
@@ -437,8 +1061,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 13,
-    "upright": "Good, fair woman; honest, devoted woman, who will do service to the Querent; loving intelligence, and hence the gift of vision; success, happiness, pleasure; also wisdom, virtue; a perfect spouse and a good mother.",
-    "reversed": "The accounts vary; good woman; otherwise, distinguished woman but one not to be trusted; perverse woman; vice, dishonour, depravity."
+    "keywords": [
+      "empathy",
+      "care",
+      "emotional wisdom"
+    ],
+    "upright": [
+      "Your empathy is a gift today. Someone needs your listening ear.",
+      "Trust your feelings; they're telling you something true.",
+      "Be gentle with yourself, as you would be with a friend."
+    ],
+    "reversed": [
+      "You're taking on everyone's emotions. Protect your own energy.",
+      "Self-care isn't selfish. Refill your cup.",
+      "Feeling too much? Ground yourself with something physical."
+    ]
   },
   {
     "id": "cups_14",
@@ -446,8 +1083,21 @@
     "arcana": "minor",
     "suit": "cups",
     "number": 14,
-    "upright": "Fair man, man of business, law, or divinity; responsible, disposed to oblige the Querent; also equity, art and science, including those who profess science, law and art; creative intelligence.",
-    "reversed": "Dishonest, double-dealing man; roguery, exaction, injustice, vice, scandal, pillage, considerable loss."
+    "keywords": [
+      "calm",
+      "balance",
+      "emotional maturity"
+    ],
+    "upright": [
+      "Stay calm under pressure. Your steady presence helps everyone.",
+      "Balance head and heart in today's decision.",
+      "Lead with compassion. It's more powerful than it looks."
+    ],
+    "reversed": [
+      "Bottled-up feelings could leak out sideways. Let them out safely.",
+      "Don't let emotions steer the ship. Steady the wheel.",
+      "Someone may be manipulating feelings. Stay grounded."
+    ]
   },
   {
     "id": "swords_01",
@@ -455,8 +1105,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 1,
-    "upright": "Triumph, the excessive degree in everything, conquest, triumph of force. It is a card of great force, in love as well as in hatred. The crown may carry a much higher significance than comes usually within the sphere of fortune-telling.",
-    "reversed": "The same, but the results are disastrous; another account says--conception, childbirth, augmentation, multiplicity."
+    "keywords": [
+      "clarity",
+      "breakthrough",
+      "truth"
+    ],
+    "upright": [
+      "A moment of clarity cuts through the confusion. You see it clearly now.",
+      "Say what you mean today. Clear words carry real power.",
+      "A breakthrough idea arrives. Write it down before it slips away."
+    ],
+    "reversed": [
+      "Your thoughts are scattered. Get them on paper before deciding.",
+      "Careful with sharp words. Clarity doesn't have to cut.",
+      "Mixed messages abound. Ask for clarification."
+    ]
   },
   {
     "id": "swords_02",
@@ -464,8 +1127,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 2,
-    "upright": "Conformity and the equipoise which it suggests, courage, friendship, concord in a state of arms; another reading gives tenderness, affection, intimacy. The suggestion of harmony and other favourable readings must be considered in a qualified manner, as Swords generally are not symbolical of beneficent forces in human affairs.",
-    "reversed": "Imposture, falsehood, duplicity, disloyalty."
+    "keywords": [
+      "indecision",
+      "stalemate",
+      "weighing options"
+    ],
+    "upright": [
+      "You're stuck between two choices. Take off the blindfold and look at the facts.",
+      "Avoiding the decision is a decision too. Gather what you need and choose.",
+      "A truce can be a good thing, for now."
+    ],
+    "reversed": [
+      "Information overload. Step away and let your gut decide.",
+      "The stalemate is breaking. Movement is coming.",
+      "You can't sit on the fence forever. Pick a side."
+    ]
   },
   {
     "id": "swords_03",
@@ -473,8 +1149,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 3,
-    "upright": "Removal, absence, delay, division, rupture, dispersion, and all that the design signifies naturally, being too simple and obvious to call for specific enumeration.",
-    "reversed": "Mental alienation, error, loss, distraction, disorder, confusion."
+    "keywords": [
+      "heartache",
+      "honesty",
+      "release"
+    ],
+    "upright": [
+      "Something stings today. Let yourself feel it; that's how it heals.",
+      "A hard truth hurts, but it's better out than in.",
+      "Be gentle with your heart. Healing starts with honesty."
+    ],
+    "reversed": [
+      "You're on the mend. The worst is behind you.",
+      "Let go of an old hurt. It's had its time.",
+      "Talking it through helps more than holding it in."
+    ]
   },
   {
     "id": "swords_04",
@@ -482,8 +1171,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 4,
-    "upright": "Vigilance, retreat, solitude, hermit's repose, exile, tomb and coffin. It is these last that have suggested the design.",
-    "reversed": "Wise administration, circumspection, economy, avarice, precaution, testament."
+    "keywords": [
+      "rest",
+      "recovery",
+      "quiet"
+    ],
+    "upright": [
+      "Rest is productive today. Recharge before the next round.",
+      "Take a proper break: screens off, mind quiet.",
+      "Step back and let things settle. You'll think more clearly after."
+    ],
+    "reversed": [
+      "Restlessness won't let you relax. Ease back in gently.",
+      "You've rested enough. Time to get moving again.",
+      "Burnout is close. Don't skip the downtime."
+    ]
   },
   {
     "id": "swords_05",
@@ -491,8 +1193,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 5,
-    "upright": "Degradation, destruction, revocation, infamy, dishonour, loss, with the variants and analogues of these.",
-    "reversed": "The same; burial and obsequies."
+    "keywords": [
+      "conflict",
+      "pride",
+      "hollow wins"
+    ],
+    "upright": [
+      "Is winning this argument worth what it costs? Choose your battles.",
+      "Tension is in the air. Walk away from fights that don't matter.",
+      "Sometimes the bigger win is letting it go."
+    ],
+    "reversed": [
+      "Time to make peace. Apologise or accept one.",
+      "The dust is settling after a conflict. Learn from it and move on.",
+      "Let go of the need to be right."
+    ]
   },
   {
     "id": "swords_06",
@@ -500,8 +1215,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 6,
-    "upright": "Journey by water, route, way, envoy, commissionary, expedient.",
-    "reversed": "Declaration, confession, publicity; one account says that it is a proposal of love."
+    "keywords": [
+      "transition",
+      "moving on",
+      "calmer waters"
+    ],
+    "upright": [
+      "You're leaving rough waters behind. Calmer days are ahead.",
+      "A transition is happening. Go with it, one step at a time.",
+      "Distance gives perspective. Step back from the situation."
+    ],
+    "reversed": [
+      "Moving on is harder than expected. Take it slow.",
+      "Unfinished business is following you. Address it.",
+      "Resisting the change is keeping you stuck. Let the current carry you."
+    ]
   },
   {
     "id": "swords_07",
@@ -509,8 +1237,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 7,
-    "upright": "Design, attempt, wish, hope, confidence; also quarrelling, a plan that may fail, annoyance. The design is uncertain in its import, because the significations are widely at variance with each other.",
-    "reversed": "Good advice, counsel, instruction, slander, babbling."
+    "keywords": [
+      "strategy",
+      "discretion",
+      "sneakiness"
+    ],
+    "upright": [
+      "Be strategic today. Not every plan needs announcing.",
+      "Work smarter, not harder. There's a clever way around this.",
+      "Keep an eye out. Not everyone is playing fair."
+    ],
+    "reversed": [
+      "A secret could come out. Honesty is the easier path.",
+      "Stop trying to do it all alone. Ask for help.",
+      "Your conscience is nudging you. Listen to it."
+    ]
   },
   {
     "id": "swords_08",
@@ -518,8 +1259,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 8,
-    "upright": "Bad news, violent chagrin, crisis, censure, power in trammels, conflict, calumny; also sickness.",
-    "reversed": "Disquiet, difficulty, opposition, accident, treachery; what is unforeseen; fatality."
+    "keywords": [
+      "feeling stuck",
+      "self-limits",
+      "perspective"
+    ],
+    "upright": [
+      "You feel trapped, but the bindings are looser than they seem. Look for the way out.",
+      "Negative thoughts are your biggest obstacle today. Question them.",
+      "You have more options than you think. List them."
+    ],
+    "reversed": [
+      "You're breaking free from a limiting belief. Keep going.",
+      "A new perspective opens a door. Walk through it.",
+      "Freedom is a choice. Make it."
+    ]
   },
   {
     "id": "swords_09",
@@ -527,8 +1281,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 9,
-    "upright": "Death, failure, miscarriage, delay, deception, disappointment, despair.",
-    "reversed": "Imprisonment, suspicion, doubt, reasonable fear, shame."
+    "keywords": [
+      "worry",
+      "anxiety",
+      "overthinking"
+    ],
+    "upright": [
+      "Worries feel big right now. Write them down; they shrink on paper.",
+      "Your mind is racing. Ground yourself in the present moment.",
+      "Talk to someone. Anxiety loses power when shared."
+    ],
+    "reversed": [
+      "The worst is passing. You're finding your footing again.",
+      "You're realising the fear was bigger than the problem.",
+      "Reach out for support. You don't have to manage alone."
+    ]
   },
   {
     "id": "swords_10",
@@ -536,8 +1303,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 10,
-    "upright": "Whatsoever is intimated by the design; also pain, affliction, tears, sadness, desolation. It is not especially a card of violent death.",
-    "reversed": "Advantage, profit, success, favour, but none of these are permanent; also power and authority."
+    "keywords": [
+      "endings",
+      "rock bottom",
+      "fresh start"
+    ],
+    "upright": [
+      "It feels like the end, but it's really the bottom from which you rise. Things only go up from here.",
+      "Let it be over. Closure brings relief.",
+      "The dawn comes after the darkest point. Hang in there."
+    ],
+    "reversed": [
+      "You're recovering. Every day gets a little easier.",
+      "Don't relive the hard moment over and over. Let it rest.",
+      "You survived it. That counts for a lot."
+    ]
   },
   {
     "id": "swords_11",
@@ -545,8 +1325,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 11,
-    "upright": "Authority, overseeing, secret service, vigilance, spying, examination, and the qualities thereto belonging.",
-    "reversed": "More evil side of these qualities; what is unforeseen, unprepared state; sickness is also intimated."
+    "keywords": [
+      "curiosity",
+      "new ideas",
+      "vigilance"
+    ],
+    "upright": [
+      "Curiosity drives you today. Ask questions, lots of them.",
+      "New ideas are flowing. Explore them.",
+      "Stay alert. Something interesting is worth noticing."
+    ],
+    "reversed": [
+      "All talk, no action. Follow through on your ideas.",
+      "Gossip might tempt you. Resist.",
+      "Scattered focus today. Pick one thing to dig into."
+    ]
   },
   {
     "id": "swords_12",
@@ -554,8 +1347,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 12,
-    "upright": "Skill, bravery, capacity, defence, address, enmity, wrath, war, destruction, opposition, resistance, ruin. There is therefore a sense in which the card signifies death, but it carries this meaning only in its proximity to other cards of fatality.",
-    "reversed": "Imprudence, incapacity, extravagance."
+    "keywords": [
+      "ambition",
+      "fast action",
+      "drive"
+    ],
+    "upright": [
+      "Charge ahead with your ideas. Momentum is on your side.",
+      "A great day for decisive action. Go for it.",
+      "Speak up confidently. Your voice matters."
+    ],
+    "reversed": [
+      "Rushing in without thinking. Slow down a beat.",
+      "Your words could cut deeper than you intend. Soften them.",
+      "Impatience with others is showing. Breathe."
+    ]
   },
   {
     "id": "swords_13",
@@ -563,8 +1369,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 13,
-    "upright": "Widowhood, female sadness and embarrassment, absence, sterility, mourning, privation, separation.",
-    "reversed": "Malice, bigotry, artifice, prudery, bale, deceit."
+    "keywords": [
+      "perception",
+      "independence",
+      "clear boundaries"
+    ],
+    "upright": [
+      "Clear-eyed honesty is your strength today. Say it straight, with care.",
+      "Set a boundary and stick to it.",
+      "Trust your judgement. You see through the noise."
+    ],
+    "reversed": [
+      "Too much criticism, inward or outward. Ease off.",
+      "Coldness can push people away. Let a little warmth in.",
+      "Past hurts colour your view. Look at today with fresh eyes."
+    ]
   },
   {
     "id": "swords_14",
@@ -572,8 +1391,21 @@
     "arcana": "minor",
     "suit": "swords",
     "number": 14,
-    "upright": "Whatsoever arises out of the idea of judgment and all its connexions-power, command, authority, militant intelligence, law, offices of the crown, and so forth.",
-    "reversed": "Cruelty, perversity, barbarity, perfidy, evil intention."
+    "keywords": [
+      "authority",
+      "logic",
+      "fairness"
+    ],
+    "upright": [
+      "Logic leads the way today. Think it through calmly.",
+      "Be fair and firm. People respect clarity.",
+      "Your expertise is valued. Share it."
+    ],
+    "reversed": [
+      "Being right isn't the same as being kind. Balance both.",
+      "Overthinking is getting in the way. Trust your instincts too.",
+      "Rigidity is causing friction. Bend a little."
+    ]
   },
   {
     "id": "pentacles_01",
@@ -581,8 +1413,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 1,
-    "upright": "Perfect contentment, felicity, ecstasy; also speedy intelligence; gold.",
-    "reversed": "The evil side of wealth, bad intelligence; also great riches. In any case it shews prosperity, comfortable material conditions, but whether these are of advantage to the possessor will depend on whether the card is reversed or not."
+    "keywords": [
+      "opportunity",
+      "grounding",
+      "new start"
+    ],
+    "upright": [
+      "A practical opportunity is in front of you. Plant the seed.",
+      "A solid new start: a project, a habit, a plan. Build it step by step.",
+      "Good things come from small beginnings. Start today."
+    ],
+    "reversed": [
+      "An opportunity might slip by. Pay attention.",
+      "Planning without doing. Take one concrete step.",
+      "Ground yourself before starting something new."
+    ]
   },
   {
     "id": "pentacles_02",
@@ -590,8 +1435,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 2,
-    "upright": "On the one hand it is represented as a card of gaiety, recreation and its connexions, which is the subject of the design; but it is read also as news and messages in writing, as obstacles, agitation, trouble, embroilment.",
-    "reversed": "Enforced gaiety, simulated enjoyment, literal sense, handwriting, composition, letters of exchange."
+    "keywords": [
+      "juggling",
+      "adaptability",
+      "balance"
+    ],
+    "upright": [
+      "You're juggling a lot and doing it well. Keep the rhythm.",
+      "Flexibility is your friend today. Go with the flow.",
+      "Balance work and play; both matter."
+    ],
+    "reversed": [
+      "Too many balls in the air. Drop one on purpose before you drop them all.",
+      "Overcommitted? Say no to something.",
+      "Disorganisation is costing you. Take ten minutes to regroup."
+    ]
   },
   {
     "id": "pentacles_03",
@@ -599,8 +1457,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 3,
-    "upright": "Métier, trade, skilled labour; usually, however, regarded as a card of nobility, aristocracy, renown, glory.",
-    "reversed": "Mediocrity, in work and otherwise, puerility, pettiness, weakness."
+    "keywords": [
+      "teamwork",
+      "craft",
+      "collaboration"
+    ],
+    "upright": [
+      "Teamwork makes the dream work today. Collaborate.",
+      "Your skills are appreciated. Bring them to the table.",
+      "Quality over speed. Do it properly."
+    ],
+    "reversed": [
+      "The team isn't clicking. Clarify who's doing what.",
+      "Going it alone isn't working. Ask for input.",
+      "Cutting corners shows. Slow down and do it right."
+    ]
   },
   {
     "id": "pentacles_04",
@@ -608,8 +1479,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 4,
-    "upright": "The surety of possessions, cleaving to that which one has, gift, legacy, inheritance.",
-    "reversed": "Suspense, delay, opposition."
+    "keywords": [
+      "security",
+      "holding on",
+      "stability"
+    ],
+    "upright": [
+      "A good day to secure what you have. Stability feels good.",
+      "Protect your time and energy. Not everyone needs a piece of it.",
+      "Saving, planning and organising all pay off today."
+    ],
+    "reversed": [
+      "Holding on too tightly. Loosen your grip a little.",
+      "Generosity feels good. Share something.",
+      "Fear of change is keeping you stuck. Open up."
+    ]
   },
   {
     "id": "pentacles_05",
@@ -617,8 +1501,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 5,
-    "upright": "The card foretells material trouble above all, whether in the form illustrated--that is, destitution--or otherwise. For some cartomancists, it is a card of love and lovers-wife, husband, friend, mistress; also concordance, affinities. These alternatives cannot be harmonized.",
-    "reversed": "Disorder, chaos, ruin, discord, profligacy."
+    "keywords": [
+      "hardship",
+      "feeling left out",
+      "support nearby"
+    ],
+    "upright": [
+      "Times feel tough, but help is closer than you think. Look around.",
+      "You're not alone in this. Reach out.",
+      "It's okay to accept support. That's what community is for."
+    ],
+    "reversed": [
+      "Things are improving. The hard stretch is easing.",
+      "Accept the help on offer. Pride isn't worth staying cold for.",
+      "Recovery starts with one small step forward."
+    ]
   },
   {
     "id": "pentacles_06",
@@ -626,8 +1523,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 6,
-    "upright": "Presents, gifts, gratification another account says attention, vigilance now is the accepted time, present prosperity, etc.",
-    "reversed": "Desire, cupidity, envy, jealousy, illusion."
+    "keywords": [
+      "generosity",
+      "sharing",
+      "give and take"
+    ],
+    "upright": [
+      "Generosity flows both ways today. Give freely, receive graciously.",
+      "Help someone out. It'll come back around.",
+      "Share your time, skills or resources where they're needed."
+    ],
+    "reversed": [
+      "Is the give and take balanced? Check for strings attached.",
+      "Don't give so much you leave yourself short.",
+      "It's okay to ask for help. Let someone return the favour."
+    ]
   },
   {
     "id": "pentacles_07",
@@ -635,8 +1545,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 7,
-    "upright": "These are exceedingly contradictory; in the main, it is a card of money, business, barter; but one reading gives altercation, quarrels--and another innocence, ingenuity, purgation.",
-    "reversed": "Cause for anxiety regarding money which it may be proposed to lend."
+    "keywords": [
+      "patience",
+      "long view",
+      "steady growth"
+    ],
+    "upright": [
+      "Your efforts are growing, slowly but surely. Be patient.",
+      "Step back and assess. Is this still worth your energy?",
+      "The long game pays off. Keep tending it."
+    ],
+    "reversed": [
+      "Impatience with slow progress. Remember why you started.",
+      "Effort isn't paying off here. Reassess where you're investing.",
+      "Don't abandon the garden just before harvest."
+    ]
   },
   {
     "id": "pentacles_08",
@@ -644,8 +1567,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 8,
-    "upright": "Work, employment, commission, craftsmanship, skill in craft and business, perhaps in the preparatory stage.",
-    "reversed": "Voided ambition, vanity, cupidity, exaction, usury. It may also signify the possession of skill, in the sense of the ingenious mind turned to cunning and intrigue."
+    "keywords": [
+      "diligence",
+      "practice",
+      "mastery"
+    ],
+    "upright": [
+      "Head down, focus up. Steady work builds real skill.",
+      "Practice makes progress. Keep at it.",
+      "A good day to learn something new or sharpen an old skill."
+    ],
+    "reversed": [
+      "Repetition without improvement. Try a new approach.",
+      "Perfectionism is slowing you down. Done beats perfect.",
+      "Feeling uninspired by the grind? Mix it up."
+    ]
   },
   {
     "id": "pentacles_09",
@@ -653,8 +1589,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 9,
-    "upright": "Prudence, safety, success, accomplishment, certitude, discernment.",
-    "reversed": "Roguery, deception, voided project, bad faith."
+    "keywords": [
+      "independence",
+      "self-reliance",
+      "enjoying the rewards"
+    ],
+    "upright": [
+      "Enjoy what you've built. You've earned it.",
+      "Independence feels great today. Treat yourself.",
+      "Self-reliance is your strength. Trust it."
+    ],
+    "reversed": [
+      "Overworking without enjoying the results. Take a break.",
+      "Feeling isolated in your success? Share it with someone.",
+      "Don't measure your worth by your output."
+    ]
   },
   {
     "id": "pentacles_10",
@@ -662,8 +1611,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 10,
-    "upright": "Gain, riches; family matters, archives, extraction, the abode of a family.",
-    "reversed": "Chance, fatality, loss, robbery, games of hazard; sometimes gift, dowry, pension."
+    "keywords": [
+      "legacy",
+      "family",
+      "long-term security"
+    ],
+    "upright": [
+      "Think long-term today. What are you building for the future?",
+      "Family, chosen or otherwise, brings stability.",
+      "Traditions and roots ground you. Lean on them."
+    ],
+    "reversed": [
+      "Old family patterns could resurface. Choose your own way.",
+      "Short-term thinking could cost you later. Plan ahead.",
+      "Stability feels shaky. Shore up the basics."
+    ]
   },
   {
     "id": "pentacles_11",
@@ -671,8 +1633,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 11,
-    "upright": "Application, study, scholarship, reflection another reading says news, messages and the bringer thereof; also rule, management.",
-    "reversed": "Prodigality, dissipation, liberality, luxury; unfavourable news."
+    "keywords": [
+      "learning",
+      "ambition",
+      "new skills"
+    ],
+    "upright": [
+      "A good day to study or learn something practical. Dive in.",
+      "Set a goal and take one step toward it.",
+      "Curiosity and diligence go hand in hand. Stay focused."
+    ],
+    "reversed": [
+      "Procrastinating on learning. Start small.",
+      "Distraction is winning today. Put the phone away.",
+      "Dreaming without doing. Make a plan."
+    ]
   },
   {
     "id": "pentacles_12",
@@ -680,8 +1655,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 12,
-    "upright": "Utility, serviceableness, interest, responsibility, rectitude-all on the normal and external plane.",
-    "reversed": "inertia, idleness, repose of that kind, stagnation; also placidity, discouragement, carelessness."
+    "keywords": [
+      "reliability",
+      "routine",
+      "steady progress"
+    ],
+    "upright": [
+      "Slow and steady wins today. Stick to the routine.",
+      "Reliability is underrated. Be the one people can count on.",
+      "Do the boring but important thing."
+    ],
+    "reversed": [
+      "Stuck in a rut. Shake up the routine.",
+      "Too cautious? Take a small calculated risk.",
+      "Laziness is creeping in. Get one task done."
+    ]
   },
   {
     "id": "pentacles_13",
@@ -689,8 +1677,21 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 13,
-    "upright": "Opulence, generosity, magnificence, security, liberty.",
-    "reversed": "Evil, suspicion, suspense, fear, mistrust."
+    "keywords": [
+      "nurture",
+      "practicality",
+      "comfort"
+    ],
+    "upright": [
+      "Take care of yourself and your space today. Comfort is productive.",
+      "Practical kindness: cook a meal, tidy up, help out.",
+      "Down-to-earth wisdom works best today."
+    ],
+    "reversed": [
+      "Neglecting yourself while caring for others. Rebalance.",
+      "Work and home are out of sync. Prioritise.",
+      "Clutter is stressing you out. Clear a little space."
+    ]
   },
   {
     "id": "pentacles_14",
@@ -698,7 +1699,20 @@
     "arcana": "minor",
     "suit": "pentacles",
     "number": 14,
-    "upright": "Valour, realizing intelligence, business and normal intellectual aptitude, sometimes mathematical gifts and attainments of this kind; success in these paths.",
-    "reversed": "Vice, weakness, ugliness, perversity, corruption, peril."
+    "keywords": [
+      "success",
+      "abundance",
+      "steady leadership"
+    ],
+    "upright": [
+      "Your hard work is paying off. Enjoy the stability.",
+      "Lead with generosity and practicality.",
+      "A good day for long-term decisions. You're in a strong position."
+    ],
+    "reversed": [
+      "Don't let status or stuff define you.",
+      "Stubbornness could cost you. Stay open to new ideas.",
+      "Overindulgence? Pull back a little."
+    ]
   }
 ]

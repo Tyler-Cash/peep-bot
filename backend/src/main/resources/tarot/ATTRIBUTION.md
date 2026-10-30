@@ -10,8 +10,8 @@ Changes: resized from the 720px set to 480px wide and renamed to card ids
 
 The Discord embed footer carries the attribution line on every draw.
 
-## Card meanings — `cards.json`
+## Card readings — `cards.json`
 
-Upright/reversed meanings are from A. E. Waite, *The Pictorial Key to the Tarot* (1910, public domain),
-via the `card_data.json` parse in https://github.com/ekelen/tarot-api. Card names follow the Soimoi deck
-(Strength, Judgement).
+Keywords and the upright/reversed daily readings are original text written for Peep Bot (three
+interchangeable readings per orientation; each draw stores which one it showed in
+`tarot_draw.reading_index`). Card names follow the Soimoi deck (Strength, Judgement).

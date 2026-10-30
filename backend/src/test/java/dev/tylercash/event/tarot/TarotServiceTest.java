@@ -72,6 +72,12 @@ class TarotServiceTest {
         assertThat(saved.getValue().getGuildId()).isEqualTo(GUILD);
         assertThat(saved.getValue().getUserSnowflake()).isEqualTo(USER);
         assertThat(saved.getValue().getDrawnAt()).isEqualTo(BEFORE_SYDNEY_MIDNIGHT);
+        assertThat(saved.getValue().getReadingIndex())
+                .isBetween(0, result.card().readings(result.draw().isReversed()).size() - 1);
+        assertThat(result.reading())
+                .isEqualTo(result.card()
+                        .readings(result.draw().isReversed())
+                        .get(saved.getValue().getReadingIndex()));
     }
 
     @Test
@@ -143,6 +149,6 @@ class TarotServiceTest {
     }
 
     private static TarotDraw draw(String cardId, boolean reversed, LocalDate date) {
-        return new TarotDraw(UUID.randomUUID(), GUILD, USER, date, cardId, reversed, BEFORE_SYDNEY_MIDNIGHT);
+        return new TarotDraw(UUID.randomUUID(), GUILD, USER, date, cardId, reversed, 0, BEFORE_SYDNEY_MIDNIGHT);
     }
 }

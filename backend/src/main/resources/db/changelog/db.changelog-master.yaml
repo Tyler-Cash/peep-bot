@@ -1476,3 +1476,21 @@ databaseChangeLog:
                   name: guild_id
               - column:
                   name: draw_date
+
+  - changeSet:
+      id: add reading_index to tarot_draw
+      author: tyler
+      comment: >
+        Cards now carry several readings per orientation; store which one a
+        draw showed so the "already drawn today" reply repeats it. Existing
+        draws default to the first reading.
+      changes:
+        - addColumn:
+            tableName: tarot_draw
+            columns:
+              - column:
+                  name: reading_index
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

@@ -34,17 +34,17 @@ class TarotRepositoryIntegrationTest extends AbstractHttpIntegrationTest {
         long user = TestIds.nextLong();
         LocalDate day = LocalDate.of(2026, 10, 20);
         drawRepository.saveAndFlush(
-                new TarotDraw(UUID.randomUUID(), guildId, user, day, "major_00", false, Instant.now()));
+                new TarotDraw(UUID.randomUUID(), guildId, user, day, "major_00", false, 0, Instant.now()));
 
         assertThatThrownBy(() -> drawRepository.saveAndFlush(
-                        new TarotDraw(UUID.randomUUID(), guildId, user, day, "major_01", true, Instant.now())))
+                        new TarotDraw(UUID.randomUUID(), guildId, user, day, "major_01", true, 0, Instant.now())))
                 .isInstanceOf(DataIntegrityViolationException.class);
 
         // Next day and other guilds are independent.
         drawRepository.saveAndFlush(
-                new TarotDraw(UUID.randomUUID(), guildId, user, day.plusDays(1), "major_02", false, Instant.now()));
+                new TarotDraw(UUID.randomUUID(), guildId, user, day.plusDays(1), "major_02", false, 0, Instant.now()));
         drawRepository.saveAndFlush(
-                new TarotDraw(UUID.randomUUID(), TestIds.nextLong(), user, day, "major_03", false, Instant.now()));
+                new TarotDraw(UUID.randomUUID(), TestIds.nextLong(), user, day, "major_03", false, 0, Instant.now()));
     }
 
     @Test

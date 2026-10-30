@@ -121,11 +121,12 @@ public class TarotSlashCommandHandler {
     static MessageEmbed buildEmbed(
             TarotCard card, boolean reversed, TarotService.DrawResult result, String displayName, String avatarUrl) {
         String title = card.name() + (reversed ? " (Reversed)" : "");
-        String meaning = reversed ? card.reversed() : card.upright();
+        String keywords = String.join(" · ", card.keywords());
         return new EmbedBuilder()
                 .setAuthor(displayName + "'s daily draw", null, avatarUrl)
                 .setTitle(title)
-                .setDescription(meaning + "\n\nNext draw " + discordRelative(result))
+                .setDescription(
+                        "*" + keywords + "*\n\n" + result.reading() + "\n\nNext draw " + discordRelative(result))
                 .setImage("attachment://" + card.imageFileName())
                 .setColor(EMBED_COLOUR)
                 .setFooter(TarotDeck.ATTRIBUTION)
@@ -134,7 +135,8 @@ public class TarotSlashCommandHandler {
 
     static String alreadyDrawnMessage(TarotService.DrawResult result) {
         String name = result.card().name() + (result.draw().isReversed() ? " (Reversed)" : "");
-        return "You've already drawn today: **" + name + "**. Your next draw is " + discordRelative(result) + ".";
+        return "You've already drawn today: **" + name + "**\n> " + result.reading() + "\nYour next draw is "
+                + discordRelative(result) + ".";
     }
 
     private static String discordRelative(TarotService.DrawResult result) {

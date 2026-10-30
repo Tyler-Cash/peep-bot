@@ -37,6 +37,10 @@ public class TarotDraw {
     @Column(name = "reversed", nullable = false)
     private boolean reversed;
 
+    /** Which of the card's readings (for its orientation) this draw showed. */
+    @Column(name = "reading_index", nullable = false)
+    private int readingIndex;
+
     @Column(name = "drawn_at", nullable = false)
     private Instant drawnAt;
 }

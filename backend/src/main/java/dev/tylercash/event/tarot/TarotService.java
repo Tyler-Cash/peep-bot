@@ -44,7 +44,11 @@ public class TarotService {
         this.clock = clock;
     }
 
-    public record DrawResult(TarotDraw draw, TarotCard card, boolean alreadyDrawn, Instant nextReset) {}
+    public record DrawResult(TarotDraw draw, TarotCard card, boolean alreadyDrawn, Instant nextReset) {
+        public String reading() {
+            return card.reading(draw.isReversed(), draw.getReadingIndex());
+        }
+    }
 
     /** The user's draw for today in the guild's timezone, if they've made one. */
     public Optional<DrawResult> todaysDraw(long guildId, long userSnowflake) {
@@ -67,13 +71,15 @@ public class TarotService {
         ZoneId zone = zoneFor(guildId);
         Instant now = clock.instant();
         TarotCard card = deck.random(random);
+        boolean reversed = random.nextBoolean();
         TarotDraw draw = new TarotDraw(
                 UUID.randomUUID(),
                 guildId,
                 userSnowflake,
                 LocalDate.ofInstant(now, zone),
                 card.id(),
-                random.nextBoolean(),
+                reversed,
+                random.nextInt(card.readings(reversed).size()),
                 now);
         try {
             drawRepository.saveAndFlush(draw);
