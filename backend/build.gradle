@@ -84,7 +84,7 @@ dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.google.protobuf:protobuf-java:4.36.2'
-    implementation 'com.ibm.icu:icu4j:78.3'
+    implementation 'com.ibm.icu:icu4j:79.1'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
     // Boot 4 modularised Liquibase autoconfig — pulling just liquibase-core no longer
