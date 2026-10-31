@@ -98,7 +98,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -175,7 +175,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -233,7 +233,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Cache ONNX model files
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: backend/src/main/resources/models
           key: onnx-model-all-minilm-l6-v2
@@ -450,7 +450,7 @@ jobs:
         working-directory: ./frontend
 
       - name: Cache Playwright browsers
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
@@ -510,7 +510,7 @@ jobs:
         working-directory: ./frontend
 
       - name: Cache Playwright browsers
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
