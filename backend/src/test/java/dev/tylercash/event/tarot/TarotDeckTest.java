@@ -29,10 +29,16 @@ class TarotDeckTest {
         for (TarotCard card : deck.all()) {
             assertThat(card.keywords()).as(card.id()).hasSize(3).allSatisfy(k -> assertThat(k)
                     .isNotBlank());
-            assertThat(card.upright()).as(card.id()).hasSize(3).allSatisfy(r -> assertThat(r)
-                    .isNotBlank());
-            assertThat(card.reversed()).as(card.id()).hasSize(3).allSatisfy(r -> assertThat(r)
-                    .isNotBlank());
+            assertThat(card.upright())
+                    .as(card.id())
+                    .hasSize(20)
+                    .doesNotHaveDuplicates()
+                    .allSatisfy(r -> assertThat(r).isNotBlank());
+            assertThat(card.reversed())
+                    .as(card.id())
+                    .hasSize(20)
+                    .doesNotHaveDuplicates()
+                    .allSatisfy(r -> assertThat(r).isNotBlank());
             BufferedImage img = ImageIO.read(new ByteArrayInputStream(deck.image(card, false)));
             assertThat(img).as(card.id()).isNotNull();
         }
@@ -54,7 +60,7 @@ class TarotDeckTest {
 
         assertThat(card.reading(false, 1)).isEqualTo(card.upright().get(1));
         assertThat(card.reading(true, 2)).isEqualTo(card.reversed().get(2));
-        assertThat(card.reading(true, 5)).isEqualTo(card.reversed().get(2));
+        assertThat(card.reading(true, 22)).isEqualTo(card.reversed().get(2));
     }
 
     @Test

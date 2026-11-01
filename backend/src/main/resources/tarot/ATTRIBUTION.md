@@ -12,6 +12,6 @@ The Discord embed footer carries the attribution line on every draw.
 
 ## Card readings — `cards.json`
 
-Keywords and the upright/reversed daily readings are original text written for Peep Bot (three
+Keywords and the upright/reversed daily readings are original text written for Peep Bot (twenty
 interchangeable readings per orientation; each draw stores which one it showed in
 `tarot_draw.reading_index`). Card names follow the Soimoi deck (Strength, Judgement).
