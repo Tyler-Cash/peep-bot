@@ -292,10 +292,10 @@ export type KickGuildRequest = {
 };
 
 export type PageMetadata = {
-    number?: number;
-    size?: number;
-    totalElements?: number;
-    totalPages?: number;
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
 };
 
 export type Pageable = {
@@ -305,8 +305,8 @@ export type Pageable = {
 };
 
 export type PagedModelEventDto = {
-    content?: Array<EventDto>;
-    page?: PageMetadata;
+    content: Array<EventDto>;
+    page: PageMetadata;
 };
 
 export type PermissionDto = {
