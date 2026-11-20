@@ -376,6 +376,7 @@
           },
           "capacity" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "category" : {
@@ -389,6 +390,7 @@
           },
           "cost" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "dateTime" : {
@@ -462,6 +464,7 @@
         "properties" : {
           "capacity" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "category" : {
@@ -472,6 +475,7 @@
           },
           "cost" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "dateTime" : {
@@ -553,6 +557,7 @@
           },
           "capacity" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "dateTime" : {
@@ -862,6 +867,7 @@
             "type" : "integer"
           }
         },
+        "required" : [ "number", "size", "totalElements", "totalPages" ],
         "type" : "object"
       },
       "Pageable" : {
@@ -897,6 +903,7 @@
             "$ref" : "#/components/schemas/PageMetadata"
           }
         },
+        "required" : [ "content", "page" ],
         "type" : "object"
       },
       "PermissionDto" : {

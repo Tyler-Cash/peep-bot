@@ -118,11 +118,11 @@ export const zEventCategoryDto = z.object({
 
 export const zEventDetailDto = z.object({
     accepted: z.array(zAttendeeDto).nullable().optional(),
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    capacity: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     category: z.string().nullable().optional(),
     channelId: z.string().nullable().optional(),
     completed: z.boolean().nullable().optional(),
-    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    cost: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     dateTime: z.iso.datetime(),
     declined: z.array(zAttendeeDto).nullable().optional(),
     description: z.string().min(0).max(3800).nullable().optional(),
@@ -143,10 +143,10 @@ export const zEventDetailDto = z.object({
 });
 
 export const zEventDto = z.object({
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    capacity: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     category: z.string().nullable().optional(),
     channelId: z.string().nullable().optional(),
-    cost: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    cost: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     dateTime: z.iso.datetime(),
     description: z.string().min(0).max(3800).nullable().optional(),
     displayState: z.string().nullable().optional(),
@@ -171,7 +171,7 @@ export const zEventSummaryDto = z.object({
 
 export const zEventUpdateDto = z.object({
     accepted: z.array(z.string()).nullable().optional(),
-    capacity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
+    capacity: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable().optional(),
     dateTime: z.iso.datetime().nullable().optional(),
     description: z.string().nullable().optional(),
     id: z.uuid(),
@@ -283,10 +283,10 @@ export const zKickGuildRequest = z.object({
 });
 
 export const zPageMetadata = z.object({
-    number: z.number().nullable().optional(),
-    size: z.number().nullable().optional(),
-    totalElements: z.number().nullable().optional(),
-    totalPages: z.number().nullable().optional()
+    number: z.number(),
+    size: z.number(),
+    totalElements: z.number(),
+    totalPages: z.number()
 });
 
 export const zPageable = z.object({
@@ -296,8 +296,8 @@ export const zPageable = z.object({
 });
 
 export const zPagedModelEventDto = z.object({
-    content: z.array(zEventDto).nullable().optional(),
-    page: zPageMetadata.nullable().optional()
+    content: z.array(zEventDto),
+    page: zPageMetadata
 });
 
 export const zPermissionDto = z.object({
