@@ -25,7 +25,7 @@
     "@opentelemetry/instrumentation-document-load": "^0.68.0",
     "@opentelemetry/instrumentation-fetch": "^0.223.0",
     "@opentelemetry/instrumentation-user-interaction": "^0.67.0",
-    "@opentelemetry/resources": "^2.7.1",
+    "@opentelemetry/resources": "^3.0.0",
     "@opentelemetry/sdk-trace-web": "^2.7.1",
     "@opentelemetry/semantic-conventions": "^1.41.1",
     "@upstash/ratelimit": "^2.0.8",
